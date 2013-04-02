@@ -1,0 +1,16 @@
+* Get a proper test suite. Seriously.
+
+* Update to F# 3.0 (not tried, maybe it already works).
+
+* Update to FParsec 1.0. This requires a couple of easy changes in
+  parse.fs.
+
+* Simplify the release process. Ideally, we should get a single .exe file
+  that works both on Microsoft .NET and on Mono.
+
+* Some antivirus (eg. Avast) don't like Shader Minifier. No idea why.
+
+* Performance. I suspect that using StringBuffer in the printer would
+  drastically improve performance.
+
+* All the bug reports I've received. I should do some triaging.
