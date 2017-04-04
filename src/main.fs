@@ -48,10 +48,17 @@ let rename code =
     printSize code
     code
 
+let readFile file =
+    let stream =
+        if file = "" then new StreamReader(Console.OpenStandardInput())
+        else new StreamReader(file)
+    stream.ReadToEnd()
 
 let minify file =
-  vprintf "Input file size is: %d\n" (FileInfo(file).Length)
-  let code = Parse.runParser file
+  let content = readFile file
+  let filename = if file = "" then "stdin" else file
+  vprintf "Input file size is: %d\n" (content.Length)
+  let code = Parse.runParser filename content
   vprintf "File parsed. "; printSize code
 
   let code = Rewriter.reorder code

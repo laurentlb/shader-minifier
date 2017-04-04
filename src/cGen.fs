@@ -14,7 +14,7 @@ let export ty name (newName:string) =
   else
     exportedValues := (ty, name, newName) :: !exportedValues
 
-let output() =
+let private output() =
   if Ast.debugMode || Ast.outputName = "" then stdout
   else new StreamWriter(Ast.outputName) :> TextWriter
 

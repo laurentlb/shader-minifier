@@ -4,7 +4,7 @@ open System.Collections.Generic
 
 type targetOutput = Text | CHeader | CList | JS | Nasm
 
-let version = "1.1.3" // Shader Minifer version
+let version = "1.1.4" // Shader Minifer version
 let debugMode = false
 
 let mutable outputName = "shader_code.h"

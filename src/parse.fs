@@ -1,345 +1,350 @@
 ﻿module Parse
 
-// TODO: true, false
-// TODO: switch case
+module private ParseImpl =
 
-open FParsec.Primitives
-open FParsec.CharParsers
-open FParsec.OperatorPrecedenceParser
+    // TODO: true, false
+    // TODO: switch case
 
-let commentLine = parse {
-  do! skipString "//" // .>> noneOf "[")) // (pchar '[')) // <?> "comment, not verbatim code"
-  do! notFollowedBy (anyOf "[]") <?> "not a verbatim code"
-  do! skipManyCharsTill anyChar (followedBy newline) } |> attempt
+    open FParsec.Primitives
+    open FParsec.CharParsers
+    open FParsec
 
-let commentBlock = parse {
-  do! skipString "/*"
-  do! skipManyCharsTill anyChar (skipString "*/") }
+    let private commentLine = parse {
+      do! skipString "//" // .>> noneOf "[")) // (pchar '[')) // <?> "comment, not verbatim code"
+      do! notFollowedBy (anyOf "[]") <?> "not a verbatim code"
+      do! skipManyTill anyChar (followedBy newline) } |> attempt
 
-let ws = (many (choice [spaces1; commentLine; commentBlock] <?> "") |>> ignore)
+    let private commentBlock = parse {
+      do! skipString "/*"
+      do! skipManyTill anyChar (skipString "*/") }
 
-let ch c = skipChar c >>. ws
-let str s = pstring s .>> ws
+    let ws = (many (choice [spaces1; commentLine; commentBlock] <?> "") |>> ignore)
 
-let ident =
-  let nonDigit = asciiLetter <|> pchar '_'
-  let p = pipe2 nonDigit (manyChars (nonDigit <|> digit <?> "")) (fun c s -> c.ToString() + s)
-  (p .>> ws) <?> "identifier"
+    let ch c = skipChar c >>. ws
+    let str s = pstring s .>> ws
 
-let opp = new OperatorPrecedenceParser<_,_>()
-let exprNoComma = opp.ExpressionParser
-let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Var ",", [acc;e])))
-let parenExp = between (ch '(') (ch ')') expr
+    let ident =
+      let nonDigit = asciiLetter <|> pchar '_'
+      let p = pipe2 nonDigit (manyChars (nonDigit <|> digit <?> "")) (fun c s -> c.ToString() + s)
+      (p .>> ws) <?> "identifier"
 
-// Primitives
-let octal =
-    let r = @"0[0-7]+"
-    let conv s = System.Convert.ToInt32(s, 8) |> (fun x -> Ast.Int(x, ""))
-    let body = regex r |>> conv
-    body .>> ws
+    let opp = new OperatorPrecedenceParser<_,_,_>()
+    let exprNoComma = opp.ExpressionParser
+    let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Var ",", [acc;e])))
+    let parenExp = between (ch '(') (ch ')') expr
 
-let hexa =
-    let prefix = pstring "0x" <|> pstring "0X"
-    let r = @"([0-9a-fA-F])+"
-    let conv s = System.Convert.ToInt32(s, 16) |> (fun x -> Ast.Int(x, ""))
-    let body = regex r |>> conv
-    prefix >>. body .>> ws
+    // Primitives
+    let octal =
+        let r = @"0[0-7]+"
+        let conv s = System.Convert.ToInt32(s, 8) |> (fun x -> Ast.Int(x, ""))
+        let body = regex r |>> conv
+        body .>> ws
 
-let number =
-  let r = @"(\d+\.?\d*|\.\d+)([eE][-+]?[0-9]+)?"
-  let conv (s: string) =
-    let ok, res = System.Int32.TryParse(s)
-    if ok then Ast.Int (res, "")
-    else Ast.Float (try float s, "" with _ -> failwith ("invalid number: " + s))
-  regex r .>> ws |>> conv
+    let hexa =
+        let prefix = pstring "0x" <|> pstring "0X"
+        let r = @"([0-9a-fA-F])+"
+        let conv s = System.Convert.ToInt32(s, 16) |> (fun x -> Ast.Int(x, ""))
+        let body = regex r |>> conv
+        prefix >>. body .>> ws
 
-let anyNumber =
-    let n = (hexa <|> octal <|> number) <?> "number"
-    let suffix = ["f"; "F"; "LF"; "lf"; "u"; "U"; "l"; "L"; "h"; "H"]
-                 |> List.map str |> choice
-    let suffix = suffix <?> "suffix"
-    let addSuffix = function
-      | Some su, Ast.Int (i, _) -> Ast.Int (i, su)
-      | Some su, Ast.Float (f,_) -> Ast.Float (f, su)
-      | _, n -> n
-    pipe2 n (opt suffix) (fun nb su -> addSuffix (su, nb))
+    let number =
+      let r = @"(\d+\.?\d*|\.\d+)([eE][-+]?[0-9]+)?"
+      let conv s =
+        let ok, res = System.Int32.TryParse(s)
+        if ok then Ast.Int (res, "")
+        else Ast.Float (try float s, "" with _ -> failwith ("invalid number: " + s))
+      regex r .>> ws |>> conv
 
-let vectorExp =
-    let inner = sepBy exprNoComma (ch ',')
-    between (ch '{') (ch '}') inner |>> Ast.VectorExp
+    let anyNumber =
+        let n = (hexa <|> octal <|> number) <?> "number"
+        let suffix = ["f"; "F"; "LF"; "lf"; "u"; "U"; "l"; "L"; "h"; "H"]
+                     |> List.map str |> choice
+        let suffix = suffix <?> "suffix"
+        let addSuffix = function
+          | Some su, Ast.Int (i, _) -> Ast.Int (i, su)
+          | Some su, Ast.Float (f,_) -> Ast.Float (f, su)
+          | _, n -> n
+        pipe2 n (opt suffix) (fun nb su -> addSuffix (su, nb))
 
-let prim' = choice [vectorExp; parenExp; ident |>> Ast.Var; anyNumber]
-           <?> "expression"
+    let vectorExp =
+        let inner = sepBy exprNoComma (ch ',')
+        between (ch '{') (ch '}') inner |>> Ast.VectorExp
 
-let cast =
-    let op = between (ch '(') (ch ')') ident
-    pipe2 op prim' (fun id e -> Ast.Cast(id, e)) <?> "cast"
+    let prim' = choice [vectorExp; parenExp; ident |>> Ast.Var; anyNumber]
+               <?> "expression"
 
-let prim = attempt cast <|> prim'
+    let cast =
+        let op = between (ch '(') (ch ')') ident
+        pipe2 op prim' (fun id e -> Ast.Cast(id, e)) <?> "cast"
 
-// Very high priority (parenthesis, function call, field access)
-let argList = sepBy exprNoComma (ch ',')
-let fcall = between (ch '(') (ch ')') argList |>>
-            (fun args fct -> Ast.FunCall(fct, args))
-let subscript = between (ch '[') (ch ']') expr |>>
-                (fun ind arr -> Ast.Subscript(arr, ind))
-let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field))
-let post = (dot <|> subscript <|> fcall) <?> ""
+    let prim = attempt cast <|> prim'
 
-let simpleExpr = pipe2 prim (many post)
-                  (fun prim posts -> List.fold (fun acc elt -> elt acc) prim posts)
-opp.TermParser <- simpleExpr
+    // Very high priority (parenthesis, function call, field access)
+    let argList = sepBy exprNoComma (ch ',')
+    let fcall = between (ch '(') (ch ')') argList |>>
+                (fun args fct -> Ast.FunCall(fct, args))
+    let subscript = between (ch '[') (ch ']') expr |>>
+                    (fun ind arr -> Ast.Subscript(arr, ind))
+    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field))
+    let post = (dot <|> subscript <|> fcall) <?> ""
 
-// Operators
+    let simpleExpr = pipe2 prim (many post)
+                      (fun prim posts -> List.fold (fun acc elt -> elt acc) prim posts)
+    opp.TermParser <- simpleExpr
 
-let precedence1 = [
-    ["*"; "/"; "%"], Assoc.Left
-    ["+"; "-"], Assoc.Left
-    ["<<"; ">>"], Assoc.Left
-    ["<"; ">"; "<="; ">="], Assoc.Left
-    ["=="; "!="], Assoc.Left
-    ["&"], Assoc.Left
-    ["^"], Assoc.Left
-    ["|"], Assoc.Left
-    ["&&"], Assoc.Left
-    ["^^"], Assoc.Left
-    ["||"], Assoc.Left
-]
-// precedence of ?: is between precedence1 and precedence2
-let precedence2 = [
-    ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Assoc.Right
-]
+    // Operators
 
-// Add all the operators in the OperatorParser
-let makeOperator =
-  // we start with operators with highest priority, then we decrement the counter.
-  let precCounter = ref 20 //(we have at most 20 different priorities)
-  let addInfix li =
-    for ops, assoc in li do
+    let precedence1 = [
+        ["*"; "/"; "%"], Associativity.Left
+        ["+"; "-"], Associativity.Left
+        ["<<"; ">>"], Associativity.Left
+        ["<"; ">"; "<="; ">="], Associativity.Left
+        ["=="; "!="], Associativity.Left
+        ["&"], Associativity.Left
+        ["^"], Associativity.Left
+        ["|"], Associativity.Left
+        ["&&"], Associativity.Left
+        ["^^"], Associativity.Left
+        ["||"], Associativity.Left
+    ]
+    // precedence of ?: is between precedence1 and precedence2
+    let precedence2 = [
+        ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Associativity.Right
+    ]
+
+    // Add all the operators in the OperatorParser
+    let makeOperator =
+      // we start with operators with highest priority, then we decrement the counter.
+      let precCounter = ref 20 //(we have at most 20 different priorities)
+      let addInfix li =
+        for ops, assoc in li do
+          decr precCounter
+          for op in ops do
+            opp.AddOperator(InfixOperator(op, ws, !precCounter, assoc, fun x y -> Ast.FunCall(Ast.Var op, [x; y])))
+
+      let addPrefix() =
+        decr precCounter
+        for op in ["++"; "--"; "+"; "-"; "~"; "!"] do
+          opp.AddOperator(PrefixOperator(op, ws, !precCounter, true, fun x -> Ast.FunCall(Ast.Var op, [x])))
+
+      let addPostfix() =
+        decr precCounter
+        for op in ["++"; "--"] do
+          opp.AddOperator(PostfixOperator(op, ws, !precCounter, true, fun x -> Ast.FunCall(Ast.Var ("$"+op), [x])))
+
+      addPostfix()
+      addPrefix()
+      addInfix precedence1
       decr precCounter
-      for op in ops do
-        opp.AddOperator(InfixOp(op, ws, !precCounter, assoc, fun x y -> Ast.FunCall(Ast.Var op, [x; y])))
+      opp.AddOperator(TernaryOperator("?", ws, ":", ws, !precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Var "?:", [x; y; z])))
+      addInfix precedence2
 
-  let addPrefix() =
-    decr precCounter
-    for op in ["++"; "--"; "+"; "-"; "~"; "!"] do
-      opp.AddOperator(PrefixOp(op, ws, !precCounter, true, fun x -> Ast.FunCall(Ast.Var op, [x])))
+    let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
+    let statement, stmtRef = createParserForwardedToRef()
+    let declaration, declRef = createParserForwardedToRef()
 
-  let addPostfix() =
-    decr precCounter
-    for op in ["++"; "--"] do
-      opp.AddOperator(PostfixOp(op, ws, !precCounter, true, fun x -> Ast.FunCall(Ast.Var ("$"+op), [x])))
+    let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit) .>> ws
 
-  addPostfix()
-  addPrefix()
-  addInfix precedence1
-  decr precCounter
-  opp.AddOperator(TernaryOp("?", ws, ":", ws, !precCounter, Assoc.Right, fun x y z -> Ast.FunCall(Ast.Var "?:", [x; y; z])))
-  addInfix precedence2
+    // A type block, like struct or interface blocks
+    let blockSpecifier prefix =
 
-let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
-let statement, stmtRef = createParserForwardedToRef()
-let declaration, declRef = createParserForwardedToRef()
+      // Restriction on field names
+      let check ((_,l) as arg : Ast.Decl) =
+        List.iter (fun (decl:Ast.DeclElt) ->
+          if decl.name <> Rewriter.renameField decl.name then
+            failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name) l
+        arg
 
-let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit) .>> ws
+      let decls = many (declaration .>> ch ';' |>> check)
+      let name = opt ident
+      pipe2 name (between (ch '{') (ch '}') decls)
+        (fun n d -> Ast.TypeStruct(prefix, n, d))
 
-// A type block, like struct or interface blocks
-let blockSpecifier prefix =
+    let structSpecifier = parse {
+        let! str = keyword "struct"
+        let! res = blockSpecifier str
+        return res
+    }
 
-  // Restriction on field names
-  let check ((_,l) as arg : Ast.Decl) =
-    List.iter (fun (decl:Ast.DeclElt) ->
-      if decl.name <> Rewriter.renameField decl.name then
-        failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name) l
-    arg
+    let structDecl =
+        let semi = if Ast.hlsl then opt (ch ';') |>> ignore else ch ';'
+        (structSpecifier .>> semi) |>> Ast.TypeDecl
 
-  let decls = many (declaration .>> ch ';' |>> check)
-  let name = opt ident
-  pipe2 name (between (ch '{') (ch '}') decls)
-    (fun n d -> Ast.TypeStruct(prefix, n, d))
+    // eg. "const out int", "uniform float"
+    let specifiedTypeGLSL =
+      let storage = ["const"; "inout"; "in"; "out"; "centroid"
+                     "patch"; "sample"; "uniform"; "buffer"; "shared"; "coherent"
+                     "volatile"; "restrict"; "readonly"; "writeonly"; "subroutine"
+                     "attribute"; "varying"
+                     "highp"; "mediump"; "lowp"
+                     "invariant"; "precise"
+                     "smooth"; "flat"; "noperspective"
+                    ]
+                    |> List.map keyword |> choice <?> "Type qualifier"
+      let layout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
+                 |>> (function s -> "layout(" + s + ")")
+      let qualifier = many (storage <|> layout)
+                    |>> (function [] -> None | li -> Some (String.concat " " li))
+      let typeSpec = structSpecifier <|> (ident |>> Ast.TypeName)
+      pipe2 qualifier typeSpec (fun tyQ name -> Ast.makeType name tyQ)
 
-let structSpecifier = parse {
-    let! str = keyword "struct"
-    let! res = blockSpecifier str
-    return res
-}
+    let specifiedTypeHLSL =
+      let storage = ["extern"; "nointerpolation"; "precise"; "shared"; "groupshared"
+                     "static"; "uniform"; "volatile"; "const"; "row_major"; "column_major"
+                     "inline"; "target"
+                     "out"; "in"; "inout"
+                     "linear"; "centroid"; "nointerpolation"; "noperspective"; "sample"
+                     "cbuffer"; "tbuffer"
+                    ]
+                    |> List.map keyword |> choice <?> "Type qualifier"
+      let qualifier = many storage |>> (function [] -> None | li -> Some (String.concat " " li))
+      let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
+                 |> opt
+                 |>> (function Some s -> "<" + s + ">" | None -> "")
+      let typeName = pipe2 ident generic (+)
+      let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
+      pipe3 qualifier typeSpec generic (fun tyQ name gen -> Ast.makeType name tyQ)
 
-let structDecl =
-    let semi = if Ast.hlsl then opt (ch ';') |>> ignore else ch ';'
-    (structSpecifier .>> semi) |>> Ast.TypeDecl
+    let specifiedType =
+        if Ast.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
 
-// eg. "const out int", "uniform float"
-let specifiedTypeGLSL =
-  let storage = ["const"; "inout"; "in"; "out"; "centroid"
-                 "patch"; "sample"; "uniform"; "buffer"; "shared"; "coherent"
-                 "volatile"; "restrict"; "readonly"; "writeonly"; "subroutine"
-                 "attribute"; "varying"
-                 "highp"; "mediump"; "lowp"
-                 "invariant"; "precise"
-                 "smooth"; "flat"; "noperspective"
-                ]
-                |> List.map keyword |> choice <?> "Type qualifier"
-  let layout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
-             |>> (function s -> "layout(" + s + ")")
-  let qualifier = many (storage <|> layout)
-                |>> (function [] -> None | li -> Some (String.concat " " li))
-  let typeSpec = structSpecifier <|> (ident |>> Ast.TypeName)
-  pipe2 qualifier typeSpec (fun tyQ name -> Ast.makeType name tyQ)
+    // For HLSL, e.g. ": color"
+    let semantics =
+        many (ch ':' >>. simpleExpr)
 
-let specifiedTypeHLSL =
-  let storage = ["extern"; "nointerpolation"; "precise"; "shared"; "groupshared"
-                 "static"; "uniform"; "volatile"; "const"; "row_major"; "column_major"
-                 "inline"; "target"
-                 "out"; "in"; "inout"
-                 "linear"; "centroid"; "nointerpolation"; "noperspective"; "sample"
-                 "cbuffer"; "tbuffer"
-                ]
-                |> List.map keyword |> choice <?> "Type qualifier"
-  let qualifier = many storage |>> (function [] -> None | li -> Some (String.concat " " li))
-  let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
-             |> opt
-             |>> (function Some s -> "<" + s + ">" | None -> "")
-  let typeName = pipe2 ident generic (+)
-  let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
-  pipe3 qualifier typeSpec generic (fun tyQ name gen -> Ast.makeType name tyQ)
+    // eg. "int foo[] = exp, bar = 3"
+    declRef := (
+      let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
+      let init = ch '=' >>. exprNoComma
+      let var = pipe4 ident (opt bracket) semantics (opt init) Ast.makeDecl
+      let list = sepBy1 var (ch ',')
+      tuple2 specifiedType list
+    )
 
-let specifiedType =
-    if Ast.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
+    // eg. int foo[]   used for function arguments
+    let singleDeclaration =
+      let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
+      pipe4 specifiedType ident (opt bracket) semantics
+          (fun ty id brack sem -> (ty, [Ast.makeDecl id brack sem None]))
 
-// For HLSL, e.g. ": color"
-let semantics =
-    many (ch ':' >>. simpleExpr)
+    // GLSL, eg. "uniform Transform { ... };"
+    let interfaceBlock = parse {
+        let! ty = specifiedType
+        let! sem = semantics
+        let s = sem |> List.map (fun s -> ":" + Printer.exprToS s) |> String.concat ""
+        let! ret = blockSpecifier (Printer.typeToS ty + s)
+                      |>> Ast.TypeDecl
+        // semi-colon seems to be optional in hlsl
+        do! if Ast.hlsl then opt (ch ';') |>> ignore else ch ';'
+        return ret
+    }
 
-// eg. "int foo[] = exp, bar = 3"
-declRef := (
-  let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
-  let init = ch '=' >>. exprNoComma
-  let var = pipe4 ident (opt bracket) semantics (opt init) Ast.makeDecl
-  let list = sepBy1 var (ch ',')
-  tuple2 specifiedType list
-)
+    let forLoop =
+      let init1 = declaration |>> (fun decl e2 e3 body -> Ast.ForD(decl, e2, e3, body))
+      let init2 = opt expr |>> (fun e1 e2 e3 body -> Ast.ForE(e1, e2, e3, body))
+      let init = attempt init1 <|> init2 .>> ch ';'
+      let cond = opt expr .>> ch ';'
+      let inc = opt expr .>> ch ')'
+      pipe4 (keyword "for" >>. ch '(' >>. init) cond inc statement
+        (fun f e2 e3 body -> f e2 e3 body)
 
-// eg. int foo[]   used for function arguments
-let singleDeclaration =
-  let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
-  pipe4 specifiedType ident (opt bracket) semantics
-      (fun ty id brack sem -> (ty, [Ast.makeDecl id brack sem None]))
+    let whileLoop =
+        pipe2 (keyword "while" >>. parenExp) statement
+          (fun cond stmt -> Ast.While(cond, stmt))
+    let doWhileLoop =
+        pipe2 (keyword "do" >>. statement) (str "while" >>. parenExp)
+          (fun stmt cond -> Ast.DoWhile(cond, stmt))
+    let ifStatement =
+        pipe3 (keyword "if" >>. parenExp) statement (opt (str "else" >>. statement))
+          (fun cond stmt1 stmt2 -> Ast.If(cond, stmt1, stmt2))
 
-// GLSL, eg. "uniform Transform { ... };"
-let interfaceBlock = parse {
-    let! ty = specifiedType
-    let! sem = semantics
-    let s = sem |> List.map (fun s -> ":" + Printer.exprToS s) |> String.concat ""
-    let! ret = blockSpecifier (Printer.typeToS ty + s)
-                  |>> Ast.TypeDecl
-    // semi-colon seems to be optional in hlsl
-    do! if Ast.hlsl then opt (ch ';') |>> ignore else ch ';'
-    return ret
-}
+    let block =
+      let list = many statement |>> Ast.Block
+      between (ch '{') (ch '}') list
 
-let forLoop =
-  let init1 = declaration |>> (fun decl e2 e3 body -> Ast.ForD(decl, e2, e3, body))
-  let init2 = opt expr |>> (fun e1 e2 e3 body -> Ast.ForE(e1, e2, e3, body))
-  let init = attempt init1 <|> init2 .>> ch ';'
-  let cond = opt expr .>> ch ';'
-  let inc = opt expr .>> ch ')'
-  pipe4 (keyword "for" >>. ch '(' >>. init) cond inc statement
-    (fun f e2 e3 body -> f e2 e3 body)
+    let skipComment = skipMany (commentLine <|> commentBlock)
 
-let whileLoop =
-    pipe2 (keyword "while" >>. parenExp) statement
-      (fun cond stmt -> Ast.While(cond, stmt))
-let doWhileLoop =
-    pipe2 (keyword "do" >>. statement) (str "while" >>. parenExp)
-      (fun stmt cond -> Ast.DoWhile(cond, stmt))
-let ifStatement =
-    pipe3 (keyword "if" >>. parenExp) statement (opt (str "else" >>. statement))
-      (fun cond stmt1 stmt2 -> Ast.If(cond, stmt1, stmt2))
+    let macro =
+      let nl = skipComment >>. skipMany (pchar '\\' >>. newline)
+      let line = manyCharsTill (anyChar .>> nl) newline
+      // an ident, without eating trailing spaces
+      let ident = manyChars (pchar '_' <|> asciiLetter <|> digit)
+      // parse the #define macros to get the macro name
+      let define = pipe2 (keyword "define" >>. ident) line
+                     (fun id line -> Ast.addFobiddenName id; "define " + id + line)
+      pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s)
 
-let block =
-  let list = many statement |>> Ast.Block
-  between (ch '{') (ch '}') list
+    let verbatim = parse {
+      do! skipString "//["
+      do! skipComment
+      let! content = manyCharsTill (anyChar .>> skipComment) (pstring "//]")
+      do! ws
+      return content }
 
-let skipComment = skipMany (commentLine <|> commentBlock)
+    // HLSL attribute, eg. [maxvertexcount(12)]
+    let attribute =
+        if Ast.hlsl then
+            ch '[' >>. manyCharsTill anyChar (ch ']')
+                |>> (function s -> "[" + s + "]")
+        else
+            pzero
 
-let macro =
-  let nl = skipComment >>. skipMany (pchar '\\' >>. newline)
-  let line = manyCharsTill (anyChar .>> nl) newline
-  // an ident, without eating trailing spaces
-  let ident = manyChars (pchar '_' <|> asciiLetter <|> digit)
-  // parse the #define macros to get the macro name
-  let define = pipe2 (keyword "define" >>. ident) line
-                 (fun id line -> Ast.addFobiddenName id; "define " + id + line)
-  pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s)
+    let special =
+      let key =
+       choice [
+        keyword "break"
+        keyword "continue"
+        keyword "discard"
+       ] |>> (fun k -> Ast.Keyword(k, None))
 
-let verbatim = parse {
-  do! skipString "//["
-  do! skipComment
-  let! content = manyCharsTill (anyChar .>> skipComment) (pstring "//]")
-  do! ws
-  return content }
+      let ret = pipe2 (keyword "return") (opt expr) (fun k e -> Ast.Keyword(k, e))
+      (key <|> ret) .>> ch ';'
 
-// HLSL attribute, eg. [maxvertexcount(12)]
-let attribute =
-    if Ast.hlsl then
-        ch '[' >>. manyCharsTill anyChar (ch ']')
-            |>> (function s -> "[" + s + "]")
-    else
-        pzero
+    // A statement
+    stmtRef := choice [
+      block
+      special
+      forLoop
+      ifStatement
+      whileLoop
+      doWhileLoop
+      verbatim |>> Ast.Verbatim
+      macro |>> Ast.Verbatim
+      attribute |>> Ast.Verbatim
+      attempt ((declaration .>> ch ';') |>> Ast.Decl)
+      simpleStatement .>> ch ';'] <?> "instruction"
 
-let special =
-  let key =
-   choice [
-    keyword "break"
-    keyword "continue"
-    keyword "discard"
-   ] |>> (fun k -> Ast.Keyword(k, None))
+    // eg. "int foo(float a[], out int b) : color"
+    let functionHeader =
+      let void_ = keyword "void" |>> (fun _ -> [])
+      let argList = void_ <|> (sepBy singleDeclaration (ch ','))
+      let argList = between (ch '(') (ch ')') argList
+      pipe4 specifiedType ident argList semantics Ast.makeFunctionType
 
-  let ret = pipe2 (keyword "return") (opt expr) (fun k e -> Ast.Keyword(k, e))
-  (key <|> ret) .>> ch ';'
+    let pfunction =
+      pipe2 functionHeader block (fun head body -> Ast.Function(head, body))
 
-// A statement
-stmtRef := choice [
-  block
-  special
-  forLoop
-  ifStatement
-  whileLoop
-  doWhileLoop
-  verbatim |>> Ast.Verbatim
-  macro |>> Ast.Verbatim
-  attribute |>> Ast.Verbatim
-  attempt ((declaration .>> ch ';') |>> Ast.Decl)
-  simpleStatement .>> ch ';'] <?> "instruction"
+    let toplevel =
+      let decl = declaration .>> ch ';'
+      let item = choice [
+                  macro |>> Ast.TLVerbatim
+                  verbatim |>> Ast.TLVerbatim
+                  attribute |>> Ast.TLVerbatim
+                  attempt decl |>> Ast.TLDecl
+                  structDecl
+                  attempt interfaceBlock
+                  pfunction
+      ]
+      let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> Ast.reorderFunctions <- true)
+      many ((attempt forwardDecl|>>fun _ -> None) <|> (item|>>Some)) |>> List.choose id // FIXME: use skip?
 
-// eg. "int foo(float a[], out int b) : color"
-let functionHeader =
-  let void_ = keyword "void" |>> (fun _ -> [])
-  let argList = void_ <|> (sepBy singleDeclaration (ch ','))
-  let argList = between (ch '(') (ch ')') argList
-  pipe4 specifiedType ident argList semantics Ast.makeFunctionType
+    let parse = ws >>. toplevel .>> eof
 
-let pfunction =
-  pipe2 functionHeader block (fun head body -> Ast.Function(head, body))
+    let runParser filename content =
+      let res = runParserOnString parse () filename content
+      match res with
+      | Success(r,_,_) -> r
+      | Failure(str, exn, _) -> failwithf "Parse error: %s" str
 
-let toplevel =
-  let decl = declaration .>> ch ';'
-  let item = choice [
-              macro |>> Ast.TLVerbatim
-              verbatim |>> Ast.TLVerbatim
-              attribute |>> Ast.TLVerbatim
-              attempt decl |>> Ast.TLDecl
-              structDecl
-              attempt interfaceBlock
-              pfunction
-  ]
-  let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> Ast.reorderFunctions <- true)
-  many ((attempt forwardDecl|>>fun _ -> None) <|> (item|>>Some)) |>> List.choose id // FIXME: use skip?
 
-let parse = ws >>. toplevel .>> eof
-
-let runParser file =
-  let res = runParserOnFile parse () file System.Text.Encoding.Default
-  match res with
-  | Success(r,_,_) -> r
-  | Failure(str, exn, _) -> failwithf "Parse error: %s" str
+let runParser = ParseImpl.runParser
