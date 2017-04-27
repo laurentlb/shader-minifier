@@ -271,7 +271,7 @@ module private ParseImpl =
       let ident = manyChars (pchar '_' <|> asciiLetter <|> digit)
       // parse the #define macros to get the macro name
       let define = pipe2 (keyword "define" >>. ident) line
-                     (fun id line -> Ast.addFobiddenName id; "define " + id + line)
+                     (fun id line -> Ast.addForbiddenName id; "define " + id + line)
       pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s)
 
     let verbatim = parse {

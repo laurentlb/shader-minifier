@@ -151,11 +151,6 @@ let renFunction env nbArgs id =
         let env = {env with fct = env.fct.Add (newName, Map.empty.Add(nbArgs, id))}
         env, newName
 
-let renSpecial env ty id =
-  let env, name = newId env id
-  CGen.export ty id name
-  env, name
-
 let renFctName env (f: FunctionType) =
   let ext = hlsl && f.semantics <> []
   if (ext && preserveExternals) || preserveAllGlobals then

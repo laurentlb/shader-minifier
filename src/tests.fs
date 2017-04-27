@@ -15,14 +15,14 @@ let () =
     exit 1
   let stopwatch = Stopwatch.StartNew()
   printfn "Running %i tests..." (testFiles.Length)
-  let failedTestCount = ref 0
+  let mutable failedTestCount = 0
   for filename in testFiles do
     let p = Process.Start(binaryFilename,
                           String.concat " " (List.map quoteArgs [ filename; "-o"; outFilename ]))
     p.WaitForExit()
     if p.ExitCode <> 0 then
       printfn "*** error while testing %s: program returned %i" filename p.ExitCode
-      failedTestCount := !failedTestCount + 1
+      failedTestCount <- failedTestCount + 1
       printfn "\n"
-  printfn "%i tests run in %i seconds, %i failed." testFiles.Length (int(stopwatch.Elapsed.TotalSeconds)) !failedTestCount
+  printfn "%i tests run in %i seconds, %i failed." testFiles.Length (int(stopwatch.Elapsed.TotalSeconds)) failedTestCount
   ()

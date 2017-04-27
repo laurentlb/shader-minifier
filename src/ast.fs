@@ -23,7 +23,7 @@ let mutable noSequence = false
 let mutable noRenaming = false
 let mutable noRenamingList = [ "main" ]
 let mutable forbiddenNames = [ "if"; "in"; "do" ]
-let addFobiddenName s = forbiddenNames <- s :: forbiddenNames
+let addForbiddenName s = forbiddenNames <- s :: forbiddenNames
 
 type Ident = string
 
