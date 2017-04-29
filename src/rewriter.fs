@@ -55,6 +55,8 @@ let stripSpaces str =
     if macro then result.Append("\n") |> ignore
     result.ToString()
 
+let hasInlinePrefix (s:string) = s.StartsWith("i_")
+let declsNotToInline d = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
 
 let bool = function
   | true -> Var "true" // Int (1, "")
@@ -113,6 +115,7 @@ let rec expr env = function
       if (Printer.exprToS e).Length <= (Printer.exprToS div).Length then e
       else div
 
+  // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
   | FunCall(Var "smoothstep", [Float (0.,_); Float (1.,_); _]) as e -> e
   | FunCall(Var "smoothstep", [a; b; x]) when Ast.smoothstepTrick ->
       let sub1 = FunCall(Var "-", [x; a])
@@ -122,7 +125,7 @@ let rec expr env = function
 
   | Dot(e, field) when fieldNames <> "" -> Dot(e, renameField field)
 
-  | Var s as e when s.StartsWith("i_") ->
+  | Var s as e when hasInlinePrefix s ->
     match Map.tryFind s env.vars with
       | Some (ty, size, Some init) -> init
       | _ -> e
@@ -174,10 +177,8 @@ let instr = function
            Keyword("return", Some expr)
       else
         Block (squeezeDeclarations b)
-  | Decl (ty, li) -> Decl (rwType ty, li |> List.filter (fun x -> not (x.name.StartsWith("i_"))))
-  | ForD((ty, d), cond, inc, body) ->
-      let d = d |> List.filter (fun x -> not (x.name.StartsWith("i_")))
-      ForD((rwType ty, d), cond, inc, body)
+  | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
+  | ForD((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, body)
   // FIXME: properly handle booleans
   | If(Var "true", e1, e2) -> e1
   | If(Var "false", e1, Some e2) -> e2
@@ -197,8 +198,7 @@ let apply li =
   |> reorderTopLevel
   |> mapTopLevel (mapEnv expr instr)
   |> List.map (function
-      | TLDecl (ty, li) ->
-           TLDecl (rwType ty, li |> List.filter (fun x -> not (x.name.StartsWith("i_"))))
+      | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)
       | TLVerbatim s -> TLVerbatim (stripSpaces s)
       | e -> e
   )

@@ -5,6 +5,7 @@ open System.IO
 // Values to export in the C code (uniform and attribute values)
 let exportedValues = ref ([] : (string * string * string) list)
 
+// 'ty' is a prefix for the type of shader param. Nothing (VAR) for vars, "F" for hlsl functions
 let export ty name (newName:string) =
   if newName.[0] <> '0' then
      exportedValues := !exportedValues |> List.map (fun (ty2, name2, newName2 as arg) ->

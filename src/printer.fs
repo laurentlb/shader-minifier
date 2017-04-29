@@ -3,7 +3,6 @@
 open Ast
 
 let mutable identTable = [||]
-let mutable output = stdout
 let out a = sprintf a
 
 // how to print variable names
