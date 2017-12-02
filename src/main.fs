@@ -92,8 +92,7 @@ let run files =
     | exn -> fail exn exn.Message
 
 let printHeader () =
-  printfn "Shader Minifier %s (c) Laurent Le Brun 2012" Ast.version
-  printfn "http://www.ctrl-alt-test.fr"
+  printfn "Shader Minifier %s, Dec 2017 - https://github.com/laurentlb/Shader_Minifier" Ast.version
   printfn ""
 
 let () =
@@ -131,8 +130,6 @@ let () =
      "--smoothstep", ArgType.Unit (fun() -> Ast.smoothstepTrick<-true), "Use IQ's smoothstep trick"
      //"--macro-threshold", ArgType.Int (fun i ->
      //    printfn "Macros are disabled in the release."; Ast.macroThreshold <- i), "[disabled] Use a #define macro if it can save at least <int> bytes"
-     "--shader-only", ArgType.Unit (fun() -> Ast.targetOutput<-Ast.Text), "[Deprecated]"
-     "--js-output", ArgType.Unit (fun() -> Ast.targetOutput<-Ast.JS), "[Deprecated]"
      "--", ArgType.Rest setFile, "Stop parsing command line"
     ] |> List.map (fun (s, f, d) -> ArgInfo(s, f, d))
 

@@ -16,13 +16,13 @@ let export ty name (newName:string) =
     exportedValues := (ty, name, newName) :: !exportedValues
 
 let private output() =
-  if Ast.debugMode || Ast.outputName = "" then stdout
+  if Ast.debugMode || Ast.outputName = "" || Ast.outputName = "-" then stdout
   else new StreamWriter(Ast.outputName) :> TextWriter
 
 let printHeader data asAList =
   use out = output()
   let fileName =
-      if Ast.outputName = "" then "shader_code.h"
+      if Ast.outputName = "" || Ast.outputName = "-" then "shader_code.h"
       else Path.GetFileName Ast.outputName
   let macroName = fileName.Replace(".", "_").ToUpper() + "_"
 
