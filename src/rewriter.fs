@@ -176,7 +176,9 @@ let instr = function
       if not Ast.noSequence && canOptimize then
         let li = List.choose (function Expr e -> Some e | _ -> None) b
         match returnExp with
-         | None -> Expr (List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) li)
+         | None ->
+            if li = [] then Block []
+            else Expr (List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) li)
          | Some e ->
            let expr = List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) (li@[e])
            Keyword("return", Some expr)
@@ -188,6 +190,7 @@ let instr = function
   | If(Var "true", e1, e2) -> e1
   | If(Var "false", e1, Some e2) -> e2
   | If(Var "false", e1, None) -> Block []
+  | If(c, b, Some (Block [])) -> If(c, b, None)
   | Verbatim s -> Verbatim (stripSpaces s)
   | e -> e
 

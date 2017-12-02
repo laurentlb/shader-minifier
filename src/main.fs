@@ -79,13 +79,17 @@ let minify file =
   code
 
 let run files =
+  let fail (exn:exn) s =
+        printfn "%s" s;
+        printfn "%s" exn.StackTrace
+        1
   try
     let codes = Array.map minify files
     CGen.print (Array.zip files codes)
     0
   with
-    | Failure s as exn -> printfn "%s" s; 1 //; printfn "%s" exn.StackTrace
-    | exn -> printfn "Error: %s" exn.Message; 1 //; printfn "%s" exn.StackTrace
+    | Failure s as exn -> fail exn s
+    | exn -> fail exn exn.Message
 
 let printHeader () =
   printfn "Shader Minifier %s (c) Laurent Le Brun 2012" Ast.version
