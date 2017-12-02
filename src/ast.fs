@@ -101,6 +101,7 @@ let foldList env fct li =
     snd x) : 'a -> 'a)
   !env, res
 
+// Applies env.fExpr recursively on all nodes of an expression.
 let rec mapExpr env = function
   | FunCall(fct, args) ->
      env.fExpr env (FunCall(mapExpr env fct, List.map (mapExpr env) args))

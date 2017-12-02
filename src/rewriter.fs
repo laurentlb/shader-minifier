@@ -70,6 +70,11 @@ let rec expr env = function
   | FunCall(Var ",", [e1; FunCall(Var ",", [e2; e3])]) ->
       FunCall(Var ",", [expr env (FunCall(Var ",", [e1; e2])); e3])
 
+  | FunCall(Var "-", [x; Float (f, s)]) when f < 0. ->
+        FunCall(Var "+", [x; Float (-f, s)]) |> expr env
+  | FunCall(Var "-", [x; Int (i, s)]) when i < 0 ->
+        FunCall(Var "+", [x; Int (-i, s)]) |> expr env
+
   // Boolean simplifications (let's ignore the suffix)
   | FunCall(Var "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
   | FunCall(Var ">",  [Int (i1, _); Int (i2, _)]) -> bool(i1 > i2)

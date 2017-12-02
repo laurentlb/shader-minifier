@@ -279,7 +279,8 @@ let rec doNotOverload env = function
       let env = {env with map = Map.add name name env.map; reusable = re}
       doNotOverload env li
 
-let rec renTopLevel li =
+let rec renTopLevel li mode =
+  renameMode <- mode
   let idents = Printer.identTable |> Array.toList
             |> List.filter (fun x -> x.Length = 1)
             |> List.filter (fun x -> not <| List.exists ((=) x) Ast.forbiddenNames)

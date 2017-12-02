@@ -35,15 +35,13 @@ let printSize code =
       printfn "Shader size is: %d" n
 
 let rename code =
-    Renamer.renameMode <- Renamer.Unambiguous
     Printer.printMode <- Printer.SingleChar
-    let code, lastIdent = Renamer.renTopLevel code
+    let code, lastIdent = Renamer.renTopLevel code Renamer.Unambiguous
     computeFrequencyIdentTable code
     Renamer.computeContextTable code
 
     Printer.printMode <- Printer.FromTable
-    Renamer.renameMode <- Renamer.Context
-    let code, lastIdent = Renamer.renTopLevel code
+    let code, lastIdent = Renamer.renTopLevel code Renamer.Context
     vprintf "%d identifiers renamed. " Renamer.numberOfUsedIdents
     printSize code
     code
@@ -129,7 +127,6 @@ let () =
      "--smoothstep", ArgType.Unit (fun() -> Ast.smoothstepTrick<-true), "Use IQ's smoothstep trick"
      //"--macro-threshold", ArgType.Int (fun i ->
      //    printfn "Macros are disabled in the release."; Ast.macroThreshold <- i), "[disabled] Use a #define macro if it can save at least <int> bytes"
-     //"--make-elevated2", ArgType.Unit (fun () -> printfn "Please buy the commercial version."; exit 1), "Generate the 4k intro 'Elevated 2'"
      "--shader-only", ArgType.Unit (fun() -> Ast.targetOutput<-Ast.Text), "[Deprecated]"
      "--js-output", ArgType.Unit (fun() -> Ast.targetOutput<-Ast.JS), "[Deprecated]"
      "--", ArgType.Rest setFile, "Stop parsing command line"
