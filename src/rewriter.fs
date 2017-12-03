@@ -132,7 +132,7 @@ let rec expr env = function
 
   | Var s as e when hasInlinePrefix s ->
     match Map.tryFind s env.vars with
-      | Some (ty, size, Some init) -> init
+      | Some (_, _, Some init) -> init
       | _ -> e
 
   | e -> e
@@ -171,7 +171,9 @@ let instr = function
       // Try to remove blocks by using the comma operator
       let returnExp = b |> Seq.tryPick (function Keyword("return", e) -> e | _ -> None)
       let canOptimize = b |> List.forall (function
-        | Expr _ -> true | Keyword("return", Some e) -> true | _ -> false)
+        | Expr _ -> true
+        | Keyword("return", Some _) -> true
+        | _ -> false)
 
       if not Ast.noSequence && canOptimize then
         let li = List.choose (function Expr e -> Some e | _ -> None) b
@@ -187,9 +189,9 @@ let instr = function
   | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
   | ForD((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, body)
   // FIXME: properly handle booleans
-  | If(Var "true", e1, e2) -> e1
-  | If(Var "false", e1, Some e2) -> e2
-  | If(Var "false", e1, None) -> Block []
+  | If(Var "true", e1, _) -> e1
+  | If(Var "false", _, Some e2) -> e2
+  | If(Var "false", _, None) -> Block []
   | If(c, b, Some (Block [])) -> If(c, b, None)
   | Verbatim s -> Verbatim (stripSpaces s)
   | e -> e
@@ -211,65 +213,6 @@ let apply li =
       | e -> e
   )
   |> squeezeTLDeclarations
-
-                                (* ** Macro creation ** *)
-let macroCount = Dictionary()
-let addWord str =
-  if str <> "" then
-    match macroCount.TryGetValue str with
-     | true, n -> macroCount.Remove str |> ignore; macroCount.Add(str, (n + 1))
-     | false, _ -> macroCount.Add(str, 1)
-
-let macroExpr _ expr =
-  match expr with
-  | Var s when System.Char.IsLetter s.[0] -> addWord s
-  | Int _ -> addWord (Printer.exprToS expr)
-  | Float _ -> addWord (Printer.exprToS expr)
-  | _ -> ()
-  expr
-
-let macroTy (ty:Type) =
-  match ty.name with TypeName s -> addWord s | TypeStruct _ -> () // FIXME
-  addWord (defaultArg ty.typeQ "")
-
-let macroInstr expr =
-  match expr with
-  | Decl (ty, _) -> macroTy ty
-  | If(_, _, el) -> addWord "if"; if el <> None then addWord "else"
-  | ForD((ty, _), _, _, _) -> macroTy ty; addWord "for"
-  | ForE(_, _, _, _) -> addWord "for"
-  | While(_, _) -> addWord "while"
-  | DoWhile(_, _) -> addWord "do"; addWord "while"
-  | Keyword(k, _) -> addWord k
-  | _ -> ()
-  expr
-
-let macroTL = function
-  | Function(fct, _) ->
-      List.iter (fst >> macroTy) fct.args
-      macroTy fct.retType
-  | TLDecl (ty, _) -> macroTy ty
-  | _ -> ()
-
-let injectMacros numberOfIdent code =
-  macroCount.Clear()
-  generatedMacros.Clear()
-  List.iter macroTL code
-  mapTopLevel (mapEnv macroExpr macroInstr) code |> ignore
-  let macroLen = "#define  \n".Length
-  let mutable name = numberOfIdent
-  for i in macroCount do
-    let oldLen = i.Value * i.Key.Length
-    // check if we still have 1-char names available
-    let newIdentSize = if name > 26 * 2 then 2 else 1
-    let newLen = macroLen + i.Key.Length + newIdentSize * i.Value
-    //printfn "%s: %d vs %d" i.Key oldLen newLen
-    if oldLen - newLen >= macroThreshold then
-      name <- name + 1
-      generatedMacros.Add(i.Key, name)
-  let macros = [for i in generatedMacros ->
-                  TLVerbatim(sprintf "define %s %s" Printer.identTable.[i.Value] i.Key)]
-  macros @ code, name - numberOfIdent
 
           (* Reorder functions because of forward declarations *)
 

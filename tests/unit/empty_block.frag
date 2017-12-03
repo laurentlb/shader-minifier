@@ -1,4 +1,6 @@
 void f() {
+  int x = 5;
+  int y = 7;
   if (1) {
     return 2;
   } else {;}

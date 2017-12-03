@@ -50,12 +50,12 @@ let chooseIdent ident candidates =
   for word in candidates do
     let letter = (word : string).[0] // FIXME: use both first and last letter to compute stats
     let mutable score = 0
-    for c, occ in prevs do
+    for c, _ in prevs do
       match contextTable.TryFind (c, letter) with
       | None -> ()
       | Some occ2 -> score <- score + occ2 // * occ
 
-    for c, occ in nexts do
+    for c, _ in nexts do
       match contextTable.TryFind (letter, c) with
       | None -> ()
       | Some occ2 -> score <- score + occ2 // * occ
@@ -108,20 +108,18 @@ let alwaysNewName env id =
 
 let optimizeFrequency env id =
   match env.reusable with
-   |[] -> // create a new variable
+   | [] -> // create a new variable
       let newName = sprintf "%04d" env.max
       let env = {env with map = Map.add id newName env.map; max = env.max + 1}
       numberOfUsedIdents <- max numberOfUsedIdents env.max
       env, newName
-   |e::l -> // reuse a variable name
+   | e::l -> // reuse a variable name
       {env with map = Map.add id e env.map; reusable = l}, e
 
 // FIXME: handle 2-letter names
 let optimizeContext env id =
   let cid = char (1000 + int id)
-  let l2 = env.reusable
-//        |> Seq.choose (fun s -> if s.Length = 1 then Some s.[0] else None)
-  let newName = chooseIdent cid l2
+  let newName = chooseIdent cid env.reusable
   let l = env.reusable |> List.filter (fun x -> x.[0] <> newName.[0])
   {env with map = Map.add id newName env.map; reusable = l}, newName
 
@@ -225,16 +223,14 @@ let rec renInstr env =
   | Decl d ->
       let env, res = renDecl false env d
       env, Decl res
-  | Block b as i ->
-      //let env = garbage env i
+  | Block b ->
       let _, res = renList env renInstr b
       env, Block res
   | If(cond, th, el) ->
       let _, th = renInstr env th
       let el = Option.map (fun x -> snd (renInstr env x)) el
       env, If(renExpr env cond, th, el)
-  | ForD(init, cond, inc, body) as loop ->
-      //let newEnv = garbage env loop
+  | ForD(init, cond, inc, body) ->
       let newEnv, init = renDecl false env init
       let _, body = renInstr newEnv body
       let cond = Option.map (renExpr newEnv) cond
@@ -266,7 +262,7 @@ let rec renTopLevelBody env = function
   | Function(fct, body) ->
       let env = garbage env body
       let env, args = renList env (renDecl false) fct.args
-      let env, body = renInstr env body
+      let _env, body = renInstr env body
       Function({fct with args=args}, body)
   | e -> e
 
@@ -290,4 +286,4 @@ let rec renTopLevel li mode =
   let env, li = renList env renTopLevelName li
 
   // Then, rename local values
-  List.map (renTopLevelBody env) li, numberOfUsedIdents-1
+  List.map (renTopLevelBody env) li

@@ -2,7 +2,7 @@
 
 open Ast
 
-let mutable identTable = [||]
+let mutable identTable: string[] = [||]
 let out a = sprintf a
 
 // how to print variable names
@@ -35,19 +35,13 @@ let precedence =
   |> List.concat
   |> dict
 
-// check if the string is defined by a macro
-let (!!) str =
-  match generatedMacros.TryGetValue str with
-   | true, s -> identTable.[int s]
-   | false, _ -> str
-
 let idToS (id: string) =
   if id.[0] = '0' then
     match printMode with
-    | FromTable -> !!id //  identTable.[int id]
+    | FromTable -> id
     | Nothing -> ""
     | SingleChar -> string (char (1000 + int id))
-  else !!id
+  else id
 
 let listToS toS sep li =
   List.map toS li |> String.concat sep
@@ -56,14 +50,14 @@ let floatToS f =
     let si = if f < 0. then "-" else ""
     let test = out "%g" (abs f)
     // display "3." instead of "3"
-    if fst (System.Int32.TryParse test) then !!(out "%g." f)
+    if fst (System.Int32.TryParse test) then (out "%g." f)
     // display ".5" instead of "0.5"
-    else if test.[0] = '0' then si + !!(test.[1..])
-    else si + !!test
+    else if test.[0] = '0' then si + (test.[1..])
+    else si + test
 
 let rec exprToS exp = exprToSLevel 0 exp
 and exprToSLevel level = function
-  | Int (i, suf) -> !!(out "%d%s" i suf)
+  | Int (i, suf) -> (out "%d%s" i suf)
   | Float (f, suf) -> out "%s%s" (floatToS f) suf
   | Var s -> idToS s
   | FunCall(f, args) ->
@@ -127,9 +121,9 @@ and typeSpecToS = function
   | TypeStruct(prefix, id, decls) -> structToS prefix id decls
 
 and typeToS (ty: Type) =
-  let get = Option.fold (fun _ s -> !!s + " ") ""
+  let get = Option.fold (fun _ s -> s + " ") ""
   let typeSpec = typeSpecToS ty.name
-  out "%s%s" (get ty.typeQ) !!typeSpec
+  out "%s%s" (get ty.typeQ) typeSpec
 
 and declToS (ty, vars) =
   let out1 decl =
@@ -179,23 +173,23 @@ let rec instrToS' indent = function
   | If(cond, th, el) ->
      let el = match el with
                | None -> ""
-               | Some el -> out "%s%s%s%s" (nl indent) !!"else" (nl (indent+1)) (instrToS' (indent+1) el |> sp)
+               | Some el -> out "%s%s%s%s" (nl indent) "else" (nl (indent+1)) (instrToS' (indent+1) el |> sp)
      out "if(%s)%s%s" (exprToS cond) (instrToSInd indent th) el
   | ForD(init, cond, inc, body) ->
      let cond = defaultArg (Option.map exprToS cond) ""
      let inc = defaultArg (Option.map exprToS inc) ""
-     out "%s(%s;%s;%s)%s" !!"for" (declToS init) cond inc (instrToSInd indent body)
+     out "%s(%s;%s;%s)%s" "for" (declToS init) cond inc (instrToSInd indent body)
   | ForE(init, cond, inc, body) ->
      let cond = defaultArg (Option.map exprToS cond) ""
      let inc = defaultArg (Option.map exprToS inc) ""
      let init = defaultArg (Option.map exprToS init) ""
-     out "%s(%s;%s;%s)%s" !!"for" init cond inc (instrToSInd indent body)
+     out "%s(%s;%s;%s)%s" "for" init cond inc (instrToSInd indent body)
   | While(cond, body) ->
-     out "%s(%s)%s" !!"while" (exprToS cond) (instrToSInd indent body)  
+     out "%s(%s)%s" "while" (exprToS cond) (instrToSInd indent body)  
   | DoWhile(cond, body) ->
-     out "%s%s%s(%s)" !!"do" !!"while" (exprToS cond |> sp) (instrToS indent body)
-  | Keyword(k, None) -> out "%s;" !!k
-  | Keyword(k, Some exp) -> out "%s%s;" !!k (exprToS exp |> sp)
+     out "%s%s%s(%s)" "do" "while" (exprToS cond |> sp) (instrToS indent body)
+  | Keyword(k, None) -> out "%s;" k
+  | Keyword(k, Some exp) -> out "%s%s;" k (exprToS exp |> sp)
   | Verbatim s ->
       // add a space at end when it seems to be needed
       let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s

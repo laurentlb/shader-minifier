@@ -36,12 +36,12 @@ let printSize code =
 
 let rename code =
     Printer.printMode <- Printer.SingleChar
-    let code, lastIdent = Renamer.renTopLevel code Renamer.Unambiguous
+    let code = Renamer.renTopLevel code Renamer.Unambiguous
     computeFrequencyIdentTable code
     Renamer.computeContextTable code
 
     Printer.printMode <- Printer.FromTable
-    let code, lastIdent = Renamer.renTopLevel code Renamer.Context
+    let code = Renamer.renTopLevel code Renamer.Context
     vprintf "%d identifiers renamed. " Renamer.numberOfUsedIdents
     printSize code
     code
@@ -68,13 +68,6 @@ let minify file =
       if Ast.noRenaming then code
       else rename code
 
-//  vprintf "Identifiers renamed. "; printSize code
-//  let code =
-//    if !Ast.macroThreshold < 10000 then
-//      let code, n = Rewriter.injectMacros lastIdent code
-//      vprintfn "%d macros added." n
-//      code
-//    else code
   vprintf "Minification of '%s' finished.\n" file
   code
 

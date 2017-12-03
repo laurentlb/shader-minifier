@@ -12,10 +12,8 @@ let mutable targetOutput = CHeader
 let mutable verbose = false
 let mutable smoothstepTrick = false
 let mutable fieldNames = "xyzw"
-let mutable macroThreshold = 10000
 let mutable preserveExternals = false
 let mutable preserveAllGlobals = false
-let generatedMacros = Dictionary<string, int>()
 let mutable reorderDeclarations = false
 let mutable reorderFunctions = false
 let mutable hlsl = false
@@ -152,7 +150,7 @@ let rec mapInstr env i =
   env, env.fInstr res
 
 let mapTopLevel env li =
-  let env, res = li |> foldList env (fun env tl ->
+  let _, res = li |> foldList env (fun env tl ->
     match tl with
     | TLDecl t ->
         let env, res = mapDecl env t
@@ -160,21 +158,3 @@ let mapTopLevel env li =
     | Function(fct, body) -> env, Function(fct, snd (mapInstr env body))
     | e -> env, e)
   res
-
-
-let countIdent code =
-  let count = ref 0
-  let add li = count := !count + List.length li
-  let mapInstr = function
-    | Decl (_, li) as e -> add li; e
-    | ForD((_, li), _, _, _) as e -> add li; e
-    | e -> e
-  let mapExpr _ e = e
-  let mapTL = function
-    | Function(fct, _) -> incr count; add fct.args
-    | TLDecl (_, li) -> add li
-    | _ -> ()
-
-  mapTopLevel (mapEnv mapExpr mapInstr) code |> ignore
-  List.iter mapTL code
-  !count

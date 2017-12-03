@@ -203,7 +203,7 @@ module private ParseImpl =
                  |>> (function Some s -> "<" + s + ">" | None -> "")
       let typeName = pipe2 ident generic (+)
       let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
-      pipe3 qualifier typeSpec generic (fun tyQ name gen -> Ast.makeType name tyQ)
+      pipe3 qualifier typeSpec generic (fun tyQ name _ -> Ast.makeType name tyQ)
 
     let specifiedType =
         if Ast.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
@@ -314,7 +314,7 @@ module private ParseImpl =
       attempt ((declaration .>> ch ';') |>> Ast.Decl)
       simpleStatement .>> ch ';'] <?> "instruction"
 
-    // eg. "int foo(float a[], out int b) : color"
+    // e.g. "int foo(float a[], out int b) : color"
     let functionHeader =
       let void_ = keyword "void" |>> (fun _ -> [])
       let argList = void_ <|> (sepBy singleDeclaration (ch ','))
@@ -344,7 +344,7 @@ module private ParseImpl =
       let res = runParserOnString parse () filename content
       match res with
       | Success(r,_,_) -> r
-      | Failure(str, exn, _) -> failwithf "Parse error: %s" str
+      | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
 
 let runParser = ParseImpl.runParser
