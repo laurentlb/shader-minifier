@@ -1,11 +1,14 @@
 ﻿module Ast
 
 open System.Collections.Generic
+open System.IO
 
 type targetOutput = Text | CHeader | CList | JS | Nasm
 
 let version = "1.1.5" // Shader Minifer version
-let debugMode = false
+let debugMode = true
+
+let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
 let mutable outputName = "shader_code.h"
 let mutable targetOutput = CHeader
@@ -93,10 +96,10 @@ let mapEnv fe fi = {fExpr = fe; fInstr = fi; vars = Map.empty}
 
 let foldList env fct li =
   let env = ref env
-  let res = li |> List.map ((fun i -> // FIXME: use List.fold is cleaner :)
+  let res = li |> List.map (fun i -> // FIXME: use List.fold is cleaner :)
     let x = fct !env i
     env := fst x
-    snd x) : 'a -> 'a)
+    snd x)
   !env, res
 
 // Applies env.fExpr recursively on all nodes of an expression.

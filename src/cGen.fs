@@ -55,7 +55,7 @@ let printHeader data asAList =
 
 let printNoHeader data =
   use out = output()
-  let str = [for _,code in data -> Printer.print code] |> String.concat "\n"
+  let str = [for _, code in data -> Printer.print code] |> String.concat "\n"
   fprintf out "%s" str
 
 let printJSHeader data =
@@ -95,8 +95,7 @@ let printNasmHeader data =
     fprintfn out "_%s:\r\n\tdb '%s', 0" name (Printer.print code)
     fprintfn out ""
 
-let print data =
-    match Ast.targetOutput with
+let print data = function
     | Ast.Text -> printNoHeader data
     | Ast.CHeader -> printHeader data false
     | Ast.CList -> printHeader data true

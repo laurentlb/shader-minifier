@@ -143,7 +143,7 @@ module private ParseImpl =
     let statement, stmtRef = createParserForwardedToRef()
     let declaration, declRef = createParserForwardedToRef()
 
-    let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit) .>> ws
+    let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit .>> notFollowedBy (ch '_')) .>> ws
 
     // A type block, like struct or interface blocks
     let blockSpecifier prefix =

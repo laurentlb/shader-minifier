@@ -26,7 +26,7 @@ let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
 // like printf when verbose option is set
 let vprintf fmt =
-  let out = if Ast.verbose then stdout else nullOut
+  let out = if Ast.verbose then stdout else Ast.nullOut
   fprintf out fmt
 
 let printSize code =
@@ -52,9 +52,7 @@ let readFile file =
         else new StreamReader(file)
     stream.ReadToEnd()
 
-let minify file =
-  let content = readFile file
-  let filename = if file = "" then "stdin" else file
+let minify filename (content: string) =
   vprintf "Input file size is: %d\n" (content.Length)
   let code = Parse.runParser filename content
   vprintf "File parsed. "; printSize code
@@ -68,8 +66,13 @@ let minify file =
       if Ast.noRenaming then code
       else rename code
 
-  vprintf "Minification of '%s' finished.\n" file
+  vprintf "Minification of '%s' finished.\n" filename
   code
+
+let minifyFile file =
+  let content = readFile file
+  let filename = if file = "" then "stdin" else file
+  minify filename content
 
 let run files =
   let fail (exn:exn) s =
@@ -77,8 +80,8 @@ let run files =
         printfn "%s" exn.StackTrace
         1
   try
-    let codes = Array.map minify files
-    CGen.print (Array.zip files codes)
+    let codes = Array.map minifyFile files
+    CGen.print (Array.zip files codes) Ast.targetOutput
     0
   with
     | Failure s as exn -> fail exn s
@@ -124,7 +127,7 @@ let () =
      //"--macro-threshold", ArgType.Int (fun i ->
      //    printfn "Macros are disabled in the release."; Ast.macroThreshold <- i), "[disabled] Use a #define macro if it can save at least <int> bytes"
      "--", ArgType.Rest setFile, "Stop parsing command line"
-    ] |> List.map (fun (s, f, d) -> ArgInfo(s, f, d))
+    ] |> List.map ArgInfo
 
   ArgParser.Parse(specs, setFile)
   files := List.rev !files
