@@ -25,6 +25,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\Debug\Checker.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
+    <StartWorkingDirectory>../../..</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -36,6 +37,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\Release\Checker.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
+    <StartWorkingDirectory>..\..\..</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -66,9 +68,7 @@
     </Reference>
     <Reference Include="OpenTK">
       <HintPath>..\lib\OpenTK.dll</HintPath>
-      <Private>True</Private>
     </Reference>
-    <Reference Include="OpenTK" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
