@@ -191,7 +191,8 @@ let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
         newId env decl.name
 
     let init = Option.map (renExpr env) decl.init
-    env, {decl with name=newName; init=init}
+    let size = Option.map (renExpr env) decl.size
+    env, {decl with name=newName; size=size; init=init}
   let env, res = renList env aux vars
   env, (ty, res)
 
