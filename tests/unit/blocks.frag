@@ -11,7 +11,10 @@ float test_if()
       bar = 0.3;
   else
     bar = 0.4;
+  return bar;
 }
+
+int k = 5;
 
 float test_for()
 {
