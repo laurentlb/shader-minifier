@@ -5,7 +5,7 @@ open System.IO
 
 type targetOutput = Text | CHeader | CList | JS | Nasm
 
-let version = "1.1.5" // Shader Minifer version
+let version = "1.1.6" // Shader Minifer version
 let debugMode = true
 
 let nullOut = new StreamWriter(Stream.Null) :> TextWriter
