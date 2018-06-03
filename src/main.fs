@@ -88,7 +88,7 @@ let run files =
     | exn -> fail exn exn.Message
 
 let printHeader () =
-  printfn "Shader Minifier %s, Dec 2017 - https://github.com/laurentlb/Shader_Minifier" Ast.version
+  printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Ast.version
   printfn ""
 
 let () =

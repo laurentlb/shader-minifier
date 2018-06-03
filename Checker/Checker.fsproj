@@ -54,8 +54,7 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="main.fs" />
     <None Include="App.config" />
     <Content Include="OpenTK.dll.config" />
     <Content Include="packages.config" />
@@ -66,9 +65,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="OpenTK">
-      <HintPath>..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
+      <HintPath>..\lib\OpenTK.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="OpenTK" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
