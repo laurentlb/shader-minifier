@@ -23,8 +23,8 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <StartArguments>
-    </StartArguments>
+    <StartArguments>-o "" ../../tests\unit\commas.frag --smoothstep</StartArguments>
+    <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,7 +33,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <StartArguments>-o "" ../../tests\unit\smoothstep.frag --smoothstep</StartArguments>
+    <StartArguments>-o "" ../../tests\unit\empty_block.frag --smoothstep</StartArguments>
     <OtherFlags>--standalone</OtherFlags>
   </PropertyGroup>
   <Choose>
@@ -60,6 +60,8 @@
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Content Include="OpenTK.dll.config" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FParsec">

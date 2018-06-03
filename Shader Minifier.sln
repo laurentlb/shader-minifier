@@ -5,6 +5,11 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Shader Minifier", "Shader Minifier.fsproj", "{059C6AF3-1877-4698-BE34-BF7EB55D060A}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Checker", "Checker\Checker.fsproj", "{CF735CB3-7698-41DA-9E91-69D0057087CB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{059C6AF3-1877-4698-BE34-BF7EB55D060A} = {059C6AF3-1877-4698-BE34-BF7EB55D060A}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +20,10 @@ Global
 		{059C6AF3-1877-4698-BE34-BF7EB55D060A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{059C6AF3-1877-4698-BE34-BF7EB55D060A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{059C6AF3-1877-4698-BE34-BF7EB55D060A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF735CB3-7698-41DA-9E91-69D0057087CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF735CB3-7698-41DA-9E91-69D0057087CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF735CB3-7698-41DA-9E91-69D0057087CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF735CB3-7698-41DA-9E91-69D0057087CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
