@@ -56,6 +56,11 @@ let floatToS f =
     else si + test
 
 let rec exprToS exp = exprToSLevel 0 exp
+
+// Convert Expr option to string, with default value.
+and exprToSOpt def exp =
+    defaultArg (Option.map exprToS exp) def
+
 and exprToSLevel level = function
   | Int (i, suf) -> (out "%d%s" i suf)
   | Float (f, suf) -> out "%s%s" (floatToS f) suf
@@ -81,7 +86,7 @@ and exprToSLevel level = function
            else res
         | _ -> out "%s(%s)" (exprToS f) (listToS exprToS "," args)
   | Subscript(arr, ind) ->
-      out "%s[%s]" (exprToS arr) (defaultArg (Option.map exprToS ind) "")
+      out "%s[%s]" (exprToS arr) (exprToSOpt "" ind)
   | Cast(id, e) ->
       // Cast seems to have the same precedence as unary minus
       out "(%s)%s" id (exprToSLevel precedence.["_-"] e)
@@ -176,13 +181,13 @@ let rec instrToS' indent = function
                | Some el -> out "%s%s%s%s" (nl indent) "else" (nl (indent+1)) (instrToS' (indent+1) el |> sp)
      out "if(%s)%s%s" (exprToS cond) (instrToSInd indent th) el
   | ForD(init, cond, inc, body) ->
-     let cond = defaultArg (Option.map exprToS cond) ""
-     let inc = defaultArg (Option.map exprToS inc) ""
+     let cond = exprToSOpt "" cond
+     let inc = exprToSOpt "" inc
      out "%s(%s;%s;%s)%s" "for" (declToS init) cond inc (instrToSInd indent body)
   | ForE(init, cond, inc, body) ->
-     let cond = defaultArg (Option.map exprToS cond) ""
-     let inc = defaultArg (Option.map exprToS inc) ""
-     let init = defaultArg (Option.map exprToS init) ""
+     let cond = exprToSOpt "" cond
+     let inc = exprToSOpt "" inc
+     let init = exprToSOpt "" init
      out "%s(%s;%s;%s)%s" "for" init cond inc (instrToSInd indent body)
   | While(cond, body) ->
      out "%s(%s)%s" "while" (exprToS cond) (instrToSInd indent body)  
