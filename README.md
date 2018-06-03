@@ -17,7 +17,8 @@ Slightly outdated user manual:
 
 ## Usage
 
-Download Shader Minifier here: http://ctrl-alt-test.fr/dl/shader_minifier.exe
+Download Shader Minifier here:
+  https://github.com/laurentlb/Shader_Minifier/releases
 
 It is a command-line tool. Without argument, it will show the usage. If you are
 not on Windows, you will need mono:
@@ -32,7 +33,7 @@ $ mono shader_minifier.exe  # Linux, Mac...
 * List the shaders you want to minify on the command-line.
 
 * Use `-o` to choose the output file (by default, it will use `shader_code.h`).
-  If you pass an empty string for the output, it will be printed on stdout.
+  If you pass `-` for the output, it will be printed on stdout.
 
 * Use `--format` to control the output format. By default, it will create a C
   header. There are other options to get only the shader, or have it in a .js or
