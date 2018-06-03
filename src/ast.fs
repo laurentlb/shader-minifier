@@ -6,7 +6,7 @@ open System.IO
 type targetOutput = Text | CHeader | CList | JS | Nasm
 
 let version = "1.1.6" // Shader Minifer version
-let debugMode = true
+let debugMode = false
 
 let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
@@ -86,6 +86,7 @@ let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=ini
 let makeFunctionType ty name args sem =
   {retType=ty; fName=name; args=args; semantics=sem}
 
+[<NoComparison; NoEquality>]
 type MapEnv = {
   fExpr: MapEnv -> Expr -> Expr
   fInstr: Instr -> Instr
@@ -96,7 +97,7 @@ let mapEnv fe fi = {fExpr = fe; fInstr = fi; vars = Map.empty}
 
 let foldList env fct li =
   let env = ref env
-  let res = li |> List.map (fun i -> // FIXME: use List.fold is cleaner :)
+  let res = li |> List.map (fun i ->
     let x = fct !env i
     env := fst x
     snd x)
@@ -117,7 +118,9 @@ let rec mapExpr env = function
 and mapDecl env (ty, vars) =
   let aux env decl =
     let env = {env with vars = env.vars.Add(decl.name, (ty, decl.size, decl.init))}
-    env, {decl with size=Option.map (mapExpr env) decl.size; init=Option.map (mapExpr env) decl.init}
+    env, {decl with
+            size=Option.map (mapExpr env) decl.size
+            init=Option.map (mapExpr env) decl.init}
   let env, vars = foldList env aux vars
   env, (ty, vars)
 

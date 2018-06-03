@@ -124,8 +124,6 @@ let () =
      "--no-renaming-list", ArgType.String noRenamingFct, "Comma-separated list of functions to preserve"
      "--no-sequence", ArgType.Unit (fun() -> Ast.noSequence<-true), "Do not use the comma operator trick"
      "--smoothstep", ArgType.Unit (fun() -> Ast.smoothstepTrick<-true), "Use IQ's smoothstep trick"
-     //"--macro-threshold", ArgType.Int (fun i ->
-     //    printfn "Macros are disabled in the release."; Ast.macroThreshold <- i), "[disabled] Use a #define macro if it can save at least <int> bytes"
      "--", ArgType.Rest setFile, "Stop parsing command line"
     ] |> List.map ArgInfo
 
