@@ -25,6 +25,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\Debug\Checker.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
+    <StartWorkingDirectory>../../..</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -36,6 +37,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\Release\Checker.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
+    <StartWorkingDirectory>..\..\..</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

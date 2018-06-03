@@ -5,6 +5,8 @@ open System.IO
 
 type targetOutput = Text | CHeader | CList | JS | Nasm
 
+let text() = Text
+
 let version = "1.1.6" // Shader Minifer version
 let debugMode = false
 

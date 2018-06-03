@@ -19,9 +19,9 @@ let testCompile content =
         printfn "compilation failed: %s" info
         false
 
-let minify content =
-    Ast.targetOutput <- Ast.Text
-    content |> main.minify "input" |> Printer.print
+let doMinify content =
+    Ast.targetOutput <- Ast.text()
+    main.minify("input", content) |> Printer.print
 
 let check (file: string) =
     try
@@ -30,7 +30,7 @@ let check (file: string) =
             printfn "Invalid input file '%s'" file
             false
         else
-            let minified = minify content + "\n"
+            let minified = doMinify content + "\n"
             if not (testCompile minified) then
                 printfn "Minification broke the file '%s'" file
                 printfn "%s" minified
@@ -43,13 +43,13 @@ let check (file: string) =
         false
 
 let inputs = [
-    @"..\..\..\tests\unit\blocks.frag"
-    @"..\..\..\tests\unit\hexa.frag"
-    @"..\..\..\tests\unit\inline.frag"
-    @"..\..\..\tests\unit\keyword_prefix.frag"
-    @"..\..\..\tests\unit\commas.frag"
-    @"..\..\..\tests\unit\numbers.frag"
-    @"..\..\..\tests\unit\array.frag"
+    @"tests\unit\blocks.frag"
+    @"tests\unit\hexa.frag"
+    @"tests\unit\inline.frag"
+    @"tests\unit\keyword_prefix.frag"
+    @"tests\unit\commas.frag"
+    @"tests\unit\numbers.frag"
+    @"tests\unit\array.frag"
 ]
 
 [<EntryPoint>]

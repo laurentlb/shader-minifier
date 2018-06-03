@@ -52,7 +52,7 @@ let readFile file =
         else new StreamReader(file)
     stream.ReadToEnd()
 
-let minify filename (content: string) =
+let minify(filename, content: string) =
   vprintf "Input file size is: %d\n" (content.Length)
   let code = Parse.runParser filename content
   vprintf "File parsed. "; printSize code
@@ -72,7 +72,7 @@ let minify filename (content: string) =
 let minifyFile file =
   let content = readFile file
   let filename = if file = "" then "stdin" else file
-  minify filename content
+  minify(filename, content)
 
 let run files =
   let fail (exn:exn) s =
