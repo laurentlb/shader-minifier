@@ -83,7 +83,7 @@ module private ParseImpl =
     let argList = sepBy exprNoComma (ch ',')
     let fcall = between (ch '(') (ch ')') argList |>>
                 (fun args fct -> Ast.FunCall(fct, args))
-    let subscript = between (ch '[') (ch ']') expr |>>
+    let subscript = between (ch '[') (ch ']') (opt expr) |>>
                     (fun ind arr -> Ast.Subscript(arr, ind))
     let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field))
     let post = (dot <|> subscript <|> fcall) <?> ""

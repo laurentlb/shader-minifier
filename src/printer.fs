@@ -81,7 +81,7 @@ and exprToSLevel level = function
            else res
         | _ -> out "%s(%s)" (exprToS f) (listToS exprToS "," args)
   | Subscript(arr, ind) ->
-      out "%s[%s]" (exprToS arr) (exprToS ind)
+      out "%s[%s]" (exprToS arr) (defaultArg (Option.map exprToS ind) "")
   | Cast(id, e) ->
       // Cast seems to have the same precedence as unary minus
       out "(%s)%s" id (exprToSLevel precedence.["_-"] e)

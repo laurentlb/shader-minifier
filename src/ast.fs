@@ -33,7 +33,7 @@ type Expr =
   | Float of float * string
   | Var of Ident
   | FunCall of Expr * Expr list
-  | Subscript of Expr * Expr
+  | Subscript of Expr * Expr option
   | Dot of Expr * Ident
   | Cast of Ident * Expr  // hlsl
   | VectorExp of Expr list // hlsl
@@ -107,7 +107,7 @@ let rec mapExpr env = function
   | FunCall(fct, args) ->
      env.fExpr env (FunCall(mapExpr env fct, List.map (mapExpr env) args))
   | Subscript(arr, ind) ->
-     env.fExpr env (Subscript(mapExpr env arr, mapExpr env ind))
+     env.fExpr env (Subscript(mapExpr env arr, Option.map (mapExpr env) ind))
   | Dot(e,  field) -> env.fExpr env (Dot(mapExpr env e, field))
   | Cast(id, e) -> env.fExpr env (Cast(id, mapExpr env e))
   | VectorExp(li) ->
