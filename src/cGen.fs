@@ -42,7 +42,7 @@ let printHeader data asAList =
         fprintfn out "# define %c_%s \"%s\"" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
 
   fprintfn out ""
-  for file, code in data do
+  for file : string, code in data do
     let name = (Path.GetFileName file).Replace(".", "_")
     if asAList then
         fprintfn out "// %s" file
@@ -72,7 +72,7 @@ let printJSHeader data =
         fprintfn out "var %c_%s = \"%s\"" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
 
   fprintfn out ""
-  for file, code in data do
+  for file : string, code in data do
     let name = (Path.GetFileName file).Replace(".", "_")
     fprintfn out "var %s =\r\n \"%s\"" name (Printer.print code)
     fprintfn out ""
@@ -90,7 +90,7 @@ let printNasmHeader data =
         fprintfn out "_%c_%s: db '%s', 0" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
 
   fprintfn out ""
-  for file, code in data do
+  for file : string, code in data do
     let name = (Path.GetFileName file).Replace(".", "_")
     fprintfn out "_%s:\r\n\tdb '%s', 0" name (Printer.print code)
     fprintfn out ""
