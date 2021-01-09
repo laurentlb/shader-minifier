@@ -50,7 +50,7 @@ module private ParseImpl =
     let number =
       let r = @"(\d+\.?\d*|\.\d+)([eE][-+]?[0-9]+)?"
       let conv s =
-        let ok, res = System.Int32.TryParse(s)
+        let ok, res = System.Int32.TryParse(s : string)
         if ok then Ast.Int (res, "")
         else Ast.Float (try float s, "" with _ -> failwith ("invalid number: " + s))
       regex r .>> ws |>> conv
