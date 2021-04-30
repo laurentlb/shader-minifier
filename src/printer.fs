@@ -6,7 +6,7 @@ let mutable identTable: string[] = [||]
 let out a = sprintf a
 
 // how to print variable names
-type printMode = FromTable | SingleChar | Nothing
+type PrintMode = FromTable | SingleChar | Nothing
 let mutable printMode = Nothing
 
 module private PrinterImpl =
@@ -150,18 +150,17 @@ module private PrinterImpl =
         else out "%s %s" (typeToS ty) (vars |> List.map out1 |> String.concat ",")
 
     let mutable ignoreFirstNewLine = true
-    let nl  =
-        let wh = String.replicate 80 " "
-        fun n ->
-            if ignoreFirstNewLine then
-                ignoreFirstNewLine <- false
-                ""
-            else
-                match targetOutput with
-                | Text -> ""
-                | CHeader | CList -> out "\"\r\n%s\"" wh.[0 .. 2 * n]
-                | JS -> out "\" +\r\n%s\"" wh.[0 .. 2 * n]
-                | Nasm -> out "'\r\n\tdb%s'" wh.[0 .. 2 * n]
+    let nl indent = // newline and optionally indent
+        if ignoreFirstNewLine then
+            ignoreFirstNewLine <- false
+            ""
+        else
+            let spaces = new string(' ', indent * 2 + 1)
+            match targetOutput with
+            | Text -> ""
+            | CHeader | CList -> out "\"\r\n%s\"" spaces
+            | JS -> out "\" +\r\n%s\"" spaces
+            | Nasm -> out "'\r\n\tdb%s'" spaces
 
     let escape (s: string) =
         match targetOutput with
@@ -242,7 +241,7 @@ module private PrinterImpl =
         Ast.targetOutput <- Text
         let str = print tl
         Ast.targetOutput <- out
-        str.Length, str
+        str
 
 let quickPrint = PrinterImpl.quickPrint
 let print = PrinterImpl.print

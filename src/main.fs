@@ -6,7 +6,7 @@ open Microsoft.FSharp.Text
 
 // Compute table of variables names, based on frequency
 let computeFrequencyIdentTable li =
-    let _, str = Printer.quickPrint li
+    let str = Printer.quickPrint li
 
     let charCounts = Seq.countBy id str |> dict
     let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
@@ -34,8 +34,7 @@ let vprintf fmt =
 
 let printSize code =
     if Ast.verbose then
-        let n, _ = Printer.quickPrint code
-        printfn "Shader size is: %d" n
+        printfn "Shader size is: %d" (Printer.quickPrint code).Length
 
 let rename code =
     Printer.printMode <- Printer.SingleChar
