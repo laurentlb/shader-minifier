@@ -1,4 +1,4 @@
-﻿module main
+﻿module Main
 
 open System
 open System.IO
@@ -92,8 +92,8 @@ let printHeader () =
     printfn ""
 
 let () =
-    let files = ref []
-    let setFile s = files := s :: !files
+    let mutable files = []
+    let setFile s = files <- s :: files
 
     let setFieldNames s =
         if s = "rgba" || s = "xyzw" || s = "stpq" || s = "" then
@@ -128,19 +128,19 @@ let () =
         ] |> List.map ArgInfo
 
     ArgParser.Parse(specs, setFile)
-    files := List.rev !files
+    files <- List.rev files
 
     let myExit n =
         if Ast.debugMode then System.Console.ReadLine() |> ignore
         exit n
 
-    if !files = [] then
+    if files = [] then
         printHeader()
         ArgParser.Usage(specs, usage="Please give the shader files to compress on the command line.")
         myExit 1
-    elif List.length !files > 1 && not Ast.preserveExternals then
+    elif List.length files > 1 && not Ast.preserveExternals then
         printfn "When compressing multiple files, you must use the --preserve-externals option."
         myExit 1
     else
         if Ast.verbose then printHeader()
-        myExit (run (Array.ofList !files))
+        myExit (run (Array.ofList files))

@@ -147,12 +147,12 @@ and declToS (ty, vars) =
     if vars = [] then ""
     else out "%s %s" (typeToS ty) (vars |> List.map out1 |> String.concat ",")
 
-let ignoreFirstNewLine = ref true
+let mutable ignoreFirstNewLine = true
 let nl =
     let wh = String.replicate 80 " "
     fun n ->
-        if !ignoreFirstNewLine then
-            ignoreFirstNewLine := false
+        if ignoreFirstNewLine then
+            ignoreFirstNewLine <- false
             ""
         else
             match targetOutput with
@@ -223,13 +223,13 @@ let topLevelToS = function
     | TypeDecl t -> out "%s;" (typeSpecToS t)
 
 let print tl =
-    let wasMacro = ref true
+    let mutable wasMacro = true
     // handle the required \n before a macro
-    ignoreFirstNewLine := true
+    ignoreFirstNewLine <- true
     let f x =
         let isMacro = match x with TLVerbatim s -> s <> "" && s.[0] = '#' | _ -> false
-        let needEndline = isMacro && not !wasMacro
-        wasMacro := isMacro
+        let needEndline = isMacro && not wasMacro
+        wasMacro <- isMacro
         if needEndline then out "%s%s" (backslashN()) (topLevelToS x)
         else topLevelToS x
 
