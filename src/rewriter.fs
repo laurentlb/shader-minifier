@@ -22,7 +22,7 @@ let renameField field =
     else field
 
 // Remove useless spaces in macros
-let stripSpaces str =
+let private stripSpaces str =
     let result = Text.StringBuilder()
 
     let mutable last = '\n'
@@ -55,14 +55,14 @@ let stripSpaces str =
     if macro then result.Append("\n") |> ignore
     result.ToString()
 
-let hasInlinePrefix (s:string) = s.StartsWith("i_")
-let declsNotToInline d = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
+let private hasInlinePrefix (s:string) = s.StartsWith("i_")
+let private declsNotToInline d = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
 
-let bool = function
+let private bool = function
     | true -> Var "true" // Int (1, "")
     | false -> Var "false" // Int (0, "")
 
-let rec expr env = function
+let rec private expr env = function
     | FunCall(Var "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Var "-", [FunCall(Var "-", [e])]) -> e
     | FunCall(Var "+", [e]) -> e
@@ -71,9 +71,9 @@ let rec expr env = function
         FunCall(Var ",", [expr env (FunCall(Var ",", [e1; e2])); e3])
 
     | FunCall(Var "-", [x; Float (f, s)]) when f < 0. ->
-          FunCall(Var "+", [x; Float (-f, s)]) |> expr env
+        FunCall(Var "+", [x; Float (-f, s)]) |> expr env
     | FunCall(Var "-", [x; Int (i, s)]) when i < 0 ->
-          FunCall(Var "+", [x; Int (-i, s)]) |> expr env
+        FunCall(Var "+", [x; Int (-i, s)]) |> expr env
 
     // Boolean simplifications (let's ignore the suffix)
     | FunCall(Var "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
@@ -139,17 +139,17 @@ let rec expr env = function
 
 // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
 let rec squeezeDeclarations = function
-    |[]-> []
-    |Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
-      squeezeDeclarations (Decl(ty1, li1 @ li2) :: l)
-    |e::l -> e :: squeezeDeclarations l
+    | []-> []
+    | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
+        squeezeDeclarations (Decl(ty1, li1 @ li2) :: l)
+    | e::l -> e :: squeezeDeclarations l
 
 // Squeeze top-level declarations, e.g. uniforms
 let rec squeezeTLDeclarations = function
-    |[]-> []
-    |TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 ->
-      squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
-    |e::l -> e :: squeezeTLDeclarations l
+    | []-> []
+    | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 ->
+        squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
+    | e::l -> e :: squeezeTLDeclarations l
 
 let rwTypeSpec = function
     | TypeName n -> TypeName (stripSpaces n)
@@ -226,7 +226,7 @@ let rec findRemove callback = function
     | x :: l -> x :: findRemove callback l
 
 // slow, but who cares?
-let graphReorder deps =
+let private graphReorder deps =
     let mutable list = []
     let mutable lastName = ""
 
@@ -240,7 +240,7 @@ let graphReorder deps =
 
 
 // get the list of external values the block depends on
-let computeDependencies block =
+let private computeDependencies block =
     let d = HashSet()
     let collect mEnv = function
         | Var id as e ->
@@ -257,7 +257,7 @@ let computeAllDependencies code =
         | _ -> None)
     let deps = fct |> List.map (fun (name, block, f) ->
         let dep = computeDependencies block
-               |> List.filter (fun name -> List.exists (fun (x,_,_) -> name = x) fct)
+                  |> List.filter (fun name -> List.exists (fun (x,_,_) -> name = x) fct)
         name, dep, f)
     deps
 

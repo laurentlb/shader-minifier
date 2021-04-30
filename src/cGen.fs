@@ -3,7 +3,7 @@
 open System.IO
 
 // Values to export in the C code (uniform and attribute values)
-let mutable exportedValues = ([] : (string * string * string) list)
+let mutable private exportedValues = ([] : (string * string * string) list)
 
 // 'ty' is a prefix for the type of shader param. Nothing (VAR) for vars, "F" for hlsl functions
 let export ty name (newName:string) =

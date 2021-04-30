@@ -8,19 +8,22 @@ open Microsoft.FSharp.Text
 let computeFrequencyIdentTable li =
     let _, str = Printer.quickPrint li
 
-    let stat = Seq.countBy id str |> dict
-    let get c = let ok, res = stat.TryGetValue(c) in if ok then res else 0
+    let charCounts = Seq.countBy id str |> dict
+    let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
     let letters = ['a'..'z']@['A'..'Z']
 
     // First, use most frequent letters
-    let table = letters |> List.sortBy get |> List.rev |> List.map string
+    let oneLetterIdentifiers = letters |> List.sortBy count |> List.rev |> List.map string
 
     // Then, generate identifiers with 2 letters
-    let score (s:string) = - (get s.[0] + get s.[1])
-    let table2 = [for c1 in letters do for c2 in letters do yield c1.ToString() + c2.ToString()]
-              |> List.sortBy score
+    let score (s:string) = - (count s.[0] + count s.[1])
+    let twoLettersIdentifiers =
+        [for c1 in letters do
+         for c2 in letters do
+         yield c1.ToString() + c2.ToString()]
+        |> List.sortBy (fun s -> - (count s.[0] + count s.[1]))
 
-    Printer.identTable <- Array.ofList (table @ table2)
+    Printer.identTable <- Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
 let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
