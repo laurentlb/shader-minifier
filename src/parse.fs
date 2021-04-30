@@ -1,5 +1,7 @@
 ﻿module Parse
 
+open Options.Globals
+
 module private ParseImpl =
 
     // TODO: true, false
@@ -167,7 +169,7 @@ module private ParseImpl =
     }
 
     let structDecl =
-        let semi = if Ast.hlsl then opt (ch ';') |>> ignore else ch ';'
+        let semi = if options.hlsl then opt (ch ';') |>> ignore else ch ';'
         (structSpecifier .>> semi) |>> Ast.TypeDecl
 
     // eg. "const out int", "uniform float"
@@ -206,7 +208,7 @@ module private ParseImpl =
         pipe3 qualifier typeSpec generic (fun tyQ name _ -> Ast.makeType name tyQ)
 
     let specifiedType =
-        if Ast.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
+        if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
 
     // For HLSL, e.g. ": color"
     let semantics =
@@ -235,7 +237,7 @@ module private ParseImpl =
         let! ret = blockSpecifier (Printer.typeToS ty + s)
                       |>> Ast.TypeDecl
         // semi-colon seems to be optional in hlsl
-        do! if Ast.hlsl then opt (ch ';') |>> ignore else ch ';'
+        do! if options.hlsl then opt (ch ';') |>> ignore else ch ';'
         return ret
     }
 
@@ -283,7 +285,7 @@ module private ParseImpl =
 
     // HLSL attribute, eg. [maxvertexcount(12)]
     let attribute =
-        if Ast.hlsl then
+        if options.hlsl then
             ch '[' >>. manyCharsTill anyChar (ch ']')
                 |>> (function s -> "[" + s + "]")
         else
@@ -332,7 +334,7 @@ module private ParseImpl =
                     attempt interfaceBlock
                     pfunction
         ]
-        let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> Ast.reorderFunctions <- true)
+        let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> options.reorderFunctions <- true)
         many ((attempt forwardDecl|>>fun _ -> None) <|> (item|>>Some)) |>> List.choose id // FIXME: use skip?
 
     let parse = ws >>. toplevel .>> eof

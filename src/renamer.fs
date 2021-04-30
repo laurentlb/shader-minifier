@@ -2,12 +2,13 @@
 
 open System.Collections.Generic
 open Ast
+open Options.Globals
 
 type RenameMode = Unambiguous | Frequency | Context
 
 let mutable renameMode = Unambiguous
 
-let doNotOverloadList = Ast.noRenamingList
+let doNotOverloadList = options.noRenamingList
 
       (* Contextual renaming *)
 
@@ -129,7 +130,7 @@ let newId env id =
     | Context -> optimizeContext env id
 
 let renFunction env nbArgs id =
-    if List.exists ((=) id) Ast.noRenamingList then env, id // don't rename "main"
+    if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
     else
         // we're looking for a function name, already used before,
         // but not with the same number of arg, and which is not in doNotOverloadList.
@@ -149,8 +150,8 @@ let renFunction env nbArgs id =
             env, newName
 
 let renFctName env (f: FunctionType) =
-    let ext = hlsl && f.semantics <> []
-    if (ext && preserveExternals) || preserveAllGlobals then
+    let ext = options.hlsl && f.semantics <> []
+    if (ext && options.preserveExternals) || options.preserveAllGlobals then
         env, f
     else
         let newEnv, newName = renFunction env (List.length f.args) f.fName
@@ -179,8 +180,8 @@ let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
                 | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
                              |> List.exists (fun s -> tyQ.Contains(s))
                 | None -> false
-            if isTopLevel && (ext || hlsl || Ast.preserveAllGlobals) then
-                if Ast.preserveExternals then
+            if isTopLevel && (ext || options.hlsl || options.preserveAllGlobals) then
+                if options.preserveExternals then
                     {env with reusable = List.filter ((<>)decl.name) env.reusable}, decl.name
                 else
                     let env, newName = newId env decl.name
@@ -212,7 +213,7 @@ let garbage (env: Env) block =
     mapInstr (mapEnv collect id) block |> ignore
     let set = HashSet(Seq.choose env.map.TryFind d)
     let map, reusable = Map.partition (fun _ id -> set.Contains id) env.map
-    let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) Ast.noRenamingList))
+    let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
     let merge = [for i in reusable -> i.Value] @ env.reusable |> Seq.distinct |> Seq.toList // |> List.sort
     {env with map=map; reusable=merge}
 
@@ -235,7 +236,7 @@ let rec renInstr env =
         let _, body = renInstr newEnv body
         let cond = Option.map (renExpr newEnv) cond
         let inc = Option.map (renExpr newEnv) inc
-        if hlsl then newEnv, ForD(init, renOpt cond, renOpt inc, body)
+        if options.hlsl then newEnv, ForD(init, renOpt cond, renOpt inc, body)
         else env, ForD(init, renOpt cond, renOpt inc, body)
     | ForE(init, cond, inc, body) ->
         let _, body = renInstr env body
