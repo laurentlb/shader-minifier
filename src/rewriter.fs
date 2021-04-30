@@ -3,16 +3,17 @@
 open System
 open System.Collections.Generic
 open Ast
+open Options.Globals
 
                                 (* ** Rewrite tricks ** *)
 
 
 let renameField field =
     let transform = function
-        | 'r' | 'x' | 's' -> fieldNames.[0]
-        | 'g' | 'y' | 't' -> fieldNames.[1]
-        | 'b' | 'z' | 'p' -> fieldNames.[2]
-        | 'a' | 'w' | 'q' -> fieldNames.[3]
+        | 'r' | 'x' | 's' -> options.canonicalFieldNames.[0]
+        | 'g' | 'y' | 't' -> options.canonicalFieldNames.[1]
+        | 'b' | 'z' | 'p' -> options.canonicalFieldNames.[2]
+        | 'a' | 'w' | 'q' -> options.canonicalFieldNames.[3]
         | c -> failwithf "Internal error: transform('%c')" c
     if Seq.forall (fun c -> Seq.exists ((=) c) "rgba") field ||
         Seq.forall (fun c -> Seq.exists ((=) c) "xyzw") field ||
@@ -122,13 +123,13 @@ let rec private expr env = function
 
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
     | FunCall(Var "smoothstep", [Float (0.,_); Float (1.,_); _]) as e -> e
-    | FunCall(Var "smoothstep", [a; b; x]) when Ast.smoothstepTrick ->
+    | FunCall(Var "smoothstep", [a; b; x]) when options.smoothstepTrick ->
         let sub1 = FunCall(Var "-", [x; a])
         let sub2 = FunCall(Var "-", [b; a])
         let div  = FunCall(Var "/", [sub1; sub2]) |> mapExpr env
         FunCall(Var "smoothstep",  [Float (0.,""); Float (1.,""); div])
 
-    | Dot(e, field) when fieldNames <> "" -> Dot(e, renameField field)
+    | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
     | Var s as e when hasInlinePrefix s ->
       match Map.tryFind s env.vars with
@@ -175,7 +176,7 @@ let instr = function
             | Keyword("return", Some _) -> true
             | _ -> false)
 
-        if not Ast.noSequence && canOptimize then
+        if not options.noSequence && canOptimize then
             let li = List.choose (function Expr e -> Some e | _ -> None) b
             match returnExp with
             | None ->
@@ -197,7 +198,7 @@ let instr = function
     | e -> e
 
 let reorderTopLevel t =
-    if reorderDeclarations then
+    if options.reorderDeclarations then
         let externals, functions = List.partition (function TLDecl _ -> true | _ -> false) t
         List.sort externals @ functions
     else
@@ -263,8 +264,8 @@ let computeAllDependencies code =
 
 // reorder functions if there were forward declarations
 let reorder code =
-    if Ast.reorderFunctions then
-        if Ast.verbose then
+    if options.reorderFunctions then
+        if options.verbose then
             printfn "Reordering functions because of forward declarations."
         let order = code |> computeAllDependencies |> graphReorder
         let rest = code |> List.filter (function Function _ -> false | _ -> true)

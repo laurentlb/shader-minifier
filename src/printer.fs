@@ -1,6 +1,7 @@
 ﻿module Printer
 
 open Ast
+open Options.Globals
 
 let mutable identTable: string[] = [||]
 let out a = sprintf a
@@ -108,9 +109,9 @@ module private PrinterImpl =
         else s + s2
 
     let backslashN() =
-        match targetOutput with
-        | Text -> "\n"
-        | Nasm -> "', 10, '"
+        match options.targetOutput with
+        | Options.Text -> "\n"
+        | Options.Nasm -> "', 10, '"
         | _ ->  "\\n"
 
     // Print HLSL semantics
@@ -156,17 +157,17 @@ module private PrinterImpl =
             ""
         else
             let spaces = new string(' ', indent * 2 + 1)
-            match targetOutput with
-            | Text -> ""
-            | CHeader | CList -> out "\"\r\n%s\"" spaces
-            | JS -> out "\" +\r\n%s\"" spaces
-            | Nasm -> out "'\r\n\tdb%s'" spaces
+            match options.targetOutput with
+            | Options.Text -> ""
+            | Options.CHeader | Options.CList -> out "\"\r\n%s\"" spaces
+            | Options.JS -> out "\" +\r\n%s\"" spaces
+            | Options.Nasm -> out "'\r\n\tdb%s'" spaces
 
     let escape (s: string) =
-        match targetOutput with
-        | Text -> s
-        | CHeader | CList | JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
-        | Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
+        match options.targetOutput with
+        | Options.Text -> s
+        | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
+        | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
 
     let rec instrToS' indent = function
         | Block [] -> ";"
@@ -237,13 +238,13 @@ module private PrinterImpl =
         tl |> List.map f |> String.concat ""
 
     let quickPrint tl =
-        let out = Ast.targetOutput
-        Ast.targetOutput <- Text
+        let out = options.targetOutput
+        options.targetOutput <- Options.Text
         let str = print tl
-        Ast.targetOutput <- out
+        options.targetOutput <- out
         str
 
 let quickPrint = PrinterImpl.quickPrint
-let print = PrinterImpl.print
+let print tl = PrinterImpl.print tl
 let exprToS = PrinterImpl.exprToS
 let typeToS = PrinterImpl.typeToS

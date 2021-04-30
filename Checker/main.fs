@@ -20,8 +20,8 @@ let testCompile content =
         false
 
 let doMinify content =
-    Ast.targetOutput <- Ast.text()
-    main.minify("input", content) |> Printer.print
+    Options.Globals.options.targetOutput <- Options.text()
+    Printer.print(Main.minify("input", content))
 
 let check (file: string) =
     try
