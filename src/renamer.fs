@@ -16,12 +16,12 @@ let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
 // This function is called when all 1-char ident are already used
 let makeLetterIdent =
     let chars = [| 'a' .. 'z' |]
-    let first = ref 0
-    let second = ref 0
+    let mutable first = 0
+    let mutable second = 0
     fun () ->
-        incr second
-        if !second >= chars.Length then second := 0; incr first
-        string(chars.[!first]) + string(chars.[!second])
+        second <- second + 1
+        if second >= chars.Length then second <- 0; first <- first + 1
+        string(chars.[first]) + string(chars.[second])
 
 let computeContextTable code =
     let _, str = Printer.quickPrint code
@@ -39,12 +39,12 @@ let chooseIdent ident candidates =
         match contextTable.TryFind (c, ident) with
         | Some occ -> Some (c, occ)
         | None -> None
-      )
+    )
     let nexts = allChars |> Seq.choose (fun c ->
         match contextTable.TryFind (ident, c) with
         | Some occ -> Some (c, occ)
         | None -> None
-      )
+    )
 
     let mutable best = -1000, "a"
     for word in candidates do
@@ -159,12 +159,12 @@ let renFctName env (f: FunctionType) =
         newEnv, {f with fName = newName}
 
 let renList env fct li =
-    let env = ref env
+    let mutable env = env
     let res = li |> List.map (fun i ->
-        let x = fct !env i
-        env := fst x
+        let x = fct env i
+        env <- fst x
         snd x)
-    !env, res
+    env, res
 
 let rec renExpr env =
     let mapper _ = function

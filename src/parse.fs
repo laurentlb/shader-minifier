@@ -115,28 +115,28 @@ module private ParseImpl =
     // Add all the operators in the OperatorParser
     let makeOperator =
         // we start with operators with highest priority, then we decrement the counter.
-        let precCounter = ref 20 //(we have at most 20 different priorities)
+        let mutable precCounter = 20 //(we have at most 20 different priorities)
         let addInfix li =
             for ops, assoc in li do
-                decr precCounter
+                precCounter <- precCounter - 1
                 for op in ops do
-                    opp.AddOperator(InfixOperator(op, ws, !precCounter, assoc, fun x y -> Ast.FunCall(Ast.Var op, [x; y])))
+                    opp.AddOperator(InfixOperator(op, ws, precCounter, assoc, fun x y -> Ast.FunCall(Ast.Var op, [x; y])))
 
         let addPrefix() =
-            decr precCounter
+            precCounter <- precCounter - 1
             for op in ["++"; "--"; "+"; "-"; "~"; "!"] do
-                opp.AddOperator(PrefixOperator(op, ws, !precCounter, true, fun x -> Ast.FunCall(Ast.Var op, [x])))
+                opp.AddOperator(PrefixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Var op, [x])))
 
         let addPostfix() =
-            decr precCounter
+            precCounter <- precCounter - 1
             for op in ["++"; "--"] do
-                opp.AddOperator(PostfixOperator(op, ws, !precCounter, true, fun x -> Ast.FunCall(Ast.Var ("$"+op), [x])))
+                opp.AddOperator(PostfixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Var ("$"+op), [x])))
 
         addPostfix()
         addPrefix()
         addInfix precedence1
-        decr precCounter
-        opp.AddOperator(TernaryOperator("?", ws, ":", ws, !precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Var "?:", [x; y; z])))
+        precCounter <- precCounter - 1
+        opp.AddOperator(TernaryOperator("?", ws, ":", ws, precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Var "?:", [x; y; z])))
         addInfix precedence2
 
     let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
@@ -148,17 +148,17 @@ module private ParseImpl =
     // A type block, like struct or interface blocks
     let blockSpecifier prefix =
 
-      // Restriction on field names
-      let check ((_,l) as arg : Ast.Decl) =
-          List.iter (fun (decl:Ast.DeclElt) ->
-              if decl.name <> Rewriter.renameField decl.name then
-                  failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name) l
-          arg
+        // Restriction on field names
+        let check ((_,l) as arg : Ast.Decl) =
+            List.iter (fun (decl:Ast.DeclElt) ->
+                if decl.name <> Rewriter.renameField decl.name then
+                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name) l
+            arg
 
-      let decls = many (declaration .>> ch ';' |>> check)
-      let name = opt ident
-      pipe2 name (between (ch '{') (ch '}') decls)
-          (fun n d -> Ast.TypeStruct(prefix, n, d))
+        let decls = many (declaration .>> ch ';' |>> check)
+        let name = opt ident
+        pipe2 name (between (ch '{') (ch '}') decls)
+            (fun n d -> Ast.TypeStruct(prefix, n, d))
 
     let structSpecifier = parse {
         let! str = keyword "struct"
@@ -182,9 +182,9 @@ module private ParseImpl =
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
         let layout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
-                   |>> (function s -> "layout(" + s + ")")
+                     |>> (function s -> "layout(" + s + ")")
         let qualifier = many (storage <|> layout)
-                      |>> (function [] -> None | li -> Some (String.concat " " li))
+                        |>> (function [] -> None | li -> Some (String.concat " " li))
         let typeSpec = structSpecifier <|> (ident |>> Ast.TypeName)
         pipe2 qualifier typeSpec (fun tyQ name -> Ast.makeType name tyQ)
 
@@ -240,13 +240,13 @@ module private ParseImpl =
     }
 
     let forLoop =
-      let init1 = declaration |>> (fun decl e2 e3 body -> Ast.ForD(decl, e2, e3, body))
-      let init2 = opt expr |>> (fun e1 e2 e3 body -> Ast.ForE(e1, e2, e3, body))
-      let init = attempt init1 <|> init2 .>> ch ';'
-      let cond = opt expr .>> ch ';'
-      let inc = opt expr .>> ch ')'
-      pipe4 (keyword "for" >>. ch '(' >>. init) cond inc statement
-          (fun f e2 e3 body -> f e2 e3 body)
+        let init1 = declaration |>> (fun decl e2 e3 body -> Ast.ForD(decl, e2, e3, body))
+        let init2 = opt expr |>> (fun e1 e2 e3 body -> Ast.ForE(e1, e2, e3, body))
+        let init = attempt init1 <|> init2 .>> ch ';'
+        let cond = opt expr .>> ch ';'
+        let inc = opt expr .>> ch ')'
+        pipe4 (keyword "for" >>. ch '(' >>. init) cond inc statement
+            (fun f e2 e3 body -> f e2 e3 body)
 
     let whileLoop =
         pipe2 (keyword "while" >>. parenExp) statement

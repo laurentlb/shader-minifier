@@ -25,9 +25,9 @@ let renameField field =
 let stripSpaces str =
     let result = Text.StringBuilder()
 
-    let last = ref '\n'
+    let mutable last = '\n'
     let write c =
-        last := c
+        last <- c
         result.Append(c) |> ignore
     let isId c = Char.IsLetterOrDigit c || c = '_' || c = '('
     // hack because we can't remove space in "#define foo (1+1)"
@@ -45,9 +45,9 @@ let stripSpaces str =
         else
             if not macro && c = '#' then
                 macro <- true
-                if !last <> '\n' then write '\n'
+                if last <> '\n' then write '\n'
 
-            if space && isId c && isId (!last) then
+            if space && isId c && isId last then
                 write ' '
             write c
             space <- false
@@ -227,16 +227,16 @@ let rec findRemove callback = function
 
 // slow, but who cares?
 let graphReorder deps =
-    let list = ref []
-    let lastName = ref ""
+    let mutable list = []
+    let mutable lastName = ""
 
     let rec loop deps =
-        let deps = findRemove (fun s x -> lastName := s; list := x :: !list) deps
-        let deps = deps |> List.map (fun (n, d, c) -> n, List.filter ((<>) !lastName) d, c)
+        let deps = findRemove (fun s x -> lastName <- s; list <- x :: list) deps
+        let deps = deps |> List.map (fun (n, d, c) -> n, List.filter ((<>) lastName) d, c)
         if deps <> [] then loop deps
 
     loop deps
-    !list |> List.rev
+    list |> List.rev
 
 
 // get the list of external values the block depends on

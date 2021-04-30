@@ -98,12 +98,12 @@ type MapEnv = {
 let mapEnv fe fi = {fExpr = fe; fInstr = fi; vars = Map.empty}
 
 let foldList env fct li =
-    let env = ref env
+    let mutable env = env
     let res = li |> List.map (fun i ->
-        let x = fct !env i
-        env := fst x
+        let x = fct env i
+        env <- fst x
         snd x)
-    !env, res
+    env, res
 
 // Applies env.fExpr recursively on all nodes of an expression.
 let rec mapExpr env = function
