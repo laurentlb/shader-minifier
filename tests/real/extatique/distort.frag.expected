@@ -1,0 +1,24 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef DISTORT_FRAG_EXPECTED_
+# define DISTORT_FRAG_EXPECTED_
+# define VAR_AMOUNT "m"
+# define VAR_COLORSEP "e"
+# define VAR_GLOW "l"
+# define VAR_TEX "v"
+
+const char *distort_frag =
+ "uniform sampler2D v;"
+ "uniform float m,e;"
+ "uniform vec4 l;"
+ "void main()"
+ "{"
+   "vec2 r=gl_TexCoord[0].xy-vec2(.5,.5),t=r+vec2(e,0.),o=r-vec2(e,0.);"
+   "float f=m/(1.+length(r*5.)),c=cos(f),a=sin(f);"
+   "mat2 s=mat2(c,-a,a,c);"
+   "vec4 i=vec4(1.,.5,0.,.5)*texture2D(v,vec2(.5)+s*t),n=vec4(0.,.5,1.,.5)*texture2D(v,vec2(.5)+s*o);"
+   "gl_FragColor=gl_Color*(i+n)+l;"
+ "}";
+
+#endif // DISTORT_FRAG_EXPECTED_

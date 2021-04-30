@@ -1,0 +1,21 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLITSQUARE_FRAG_EXPECTED_
+# define BLITSQUARE_FRAG_EXPECTED_
+# define VAR_BORDER "s"
+# define VAR_SIZE "t"
+# define VAR_TEX "y"
+
+const char *blitsquare_frag =
+ "uniform sampler2D y;"
+ "uniform vec2 t;"
+ "uniform float s;"
+ "void main()"
+ "{"
+   "vec2 x=gl_TexCoord[0].xy,r=x*t;"
+   "float v=smoothstep(0.,s,r.x)-smoothstep(t.x-s,t.x,r.x),o=smoothstep(0.,s,r.y)-smoothstep(t.y-s,t.y,r.y),e=v*o;"
+   "gl_FragColor=vec4(gl_Color.xyz,e)*texture2D(y,x);"
+ "}";
+
+#endif // BLITSQUARE_FRAG_EXPECTED_

@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef 2_SIMPLE_OPT_FRAG_EXPECTED_
+# define 2_SIMPLE_OPT_FRAG_EXPECTED_
+
+const char *2_simple_opt_frag =
+ "void main()"
+ "{"
+   "gl_FragColor=vec4(.2,.4,.6,0.);"
+ "}";
+
+#endif // 2_SIMPLE_OPT_FRAG_EXPECTED_

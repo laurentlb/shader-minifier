@@ -1,0 +1,25 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SNAKE_FRAG_EXPECTED_
+# define SNAKE_FRAG_EXPECTED_
+# define VAR_NORMAL "v"
+# define VAR_PROFONDEUR "r"
+
+const char *snake_frag =
+ "varying vec3 v;"
+ "varying float r;"
+ "vec4 t(vec4 v,float f)"
+ "{"
+   "vec3 r=vec3(dot(vec3(.33),v.xyz));"
+   "return vec4(mix(v.xyz,r,f),v.w);"
+ "}"
+ "void main()"
+ "{"
+   "vec3 f=v,d=vec3(0.,0.,-1.);"
+   "float m=max(0.,dot(f,d));"
+   "vec4 t=gl_Color*vec4(.1+.9*vec3(m),m);"
+   "gl_FragColor=t*exp(-r*.1);"
+ "}";
+
+#endif // SNAKE_FRAG_EXPECTED_

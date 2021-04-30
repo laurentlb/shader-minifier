@@ -1,0 +1,44 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef RADIAL_BLUR_FRAG_EXPECTED_
+# define RADIAL_BLUR_FRAG_EXPECTED_
+# define VAR_RESOLUTION "v"
+# define VAR_TEX0 "i"
+# define VAR_TEX1 "y"
+# define VAR_TEX2 "e"
+# define VAR_TEX3 "z"
+# define VAR_TIME "s"
+
+const char *radial_blur_frag =
+ "uniform vec2 v;"
+ "uniform float s;"
+ "uniform sampler2D i,y,e,z;"
+ "vec3 t(in vec2 v)"
+ "{"
+   "vec2 y,x=vec2(sin(1.1*s+v.x),sin(1.2*s+v.y));"
+   "float t=atan(x.y,x.x),e=sqrt(dot(x,x));"
+   "y.x=sin(s)+v.x*sqrt(e*e+1.);"
+   "y.y=sin(.6+1.1*s)+v.y*sqrt(e*e+1.);"
+   "return texture2D(i,y*.5).xyz;"
+ "}"
+ "void main()"
+ "{"
+   "vec2 s=-1.+2.*gl_FragCoord.xy/v.xy,x=s;"
+   "vec3 y=vec3(0.);"
+   "vec2 z=(vec2(0.,0.)-s)/40.;"
+   "float f=1.;"
+   "for(int e=0;e<40;e++)"
+     "{"
+       "vec3 r=t(x);"
+       "r=smoothstep(.1,1.,r*r);"
+       "y+=f*r;"
+       "f*=.99;"
+       "x+=z;"
+     "}"
+   "y/=40.;"
+   "float e=1.5/(1.+dot(s,s));"
+   "gl_FragColor=vec4(y*e,1.);"
+ "}";
+
+#endif // RADIAL_BLUR_FRAG_EXPECTED_

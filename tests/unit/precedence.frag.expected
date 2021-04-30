@@ -1,0 +1,14 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef PRECEDENCE_FRAG_EXPECTED_
+# define PRECEDENCE_FRAG_EXPECTED_
+
+const char *precedence_frag =
+ "void main()"
+ "{"
+   "float f=1.5-5./6.,r=(true?false?1.:2.:12.)*5.,a=4.*(false?true?1.:2.:3.),t=float(171),l=(2.+f)*(4.+r*6.)-(7.-a),e=-------5.,o=1./(f+r+a),g=1./(t*l*e);"
+   "gl_FragColor=vec4(o,g,o,0.);"
+ "}";
+
+#endif // PRECEDENCE_FRAG_EXPECTED_

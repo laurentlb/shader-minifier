@@ -1,0 +1,21 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef EMPTY_BLOCK_FRAG_EXPECTED_
+# define EMPTY_BLOCK_FRAG_EXPECTED_
+
+const char *empty_block_frag =
+ "void f()"
+ "{"
+   "int f=5,i=7;"
+   "if(1)"
+     "return 2;"
+   "if(f)"
+     ";"
+   "if(i)"
+     ";"
+   "more_semicolons;"
+   "return 3;"
+ "}";
+
+#endif // EMPTY_BLOCK_FRAG_EXPECTED_

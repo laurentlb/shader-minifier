@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef PUT_FRAG_EXPECTED_
+# define PUT_FRAG_EXPECTED_
+
+const char *put_frag =
+ "void main()"
+ "{"
+   "gl_FragColor=gl_Color;"
+ "}";
+
+#endif // PUT_FRAG_EXPECTED_

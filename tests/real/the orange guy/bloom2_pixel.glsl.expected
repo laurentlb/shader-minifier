@@ -1,0 +1,19 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLOOM2_PIXEL_GLSL_EXPECTED_
+# define BLOOM2_PIXEL_GLSL_EXPECTED_
+# define VAR_INVTEXWIDTH "y"
+# define VAR_TEX "z"
+
+const char *bloom2_pixel_glsl =
+ "uniform sampler2D z;"
+ "uniform float y;"
+ "void main()"
+ "{"
+   "vec2 r=gl_TexCoord[0].xy,e=vec2(y,0.);"
+   "vec3 m=texture2D(z,r-2.14286*e).xyz,x=texture2D(z,r-.6*e).xyz,t=texture2D(z,r+.6*e).xyz,o=texture2D(z,r+2.14286*e).xyz,u=.4375*(m+o)+1.5625*(x+t);"
+   "gl_FragColor=vec4(u,1.);"
+ "}";
+
+#endif // BLOOM2_PIXEL_GLSL_EXPECTED_

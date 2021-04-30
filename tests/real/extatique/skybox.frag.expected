@@ -1,0 +1,32 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SKYBOX_FRAG_EXPECTED_
+# define SKYBOX_FRAG_EXPECTED_
+# define VAR_ANGLE "f"
+# define VAR_POS "i"
+# define VAR_TEX "v"
+# define VAR_TIME "z"
+
+const char *skybox_frag =
+ "uniform sampler2D v;"
+ "uniform float f,z;"
+ "varying vec3 i;"
+ "vec4 t(vec3 t)"
+ "{"
+   "float r=atan(t.x,t.y+.01),a=-i.z;"
+   "vec4 m=vec4(0.);"
+   "for(int u=0;u<8;++u)"
+     "{"
+       "float s=float(u),x=a/(1.+s)+z*.01*(2.+s),e=f+2.5*r/3.14159;"
+       "m+=texture2D(v,vec2(x,e))/(1.+.3*s);"
+     "}"
+   "return m;"
+ "}"
+ "void main()"
+ "{"
+   "vec4 v=t(i);"
+   "gl_FragColor=vec4(v.xyz,1.);"
+ "}";
+
+#endif // SKYBOX_FRAG_EXPECTED_

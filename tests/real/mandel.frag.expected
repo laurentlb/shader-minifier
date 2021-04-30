@@ -1,0 +1,38 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef MANDEL_FRAG_EXPECTED_
+# define MANDEL_FRAG_EXPECTED_
+# define VAR_RESOLUTION "v"
+# define VAR_TEX0 "f"
+# define VAR_TEX1 "y"
+# define VAR_TEX2 "o"
+# define VAR_TEX3 "k"
+# define VAR_TIME "c"
+
+const char *mandel_frag =
+ "uniform vec2 v;"
+ "uniform float c;"
+ "uniform sampler2D f,y,o,k;"
+ "void main()"
+ "{"
+   "vec2 f=-1.+2.*gl_FragCoord.xy/v.xy;"
+   "f.x*=v.x/v.y;"
+   "float y=.62+.38*sin(.1*c),o=cos(.1*(1.-y)*c),k=sin(.1*(1.-y)*c);"
+   "y=pow(y,8.);"
+   "vec2 x=vec2(f.x*o-f.y*k,f.x*k+f.y*o),s=vec2(-.745,.186)+x*y,l=vec2(0.),r=l*l;"
+   "float i,g=0.;"
+   "for(int u=0;u<256;u++)"
+     "{"
+       "l=s+vec2(l.x*l.x-l.y*l.y,2.*l.x*l.y);"
+       "i=dot(l,l);"
+       "if(i>1024.)"
+         "break;"
+       "g+=1.;"
+     "}"
+   "g=g+1.-log2(.5*log2(i));"
+   "g=sqrt(g/256.);"
+   "gl_FragColor=vec4(.5+.5*cos(6.2831*g),.5+.5*cos(6.2831*g+.4),.5+.5*cos(6.2831*g+.7),1.);"
+ "}";
+
+#endif // MANDEL_FRAG_EXPECTED_

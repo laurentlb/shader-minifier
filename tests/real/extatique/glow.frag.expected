@@ -1,0 +1,17 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef GLOW_FRAG_EXPECTED_
+# define GLOW_FRAG_EXPECTED_
+# define VAR_TEX "m"
+
+const char *glow_frag =
+ "uniform sampler1D m;"
+ "void main()"
+ "{"
+   "vec2 r=gl_TexCoord[0].xy;"
+   "float t=length(r)/2.04;"
+   "gl_FragColor=gl_Color*vec4(1.,1.,1.,texture1D(m,t));"
+ "}";
+
+#endif // GLOW_FRAG_EXPECTED_

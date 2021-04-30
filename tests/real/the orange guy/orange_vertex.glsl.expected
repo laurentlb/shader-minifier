@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef ORANGE_VERTEX_GLSL_EXPECTED_
+# define ORANGE_VERTEX_GLSL_EXPECTED_
+
+const char *orange_vertex_glsl =
+ "void main()"
+ "{"
+   "gl_TexCoord[0]=gl_MultiTexCoord0,gl_Position=ftransform();"
+ "}";
+
+#endif // ORANGE_VERTEX_GLSL_EXPECTED_

@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLITCORNER_VS_EXPECTED_
+# define BLITCORNER_VS_EXPECTED_
+
+const char *blitcorner_vs =
+ "void main()"
+ "{"
+   "gl_TexCoord[0]=gl_MultiTexCoord0,gl_FrontColor=gl_Color,gl_Position=ftransform();"
+ "}";
+
+#endif // BLITCORNER_VS_EXPECTED_

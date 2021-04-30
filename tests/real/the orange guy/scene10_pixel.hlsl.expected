@@ -1,0 +1,34 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SCENE10_PIXEL_HLSL_EXPECTED_
+# define SCENE10_PIXEL_HLSL_EXPECTED_
+# define VAR_N_SPIRALES "v"
+# define VAR_WHITE "r"
+# define VAR_MUSICVOLUME "i"
+# define VAR_POS "c"
+
+const char *scene10_pixel_hlsl =
+ "const int v=12;"
+ "uniform vec4 c[v];"
+ "uniform float i;"
+ "static const vec3 r=vec3(1.,1.,1.);"
+ "vec3 p(vec2 p)"
+ "{"
+   "float f=0.;"
+   "for(int u=0;u<v;++u)"
+     "{"
+       "vec2 m=c[u].xy-p;"
+       "float d=pow(dot(m,m),.25),w=abs(d-c[u].z);"
+       "f=f+c[u].w*exp(-w*(50.-i*20.));"
+     "}"
+   "return r*max(0.,1.2-f);"
+ "}"
+ "void main()"
+ "{"
+   "vec2 v=gl_TexCoord[0].xy;"
+   "vec3 r=p(v);"
+   "gl_FragColor=vec4(r*(1.+i),1.);"
+ "}";
+
+#endif // SCENE10_PIXEL_HLSL_EXPECTED_

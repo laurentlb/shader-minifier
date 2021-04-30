@@ -1,0 +1,39 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SCENE30_FRAG_EXPECTED_
+# define SCENE30_FRAG_EXPECTED_
+# define VAR_N "d"
+# define VAR_ANGLE "f"
+# define VAR_POS "r"
+# define VAR_TEX "v"
+# define VAR_TIME "z"
+
+const char *scene30_frag =
+ "uniform sampler2D v;"
+ "uniform float f,z;"
+ "varying vec3 r,d;"
+ "vec4 t(vec3 d)"
+ "{"
+   "float m=atan(d.x,d.y+.01),t=-r.z;"
+   "vec4 y=vec4(0.);"
+   "for(int i=0;i<8;++i)"
+     "{"
+       "float g=float(i),n=t*2./(1.+g)+z*.01*(2.+g),e=f+2.5*m/3.14159;"
+       "y+=texture2D(v,vec2(n,e))/(1.+.3*g);"
+     "}"
+   "return y;"
+ "}"
+ "vec3 t(vec3 v,vec3 r)"
+ "{"
+   "float i=.8*max(0.,dot(r,vec3(1.,.2,0.))),d=.2*max(0.,dot(r,vec3(-1.,-.1,0.)));"
+   "vec3 y=vec3(i)*vec3(.8,.7,.6)+vec3(d)*vec3(.6,.7,.8);"
+   "return y;"
+ "}"
+ "void main()"
+ "{"
+   "vec3 i=normalize(d),v=reflect(-r,normalize(i)),n=t(v).xyz*mix(vec3(1.),gl_Color.xyz,.4),y=t(r).xyz*gl_Color.xyz;"
+   "gl_FragColor=vec4(y+n,1.);"
+ "}";
+
+#endif // SCENE30_FRAG_EXPECTED_

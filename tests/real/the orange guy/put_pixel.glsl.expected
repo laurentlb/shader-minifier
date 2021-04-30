@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef PUT_PIXEL_GLSL_EXPECTED_
+# define PUT_PIXEL_GLSL_EXPECTED_
+
+const char *put_pixel_glsl =
+ "void main()"
+ "{"
+   "gl_FragColor=gl_Color;"
+ "}";
+
+#endif // PUT_PIXEL_GLSL_EXPECTED_
