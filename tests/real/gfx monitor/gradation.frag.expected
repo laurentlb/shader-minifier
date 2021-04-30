@@ -1,0 +1,17 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef GRADATION_FRAG_EXPECTED_
+# define GRADATION_FRAG_EXPECTED_
+# define VAR_P "v"
+
+const char *gradation_frag =
+ "varying vec4 v;"
+ "void main()"
+ "{"
+   "float r=v.y*.5+.5;"
+   "gl_FragColor=vec4(r,r,r,0);"
+   "return;"
+ "}";
+
+#endif // GRADATION_FRAG_EXPECTED_

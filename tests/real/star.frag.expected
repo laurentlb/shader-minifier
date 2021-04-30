@@ -1,0 +1,31 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef STAR_FRAG_EXPECTED_
+# define STAR_FRAG_EXPECTED_
+# define VAR_MOUSE "f"
+# define VAR_RESOLUTION "v"
+# define VAR_TEX0 "m"
+# define VAR_TEX1 "y"
+# define VAR_TEX2 "o"
+# define VAR_TEX3 "z"
+# define VAR_TIME "c"
+
+const char *star_frag =
+ "uniform float c;"
+ "uniform vec2 v;"
+ "uniform vec4 f;"
+ "uniform sampler2D m,y,o,z;"
+ "void main()"
+ "{"
+   "vec2 f,y=-1.+2.*gl_FragCoord.xy/v.xy;"
+   "float x=atan(y.y,y.x),o=sqrt(dot(y,y)),z=o*(1.+.8*cos(c));"
+   "f.x=.02*y.y+.03*cos(-c+x*3.)/z;"
+   "f.y=.1*c+.02*y.x+.03*sin(-c+x*3.)/z;"
+   "float u=.9+pow(max(1.5-o,0.),4.);"
+   "u*=.6+.4*cos(c+3.*x);"
+   "vec3 r=texture2D(m,f).xyz;"
+   "gl_FragColor=vec4(r*u,1.);"
+ "}";
+
+#endif // STAR_FRAG_EXPECTED_

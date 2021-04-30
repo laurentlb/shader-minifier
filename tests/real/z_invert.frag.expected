@@ -1,0 +1,27 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef Z_INVERT_FRAG_EXPECTED_
+# define Z_INVERT_FRAG_EXPECTED_
+# define VAR_RESOLUTION "s"
+# define VAR_TEX0 "y"
+# define VAR_TEX1 "o"
+# define VAR_TEX2 "r"
+# define VAR_TEX3 "z"
+# define VAR_TIME "c"
+
+const char *z_invert_frag =
+ "uniform vec2 s;"
+ "uniform float c;"
+ "uniform sampler2D y,o,r,z;"
+ "void main()"
+ "{"
+   "vec2 r=-1.+2.*gl_FragCoord.xy/s.xy,z;"
+   "float x=atan(r.y,r.x),o=sqrt(dot(r,r));"
+   "z.x=cos(.6+c)+cos(cos(1.2+c)+x)/o;"
+   "z.y=cos(.3+c)+sin(cos(2.+c)+x)/o;"
+   "vec3 f=texture2D(y,z*.25).xyz;"
+   "gl_FragColor=vec4(f*o*o,1.);"
+ "}";
+
+#endif // Z_INVERT_FRAG_EXPECTED_

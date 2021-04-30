@@ -1,0 +1,50 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef METATUNNEL_FRAG_EXPECTED_
+# define METATUNNEL_FRAG_EXPECTED_
+# define VAR_RESOLUTION "k"
+# define VAR_TIME "v"
+
+const char *metatunnel_frag =
+ "uniform vec2 k;"
+ "uniform float v;"
+ "float s(vec3 y)"
+ "{"
+   "float f=distance(y,vec3(cos(v)+sin(v*.2),.3,2.+cos(v*.5)*.5));"
+   "f*=distance(y,vec3(-cos(v*.7),.3,2.+sin(v*.5)));"
+   "f*=distance(y,vec3(-sin(v*.2)*.5,sin(v),2.));"
+   "f*=cos(y.y)*cos(y.x)-.1-cos(y.z*7.+v*7.)*cos(y.x*3.)*cos(y.y*4.)*.1;"
+   "return f;"
+ "}"
+ "void main()"
+ "{"
+   "vec2 y=-1.+2.*gl_FragCoord.xy/k.xy;"
+   "vec3 f=vec3(y.x,y.y*1.25-.3,0.),c=vec3(y.x+cos(v)*.3,y.y,1.)/64.;"
+   "vec4 d=vec4(0.);"
+   "float x=0.;"
+   "for(int r=0;r<75;r++)"
+     "{"
+       "if(s(f+c*x)<.4)"
+         "{"
+           "x-=5.;"
+           "for(int m=0;m<5;m++)"
+             "{"
+               "if(s(f+c*x)<.4)"
+                 "break;"
+               "x+=1.;"
+             "}"
+           "vec3 m=vec3(.01,0.,0.),i=vec3(0.);"
+           "i.x=s(f+c*x)-s(vec3(f+c*x+m.xyy));"
+           "i.y=s(f+c*x)-s(vec3(f+c*x+m.yxy));"
+           "i.z=s(f+c*x)-s(vec3(f+c*x+m.yyx));"
+           "i=normalize(i);"
+           "d+=max(dot(vec3(0.,0.,-.5),i),0.)+max(dot(vec3(0.,-.5,.5),i),0.)*.5;"
+           "break;"
+         "}"
+       "x+=5.;"
+     "}"
+   "gl_FragColor=d+vec4(.1,.2,.5,1.)*(x*.025);"
+ "}";
+
+#endif // METATUNNEL_FRAG_EXPECTED_

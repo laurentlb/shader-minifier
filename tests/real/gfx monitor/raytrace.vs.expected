@@ -1,0 +1,16 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef RAYTRACE_VS_EXPECTED_
+# define RAYTRACE_VS_EXPECTED_
+# define VAR_DIR "n"
+# define VAR_ORG "v"
+
+const char *raytrace_vs =
+ "varying vec3 v,n;"
+ "void main()"
+ "{"
+   "gl_Position=gl_Vertex,v=vec3(0,0,0),n=normalize(-vec3(-gl_Vertex.x*1.6,-gl_Vertex.y,1));"
+ "}";
+
+#endif // RAYTRACE_VS_EXPECTED_

@@ -1,0 +1,18 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SCENE40_VS_EXPECTED_
+# define SCENE40_VS_EXPECTED_
+# define VAR_N "g"
+# define VAR_EYEPOS "v"
+# define VAR_WPOS "r"
+
+const char *scene40_vs =
+ "varying vec3 r,g;"
+ "uniform vec3 v;"
+ "void main()"
+ "{"
+   "r=gl_Vertex.xyz,gl_Position=ftransform(),gl_FrontColor=gl_Color,g=gl_Normal;"
+ "}";
+
+#endif // SCENE40_VS_EXPECTED_

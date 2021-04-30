@@ -1,0 +1,19 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef COMMAS_FRAG_EXPECTED_
+# define COMMAS_FRAG_EXPECTED_
+
+const char *commas_frag =
+ "void f()"
+ "{}"
+ "void o()"
+ "{}"
+ "void i()"
+ "{"
+   "bool i=true;"
+   "if(i)"
+     "f(),o();"
+ "}";
+
+#endif // COMMAS_FRAG_EXPECTED_

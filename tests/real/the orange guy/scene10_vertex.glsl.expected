@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SCENE10_VERTEX_GLSL_EXPECTED_
+# define SCENE10_VERTEX_GLSL_EXPECTED_
+
+const char *scene10_vertex_glsl =
+ "void main()"
+ "{"
+   "gl_TexCoord[0]=gl_MultiTexCoord0,gl_Position=ftransform();"
+ "}";
+
+#endif // SCENE10_VERTEX_GLSL_EXPECTED_

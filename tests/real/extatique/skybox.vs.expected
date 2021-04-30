@@ -1,0 +1,15 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SKYBOX_VS_EXPECTED_
+# define SKYBOX_VS_EXPECTED_
+# define VAR_POS "n"
+
+const char *skybox_vs =
+ "varying vec3 n;"
+ "void main()"
+ "{"
+   "n=(gl_ModelViewMatrix*gl_Vertex).xyz,gl_Position=ftransform();"
+ "}";
+
+#endif // SKYBOX_VS_EXPECTED_

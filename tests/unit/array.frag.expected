@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef ARRAY_FRAG_EXPECTED_
+# define ARRAY_FRAG_EXPECTED_
+
+const char *array_frag =
+ "#version 120\n"
+ "float t[5]=float[5](3.4,4.2,5.,5.2,1.1);"
+ "const int i=5;"
+ "float o[i]=float[i](3.4,4.2,5.,5.2,1.1),a[]=float[](3.4,4.2,5.,5.2,1.1),f[5]=float[](3.4,4.2,5.,5.2,1.1),l[]=float[5](3.4,4.2,5.,5.2,1.1);";
+
+#endif // ARRAY_FRAG_EXPECTED_

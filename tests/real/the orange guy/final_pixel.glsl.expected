@@ -1,0 +1,23 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef FINAL_PIXEL_GLSL_EXPECTED_
+# define FINAL_PIXEL_GLSL_EXPECTED_
+# define VAR_BLOOMTEXTURE "g"
+# define VAR_PAPER "i"
+# define VAR_PAPERINVSIZE "t"
+# define VAR_PAPERTEXTURE "y"
+# define VAR_TONEMAPPEDTEXTURE "f"
+
+const char *final_pixel_glsl =
+ "uniform sampler2D f,g,y;"
+ "uniform int i;"
+ "uniform float t;"
+ "void main()"
+ "{"
+   "vec2 i=gl_TexCoord[0].xy;"
+   "vec4 r=texture2D(f,i),o=texture2D(g,i),e=float(e)*1.8*texture2D(y,gl_FragCoord.xy*t)+vec4(1.,1.,1.,1.)*(1.-float(e));"
+   "gl_FragColor=e*(r*.8+.2*o);"
+ "}";
+
+#endif // FINAL_PIXEL_GLSL_EXPECTED_

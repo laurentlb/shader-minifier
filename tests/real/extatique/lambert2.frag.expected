@@ -1,0 +1,50 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef LAMBERT2_FRAG_EXPECTED_
+# define LAMBERT2_FRAG_EXPECTED_
+# define VAR_N "d"
+# define VAR_AMBIENTCOLOR "m"
+# define VAR_L1_POS "t"
+# define VAR_L2_POS "l"
+# define VAR_L3_POS "r"
+# define VAR_LIGHT1COLOR "x"
+# define VAR_LIGHT1DIFFUSE "o"
+# define VAR_LIGHT1SPECULAR "n"
+# define VAR_LIGHT2COLOR "f"
+# define VAR_LIGHT2DIFFUSE "a"
+# define VAR_LIGHT2SPECULAR "c"
+# define VAR_LIGHT3COLOR "e"
+# define VAR_LIGHT3DIFFUSE "y"
+# define VAR_LIGHT3SPECULAR "g"
+# define VAR_NOISE "p"
+# define VAR_POS "v"
+# define VAR_TEX "D"
+
+const char *lambert2_frag =
+ "varying vec3 d,v,t,l,r;"
+ "uniform vec3 x,f,e,m;"
+ "uniform float n,c,g,o,a,y;"
+ "const float s=.3,i=.2,u=1.,z=5.;"
+ "uniform sampler2D p,D;"
+ "vec3 h(vec3 d,float v)"
+ "{"
+   "return mix(d,vec3(dot(vec3(.3),d)),v);"
+ "}"
+ "void main()"
+ "{"
+   "vec2 o=gl_TexCoord[0].xy;"
+   "vec3 a=vec3(texture2D(p,o+vec2(.13,.46)).x,texture2D(p,o).x,texture2D(p,o+vec2(-.33,.14)).x);"
+   "vec4 y=texture2D(D,o);"
+   "a=(a-vec3(.5))*10.;"
+   "vec3 w=normalize(d+a),C=t-v,F=l-v,T=r-v;"
+   "float b=length(C),j=length(F),k=length(T);"
+   "vec3 q=C/b,A=F/j,B=T/k,E=normalize(-v),G=reflect(q,d),H=reflect(A,d),I=reflect(B,d);"
+   "float J=max(0.,dot(w,q)),K=max(0.,dot(w,A)),L=max(0.,dot(w,B)),M=n*pow(max(0.,dot(E,G)),10.),N=c*pow(max(0.,dot(E,H)),10.),O=g*pow(max(0.,dot(E,I)),10.),P=(J+M)/(1.+b*(s+i*b)),Q=(K+N)/(1.+j*(s+i*j)),R=(L+O)/(1.+k*(s+i*k));"
+   "vec3 S=m+x*vec3(P)+f*vec3(Q)+e*vec3(R);"
+   "float U=clamp((v.z-u)/(z-u),0.,1.);"
+   "vec3 V=h(S,U);"
+   "gl_FragColor=y*gl_Color*vec4(V,1.);"
+ "}";
+
+#endif // LAMBERT2_FRAG_EXPECTED_

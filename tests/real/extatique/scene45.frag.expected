@@ -1,0 +1,20 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SCENE45_FRAG_EXPECTED_
+# define SCENE45_FRAG_EXPECTED_
+# define VAR_TEX "y"
+# define VAR_TIME "r"
+
+const char *scene45_frag =
+ "uniform sampler2D y;"
+ "uniform float r;"
+ "void main()"
+ "{"
+   "vec2 v=gl_TexCoord[0].xy;"
+   "float f=atan(v.y,v.x+.0001)/3.14159,e=.002/(.01+length(v))-r*.1;"
+   "vec4 t=texture2D(y,vec2(f,e))+vec4(.5)*texture2D(y,vec2(f,e*4.))+vec4(.25)*texture2D(y,vec2(f,e*16.));"
+   "gl_FragColor=gl_Color*t;"
+ "}";
+
+#endif // SCENE45_FRAG_EXPECTED_

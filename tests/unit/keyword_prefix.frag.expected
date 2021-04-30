@@ -1,0 +1,15 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef KEYWORD_PREFIX_FRAG_EXPECTED_
+# define KEYWORD_PREFIX_FRAG_EXPECTED_
+
+const char *keyword_prefix_frag =
+ "void d()"
+ "{}"
+ "void i()"
+ "{"
+   "d();"
+ "}";
+
+#endif // KEYWORD_PREFIX_FRAG_EXPECTED_

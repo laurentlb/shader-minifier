@@ -1,0 +1,34 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef JULIA_FRAG_EXPECTED_
+# define JULIA_FRAG_EXPECTED_
+# define VAR_RESOLUTION "f"
+# define VAR_TEX0 "y"
+# define VAR_TEX1 "s"
+# define VAR_TEX2 "o"
+# define VAR_TEX3 "k"
+# define VAR_TIME "v"
+
+const char *julia_frag =
+ "uniform vec2 f;"
+ "uniform float v;"
+ "uniform sampler2D y,s,o,k;"
+ "void main()"
+ "{"
+   "vec2 y=-1.+2.*gl_FragCoord.xy/f.xy,s=vec2(cos(.25*v),sin(.25*v*1.423));"
+   "float i=1000.;"
+   "vec2 o=y*vec2(1.33,1.);"
+   "for(int u=0;u<64;u++)"
+     "{"
+       "o=s+vec2(o.x*o.x-o.y*o.y,2.*o.x*o.y);"
+       "float k=dot(o,o);"
+       "if(k>100.)"
+         "break;"
+       "i=min(i,k);"
+     "}"
+   "float k=sqrt(sqrt(i))*.7;"
+   "gl_FragColor=vec4(k,k,k,1.);"
+ "}";
+
+#endif // JULIA_FRAG_EXPECTED_

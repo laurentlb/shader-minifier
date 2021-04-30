@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLIT2_VS_EXPECTED_
+# define BLIT2_VS_EXPECTED_
+
+const char *blit2_vs =
+ "void main()"
+ "{"
+   "gl_TexCoord[0]=gl_MultiTexCoord0,gl_Position=ftransform();"
+ "}";
+
+#endif // BLIT2_VS_EXPECTED_

@@ -1,0 +1,20 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLITCORNER_FRAG_EXPECTED_
+# define BLITCORNER_FRAG_EXPECTED_
+# define VAR_FACTOR "r"
+# define VAR_RATIO "f"
+# define VAR_TEX "m"
+
+const char *blitcorner_frag =
+ "uniform sampler2D m;"
+ "uniform float f,r;"
+ "void main()"
+ "{"
+   "vec2 s=gl_TexCoord[0].xy,y=(s-vec2(.5,.5))*vec2(1.,f);"
+   "vec4 v=vec4(max(0.,1.-r*dot(y,y)));"
+   "gl_FragColor=gl_Color*v*texture2D(m,s);"
+ "}";
+
+#endif // BLITCORNER_FRAG_EXPECTED_

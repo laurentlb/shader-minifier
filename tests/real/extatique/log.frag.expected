@@ -1,0 +1,23 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef LOG_FRAG_EXPECTED_
+# define LOG_FRAG_EXPECTED_
+# define VAR_INVGAMMA "f"
+# define VAR_TEX "v"
+
+const char *log_frag =
+ "uniform sampler2D v;"
+ "uniform float f;"
+ "const vec3 r=vec3(.11,.6,.29);"
+ "void main()"
+ "{"
+   "vec2 m=gl_TexCoord[0].xy;"
+   "vec3 g=texture2D(v,m).xyz;"
+   "g=log2(g+vec3(1.));"
+   "float p=dot(r,g);"
+   "vec3 s=g*vec3(pow(p,f));"
+   "gl_FragColor=gl_Color*vec4(s,1.);"
+ "}";
+
+#endif // LOG_FRAG_EXPECTED_

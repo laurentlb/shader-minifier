@@ -1,0 +1,17 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SKYBOX2_VS_EXPECTED_
+# define SKYBOX2_VS_EXPECTED_
+# define VAR_EYEPOS "m"
+# define VAR_WPOS "v"
+
+const char *skybox2_vs =
+ "varying vec3 v;"
+ "uniform vec3 m;"
+ "void main()"
+ "{"
+   "v=gl_Vertex.xyz,gl_FrontColor=gl_Color,gl_Position=ftransform();"
+ "}";
+
+#endif // SKYBOX2_VS_EXPECTED_

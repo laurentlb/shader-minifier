@@ -1,0 +1,20 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLIT2_FRAG_EXPECTED_
+# define BLIT2_FRAG_EXPECTED_
+# define VAR_TEX1 "m"
+# define VAR_TEX1AMOUNT "f"
+# define VAR_TEX2 "y"
+# define VAR_TEX2AMOUNT "e"
+
+const char *blit2_frag =
+ "uniform sampler2D m,y;"
+ "uniform float f,e;"
+ "void main()"
+ "{"
+   "vec2 r=gl_TexCoord[0].xy;"
+   "gl_FragColor=vec4(f)*texture2D(m,r)+vec4(e)*texture2D(y,r);"
+ "}";
+
+#endif // BLIT2_FRAG_EXPECTED_

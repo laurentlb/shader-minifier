@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef SCENE45_VS_EXPECTED_
+# define SCENE45_VS_EXPECTED_
+
+const char *scene45_vs =
+ "void main()"
+ "{"
+   "gl_TexCoord[0]=gl_MultiTexCoord0,gl_FrontColor=gl_Color,gl_Position=ftransform();"
+ "}";
+
+#endif // SCENE45_VS_EXPECTED_

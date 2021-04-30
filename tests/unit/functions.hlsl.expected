@@ -1,0 +1,15 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef FUNCTIONS_HLSL_EXPECTED_
+# define FUNCTIONS_HLSL_EXPECTED_
+# define VAR_COLOR "i"
+
+const char *functions_hlsl =
+ "static float3 i;"
+ "void f(out int i,int f)"
+ "{"
+   "i=f;"
+ "}";
+
+#endif // FUNCTIONS_HLSL_EXPECTED_

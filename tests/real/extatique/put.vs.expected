@@ -1,0 +1,13 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef PUT_VS_EXPECTED_
+# define PUT_VS_EXPECTED_
+
+const char *put_vs =
+ "void main()"
+ "{"
+   "gl_FrontColor=gl_Color,gl_Position=ftransform();"
+ "}";
+
+#endif // PUT_VS_EXPECTED_
