@@ -21,7 +21,7 @@ let computeFrequencyIdentTable li =
         [for c1 in letters do
          for c2 in letters do
          yield c1.ToString() + c2.ToString()]
-        |> List.sortBy (fun s -> - (count s.[0] + count s.[1]))
+        |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
     Printer.identTable <- Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
