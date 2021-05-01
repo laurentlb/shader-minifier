@@ -6,9 +6,6 @@ open System.IO
 
 let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
-let mutable forbiddenNames = [ "if"; "in"; "do" ]
-let addForbiddenName s = forbiddenNames <- s :: forbiddenNames
-
 type Ident = string
 
 type Expr =
