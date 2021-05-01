@@ -252,7 +252,7 @@ let private computeDependencies block =
     d |> Seq.toList
 
 // This function assumes that functions are NOT overloaded
-let computeAllDependencies code =
+let private computeAllDependencies code =
     let fct = code |> List.choose (function
         | Function(fct, block) as f -> Some (fct.fName, block, f)
         | _ -> None)

@@ -6,7 +6,7 @@ open Options.Globals
 
 type RenameMode = Unambiguous | Frequency | Context
 
-let mutable renameMode = Unambiguous
+let mutable private renameMode = Unambiguous
 
 let doNotOverloadList = options.noRenamingList
 
@@ -250,6 +250,9 @@ let rec renInstr env =
     | Keyword(k, e) -> env, Keyword(k, renOpt e)
     | Verbatim _ as v -> env, v
 
+let mutable private forbiddenNames = [ "if"; "in"; "do" ]
+let addForbiddenName(s: string) = forbiddenNames <- s :: forbiddenNames
+
 let rec renTopLevelName env = function
     | TLDecl d ->
         let env, res = renDecl true env d
@@ -276,11 +279,11 @@ let rec doNotOverload env = function
         let env = {env with map = Map.add name name env.map; reusable = re}
         doNotOverload env li
 
-let rec renTopLevel li mode =
+let rec renameTopLevel li mode (identTable: string[]) =
     renameMode <- mode
-    let idents = Printer.identTable |> Array.toList
+    let idents = identTable |> Array.toList
               |> List.filter (fun x -> x.Length = 1)
-              |> List.filter (fun x -> not <| List.exists ((=) x) Ast.forbiddenNames)
+              |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
     // Rename top-level values first
     let env = {map = Map.empty ; max = 0 ; fct = Map.empty ; reusable = idents}
     let env = doNotOverload env doNotOverloadList

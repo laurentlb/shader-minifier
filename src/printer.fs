@@ -3,7 +3,6 @@
 open Ast
 open Options.Globals
 
-let mutable identTable: string[] = [||]
 let out a = sprintf a
 
 // how to print variable names
@@ -81,7 +80,7 @@ module private PrinterImpl =
             | Var op, [a1; a2] ->
                 let prec = precedence.[op]
                 let res =
-                    if prec = 1 then // "=", "+=", or other operative with right-associativity
+                    if prec = 1 then // "=", "+=", or other operator with right-associativity
                         out "%s%s%s" (exprToSLevel (prec+1) a1) op (exprToSLevel prec a2)
                     else
                         out "%s%s%s" (exprToSLevel prec a1) op (exprToSLevel (prec+1) a2)

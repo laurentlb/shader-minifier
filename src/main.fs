@@ -5,6 +5,8 @@ open System.IO
 open Microsoft.FSharp.Text
 open Options.Globals
 
+let mutable identTable: string[] = [||] // carried on from one file to the next?
+
 // Compute table of variables names, based on frequency
 let computeFrequencyIdentTable li =
     let str = Printer.quickPrint li
@@ -24,7 +26,7 @@ let computeFrequencyIdentTable li =
          yield c1.ToString() + c2.ToString()]
         |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
-    Printer.identTable <- Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
+    identTable <- Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
 let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
@@ -39,15 +41,15 @@ let printSize code =
 
 let rename code =
     Printer.printMode <- Printer.SingleChar
-    let code = Renamer.renTopLevel code Renamer.Unambiguous
-    computeFrequencyIdentTable code
-    Renamer.computeContextTable code
+    let codes = Renamer.renameTopLevel code Renamer.Unambiguous identTable
+    computeFrequencyIdentTable codes
+    Renamer.computeContextTable codes
 
     Printer.printMode <- Printer.FromTable
-    let code = Renamer.renTopLevel code Renamer.Context
+    let codes = Renamer.renameTopLevel code Renamer.Context identTable
     vprintf "%d identifiers renamed. " Renamer.numberOfUsedIdents
-    printSize code
-    code
+    printSize codes
+    codes
 
 let readFile file =
     let stream =
