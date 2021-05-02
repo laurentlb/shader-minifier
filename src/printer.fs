@@ -69,7 +69,7 @@ module private PrinterImpl =
                 let res = out "%s?%s:%s" (exprToSLevel prec a1) (exprToSLevel prec a2) (exprToSLevel prec a3)
                 if prec < level then out "(%s)" res else res
             | Var op, _ when System.Char.IsLetter op.[0] -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
-            | Var op, _ when op.[0] = '0' -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
+            | Var op, _ when System.Char.IsDigit op -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
             | Var op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
             | Var op, [a1] -> out "%s%s" op (exprToSLevel precedence.["_" + op] a1)
             | Var op, [a1; a2] ->
