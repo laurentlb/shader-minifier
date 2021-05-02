@@ -9,7 +9,7 @@ float f3(int a, int b, int c, int d) { return 0.7; }
 void main()
 {
   float a = f1() + 2. * f1(0);
-  float b = 2. * f2(1) - f2();
+  float b = 2. * f2(1.2) - f2();
   float c = f3(true) + f3(0, 1) - f3(0, 1, 2, 3);
   gl_FragColor=vec4(a,b,c,0.);
 }
