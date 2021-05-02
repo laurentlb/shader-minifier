@@ -1,5 +1,6 @@
 ﻿module CGen
 
+open System
 open System.IO
 open Options.Globals
 
@@ -49,7 +50,7 @@ let private printHeader data asAList =
             fprintfn out "// %s" file
             fprintfn out "\"%s\"," (Printer.print code)
         else
-            fprintfn out "const char *%s =\r\n \"%s\";" name (Printer.print code)
+            fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (Printer.print code)
         fprintfn out ""
 
     if not asAList then fprintfn out "#endif // %s" macroName
@@ -75,7 +76,7 @@ let private printJSHeader data =
     fprintfn out ""
     for file : string, code in data do
         let name = (Path.GetFileName file).Replace(".", "_")
-        fprintfn out "var %s =\r\n \"%s\"" name (Printer.print code)
+        fprintfn out "var %s =%s \"%s\"" name Environment.NewLine (Printer.print code)
         fprintfn out ""
 
 let private printNasmHeader data =
@@ -93,7 +94,7 @@ let private printNasmHeader data =
     fprintfn out ""
     for file : string, code in data do
         let name = (Path.GetFileName file).Replace(".", "_")
-        fprintfn out "_%s:\r\n\tdb '%s', 0" name (Printer.print code)
+        fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (Printer.print code)
         fprintfn out ""
 
 let print data = function
