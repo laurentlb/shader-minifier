@@ -48,7 +48,7 @@ let check (file: string) =
 let main argv =
     initOpenTK()
     let mutable failures = 0
-    let inputs = Directory.GetFiles("tests\\unit", "*.frag")
+    let inputs = Directory.GetFiles("tests/unit", "*.frag")
     for f in inputs do
         if not (check f) then
             failures <- failures + 1
