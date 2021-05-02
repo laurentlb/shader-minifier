@@ -4,13 +4,9 @@ open System
 open Ast
 open Options.Globals
 
-let out a = sprintf a
-
-// how to print variable names
-type PrintMode = FromTable | SingleChar | Nothing
-let mutable printMode = Nothing
-
 module private PrinterImpl =
+
+    let out a = sprintf a
 
     let precedenceList = [
         [","]
@@ -39,11 +35,9 @@ module private PrinterImpl =
         |> dict
 
     let idToS (id: string) =
-        if id.[0] = '0' then
-            match printMode with
-            | FromTable -> id
-            | Nothing -> ""
-            | SingleChar -> string (char (1000 + int id))
+        // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
+        if System.Char.IsDigit id.[0] then
+            string (char (1000 + int id))
         else id
 
     let listToS toS sep li =
@@ -75,7 +69,7 @@ module private PrinterImpl =
                 let res = out "%s?%s:%s" (exprToSLevel prec a1) (exprToSLevel prec a2) (exprToSLevel prec a3)
                 if prec < level then out "(%s)" res else res
             | Var op, _ when System.Char.IsLetter op.[0] -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
-            | Var op, _ when op.[0] = '0' -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
+            | Var op, _ when System.Char.IsDigit op -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
             | Var op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
             | Var op, [a1] -> out "%s%s" op (exprToSLevel precedence.["_" + op] a1)
             | Var op, [a1; a2] ->

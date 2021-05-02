@@ -30,12 +30,10 @@ let printSize code =
         printfn "Shader size is: %d" (Printer.quickPrint code).Length
 
 let rename codes =
-    Printer.printMode <- Printer.SingleChar
     let codes = Renamer.renameTopLevel codes Renamer.Unambiguous [||]
     let identTable = computeFrequencyIdentTable codes
     Renamer.computeContextTable codes
 
-    Printer.printMode <- Printer.FromTable
     let codes = Renamer.renameTopLevel codes Renamer.Context identTable
     vprintf "%d identifiers renamed. " Renamer.numberOfUsedIdents
     printSize codes
