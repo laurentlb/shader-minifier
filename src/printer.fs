@@ -4,13 +4,9 @@ open System
 open Ast
 open Options.Globals
 
-let out a = sprintf a
-
-// how to print variable names
-type PrintMode = FromTable | SingleChar | Nothing
-let mutable printMode = Nothing
-
 module private PrinterImpl =
+
+    let out a = sprintf a
 
     let precedenceList = [
         [","]
@@ -39,11 +35,9 @@ module private PrinterImpl =
         |> dict
 
     let idToS (id: string) =
-        if id.[0] = '0' then
-            match printMode with
-            | FromTable -> id
-            | Nothing -> ""
-            | SingleChar -> string (char (1000 + int id))
+        // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
+        if System.Char.IsDigit id.[0] then
+            string (char (1000 + int id))
         else id
 
     let listToS toS sep li =
