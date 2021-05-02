@@ -2,10 +2,6 @@
 
 open Options.Globals
 
-open System.IO
-
-let nullOut = new StreamWriter(Stream.Null) :> TextWriter
-
 type Ident = string
 
 type Expr =

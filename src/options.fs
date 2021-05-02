@@ -34,3 +34,6 @@ type Options() =
 
 module Globals =
     let options = Options()
+
+    // like printfn when verbose option is set
+    let vprintf fmt = fprintf (if options.verbose then stdout else TextWriter.Null) fmt
