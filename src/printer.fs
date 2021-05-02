@@ -1,5 +1,6 @@
 ﻿module Printer
 
+open System
 open Ast
 open Options.Globals
 
@@ -158,9 +159,9 @@ module private PrinterImpl =
             let spaces = new string(' ', indent * 2 + 1)
             match options.targetOutput with
             | Options.Text -> ""
-            | Options.CHeader | Options.CList -> out "\"\r\n%s\"" spaces
-            | Options.JS -> out "\" +\r\n%s\"" spaces
-            | Options.Nasm -> out "'\r\n\tdb%s'" spaces
+            | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
+            | Options.JS -> out "\" +%s%s\"" Environment.NewLine spaces
+            | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
 
     let escape (s: string) =
         match options.targetOutput with
