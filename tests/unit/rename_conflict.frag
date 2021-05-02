@@ -7,7 +7,8 @@ int foo(int a, int d)
 
 int i()
 {
-  foo(0);
+  foo(0, 3);
+  return 1;
 }
 
 int bar(int b, int c, int d)
