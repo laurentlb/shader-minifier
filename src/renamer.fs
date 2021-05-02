@@ -33,8 +33,9 @@ let computeContextTable code =
     //let chars, n = Seq.maxBy snd [for pair in contextTable -> pair.Key, pair.Value]
     //printfn "max occ: %A -> %d" chars n
 
+// /!\ This function is a performance bottleneck.
 let chooseIdent ident candidates =
-    let allChars = [char 0 .. char 255]
+    let allChars = [char 32 .. char 127] // printable chars
     let prevs = allChars |> Seq.choose (fun c ->
         match contextTable.TryFind (c, ident) with
         | Some occ -> Some (c, occ)
