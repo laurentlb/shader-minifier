@@ -5,8 +5,6 @@ open System.IO
 open Microsoft.FSharp.Text
 open Options.Globals
 
-let mutable identTable: string[] = [||] // carried on from one file to the next?
-
 // Compute table of variables names, based on frequency
 let computeFrequencyIdentTable li =
     let str = Printer.quickPrint li
@@ -26,7 +24,7 @@ let computeFrequencyIdentTable li =
          yield c1.ToString() + c2.ToString()]
         |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
-    identTable <- Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
+    Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
 let nullOut = new StreamWriter(Stream.Null) :> TextWriter
 
@@ -39,14 +37,14 @@ let printSize code =
     if options.verbose then
         printfn "Shader size is: %d" (Printer.quickPrint code).Length
 
-let rename code =
+let rename codes =
     Printer.printMode <- Printer.SingleChar
-    let codes = Renamer.renameTopLevel code Renamer.Unambiguous identTable
-    computeFrequencyIdentTable codes
+    let codes = Renamer.renameTopLevel codes Renamer.Unambiguous [||]
+    let identTable = computeFrequencyIdentTable codes
     Renamer.computeContextTable codes
 
     Printer.printMode <- Printer.FromTable
-    let codes = Renamer.renameTopLevel code Renamer.Context identTable
+    let codes = Renamer.renameTopLevel codes Renamer.Context identTable
     vprintf "%d identifiers renamed. " Renamer.numberOfUsedIdents
     printSize codes
     codes
