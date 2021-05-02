@@ -17,7 +17,6 @@ let computeFrequencyIdentTable li =
     let oneLetterIdentifiers = letters |> List.sortBy count |> List.rev |> List.map string
 
     // Then, generate identifiers with 2 letters
-    let score (s:string) = - (count s.[0] + count s.[1])
     let twoLettersIdentifiers =
         [for c1 in letters do
          for c2 in letters do
@@ -25,13 +24,6 @@ let computeFrequencyIdentTable li =
         |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
     Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
-
-let nullOut = new StreamWriter(Stream.Null) :> TextWriter
-
-// like printf when verbose option is set
-let vprintf fmt =
-    let out = if options.verbose then stdout else Ast.nullOut
-    fprintf out fmt
 
 let printSize code =
     if options.verbose then
@@ -94,10 +86,7 @@ let printHeader () =
     printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
     printfn ""
 
-let () =
-    let mutable files = []
-    let setFile s = files <- s :: files
-
+let parse () =
     let setFieldNames s =
         if not (options.trySetCanonicalFieldNames s) then
             printfn "'%s' is not a valid value for field-names" s
@@ -125,23 +114,23 @@ let () =
          "--no-renaming-list", ArgType.String noRenamingFct, "Comma-separated list of functions to preserve"
          "--no-sequence", ArgType.Unit (fun() -> options.noSequence<-true), "Do not use the comma operator trick"
          "--smoothstep", ArgType.Unit (fun() -> options.smoothstepTrick<-true), "Use IQ's smoothstep trick"
-         "--", ArgType.Rest setFile, "Stop parsing command line"
+         "--", ArgType.Rest options.filenames.Add, "Stop parsing command line"
         ] |> List.map ArgInfo
 
-    ArgParser.Parse(specs, setFile)
-    files <- List.rev files
+    ArgParser.Parse(specs, options.filenames.Add)
 
-    let myExit n =
-        if Options.debugMode then System.Console.ReadLine() |> ignore
-        exit n
-
-    if files = [] then
+    if options.filenames.Count = 0 then
         printHeader()
         ArgParser.Usage(specs, usage="Please give the shader files to compress on the command line.")
-        myExit 1
-    elif List.length files > 1 && not options.preserveExternals then
+        1
+    elif options.filenames.Count > 1 && not options.preserveExternals then
         printfn "When compressing multiple files, you must use the --preserve-externals option."
-        myExit 1
+        1
     else
         if options.verbose then printHeader()
-        myExit (run (Array.ofList files))
+        run (options.filenames.ToArray())
+
+let () =
+    let err = parse ()
+    if Options.debugMode then System.Console.ReadLine() |> ignore
+    exit err
