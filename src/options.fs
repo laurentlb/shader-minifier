@@ -3,7 +3,7 @@
 open System.Collections.Generic
 open System.IO
 
-let version = "1.1.6" // Shader Minifer version
+let version = "1.1.6" // Shader Minifier version
 let debugMode = false
 
 type TargetOutput = Text | CHeader | CList | JS | Nasm
@@ -23,7 +23,7 @@ type Options() =
             _canonicalFieldNames <- s
             true
     member val preserveExternals = false with get, set
-    member val preserveAllGlobals = false with get, set 
+    member val preserveAllGlobals = false with get, set
     member val reorderDeclarations = false with get, set
     member val reorderFunctions = false with get, set
     member val hlsl = false with get, set

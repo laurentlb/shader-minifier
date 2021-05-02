@@ -69,7 +69,9 @@ module private PrinterImpl =
                 let res = out "%s?%s:%s" (exprToSLevel prec a1) (exprToSLevel prec a2) (exprToSLevel prec a3)
                 if prec < level then out "(%s)" res else res
             | Var op, _ when System.Char.IsLetter op.[0] -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
-            | Var op, _ when System.Char.IsDigit op -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
+            // digit when renamed by RenameMode Unambiguous
+            | Var op, _ when System.Char.IsDigit op.[0] -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
+            // _++ is prefix and $++ is postfix
             | Var op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
             | Var op, [a1] -> out "%s%s" op (exprToSLevel precedence.["_" + op] a1)
             | Var op, [a1; a2] ->
@@ -115,7 +117,7 @@ module private PrinterImpl =
 
     let rec structToS prefix id decls =
         let name = match id with None -> "" | Some s -> " " + s
-        let d = decls |> List.map declToS |> List.map (fun s -> s + ";") |> String.concat ""
+        let d = decls |> List.map (fun s -> declToS s + ";") |> String.concat ""
         out "%s{%s}" (sp2 prefix name) d
 
     and typeSpecToS = function
@@ -141,7 +143,7 @@ module private PrinterImpl =
                 | Some i -> out "=%s" (exprToS i)
             out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
 
-        if vars = [] then ""
+        if vars.IsEmpty then ""
         else out "%s %s" (typeToS ty) (vars |> List.map out1 |> String.concat ",")
 
     let mutable ignoreFirstNewLine = true
@@ -224,9 +226,9 @@ module private PrinterImpl =
         ignoreFirstNewLine <- true
         let f x =
             let isMacro = match x with TLVerbatim s -> s <> "" && s.[0] = '#' | _ -> false
-            let needEndline = isMacro && not wasMacro
+            let needEndLine = isMacro && not wasMacro
             wasMacro <- isMacro
-            if needEndline then out "%s%s" (backslashN()) (topLevelToS x)
+            if needEndLine then out "%s%s" (backslashN()) (topLevelToS x)
             else topLevelToS x
 
         tl |> List.map f |> String.concat ""
