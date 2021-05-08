@@ -1,7 +1,10 @@
 ﻿open OpenTK.Graphics.OpenGL
+open Options.Globals
 open System
 open System.Diagnostics
 open System.IO
+
+let updateGolden = false
 
 let initOpenTK () =
     // OpenTK requires a GameWindow
@@ -26,7 +29,7 @@ let doMinify content =
 
 let testMinifyAndCompile (file: string) =
     try
-        let content = System.IO.File.ReadAllText file
+        let content = File.ReadAllText file
         if not (canBeCompiled content) then
             printfn "Invalid input file '%s'" file
             false
@@ -45,18 +48,50 @@ let testMinifyAndCompile (file: string) =
 
 let testPerformance files =
     printfn "Running performance tests..."
-    let contents = files |> Array.map System.IO.File.ReadAllText
+    let contents = files |> Array.map File.ReadAllText
     let stopwatch = Stopwatch.StartNew()
     for str in contents do
         doMinify str |> ignore
     let time = stopwatch.Elapsed
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
+let runCommand argv =
+    options.init(argv) |> ignore
+    let expected =
+        try File.ReadAllText options.outputName
+        with _ when updateGolden -> ""
+           | _ -> reraise ()
+    let result =
+        use out = new StringWriter()
+        let codes = Array.map Main.minifyFile options.filenames
+        CGen.print out (Array.zip options.filenames codes) options.targetOutput
+        out.ToString()
+    if result = expected then
+        printfn "Success: %s" options.outputName
+    else
+        printfn "Fail: %A" argv
+        if updateGolden then
+            File.WriteAllText(options.outputName, result)
+        else
+            printfn "Got: %A" result
+
+let testGolden () =
+    let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
+        let line = line.Trim()
+        if line.Length = 0 || line.[0] = '#' then 
+            None
+        else
+            Some (line.Split([|' '|]))
+    )
+    for cmd in commands do
+        runCommand cmd
+
 [<EntryPoint>]
 let main argv =
     initOpenTK()
-    Options.Globals.options.init([|"--format"; "text"; "fake.frag"|]) |> ignore
     let mutable failures = 0
+    testGolden ()
+    options.init([|"--format"; "text"; "fake.frag"|]) |> ignore
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
     for f in unitTests do
