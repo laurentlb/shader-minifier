@@ -1,0 +1,7 @@
+# Test output formats
+
+--no-renaming --format c-variables -o tests/real/chocolux.expected tests/real/chocolux.frag
+--no-renaming --format text -o tests/real/clod.expected tests/real/clod.frag
+--no-renaming --format c-array -o tests/real/kinder_painter.expected tests/real/kinder_painter.frag
+--no-renaming --format js -o tests/real/disco.expected tests/real/disco.frag
+--no-renaming --format nasm -o tests/real/leizex.expected tests/real/leizex.frag
