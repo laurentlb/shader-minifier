@@ -108,7 +108,7 @@ module private PrinterImpl =
 
     let backslashN() =
         match options.targetOutput with
-        | Options.Text -> "\n"
+        | Options.Text | Options.JS -> "\n"
         | Options.Nasm -> "', 10, '"
         | _ ->  "\\n"
 
@@ -156,14 +156,14 @@ module private PrinterImpl =
         else
             let spaces = new string(' ', indent * 2 + 1)
             match options.targetOutput with
-            | Options.Text -> ""
+            | Options.Text | Options.JS -> ""
             | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
-            | Options.JS -> out "\" +%s%s\"" Environment.NewLine spaces
             | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
 
     let escape (s: string) =
         match options.targetOutput with
         | Options.Text -> s
+        | Options.JS -> s
         | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
         | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
 
