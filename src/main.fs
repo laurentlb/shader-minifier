@@ -80,10 +80,18 @@ let run files =
         | Failure s as exn -> fail exn s
         | exn -> fail exn exn.Message
 
-let () =
+[<EntryPoint>]
+let main argv =
     let err =
-        if Options.parse () then 
-            run (options.filenames.ToArray())
-        else 1
+        try
+            if options.init argv then 
+                if options.verbose then
+                    printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
+                run options.filenames
+            else 1
+        with
+        | :? Argu.ArguParseException as ex ->
+            printfn "%s" ex.Message
+            1
     if Options.debugMode then System.Console.ReadLine() |> ignore
     exit err
