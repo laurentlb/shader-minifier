@@ -6,6 +6,8 @@ open Options.Globals
 
 module private PrinterImpl =
 
+    let mutable targetOutput = Options.Text
+
     let out a = sprintf a
 
     let precedenceList = [
@@ -233,14 +235,18 @@ module private PrinterImpl =
 
         tl |> List.map f |> String.concat ""
 
-    let quickPrint tl =
-        let out = options.targetOutput
-        options.targetOutput <- Options.Text
-        let str = print tl
-        options.targetOutput <- out
-        str
+let print tl = 
+    PrinterImpl.targetOutput <- options.targetOutput
+    PrinterImpl.print tl
 
-let quickPrint = PrinterImpl.quickPrint
-let print tl = PrinterImpl.print tl
-let exprToS = PrinterImpl.exprToS
-let typeToS = PrinterImpl.typeToS
+let printText tl =
+    PrinterImpl.targetOutput <- Options.Text
+    PrinterImpl.print tl
+   
+let exprToS x =
+    PrinterImpl.targetOutput <- Options.Text
+    PrinterImpl.exprToS x
+
+let typeToS ty =
+    PrinterImpl.targetOutput <- Options.Text
+    PrinterImpl.typeToS ty

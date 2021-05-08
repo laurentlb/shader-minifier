@@ -7,7 +7,7 @@ open Options.Globals
 
 // Compute table of variables names, based on frequency
 let computeFrequencyIdentTable li =
-    let str = Printer.quickPrint li
+    let str = Printer.printText li
 
     let charCounts = Seq.countBy id str |> dict
     let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
@@ -27,7 +27,7 @@ let computeFrequencyIdentTable li =
 
 let printSize code =
     if options.verbose then
-        printfn "Shader size is: %d" (Printer.quickPrint code).Length
+        printfn "Shader size is: %d" (Printer.printText code).Length
 
 let rename codes =
     let codes = Renamer.renameTopLevel codes Renamer.Unambiguous [||]
