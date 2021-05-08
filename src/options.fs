@@ -59,44 +59,44 @@ type Options() =
     let mutable args: ParseResults<CliArguments> =
         Unchecked.defaultof<ParseResults<CliArguments>>
 
-    member _.outputName =
+    member this.outputName =
         args.GetResult(OutputName, defaultValue = "shader_code.h")
 
-    member _.targetOutput =
+    member this.targetOutput =
         args.GetResult(FormatArg, defaultValue = CHeader)
 
-    member _.verbose =
+    member this.verbose =
         args.Contains(Verbose)
 
-    member _.smoothstepTrick =
+    member this.smoothstepTrick =
         args.Contains(Smoothstep)
 
-    member _.canonicalFieldNames =
+    member this.canonicalFieldNames =
         args.GetResult(FieldNames, defaultValue = XYZW).ToString().ToLower()
 
-    member _.preserveExternals =
+    member this.preserveExternals =
         args.Contains(PreserveExternals)
     
-    member _.preserveAllGlobals =
+    member this.preserveAllGlobals =
         args.Contains(PreserveAllGlobals)
     
     member val reorderDeclarations = false with get, set
     member val reorderFunctions = false with get, set
 
-    member _.hlsl =
+    member this.hlsl =
         args.Contains(Hlsl)
 
-    member _.noSequence =
+    member this.noSequence =
         args.Contains(NoSequence)
 
-    member _.noRenaming =
+    member this.noRenaming =
         args.Contains(NoRenaming)
 
-    member _.noRenamingList =
+    member this.noRenamingList =
         let opt = args.GetResult(NoRenamingList, defaultValue = "main")
         [for i in opt.Split([|','|]) -> i.Trim()]
 
-    member _.filenames =
+    member this.filenames =
         args.GetResult(Filenames, defaultValue=[]) |> List.toArray
 
     member this.init(argv) =
