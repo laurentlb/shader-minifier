@@ -72,9 +72,12 @@ let run files =
           printfn "%s" s;
           printfn "%s" exn.StackTrace
           1
+    use out =
+        if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
+        else new StreamWriter(options.outputName) :> TextWriter
     try
         let codes = Array.map minifyFile files
-        CGen.print (Array.zip files codes) options.targetOutput
+        CGen.print out (Array.zip files codes) options.targetOutput
         0
     with
         | Failure s as exn -> fail exn s
