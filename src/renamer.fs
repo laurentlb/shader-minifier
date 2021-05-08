@@ -25,7 +25,7 @@ let makeLetterIdent =
         string(chars.[first]) + string(chars.[second])
 
 let computeContextTable code =
-    Printer.quickPrint code |> Seq.pairwise |> Seq.iter (fun (prev, next) ->
+    Printer.printText code |> Seq.pairwise |> Seq.iter (fun (prev, next) ->
         match contextTable.TryFind (prev, next) with
         | Some n -> contextTable.[(prev, next)] <- n + 1
         | None -> contextTable.[(prev, next)] <- 1
