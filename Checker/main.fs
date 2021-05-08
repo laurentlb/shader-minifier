@@ -55,7 +55,7 @@ let testPerformance files =
 [<EntryPoint>]
 let main argv =
     initOpenTK()
-    Options.Globals.options.init([|"--format"; "text"; "fake.frag"|])
+    Options.Globals.options.init([|"--format"; "text"; "fake.frag"|]) |> ignore
     let mutable failures = 0
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
