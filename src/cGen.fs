@@ -68,7 +68,7 @@ let private printJSHeader out data =
     fprintfn out ""
     for file : string, code in data do
         let name = (Path.GetFileName file).Replace(".", "_")
-        fprintfn out "var %s =%s \"%s\"" name Environment.NewLine (Printer.print code)
+        fprintfn out "var %s = `%s`" name (Printer.print code)
         fprintfn out ""
 
 let private printNasmHeader out data =
