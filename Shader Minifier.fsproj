@@ -65,6 +65,9 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Argu">
+      <HintPath>lib\Argu.dll</HintPath>
+    </Reference>
     <Reference Include="FParsec">
       <HintPath>lib\FParsec.dll</HintPath>
     </Reference>

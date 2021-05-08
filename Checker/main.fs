@@ -8,7 +8,8 @@ let initOpenTK () =
     let _ = new OpenTK.GameWindow()
     ()
 
-let testCompile content =
+// Return true if the file can be compiled as a GLSL shader.
+let canBeCompiled content =
     let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
     GL.ShaderSource(fragmentShader, content)
     GL.CompileShader(fragmentShader)
@@ -21,18 +22,17 @@ let testCompile content =
         false
 
 let doMinify content =
-    Options.Globals.options.targetOutput <- Options.text()
-    Printer.print(Main.minify("input", content))
+    Printer.printText(Main.minify("input", content))
 
-let check (file: string) =
+let testMinifyAndCompile (file: string) =
     try
         let content = System.IO.File.ReadAllText file
-        if not (testCompile content) then
+        if not (canBeCompiled content) then
             printfn "Invalid input file '%s'" file
             false
         else
             let minified = doMinify content + "\n"
-            if not (testCompile minified) then
+            if not (canBeCompiled minified) then
                 printfn "Minification broke the file '%s'" file
                 printfn "%s" minified
                 false
@@ -43,7 +43,7 @@ let check (file: string) =
         printfn "%A" e
         false
 
-let performanceCheck files =
+let testPerformance files =
     printfn "Running performance tests..."
     let contents = files |> Array.map System.IO.File.ReadAllText
     let stopwatch = Stopwatch.StartNew()
@@ -55,13 +55,14 @@ let performanceCheck files =
 [<EntryPoint>]
 let main argv =
     initOpenTK()
+    Options.Globals.options.init([|"--format"; "text"; "fake.frag"|]) |> ignore
     let mutable failures = 0
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
     for f in unitTests do
-        if not (check f) then
+        if not (testMinifyAndCompile f) then
             failures <- failures + 1
-    performanceCheck (Seq.concat [realTests; unitTests] |> Seq.toArray)
+    testPerformance (Seq.concat [realTests; unitTests] |> Seq.toArray)
     if failures = 0 then
         printfn "All good."
     else

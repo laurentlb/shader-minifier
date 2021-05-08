@@ -58,8 +58,6 @@
   <ItemGroup>
     <Compile Include="main.fs" />
     <None Include="App.config" />
-    <Content Include="OpenTK.dll.config" />
-    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
