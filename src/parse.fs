@@ -291,18 +291,18 @@ module private ParseImpl =
         else
             pzero
 
-    let special =
+    let jump =
         let key =
             choice [keyword "break"; keyword "continue"; keyword "discard"]
-              |>> (fun k -> Ast.Keyword(k, None))
+              |>> (fun k -> Ast.Jump(Ast.stringToJumpKeyword k, None))
 
-        let ret = pipe2 (keyword "return") (opt expr) (fun k e -> Ast.Keyword(k, e))
+        let ret = pipe2 (keyword "return") (opt expr) (fun k e -> Ast.Jump(Ast.stringToJumpKeyword k, e))
         (key <|> ret) .>> ch ';'
 
     // A statement
     stmtRef := choice [
         block
-        special
+        jump
         forLoop
         ifStatement
         whileLoop

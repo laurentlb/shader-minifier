@@ -211,14 +211,14 @@ let garbage (env: Env) block =
             | None -> d.Add id |> ignore
             e
         | e -> e
-    mapInstr (mapEnv collect id) block |> ignore
+    mapStmt (mapEnv collect id) block |> ignore
     let set = HashSet(Seq.choose env.map.TryFind d)
     let map, reusable = Map.partition (fun _ id -> set.Contains id) env.map
     let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
     let merge = [for i in reusable -> i.Value] @ env.reusable |> Seq.distinct |> Seq.toList // |> List.sort
     {env with map=map; reusable=merge}
 
-let rec renInstr env =
+let rec renStmt env =
     let renOpt o = Option.map (renExpr env) o
     function
     | Expr e -> env, Expr (renExpr env e)
@@ -226,29 +226,29 @@ let rec renInstr env =
         let env, res = renDecl false env d
         env, Decl res
     | Block b ->
-        let _, res = renList env renInstr b
+        let _, res = renList env renStmt b
         env, Block res
     | If(cond, th, el) ->
-        let _, th = renInstr env th
-        let el = Option.map (fun x -> snd (renInstr env x)) el
+        let _, th = renStmt env th
+        let el = Option.map (fun x -> snd (renStmt env x)) el
         env, If(renExpr env cond, th, el)
     | ForD(init, cond, inc, body) ->
         let newEnv, init = renDecl false env init
-        let _, body = renInstr newEnv body
+        let _, body = renStmt newEnv body
         let cond = Option.map (renExpr newEnv) cond
         let inc = Option.map (renExpr newEnv) inc
         if options.hlsl then newEnv, ForD(init, renOpt cond, renOpt inc, body)
         else env, ForD(init, renOpt cond, renOpt inc, body)
     | ForE(init, cond, inc, body) ->
-        let _, body = renInstr env body
+        let _, body = renStmt env body
         env, ForE(renOpt init, renOpt cond, renOpt inc, body)
     | While(cond, body) ->
-        let _, body = renInstr env body
+        let _, body = renStmt env body
         env, While(renExpr env cond, body)
     | DoWhile(cond, body) ->
-        let _, body = renInstr env body
+        let _, body = renStmt env body
         env, DoWhile(renExpr env cond, body)
-    | Keyword(k, e) -> env, Keyword(k, renOpt e)
+    | Jump(k, e) -> env, Jump(k, renOpt e)
     | Verbatim _ as v -> env, v
 
 let mutable private forbiddenNames = [ "if"; "in"; "do" ]
@@ -267,7 +267,7 @@ let rec renTopLevelBody env = function
     | Function(fct, body) ->
         let env = garbage env body
         let env, args = renList env (renDecl false) fct.args
-        let _env, body = renInstr env body
+        let _env, body = renStmt env body
         Function({fct with args=args}, body)
     | e -> e
 

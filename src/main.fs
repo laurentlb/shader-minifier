@@ -52,7 +52,7 @@ let minify(filename, content: string) =
 
     let code = Rewriter.reorder code
 
-    let code = Rewriter.apply code
+    let code = Rewriter.simplify code
     vprintf "Rewrite tricks applied. "; printSize code
 
     let code =

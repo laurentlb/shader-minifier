@@ -56,7 +56,7 @@ let testPerformance files =
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
 let runCommand argv =
-    options.init(argv) |> ignore
+    if not(options.init(argv)) then failwith "init failed"
     let expected =
         try File.ReadAllText options.outputName
         with _ when updateGolden -> ""
@@ -91,7 +91,7 @@ let main argv =
     initOpenTK()
     let mutable failures = 0
     testGolden ()
-    options.init([|"--format"; "text"; "fake.frag"|]) |> ignore
+    if not(options.init([|"--format"; "text"; "fake.frag"|])) then failwith "init failed"
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
     for f in unitTests do

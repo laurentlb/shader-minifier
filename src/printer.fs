@@ -167,10 +167,10 @@ module private PrinterImpl =
         | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
         | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
 
-    let rec instrToS' indent = function
+    let rec stmtToS' indent = function
         | Block [] -> ";"
         | Block b ->
-            let body = List.map (instrToS (indent+1)) b |> String.concat ""
+            let body = List.map (stmtToS (indent+1)) b |> String.concat ""
             out "{%s%s}" body (nl indent)
         | Decl (_, []) -> ""
         | Decl d -> out "%s;" (declToS d)
@@ -178,34 +178,34 @@ module private PrinterImpl =
         | If(cond, th, el) ->
             let el = match el with
                      | None -> ""
-                     | Some el -> out "%s%s%s%s" (nl indent) "else" (nl (indent+1)) (instrToS' (indent+1) el |> sp)
-            out "if(%s)%s%s" (exprToS cond) (instrToSInd indent th) el
+                     | Some el -> out "%s%s%s%s" (nl indent) "else" (nl (indent+1)) (stmtToS' (indent+1) el |> sp)
+            out "if(%s)%s%s" (exprToS cond) (stmtToSInd indent th) el
         | ForD(init, cond, inc, body) ->
             let cond = exprToSOpt "" cond
             let inc = exprToSOpt "" inc
-            out "%s(%s;%s;%s)%s" "for" (declToS init) cond inc (instrToSInd indent body)
+            out "%s(%s;%s;%s)%s" "for" (declToS init) cond inc (stmtToSInd indent body)
         | ForE(init, cond, inc, body) ->
             let cond = exprToSOpt "" cond
             let inc = exprToSOpt "" inc
             let init = exprToSOpt "" init
-            out "%s(%s;%s;%s)%s" "for" init cond inc (instrToSInd indent body)
+            out "%s(%s;%s;%s)%s" "for" init cond inc (stmtToSInd indent body)
         | While(cond, body) ->
-            out "%s(%s)%s" "while" (exprToS cond) (instrToSInd indent body)
+            out "%s(%s)%s" "while" (exprToS cond) (stmtToSInd indent body)
         | DoWhile(cond, body) ->
-            out "%s%s%s(%s)" "do" "while" (exprToS cond |> sp) (instrToS indent body)
-        | Keyword(k, None) -> out "%s;" k
-        | Keyword(k, Some exp) -> out "%s%s;" k (exprToS exp |> sp)
+            out "%s%s%s(%s)" "do" "while" (exprToS cond |> sp) (stmtToS indent body)
+        | Jump(k, None) -> out "%s;" (jumpKeywordToString k)
+        | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
             let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
             if s <> "" && s.[0] = '#' then out "%s%s" (backslashN()) (escape s)
             else escape s
 
-    and instrToS indent i =
-        out "%s%s" (nl indent) (instrToS' indent i)
+    and stmtToS indent i =
+        out "%s%s" (nl indent) (stmtToS' indent i)
 
-    // print indented instruction
-    and instrToSInd indent i = instrToS (indent+1) i
+    // print indented statement
+    and stmtToSInd indent i = stmtToS (indent+1) i
 
     let funToS (f: FunctionType) =
         out "%s %s(%s)%s" (typeToS f.retType) (idToS f.fName) (listToS declToS "," f.args) (semToS f.semantics)
@@ -216,8 +216,8 @@ module private PrinterImpl =
             let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
             out "%s%s" (nl 0) (escape s)
         | Function (fct, Block []) -> out "%s%s%s{}" (nl 0) (funToS fct) (nl 0)
-        | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (instrToS 0 body)
-        | Function (fct, body) -> out "%s%s%s{%s%s}" (nl 0) (funToS fct) (nl 0) (instrToS 1 body) (nl 0)
+        | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (stmtToS 0 body)
+        | Function (fct, body) -> out "%s%s%s{%s%s}" (nl 0) (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
         | TLDecl (_, []) -> ""
         | TLDecl decl -> out "%s%s;" (nl 0) (declToS decl)
         | TypeDecl t -> out "%s;" (typeSpecToS t)

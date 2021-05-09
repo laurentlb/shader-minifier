@@ -63,18 +63,18 @@ let private bool = function
     | true -> Var "true" // Int (1, "")
     | false -> Var "false" // Int (0, "")
 
-let rec private expr env = function
+let rec private simplifyExpr env = function
     | FunCall(Var "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Var "-", [FunCall(Var "-", [e])]) -> e
     | FunCall(Var "+", [e]) -> e
 
     | FunCall(Var ",", [e1; FunCall(Var ",", [e2; e3])]) ->
-        FunCall(Var ",", [expr env (FunCall(Var ",", [e1; e2])); e3])
+        FunCall(Var ",", [simplifyExpr env (FunCall(Var ",", [e1; e2])); e3])
 
     | FunCall(Var "-", [x; Float (f, s)]) when f < 0. ->
-        FunCall(Var "+", [x; Float (-f, s)]) |> expr env
+        FunCall(Var "+", [x; Float (-f, s)]) |> simplifyExpr env
     | FunCall(Var "-", [x; Int (i, s)]) when i < 0 ->
-        FunCall(Var "+", [x; Int (-i, s)]) |> expr env
+        FunCall(Var "+", [x; Int (-i, s)]) |> simplifyExpr env
 
     // Boolean simplifications (let's ignore the suffix)
     | FunCall(Var "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
@@ -139,41 +139,41 @@ let rec private expr env = function
     | e -> e
 
 // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
-let rec squeezeDeclarations = function
+let rec private squeezeDeclarations = function
     | []-> []
     | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
         squeezeDeclarations (Decl(ty1, li1 @ li2) :: l)
     | e::l -> e :: squeezeDeclarations l
 
 // Squeeze top-level declarations, e.g. uniforms
-let rec squeezeTLDeclarations = function
+let rec private squeezeTLDeclarations = function
     | []-> []
     | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 ->
         squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
     | e::l -> e :: squeezeTLDeclarations l
 
-let rwTypeSpec = function
+let private rwTypeSpec = function
     | TypeName n -> TypeName (stripSpaces n)
     | x -> x // structs
 
 let rwType (ty: Type) =
     makeType (rwTypeSpec ty.name) (Option.map stripSpaces ty.typeQ)
 
-let instr = function
+let private simplifyStmt = function
     | Block [] as e -> e
     | Block b ->
         // Remove dead code after return/break/...
-        let endOfCode = Seq.tryFindIndex (function Keyword(_, _) -> true | _ -> false) b
+        let endOfCode = Seq.tryFindIndex (function Jump(_, _) -> true | _ -> false) b
         let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
 
         // Remove inner empty blocks
         let b = b |> List.filter (function Block [] -> false | _ -> true)
 
         // Try to remove blocks by using the comma operator
-        let returnExp = b |> Seq.tryPick (function Keyword("return", e) -> e | _ -> None)
+        let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
         let canOptimize = b |> List.forall (function
             | Expr _ -> true
-            | Keyword("return", Some _) -> true
+            | Jump(JumpKeyword.Return, Some _) -> true
             | _ -> false)
 
         if not options.noSequence && canOptimize then
@@ -184,7 +184,7 @@ let instr = function
                 else Expr (List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) li)
             | Some e ->
                let expr = List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) (li@[e])
-               Keyword("return", Some expr)
+               Jump(JumpKeyword.Return, Some expr)
         else
             Block (squeezeDeclarations b)
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
@@ -204,10 +204,10 @@ let reorderTopLevel t =
     else
         t
 
-let apply li =
+let simplify li =
     li
     |> reorderTopLevel
-    |> mapTopLevel (mapEnv expr instr)
+    |> mapTopLevel (mapEnv simplifyExpr simplifyStmt)
     |> List.map (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)
         | TLVerbatim s -> TLVerbatim (stripSpaces s)
@@ -218,7 +218,7 @@ let apply li =
           (* Reorder functions because of forward declarations *)
 
 
-let rec findRemove callback = function
+let rec private findRemove callback = function
     | (name, [], content) :: l ->
         //printfn "=> %s" name
         callback name content
@@ -248,7 +248,7 @@ let private computeDependencies block =
             if not (mEnv.vars.ContainsKey(id)) then d.Add id |> ignore
             e
         | e -> e
-    mapInstr (mapEnv collect id) block |> ignore
+    mapStmt (mapEnv collect id) block |> ignore
     d |> Seq.toList
 
 // This function assumes that functions are NOT overloaded
