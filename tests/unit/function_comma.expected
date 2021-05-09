@@ -1,0 +1,23 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef FUNCTION_COMMA_EXPECTED_
+# define FUNCTION_COMMA_EXPECTED_
+
+const char *function_comma_frag =
+ "float min(float a,float b)"
+ "{"
+   "return a<b?a:b;"
+ "}"
+ "float foo()"
+ "{"
+   "float a=1.2,b=2.3;"
+   "return min((a=1.,b+a),0.);"
+ "}"
+ "float bar()"
+ "{"
+   "float a=1.2,b=2.3;"
+   "return min(b+=a,(a,b));"
+ "}";
+
+#endif // FUNCTION_COMMA_EXPECTED_
