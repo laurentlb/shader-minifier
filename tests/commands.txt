@@ -6,6 +6,10 @@
 --no-renaming --format js -o tests/real/disco.expected tests/real/disco.frag
 --no-renaming --format nasm -o tests/real/leizex.expected tests/real/leizex.frag
 
+# Unit tests
+
+--no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
+
 # Partial renaming tests
 
 --no-renaming --format c-variables -o tests/unit/function_comma.expected tests/unit/function_comma.frag

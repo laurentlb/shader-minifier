@@ -186,7 +186,9 @@ let private simplifyStmt = function
                let expr = List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) (li@[e])
                Jump(JumpKeyword.Return, Some expr)
         else
-            Block (squeezeDeclarations b)
+            match squeezeDeclarations b with
+            | [stmt] -> stmt
+            | stmts -> Block stmts
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
     | ForD((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, body)
     // FIXME: properly handle booleans
