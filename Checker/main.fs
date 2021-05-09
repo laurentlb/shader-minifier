@@ -90,7 +90,8 @@ let runCommand argv =
         if cliArgs.Contains(Update_Golden) then
             File.WriteAllText(options.outputName, result)
         else
-            printfn "Got: %A" result
+            printfn "Got %d: %A" result.Length result
+            printfn "Expected %d: %A" expected.Length expected
 
 let testGolden () =
     let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
