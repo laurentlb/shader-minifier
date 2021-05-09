@@ -4,6 +4,20 @@ open Options.Globals
 
 type Ident = string
 
+[<RequireQualifiedAccess>]
+type JumpKeyword = Break | Continue | Discard | Return
+let jumpKeywordToString = function
+    | JumpKeyword.Break -> "break"
+    | JumpKeyword.Continue -> "continue"
+    | JumpKeyword.Discard -> "discard"
+    | JumpKeyword.Return -> "return"
+let stringToJumpKeyword = function
+    | "break" -> JumpKeyword.Break
+    | "continue" -> JumpKeyword.Continue
+    | "discard" -> JumpKeyword.Discard
+    | "return" -> JumpKeyword.Return
+    | s -> failwith ("not a keyword: " + s)
+
 type Expr =
     | Int of int * string
     | Float of float * string
@@ -41,7 +55,7 @@ and Stmt =
     | ForE of Expr option * Expr option * Expr option * Stmt (*for loop starting with an expression*)
     | While of Expr * Stmt
     | DoWhile of Expr * Stmt
-    | Keyword of string * Expr option (*break, continue, return, discard*)
+    | Jump of JumpKeyword * Expr option (*break, continue, return (expr)?, discard*)
     | Verbatim of string
 
 and FunctionType = {
@@ -129,8 +143,8 @@ let rec mapStmt env i =
             let res = ForE (Option.map (mapExpr env) init, Option.map (mapExpr env) cond,
                             Option.map (mapExpr env) inc, snd (mapStmt env body))
             env, res
-        | Keyword(k, e) ->
-            env, Keyword (k, Option.map (mapExpr env) e)
+        | Jump(k, e) ->
+            env, Jump (k, Option.map (mapExpr env) e)
         | Verbatim _ as v -> env, v
     let env, res = aux i
     env, env.fStmt res

@@ -248,7 +248,7 @@ let rec renStmt env =
     | DoWhile(cond, body) ->
         let _, body = renStmt env body
         env, DoWhile(renExpr env cond, body)
-    | Keyword(k, e) -> env, Keyword(k, renOpt e)
+    | Jump(k, e) -> env, Jump(k, renOpt e)
     | Verbatim _ as v -> env, v
 
 let mutable private forbiddenNames = [ "if"; "in"; "do" ]

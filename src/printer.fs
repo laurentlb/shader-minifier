@@ -193,8 +193,8 @@ module private PrinterImpl =
             out "%s(%s)%s" "while" (exprToS cond) (stmtToSInd indent body)
         | DoWhile(cond, body) ->
             out "%s%s%s(%s)" "do" "while" (exprToS cond |> sp) (stmtToS indent body)
-        | Keyword(k, None) -> out "%s;" k
-        | Keyword(k, Some exp) -> out "%s%s;" k (exprToS exp |> sp)
+        | Jump(k, None) -> out "%s;" (jumpKeywordToString k)
+        | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
             let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s

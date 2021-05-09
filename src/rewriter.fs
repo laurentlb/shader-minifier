@@ -163,17 +163,17 @@ let private simplifyStmt = function
     | Block [] as e -> e
     | Block b ->
         // Remove dead code after return/break/...
-        let endOfCode = Seq.tryFindIndex (function Keyword(_, _) -> true | _ -> false) b
+        let endOfCode = Seq.tryFindIndex (function Jump(_, _) -> true | _ -> false) b
         let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
 
         // Remove inner empty blocks
         let b = b |> List.filter (function Block [] -> false | _ -> true)
 
         // Try to remove blocks by using the comma operator
-        let returnExp = b |> Seq.tryPick (function Keyword("return", e) -> e | _ -> None)
+        let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
         let canOptimize = b |> List.forall (function
             | Expr _ -> true
-            | Keyword("return", Some _) -> true
+            | Jump(JumpKeyword.Return, Some _) -> true
             | _ -> false)
 
         if not options.noSequence && canOptimize then
@@ -184,7 +184,7 @@ let private simplifyStmt = function
                 else Expr (List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) li)
             | Some e ->
                let expr = List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) (li@[e])
-               Keyword("return", Some expr)
+               Jump(JumpKeyword.Return, Some expr)
         else
             Block (squeezeDeclarations b)
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
