@@ -6,13 +6,16 @@ open Options.Globals
 
 type RenameMode = Unambiguous | Frequency | Context
 
-let mutable private renameMode = Unambiguous
-
-let doNotOverloadList = options.noRenamingList
-
       (* Contextual renaming *)
 
 let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
+
+let mutable private forbiddenNames = [ "if"; "in"; "do" ]
+let addForbiddenName(s: string) = forbiddenNames <- s :: forbiddenNames
+
+let reset () =
+    contextTable.Clear()
+    forbiddenNames <- [ "if"; "in"; "do" ]
 
 // This function is called when all 1-char ident are already used
 let makeLetterIdent =
@@ -97,6 +100,7 @@ type Env = {
     max: int
     fct: Map<Ident, Map<int, Ident>>
     reusable: Ident list
+    renameMode: RenameMode
 }
 
 let mutable numberOfUsedIdents = 0
@@ -125,7 +129,7 @@ let optimizeContext env id =
     {env with map = Map.add id newName env.map; reusable = l}, newName
 
 let newId env id =
-    match renameMode with
+    match env.renameMode with
     | Unambiguous -> alwaysNewName env id
     | Frequency -> optimizeFrequency env id
     | Context -> optimizeContext env id
@@ -134,13 +138,13 @@ let renFunction env nbArgs id =
     if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
     else
         // we're looking for a function name, already used before,
-        // but not with the same number of arg, and which is not in doNotOverloadList.
+        // but not with the same number of arg, and which is not in options.noRenamingList.
         let search (x: KeyValuePair<Ident,Map<int,Ident>>) =
             not (x.Value.ContainsKey nbArgs ||
-                 List.exists ((=) x.Key) doNotOverloadList)
+                 List.exists ((=) x.Key) options.noRenamingList)
 
         match env.fct |> Seq.tryFind search with
-        | Some res when renameMode <> Unambiguous ->
+        | Some res when env.renameMode <> Unambiguous ->
             let newName = res.Key
             let fct = env.fct.Add (res.Key, res.Value.Add(nbArgs, id))
             let env = {env with fct = fct; map = env.map.Add(id, newName)}
@@ -251,9 +255,6 @@ let rec renStmt env =
     | Jump(k, e) -> env, Jump(k, renOpt e)
     | Verbatim _ as v -> env, v
 
-let mutable private forbiddenNames = [ "if"; "in"; "do" ]
-let addForbiddenName(s: string) = forbiddenNames <- s :: forbiddenNames
-
 let rec renTopLevelName env = function
     | TLDecl d ->
         let env, res = renDecl true env d
@@ -281,13 +282,18 @@ let rec doNotOverload env = function
         doNotOverload env li
 
 let rec renameTopLevel li mode (identTable: string[]) =
-    renameMode <- mode
     let idents = identTable |> Array.toList
               |> List.filter (fun x -> x.Length = 1)
               |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+    let env = {
+        map = Map.empty
+        max = 0
+        fct = Map.empty
+        reusable = idents
+        renameMode = mode
+    }
     // Rename top-level values first
-    let env = {map = Map.empty ; max = 0 ; fct = Map.empty ; reusable = idents}
-    let env = doNotOverload env doNotOverloadList
+    let env = doNotOverload env options.noRenamingList
     let env, li = renList env renTopLevelName li
 
     // Then, rename local values
