@@ -70,12 +70,16 @@ module private PrinterImpl =
                 let prec = precedence.["?:"]
                 let res = out "%s?%s:%s" (exprToSLevel prec a1) (exprToSLevel prec a2) (exprToSLevel prec a3)
                 if prec < level then out "(%s)" res else res
-            | Var op, _ when System.Char.IsLetter op.[0] -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
-            // digit when renamed by RenameMode Unambiguous
-            | Var op, _ when System.Char.IsDigit op.[0] -> out "%s(%s)" (idToS op) (listToS exprToS "," args)
-            // _++ is prefix and $++ is postfix
+            // Function calls.
+            | Var op, _ when System.Char.IsLetter op.[0] || System.Char.IsDigit op.[0] ->
+                // We set level to 1 in case in case a comma operator is used in the argument list.
+                out "%s(%s)" (idToS op) (listToS (exprToSLevel 1) "," args)
+            
+            // Unary operators. _++ is prefix and $++ is postfix
             | Var op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
             | Var op, [a1] -> out "%s%s" op (exprToSLevel precedence.["_" + op] a1)
+
+            // Binary operators.
             | Var op, [a1; a2] ->
                 let prec = precedence.[op]
                 let res =
