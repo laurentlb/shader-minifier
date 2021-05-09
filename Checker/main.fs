@@ -4,25 +4,46 @@ open System
 open System.Diagnostics
 open System.IO
 
-let updateGolden = false
+open Argu
+
+type CliArguments =
+    | Update_Golden
+    | Skip_GLSL_Compile
+    | Skip_Performance_Tests
+
+    interface IArgParserTemplate with
+        member s.Usage =
+            match s with
+            | Update_Golden _ -> "Update the golden tests"
+            | Skip_GLSL_Compile _ -> "Skip the GLSL compilation of shaders"
+            | Skip_Performance_Tests _ -> "Skip the tests of performance"
+
+let argParser = ArgumentParser.Create<CliArguments>()
+let cliArgs = argParser.ParseCommandLine()
+
+let useOpenGL = cliArgs.Contains(Skip_GLSL_Compile)
+let performa = cliArgs.Contains(Update_Golden)
 
 let initOpenTK () =
     // OpenTK requires a GameWindow
-    let _ = new OpenTK.GameWindow()
-    ()
+    if not (cliArgs.Contains(Skip_GLSL_Compile)) then
+        new OpenTK.GameWindow() |> ignore
 
 // Return true if the file can be compiled as a GLSL shader.
 let canBeCompiled content =
-    let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
-    GL.ShaderSource(fragmentShader, content)
-    GL.CompileShader(fragmentShader)
-    let info = GL.GetShaderInfoLog(fragmentShader)
-    GL.DeleteShader(fragmentShader)
-    if info = "" then
+    if cliArgs.Contains(Skip_GLSL_Compile) then
         true
     else
-        printfn "compilation failed: %s" info
-        false
+        let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
+        GL.ShaderSource(fragmentShader, content)
+        GL.CompileShader(fragmentShader)
+        let info = GL.GetShaderInfoLog(fragmentShader)
+        GL.DeleteShader(fragmentShader)
+        if info = "" then
+            true
+        else
+            printfn "compilation failed: %s" info
+            false
 
 let doMinify content =
     Printer.printText(Main.minify("input", content))
@@ -59,7 +80,7 @@ let runCommand argv =
     if not(options.init(argv)) then failwith "init failed"
     let expected =
         try File.ReadAllText options.outputName
-        with _ when updateGolden -> ""
+        with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
     let result =
         use out = new StringWriter()
@@ -70,7 +91,7 @@ let runCommand argv =
         printfn "Success: %s" options.outputName
     else
         printfn "Fail: %A" argv
-        if updateGolden then
+        if cliArgs.Contains(Update_Golden) then
             File.WriteAllText(options.outputName, result)
         else
             printfn "Got: %A" result
