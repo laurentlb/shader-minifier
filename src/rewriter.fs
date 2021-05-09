@@ -159,7 +159,7 @@ let rwTypeSpec = function
 let rwType (ty: Type) =
     makeType (rwTypeSpec ty.name) (Option.map stripSpaces ty.typeQ)
 
-let instr = function
+let stmt = function
     | Block [] as e -> e
     | Block b ->
         // Remove dead code after return/break/...
@@ -207,7 +207,7 @@ let reorderTopLevel t =
 let apply li =
     li
     |> reorderTopLevel
-    |> mapTopLevel (mapEnv expr instr)
+    |> mapTopLevel (mapEnv expr stmt)
     |> List.map (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)
         | TLVerbatim s -> TLVerbatim (stripSpaces s)
@@ -248,7 +248,7 @@ let private computeDependencies block =
             if not (mEnv.vars.ContainsKey(id)) then d.Add id |> ignore
             e
         | e -> e
-    mapInstr (mapEnv collect id) block |> ignore
+    mapStmt (mapEnv collect id) block |> ignore
     d |> Seq.toList
 
 // This function assumes that functions are NOT overloaded

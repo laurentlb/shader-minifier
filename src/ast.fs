@@ -32,15 +32,15 @@ and DeclElt = {
 
 and Decl = Type * DeclElt list
 
-and Instr =
-    | Block of Instr list
+and Stmt =
+    | Block of Stmt list
     | Decl of Decl
     | Expr of Expr
-    | If of Expr * Instr (*then*) * Instr option (*else*)
-    | ForD of Decl * Expr option * Expr option * Instr (*for loop starting with a declaration*)
-    | ForE of Expr option * Expr option * Expr option * Instr (*for loop starting with an expression*)
-    | While of Expr * Instr
-    | DoWhile of Expr * Instr
+    | If of Expr * Stmt (*then*) * Stmt option (*else*)
+    | ForD of Decl * Expr option * Expr option * Stmt (*for loop starting with a declaration*)
+    | ForE of Expr option * Expr option * Expr option * Stmt (*for loop starting with an expression*)
+    | While of Expr * Stmt
+    | DoWhile of Expr * Stmt
     | Keyword of string * Expr option (*break, continue, return, discard*)
     | Verbatim of string
 
@@ -53,7 +53,7 @@ and FunctionType = {
 
 and TopLevel =
     | TLVerbatim of string
-    | Function of FunctionType * Instr
+    | Function of FunctionType * Stmt
     | TLDecl of Decl
     | TypeDecl of TypeSpec // structs
 
@@ -65,11 +65,11 @@ let makeFunctionType ty name args sem =
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
-    fInstr: Instr -> Instr
+    fStmt: Stmt -> Stmt
     vars: Map<Ident, Type * Expr option * Expr option >
 }
 
-let mapEnv fe fi = {fExpr = fe; fInstr = fi; vars = Map.empty}
+let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty}
 
 let foldList env fct li =
     let mutable env = env
@@ -100,36 +100,36 @@ and mapDecl env (ty, vars) =
     let env, vars = foldList env aux vars
     env, (ty, vars)
 
-let rec mapInstr env i =
+let rec mapStmt env i =
     let aux = function
         | Block b ->
-            let _, b = foldList env mapInstr b
+            let _, b = foldList env mapStmt b
             env, Block b
         | Expr e -> env, Expr (mapExpr env e)
         | Decl d ->
             let env, res = mapDecl env d
             env, Decl res
         | If(cond, th, el) ->
-            env, If (mapExpr env cond, snd (mapInstr env th), Option.map (mapInstr env >> snd) el)
+            env, If (mapExpr env cond, snd (mapStmt env th), Option.map (mapStmt env >> snd) el)
         | While(cond, body) ->
-            env, While (mapExpr env cond, snd (mapInstr env body))
+            env, While (mapExpr env cond, snd (mapStmt env body))
         | DoWhile(cond, body) ->
-            env, DoWhile (mapExpr env cond, snd (mapInstr env body))
+            env, DoWhile (mapExpr env cond, snd (mapStmt env body))
         | ForD(init, cond, inc, body) ->
             let env', decl = mapDecl env init
             let res = ForD (decl, Option.map (mapExpr env') cond,
-                            Option.map (mapExpr env') inc, snd (mapInstr env' body))
+                            Option.map (mapExpr env') inc, snd (mapStmt env' body))
             if options.hlsl then env', res
             else env, res
         | ForE(init, cond, inc, body) ->
             let res = ForE (Option.map (mapExpr env) init, Option.map (mapExpr env) cond,
-                            Option.map (mapExpr env) inc, snd (mapInstr env body))
+                            Option.map (mapExpr env) inc, snd (mapStmt env body))
             env, res
         | Keyword(k, e) ->
             env, Keyword (k, Option.map (mapExpr env) e)
         | Verbatim _ as v -> env, v
     let env, res = aux i
-    env, env.fInstr res
+    env, env.fStmt res
 
 let mapTopLevel env li =
     let _, res = li |> foldList env (fun env tl ->
@@ -137,6 +137,6 @@ let mapTopLevel env li =
         | TLDecl t ->
             let env, res = mapDecl env t
             env, TLDecl res
-        | Function(fct, body) -> env, Function(fct, snd (mapInstr env body))
+        | Function(fct, body) -> env, Function(fct, snd (mapStmt env body))
         | e -> env, e)
     res
