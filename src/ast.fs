@@ -62,6 +62,10 @@ let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=ini
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
+
+// mapEnv is a kind of visitor that applies transformations to statements and expressions,
+// while also collecting variable declarations along the way.
+
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr

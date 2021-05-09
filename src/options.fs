@@ -20,7 +20,7 @@ type FieldSet =
     | RGBA
     | XYZW
     | STPQ
-    
+
 type CliArguments =
     | [<CustomCommandLine("-o")>] OutputName of string
     | [<CustomCommandLine("-v")>] Verbose
