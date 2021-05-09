@@ -77,7 +77,7 @@ let run files =
         else new StreamWriter(options.outputName) :> TextWriter
     try
         let codes = Array.map minifyFile files
-        CGen.print out (Array.zip files codes) options.targetOutput
+        Formatter.print out (Array.zip files codes) options.outputFormat
         0
     with
         | Failure s as exn -> fail exn s
