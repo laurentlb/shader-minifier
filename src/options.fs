@@ -7,7 +7,7 @@ open Argu
 let version = "1.1.6" // Shader Minifier version
 let debugMode = false
 
-type TargetOutput =
+type OutputFormat =
     | [<CustomCommandLine("text")>] Text
     | [<CustomCommandLine("c-variables")>] CHeader
     | [<CustomCommandLine("c-array")>] CList
@@ -25,7 +25,7 @@ type CliArguments =
     | [<CustomCommandLine("-o")>] OutputName of string
     | [<CustomCommandLine("-v")>] Verbose
     | [<CustomCommandLine("--hlsl")>] Hlsl
-    | [<CustomCommandLine("--format")>] FormatArg of TargetOutput
+    | [<CustomCommandLine("--format")>] FormatArg of OutputFormat
     | [<CustomCommandLine("--field-names")>] FieldNames of FieldSet
     | [<CustomCommandLine("--preserve-externals")>] PreserveExternals
     | [<CustomCommandLine("--preserve-all-globals")>] PreserveAllGlobals
@@ -62,7 +62,7 @@ type Options() =
     member this.outputName =
         args.GetResult(OutputName, defaultValue = "shader_code.h")
 
-    member this.targetOutput =
+    member this.outputFormat =
         args.GetResult(FormatArg, defaultValue = CHeader)
 
     member this.verbose =

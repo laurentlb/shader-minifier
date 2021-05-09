@@ -156,7 +156,7 @@ let renFctName env (f: FunctionType) =
         env, f
     else
         let newEnv, newName = renFunction env (List.length f.args) f.fName
-        if ext then CGen.export "F" f.fName newName
+        if ext then Formatter.export "F" f.fName newName
         newEnv, {f with fName = newName}
 
 let renList env fct li =
@@ -186,7 +186,7 @@ let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
                     {env with reusable = List.filter ((<>)decl.name) env.reusable}, decl.name
                 else
                     let env, newName = newId env decl.name
-                    CGen.export "" decl.name newName // TODO: first argument seems now useless
+                    Formatter.export "" decl.name newName // TODO: first argument seems now useless
                     env, newName
             else
                 newId env decl.name

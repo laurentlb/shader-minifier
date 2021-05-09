@@ -1,4 +1,4 @@
-﻿module CGen
+﻿module Formatter
 
 open System
 open System.IO

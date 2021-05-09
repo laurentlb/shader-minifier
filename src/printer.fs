@@ -6,7 +6,7 @@ open Options.Globals
 
 module private PrinterImpl =
 
-    let mutable targetOutput = Options.Text
+    let mutable outputFormat = Options.Text
 
     let out a = sprintf a
 
@@ -107,7 +107,7 @@ module private PrinterImpl =
         else s + s2
 
     let backslashN() =
-        match options.targetOutput with
+        match options.outputFormat with
         | Options.Text | Options.JS -> "\n"
         | Options.Nasm -> "', 10, '"
         | _ ->  "\\n"
@@ -155,13 +155,13 @@ module private PrinterImpl =
             ""
         else
             let spaces = new string(' ', indent * 2 + 1)
-            match options.targetOutput with
+            match options.outputFormat with
             | Options.Text | Options.JS -> ""
             | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
             | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
 
     let escape (s: string) =
-        match options.targetOutput with
+        match options.outputFormat with
         | Options.Text -> s
         | Options.JS -> s
         | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
@@ -236,17 +236,17 @@ module private PrinterImpl =
         tl |> List.map f |> String.concat ""
 
 let print tl = 
-    PrinterImpl.targetOutput <- options.targetOutput
+    PrinterImpl.outputFormat <- options.outputFormat
     PrinterImpl.print tl
 
 let printText tl =
-    PrinterImpl.targetOutput <- Options.Text
+    PrinterImpl.outputFormat <- Options.Text
     PrinterImpl.print tl
    
 let exprToS x =
-    PrinterImpl.targetOutput <- Options.Text
+    PrinterImpl.outputFormat <- Options.Text
     PrinterImpl.exprToS x
 
 let typeToS ty =
-    PrinterImpl.targetOutput <- Options.Text
+    PrinterImpl.outputFormat <- Options.Text
     PrinterImpl.typeToS ty

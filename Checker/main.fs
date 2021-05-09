@@ -64,7 +64,7 @@ let runCommand argv =
     let result =
         use out = new StringWriter()
         let codes = Array.map Main.minifyFile options.filenames
-        CGen.print out (Array.zip options.filenames codes) options.targetOutput
+        Formatter.print out (Array.zip options.filenames codes) options.outputFormat
         out.ToString()
     if result = expected then
         printfn "Success: %s" options.outputName
