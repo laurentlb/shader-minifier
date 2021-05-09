@@ -18,11 +18,7 @@ type CliArguments =
             | Skip_GLSL_Compile _ -> "Skip the GLSL compilation of shaders"
             | Skip_Performance_Tests _ -> "Skip the tests of performance"
 
-let argParser = ArgumentParser.Create<CliArguments>()
-let cliArgs = argParser.ParseCommandLine()
-
-let useOpenGL = cliArgs.Contains(Skip_GLSL_Compile)
-let performa = cliArgs.Contains(Update_Golden)
+let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine()
 
 let initOpenTK () =
     // OpenTK requires a GameWindow
