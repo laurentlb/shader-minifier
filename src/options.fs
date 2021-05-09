@@ -75,7 +75,7 @@ type Options() =
         args.GetResult(FieldNames, defaultValue = XYZW).ToString().ToLower()
 
     member this.preserveExternals =
-        args.Contains(PreserveExternals)
+        args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
     
     member this.preserveAllGlobals =
         args.Contains(PreserveAllGlobals)
@@ -92,15 +92,17 @@ type Options() =
     member this.noRenaming =
         args.Contains(NoRenaming)
 
-    member this.noRenamingList =
-        let opt = args.GetResult(NoRenamingList, defaultValue = "main")
-        [for i in opt.Split([|','|]) -> i.Trim()]
+    member val noRenamingList = ["main"] with get, set
 
     member this.filenames =
         args.GetResult(Filenames, defaultValue=[]) |> List.toArray
 
     member this.init(argv) =
         args <- argParser.Parse(argv)
+        
+        let opt = args.GetResult(NoRenamingList, defaultValue = "main")
+        this.noRenamingList <- [for i in opt.Split([|','|]) -> i.Trim()]
+
         if this.filenames.Length = 0 then
             printfn "%s" (argParser.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
             false

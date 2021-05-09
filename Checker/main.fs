@@ -80,6 +80,9 @@ let runCommand argv =
            | _ -> reraise ()
     let result =
         use out = new StringWriter()
+        // Reinitialize the global state :(
+        Formatter.reset ()
+        Renamer.reset ()
         let codes = Array.map Main.minifyFile options.filenames
         Formatter.print out (Array.zip options.filenames codes) options.outputFormat
         out.ToString()

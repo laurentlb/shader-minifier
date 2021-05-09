@@ -42,8 +42,8 @@ module private PrinterImpl =
             string (char (1000 + int id))
         else id
 
-    let listToS toS sep li =
-        List.map toS li |> String.concat sep
+    let commaListToS toS li =
+        List.map toS li |> String.concat ","
 
     let floatToS f =
         let si = if f < 0. then "-" else ""
@@ -73,7 +73,7 @@ module private PrinterImpl =
             // Function calls.
             | Var op, _ when System.Char.IsLetter op.[0] || System.Char.IsDigit op.[0] ->
                 // We set level to 1 in case in case a comma operator is used in the argument list.
-                out "%s(%s)" (idToS op) (listToS (exprToSLevel 1) "," args)
+                out "%s(%s)" (idToS op) (commaListToS (exprToSLevel 1) args)
             
             // Unary operators. _++ is prefix and $++ is postfix
             | Var op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
@@ -89,14 +89,14 @@ module private PrinterImpl =
                         out "%s%s%s" (exprToSLevel prec a1) op (exprToSLevel (prec+1) a2)
                 if prec < level then out "(%s)" res
                 else res
-            | _ -> out "%s(%s)" (exprToS f) (listToS exprToS "," args)
+            | _ -> out "%s(%s)" (exprToS f) (commaListToS exprToS args)
         | Subscript(arr, ind) ->
             out "%s[%s]" (exprToS arr) (exprToSOpt "" ind)
         | Cast(id, e) ->
             // Cast seems to have the same precedence as unary minus
             out "(%s)%s" id (exprToSLevel precedence.["_-"] e)
         | VectorExp(li) ->
-            out "{%s}" (listToS exprToS "," li)
+            out "{%s}" (commaListToS exprToS li)
         | Dot(e, field) ->
             out "%s.%s" (exprToSLevel precedence.["."] e) field
 
@@ -111,7 +111,7 @@ module private PrinterImpl =
         else s + s2
 
     let backslashN() =
-        match options.outputFormat with
+        match outputFormat with
         | Options.Text | Options.JS -> "\n"
         | Options.Nasm -> "', 10, '"
         | _ ->  "\\n"
@@ -150,7 +150,7 @@ module private PrinterImpl =
             out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
 
         if vars.IsEmpty then ""
-        else out "%s %s" (typeToS ty) (vars |> List.map out1 |> String.concat ",")
+        else out "%s %s" (typeToS ty) (vars |> commaListToS out1)
 
     let mutable ignoreFirstNewLine = true
     let nl indent = // newline and optionally indent
@@ -159,13 +159,13 @@ module private PrinterImpl =
             ""
         else
             let spaces = new string(' ', indent * 2 + 1)
-            match options.outputFormat with
+            match outputFormat with
             | Options.Text | Options.JS -> ""
             | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
             | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
 
     let escape (s: string) =
-        match options.outputFormat with
+        match outputFormat with
         | Options.Text -> s
         | Options.JS -> s
         | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
@@ -212,7 +212,7 @@ module private PrinterImpl =
     and stmtToSInd indent i = stmtToS (indent+1) i
 
     let funToS (f: FunctionType) =
-        out "%s %s(%s)%s" (typeToS f.retType) (idToS f.fName) (listToS declToS "," f.args) (semToS f.semantics)
+        out "%s %s(%s)%s" (typeToS f.retType) (idToS f.fName) (commaListToS declToS f.args) (semToS f.semantics)
 
     let topLevelToS = function
         | TLVerbatim s ->

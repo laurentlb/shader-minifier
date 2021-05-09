@@ -163,7 +163,7 @@ let private simplifyStmt = function
     | Block [] as e -> e
     | Block b ->
         // Remove dead code after return/break/...
-        let endOfCode = Seq.tryFindIndex (function Jump(_, _) -> true | _ -> false) b
+        let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
         let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
 
         // Remove inner empty blocks
@@ -180,7 +180,7 @@ let private simplifyStmt = function
             let li = List.choose (function Expr e -> Some e | _ -> None) b
             match returnExp with
             | None ->
-                if li = [] then Block []
+                if li.IsEmpty then Block []
                 else Expr (List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) li)
             | Some e ->
                let expr = List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) (li@[e])

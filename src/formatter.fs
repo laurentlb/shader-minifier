@@ -7,6 +7,8 @@ open Options.Globals
 // Values to export in the C code (uniform and attribute values)
 let mutable private exportedValues = ([] : (string * string * string) list)
 
+let reset () = exportedValues <- []
+
 // 'ty' is a prefix for the type of shader param. Nothing (VAR) for vars, "F" for hlsl functions
 let export ty name (newName:string) =
     if newName.[0] <> '0' then
