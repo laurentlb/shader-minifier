@@ -53,7 +53,7 @@
     <Compile Include="src\options.fs" />
     <Compile Include="src\ast.fs" />
     <Compile Include="src\printer.fs" />
-    <Compile Include="src\cGen.fs" />
+    <Compile Include="src\formatter.fs" />
     <Compile Include="src\renamer.fs" />
     <Compile Include="src\rewriter.fs" />
     <Compile Include="src\parse.fs" />
