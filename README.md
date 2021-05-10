@@ -7,13 +7,64 @@ Shader Minifier is a tool that minifies and obfuscates shader code
 4k and 64k intros. It is also suitable for reducing the size of the
 shaders in other applications (e.g. webgl, games).
 
-The code is tested with:
+In the context of 4kB intros, Shader Minifier help developers maintain and
+iterate on human-readable files, while shipping optimized code. Even when a
+shader is minified by hand by experienced demosceners, Shader Minifier is often
+able to optimize it further. See this
+[2010 report](https://www.ctrl-alt-test.fr/2010/glsl-minifier-smaller-and-smaller/).
 
-* F# 4.0 on Windows (Visual Studio Community 2015)
-* F# 3.0 on Linux and Mono 3.2.8
+If your application uses multiple shaders, use the `--preserve-externals`
+option. Values such as the uniforms won't be renamed, which makes it easier to
+use in your application (at the expense of a slightly bigger shader).
 
-Slightly outdated user manual:
-  http://www.ctrl-alt-test.fr/?page_id=7
+## Features
+
+- Parse and print the GLSL or HLSL code.
+- Generate a file (such as a C header) that can be embedded in an application.
+- Strip spaces, remove comments.
+- Remove useless parens.
+- Simplify constant expressions: `3.14159 * 2.` becomes `6.28318`.
+- Remove curly braces whenever possible: `if(test){v.x=4; return b++;}` is
+replaced with `if(test)return v.x=4,b++;`.
+- Squeeze definitions: `float a=2.;float b;` becomes `float a=2.,b;`.
+- Consistently rename vector fields (e.g. use `foo.xy` instead of `foo.rg`) to
+help the compression.
+- Rename variables, typically to one character.
+- Reuse the variable names as much as possible: a local variable may have the
+same name as a global variable not used in the function; two functions may have
+the same name using function overloading.
+- Analyze the context and make statistics to compute the variable name that will
+be the most compression-friendly.
+- Optionally inline variables.
+
+## Example ouput
+
+```c
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef HEART_FRAG_EXPECTED_
+# define HEART_FRAG_EXPECTED_
+# define VAR_MOUSE "f"
+# define VAR_RESOLUTION "y"
+# define VAR_TIME "v"
+
+const char *heart_frag =
+ "uniform float v;"
+ "uniform vec2 y;"
+ "uniform vec4 f;"
+ "void main()"
+ "{"
+   "vec2 f=(2.*gl_FragCoord.xy-y)/y.y;"
+   "float r=mod(v,2.)/2.,a=pow(r,.2)*.5+.5;"
+   "a-=a*.2*sin(r*6.2831*5.)*exp(-r*6.);"
+   "f*=vec2(.5,1.5)+a*vec2(.5,-.5);"
+   "float m=atan(f.x,f.y)/3.14159,x=length(f),e=abs(m),o=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),l=step(x,o)*pow(1.-x/o,.25);"
+   "gl_FragColor=vec4(l,0.,0.,1.);"
+ "}";
+
+#endif // HEART_FRAG_EXPECTED_
+```
 
 ## Usage
 
@@ -28,6 +79,35 @@ $ shader_minifier.exe  # Windows
 $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
+```
+USAGE: shader_minifier.exe [--help] [-o <string>] [-v] [--hlsl] [--format <text|c-variables|c-array|js|nasm>]
+                           [--field-names <rgba|xyzw|stpq>] [--preserve-externals] [--preserve-all-globals]
+                           [--no-renaming] [--no-renaming-list <string>] [--no-sequence] [--smoothstep] [<filename>...]
+
+FILENAMES:
+
+    <filename>...         List of files to minify
+
+OPTIONS:
+
+    -o <string>           Set the output filename (default is shader_code.h)
+    -v                    Verbose, display additional information
+    --hlsl                Use HLSL (default is GLSL)
+    --format <text|c-variables|c-array|js|nasm>
+                          Choose to format the output (use none if you want just the shader)
+    --field-names <rgba|xyzw|stpq>
+                          Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'
+    --preserve-externals  Do not rename external values (e.g. uniform)
+    --preserve-all-globals
+                          Do not rename functions and global variables
+    --no-renaming         Do not rename anything
+    --no-renaming-list <string>
+                          Comma-separated list of functions to preserve
+    --no-sequence         Do not use the comma operator trick
+    --smoothstep          Use IQ's smoothstep trick
+    --help                display this list of options.
+```
+
 ## Important options
 
 * List the shaders you want to minify on the command-line.
@@ -39,10 +119,85 @@ $ mono shader_minifier.exe  # Linux, Mac...
   header. There are other options to get only the shader, or have it in a .js or
   nasm file.
 
-* Use `--help` to see all the options. You can for example have some control on
-  what gets renamed.
+## Macros
 
+Shader Minifier will preserve the preprocessor directives (the lines starting
+with `#`), except that it strips the spaces.
 
+If you define a macro, Shader Minifier will notice the name of the macro and
+won't rename the occurrences of the macro. It also doesn't rename variables used
+inside the macro. Clever macros are discouraged and can break the shader.
+
+## Verbatim
+
+If you want to temporary turn off the minifier, use the `//[` and `//]` comments. This can be useful as a workaround if you get a parser error.
+
+Variables inside the region won't be renamed. Spaces will be stripped.
+
+```c
+//[
+[maxvertexcount(3)]
+//]
+void GSScene( triangleadj GSSceneIn input[6], inout TriangleStream<PSSceneIn> OutputStream )
+{   
+    PSSceneIn output = (PSSceneIn)0;
+    ...
+}
+```
+
+## Inlining
+
+Shader Minifier will inline any variable that starts with `i_`. Inlining can allow the Minifier to simplify the code further.
+
+For example, this input:
+
+```c
+bool i_debug = false;
+int i_level = 5;
+
+int foo(int x, int y) {
+  if (i_debug) {
+    x++;
+  }
+
+  return 2 * i_level * x;
+}
+```
+
+will be simplified into:
+
+```c
+int foo(int x,int y)
+{
+  return 10*x;
+}
+```
+
+It's often a good idea to inline the variables that are used only once. The
+minifier currently doesn't this trick automatically because this can be unsafe
+(in presence of side effects).
+
+If you want to aggressively reduce the size of your shader, try inlining other
+variables. Inlining can have performance implications though (if the variable
+stored the result of a computation), so be careful with it.
+
+Inlining can lead to repetition in the shader code, which may make the shader
+longer (but the output may be more compression-friendly).
+
+## Overloading
+
+At this time, do not use overloaded functions (two functions with the same name
+but different arguments) in the input. The output probably won't compile.
+
+On the other hand, Shader Minifier will aggressively use function overloading in
+the output. If two functions have a different number of arguments, they may have
+the same name in the output. This reduces the number of identifiers used by the
+shader and make it more compression friendly.
+
+---------
+
+Slightly outdated user manual:
+  http://www.ctrl-alt-test.fr/?page_id=7
 
 Contributions are welcome.
 
