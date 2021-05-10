@@ -64,6 +64,7 @@ module private PrinterImpl =
         | Int (i, suf) -> (out "%d%s" i suf)
         | Float (f, suf) -> out "%s%s" (floatToS f) suf
         | Var s -> idToS s
+        | Op s -> s
         | FunCall(f, args) ->
             match f, args with
             | Op "?:", [a1; a2; a3] ->

@@ -197,6 +197,8 @@ module private ParseImpl =
                        "out"; "in"; "inout"
                        "linear"; "centroid"; "nointerpolation"; "noperspective"; "sample"
                        "cbuffer"; "tbuffer"
+                       // https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-geometry-shader
+                       "point"; "line"; "triangle"; "lineadj"; "triangleadj"
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
         let qualifier = many storage |>> (function [] -> None | li -> Some (String.concat " " li))
@@ -207,8 +209,10 @@ module private ParseImpl =
         let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
         pipe3 qualifier typeSpec generic (fun tyQ name _ -> Ast.makeType name tyQ)
 
-    let specifiedType =
-        if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
+    let specifiedType = parse {
+        let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
+        return ret
+    }
 
     // For HLSL, e.g. ": color"
     let semantics =
