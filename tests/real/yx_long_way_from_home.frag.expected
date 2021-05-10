@@ -212,8 +212,8 @@ const char *yx_long_way_from_home_frag =
    "c.xz*=n(a);"
    "r.xz*=n(a);"
    "c+=f;"
-   "vec4 S=vec4(h(c,r),1);"
-   "gl_FragColor=!isnan(S.x)&&S.x>=0.?S:vec4(0);"
+   "vec4 u=vec4(h(c,r),1);"
+   "gl_FragColor=!isnan(u.x)&&u.x>=0.?u:vec4(0);"
  "}";
 
 #endif // YX_LONG_WAY_FROM_HOME_FRAG_EXPECTED_
