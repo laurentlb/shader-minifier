@@ -1,0 +1,15 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+
+// tests/unit/operators.frag
+"#version 330\n"
+ "void main()"
+ "{"
+   "int a=11,b=7,c=2;"
+   "float f=2.62146;"
+   "f=.7;"
+   "f=1.4/3.;"
+   "float g=mod(8.,3.);"
+ "}",
+
