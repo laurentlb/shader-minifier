@@ -66,21 +66,21 @@ module private PrinterImpl =
         | Var s -> idToS s
         | FunCall(f, args) ->
             match f, args with
-            | Var "?:", [a1; a2; a3] ->
+            | Op "?:", [a1; a2; a3] ->
                 let prec = precedence.["?:"]
                 let res = out "%s?%s:%s" (exprToSLevel prec a1) (exprToSLevel prec a2) (exprToSLevel prec a3)
                 if prec < level then out "(%s)" res else res
             // Function calls.
-            | Var op, _ when System.Char.IsLetter op.[0] || System.Char.IsDigit op.[0] ->
+            | Var op, _ ->
                 // We set level to 1 in case in case a comma operator is used in the argument list.
                 out "%s(%s)" (idToS op) (commaListToS (exprToSLevel 1) args)
             
             // Unary operators. _++ is prefix and $++ is postfix
-            | Var op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
-            | Var op, [a1] -> out "%s%s" op (exprToSLevel precedence.["_" + op] a1)
+            | Op op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel precedence.[op] a1) op.[1..]
+            | Op op, [a1] -> out "%s%s" op (exprToSLevel precedence.["_" + op] a1)
 
             // Binary operators.
-            | Var op, [a1; a2] ->
+            | Op op, [a1; a2] ->
                 let prec = precedence.[op]
                 let res =
                     if prec = 1 then // "=", "+=", or other operator with right-associativity

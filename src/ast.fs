@@ -22,6 +22,7 @@ type Expr =
     | Int of int * string
     | Float of float * string
     | Var of Ident
+    | Op of string
     | FunCall of Expr * Expr list
     | Subscript of Expr * Expr option
     | Dot of Expr * Ident

@@ -32,7 +32,7 @@ module private ParseImpl =
 
     let opp = new OperatorPrecedenceParser<_,_,_>()
     let exprNoComma = opp.ExpressionParser
-    let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Var ",", [acc;e])))
+    let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Op ",", [acc;e])))
     let parenExp = between (ch '(') (ch ')') expr
 
     // Primitives
@@ -122,23 +122,23 @@ module private ParseImpl =
             for ops, assoc in li do
                 precCounter <- precCounter - 1
                 for op in ops do
-                    opp.AddOperator(InfixOperator(op, ws, precCounter, assoc, fun x y -> Ast.FunCall(Ast.Var op, [x; y])))
+                    opp.AddOperator(InfixOperator(op, ws, precCounter, assoc, fun x y -> Ast.FunCall(Ast.Op op, [x; y])))
 
         let addPrefix() =
             precCounter <- precCounter - 1
             for op in ["++"; "--"; "+"; "-"; "~"; "!"] do
-                opp.AddOperator(PrefixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Var op, [x])))
+                opp.AddOperator(PrefixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Op op, [x])))
 
         let addPostfix() =
             precCounter <- precCounter - 1
             for op in ["++"; "--"] do
-                opp.AddOperator(PostfixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Var ("$"+op), [x])))
+                opp.AddOperator(PostfixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Op ("$"+op), [x])))
 
         addPostfix()
         addPrefix()
         addInfix precedence1
         precCounter <- precCounter - 1
-        opp.AddOperator(TernaryOperator("?", ws, ":", ws, precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Var "?:", [x; y; z])))
+        opp.AddOperator(TernaryOperator("?", ws, ":", ws, precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Op "?:", [x; y; z])))
         addInfix precedence2
 
     let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])

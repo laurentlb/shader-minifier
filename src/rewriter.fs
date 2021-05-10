@@ -64,59 +64,59 @@ let private bool = function
     | false -> Var "false" // Int (0, "")
 
 let rec private simplifyExpr env = function
-    | FunCall(Var "-", [Int (i1, su)]) -> Int (-i1, su)
-    | FunCall(Var "-", [FunCall(Var "-", [e])]) -> e
-    | FunCall(Var "+", [e]) -> e
+    | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
+    | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
+    | FunCall(Op "+", [e]) -> e
 
-    | FunCall(Var ",", [e1; FunCall(Var ",", [e2; e3])]) ->
-        FunCall(Var ",", [simplifyExpr env (FunCall(Var ",", [e1; e2])); e3])
+    | FunCall(Op ",", [e1; FunCall(Op ",", [e2; e3])]) ->
+        FunCall(Op ",", [simplifyExpr env (FunCall(Op ",", [e1; e2])); e3])
 
-    | FunCall(Var "-", [x; Float (f, s)]) when f < 0. ->
-        FunCall(Var "+", [x; Float (-f, s)]) |> simplifyExpr env
-    | FunCall(Var "-", [x; Int (i, s)]) when i < 0 ->
-        FunCall(Var "+", [x; Int (-i, s)]) |> simplifyExpr env
+    | FunCall(Op "-", [x; Float (f, s)]) when f < 0. ->
+        FunCall(Op "+", [x; Float (-f, s)]) |> simplifyExpr env
+    | FunCall(Op "-", [x; Int (i, s)]) when i < 0 ->
+        FunCall(Op "+", [x; Int (-i, s)]) |> simplifyExpr env
 
     // Boolean simplifications (let's ignore the suffix)
-    | FunCall(Var "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
-    | FunCall(Var ">",  [Int (i1, _); Int (i2, _)]) -> bool(i1 > i2)
-    | FunCall(Var "<=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <= i2)
-    | FunCall(Var ">=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <= i2)
-    | FunCall(Var "==", [Int (i1, _); Int (i2, _)]) -> bool(i1 = i2)
-    | FunCall(Var "!=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <> i2)
+    | FunCall(Op "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
+    | FunCall(Op ">",  [Int (i1, _); Int (i2, _)]) -> bool(i1 > i2)
+    | FunCall(Op "<=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <= i2)
+    | FunCall(Op ">=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <= i2)
+    | FunCall(Op "==", [Int (i1, _); Int (i2, _)]) -> bool(i1 = i2)
+    | FunCall(Op "!=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <> i2)
 
-    | FunCall(Var "<", [Float (i1,_); Float (i2,_)]) -> bool(i1 < i2)
-    | FunCall(Var ">", [Float (i1,_); Float (i2,_)]) -> bool(i1 > i2)
-    | FunCall(Var "<=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
-    | FunCall(Var ">=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
-    | FunCall(Var "==", [Float (i1,_); Float (i2,_)]) -> bool(i1 = i2)
-    | FunCall(Var "!=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <> i2)
+    | FunCall(Op "<", [Float (i1,_); Float (i2,_)]) -> bool(i1 < i2)
+    | FunCall(Op ">", [Float (i1,_); Float (i2,_)]) -> bool(i1 > i2)
+    | FunCall(Op "<=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
+    | FunCall(Op ">=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
+    | FunCall(Op "==", [Float (i1,_); Float (i2,_)]) -> bool(i1 = i2)
+    | FunCall(Op "!=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <> i2)
 
     // Stupid simplifications (they can be useful to simplify rewritten code)
-    | FunCall(Var "/", [e; Float (1.,_)]) -> e
-    | FunCall(Var "*", [e; Float (1.,_)]) -> e
-    | FunCall(Var "*", [Float (1.,_); e]) -> e
-    | FunCall(Var "*", [_; Float (0.,_) as e]) -> e
-    | FunCall(Var "*", [Float (0.,_) as e; _]) -> e
-    | FunCall(Var "+", [e; Float (0.,_)]) -> e
-    | FunCall(Var "+", [Float (0.,_); e]) -> e
-    | FunCall(Var "-", [e; Float (0.,_)]) -> e
-    | FunCall(Var "-", [Float (0.,_); e]) -> FunCall(Var "-", [e])
+    | FunCall(Op "/", [e; Float (1.,_)]) -> e
+    | FunCall(Op "*", [e; Float (1.,_)]) -> e
+    | FunCall(Op "*", [Float (1.,_); e]) -> e
+    | FunCall(Op "*", [_; Float (0.,_) as e]) -> e
+    | FunCall(Op "*", [Float (0.,_) as e; _]) -> e
+    | FunCall(Op "+", [e; Float (0.,_)]) -> e
+    | FunCall(Op "+", [Float (0.,_); e]) -> e
+    | FunCall(Op "-", [e; Float (0.,_)]) -> e
+    | FunCall(Op "-", [Float (0.,_); e]) -> FunCall(Op "-", [e])
 
     // No simplification when numbers have different suffixes
     | FunCall(_, [Int (_, su1); Int (_, su2)]) as e when su1 <> su2 -> e
     | FunCall(_, [Float (_, su1); Float (_, su2)]) as e when su1 <> su2 -> e
 
-    | FunCall(Var "-", [Int (i1, su); Int (i2, _)]) -> Int (i1 - i2, su)
-    | FunCall(Var "+", [Int (i1, su); Int (i2, _)]) -> Int (i1 + i2, su)
-    | FunCall(Var "*", [Int (i1, su); Int (i2, _)]) -> Int (i1 * i2, su)
-    | FunCall(Var "/", [Int (i1, su); Int (i2, _)]) -> Int (i1 / i2, su)
+    | FunCall(Op "-", [Int (i1, su); Int (i2, _)]) -> Int (i1 - i2, su)
+    | FunCall(Op "+", [Int (i1, su); Int (i2, _)]) -> Int (i1 + i2, su)
+    | FunCall(Op "*", [Int (i1, su); Int (i2, _)]) -> Int (i1 * i2, su)
+    | FunCall(Op "/", [Int (i1, su); Int (i2, _)]) -> Int (i1 / i2, su)
     | FunCall(Var "mod", [Int (i1, su); Int (i2, _)]) -> Int (i1 % i2, su)
 
-    | FunCall(Var "-", [Float (f1,su)]) -> Float (-f1, su)
-    | FunCall(Var "-", [Float (i1,su); Float (i2,_)]) -> Float (i1 - i2, su)
-    | FunCall(Var "+", [Float (i1,su); Float (i2,_)]) -> Float (i1 + i2, su)
-    | FunCall(Var "*", [Float (i1,su); Float (i2,_)]) -> Float (i1 * i2, su)
-    | FunCall(Var "/", [Float (i1,su); Float (i2,_)]) as e ->
+    | FunCall(Op "-", [Float (f1,su)]) -> Float (-f1, su)
+    | FunCall(Op "-", [Float (i1,su); Float (i2,_)]) -> Float (i1 - i2, su)
+    | FunCall(Op "+", [Float (i1,su); Float (i2,_)]) -> Float (i1 + i2, su)
+    | FunCall(Op "*", [Float (i1,su); Float (i2,_)]) -> Float (i1 * i2, su)
+    | FunCall(Op "/", [Float (i1,su); Float (i2,_)]) as e ->
         let div = Float (i1 / i2, su)
         if (Printer.exprToS e).Length <= (Printer.exprToS div).Length then e
         else div
@@ -124,9 +124,9 @@ let rec private simplifyExpr env = function
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
     | FunCall(Var "smoothstep", [Float (0.,_); Float (1.,_); _]) as e -> e
     | FunCall(Var "smoothstep", [a; b; x]) when options.smoothstepTrick ->
-        let sub1 = FunCall(Var "-", [x; a])
-        let sub2 = FunCall(Var "-", [b; a])
-        let div  = FunCall(Var "/", [sub1; sub2]) |> mapExpr env
+        let sub1 = FunCall(Op "-", [x; a])
+        let sub2 = FunCall(Op "-", [b; a])
+        let div  = FunCall(Op "/", [sub1; sub2]) |> mapExpr env
         FunCall(Var "smoothstep",  [Float (0.,""); Float (1.,""); div])
 
     | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
@@ -181,9 +181,9 @@ let private simplifyStmt = function
             match returnExp with
             | None ->
                 if li.IsEmpty then Block []
-                else Expr (List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) li)
+                else Expr (List.reduce (fun acc x -> FunCall(Op ",", [acc;x])) li)
             | Some e ->
-               let expr = List.reduce (fun acc x -> FunCall(Var ",", [acc;x])) (li@[e])
+               let expr = List.reduce (fun acc x -> FunCall(Op ",", [acc;x])) (li@[e])
                Jump(JumpKeyword.Return, Some expr)
         else
             match squeezeDeclarations b with
