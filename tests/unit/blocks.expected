@@ -1,0 +1,52 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef BLOCKS_EXPECTED_
+# define BLOCKS_EXPECTED_
+
+const char *blocks_frag =
+ "float test_if()"
+ "{"
+   "int foo=2;"
+   "float bar;"
+   "if(foo==2)"
+     "foo++;"
+   "if(foo<5)"
+     "if(foo==3)"
+       "bar=.2;"
+     "else"
+       " bar=.3;"
+   "else"
+     " bar=.4;"
+   "return bar;"
+ "}"
+ "int k=5;"
+ "float test_for()"
+ "{"
+   "int foo=2,n=0;"
+   "for(int i=0;i<4;i++)"
+     "foo+=i;"
+   "for(foo++;n<4;n++)"
+     "{"
+       "int k=n-1;"
+       "foo+=k;"
+     "}"
+   "return 1./float(k);"
+ "}"
+ "int test_block()"
+ "{"
+   "if(k==0)"
+     ";"
+   "for(int i=0;i<2;i++)"
+     "if(k==1)"
+       "return k++,2;"
+     "else"
+       " break;"
+ "}"
+ "void main()"
+ "{"
+   "float a=test_if(),b=test_for();"
+   "gl_FragColor=vec4(.2,a,b,0.);"
+ "}";
+
+#endif // BLOCKS_EXPECTED_

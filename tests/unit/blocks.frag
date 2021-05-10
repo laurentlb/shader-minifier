@@ -30,6 +30,15 @@ float test_for()
   return 1. / float(k);
 }
 
+int test_block()
+{
+  {}
+  {if (k == 0) {} else {}}
+  for (int i = 0; i < 2; i++)
+  {
+    if (k == 1) {k++; return 2;} else {break;}
+  }
+}
 
 void main()
 {
