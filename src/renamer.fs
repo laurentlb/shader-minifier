@@ -94,13 +94,25 @@ let chooseIdent ident candidates =
                                 (* ** Renamer ** *)
 
 // Environment for renamer
-// int means the scope number (fun with n args = n + 1)
+// This object is useful to separate the AST walking from the renaming strategy.
+// Maybe we could use a single mutable object, instead of creating envs all the time.
+// TODO: create a real class.
+[<NoComparison>]
 type Env = {
+    // Map from an old variable name to the new one.
     map: Map<Ident, Ident>
+    // Used only for optimizeFrequency.
     max: int
+    // Map from an old function name and function arity to the new name.
     fct: Map<Ident, Map<int, Ident>>
+    // List of names that are still available.
     reusable: Ident list
-    renameMode: RenameMode
+    // Whether multiple functions can have the same name (but different arity).
+    allowOverloading: bool
+    // Function that decides a name (and returns the new Env).
+    newId: Env -> Ident -> (Env * string)
+    // Function called when we enter a function, optionally updates the Env.
+    enterFunction: Env -> Stmt -> Env
 }
 
 let mutable numberOfUsedIdents = 0
@@ -108,7 +120,7 @@ let mutable numberOfUsedIdents = 0
 let alwaysNewName env id =
     numberOfUsedIdents <- numberOfUsedIdents + 1
     let newName = sprintf "%04d" numberOfUsedIdents
-    let env = {env with map = Map.add id newName env.map; max = env.max + 1}
+    let env = {env with map = Map.add id newName env.map}
     env, newName
 
 let optimizeFrequency env id =
@@ -128,12 +140,6 @@ let optimizeContext env id =
     let l = env.reusable |> List.filter (fun x -> x.[0] <> newName.[0])
     {env with map = Map.add id newName env.map; reusable = l}, newName
 
-let newId env id =
-    match env.renameMode with
-    | Unambiguous -> alwaysNewName env id
-    | Frequency -> optimizeFrequency env id
-    | Context -> optimizeContext env id
-
 let renFunction env nbArgs id =
     if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
     else
@@ -144,13 +150,13 @@ let renFunction env nbArgs id =
                  List.exists ((=) x.Key) options.noRenamingList)
 
         match env.fct |> Seq.tryFind search with
-        | Some res when env.renameMode <> Unambiguous ->
+        | Some res when env.allowOverloading ->
             let newName = res.Key
             let fct = env.fct.Add (res.Key, res.Value.Add(nbArgs, id))
             let env = {env with fct = fct; map = env.map.Add(id, newName)}
             env, newName
         | _ ->
-            let env, newName = newId env id
+            let env, newName = env.newId env id
             let env = {env with fct = env.fct.Add (newName, Map.empty.Add(nbArgs, id))}
             env, newName
 
@@ -189,11 +195,11 @@ let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
                 if options.preserveExternals then
                     {env with reusable = List.filter ((<>)decl.name) env.reusable}, decl.name
                 else
-                    let env, newName = newId env decl.name
+                    let env, newName = env.newId env decl.name
                     Formatter.export "" decl.name newName // TODO: first argument seems now useless
                     env, newName
             else
-                newId env decl.name
+                env.newId env decl.name
 
         let init = Option.map (renExpr env) decl.init
         let size = Option.map (renExpr env) decl.size
@@ -202,8 +208,9 @@ let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
     env, (ty, res)
 
 // "Garbage collection": remove names that are not used in the block
-// so that we can reuse them.
-let garbage (env: Env) block =
+// so that we can reuse them. In other words, this function allows us
+// to shadow global variables in a function.
+let shadowVariables (env: Env) block =
     let d = HashSet()
     let collect mEnv = function
         | Var id as e ->
@@ -264,9 +271,9 @@ let rec renTopLevelName env = function
         env, Function(res, body)
     | e -> env, e
 
-let rec renTopLevelBody env = function
+let rec renTopLevelBody (env: Env) = function
     | Function(fct, body) ->
-        let env = garbage env body
+        let env = env.enterFunction env body
         let env, args = renList env (renDecl false) fct.args
         let _env, body = renStmt env body
         Function({fct with args=args}, body)
@@ -285,12 +292,21 @@ let rec renameTopLevel li mode (identTable: string[]) =
     let idents = identTable |> Array.toList
               |> List.filter (fun x -> x.Length = 1)
               |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+    let newId =
+        match mode with
+        | Unambiguous -> alwaysNewName
+        | Frequency -> optimizeFrequency
+        | Context -> optimizeContext
+
     let env = {
         map = Map.empty
         max = 0
         fct = Map.empty
         reusable = idents
-        renameMode = mode
+        allowOverloading = mode <> Unambiguous
+        newId = newId
+        enterFunction =
+           if mode <> Unambiguous then shadowVariables else fun env _ -> env
     }
     // Rename top-level values first
     let env = doNotOverload env options.noRenamingList
