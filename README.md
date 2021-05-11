@@ -37,7 +37,7 @@ the same name using function overloading.
 be the most compression-friendly.
 - Optionally inline variables.
 
-## Example ouput
+## Example output
 
 ```c
 /* File generated with Shader Minifier 1.1.6
@@ -108,7 +108,7 @@ OPTIONS:
     --help                display this list of options.
 ```
 
-## Important options
+In short:
 
 * List the shaders you want to minify on the command-line.
 
@@ -118,6 +118,57 @@ OPTIONS:
 * Use `--format` to control the output format. By default, it will create a C
   header. There are other options to get only the shader, or have it in a .js or
   nasm file.
+
+## Tips
+
+### 4kB intros
+
+4kB intros typically use a single shader file. The default flags should work well:
+
+```
+shader_minifier.exe -o shader_code.h fragment.glsl
+```
+
+We recommend that you frequently check the output of Shader Minifier to make
+sure there are no obvious problems. Use inlining where possible.
+
+If you desperately need to save a few bytes, try another value of
+`--field-names`. It can affect the size after compression.
+
+### 64kB intros
+
+The recommandation is to use:
+
+```
+shader_minifier.exe --format c-array --preserve-externals *.frag -o shaders.h
+```
+
+Then, in your C or C++ code, include the file:
+
+```c
+const char* shaderSources[] = {
+#include shaders.h
+};
+```
+
+Since the uniforms are not renamed, prefer shorter names when
+possible. Hopefully a future version of Shader Minifier will improve this.
+
+### Javascript
+
+Use `--format js`. It will define a variable for each shader, the variable name
+being derived from the input file. We expect you to run a Javascript minifier on
+the output file.
+
+### Other applications
+
+The simplest solution is to minify each file separately:
+
+```
+shader_minifier.exe --format text --preserve-externals file.glsl -o file_opt.glsl
+```
+
+The output may be used as a drop-in replacement for your original shaders.
 
 ## Macros
 
@@ -193,6 +244,16 @@ On the other hand, Shader Minifier will aggressively use function overloading in
 the output. If two functions have a different number of arguments, they may have
 the same name in the output. This reduces the number of identifiers used by the
 shader and make it more compression friendly.
+
+## Bugs and limitations
+
+- The parser is not complete. Some constructs are not yet supported.
+- Don't use overloaded functions.
+- Avoid macros that contain references to other variables.
+
+Please give feedback in the bugtracker. If something is blocking you, you can
+file a bug or update an existing bug. We rely on your feedback to prioritize the
+work.
 
 ---------
 
