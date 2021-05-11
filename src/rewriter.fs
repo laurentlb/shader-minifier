@@ -136,6 +136,11 @@ let rec private simplifyExpr env = function
         | Some (_, _, Some init) -> init
         | _ -> e
 
+    // pi is acos(-1), pi/2 is acos(0)
+    | Float(f, _) when f = 3.141592653589793 -> FunCall(Var "acos", [Float (-1., "")])
+    | Float(f, _) when f = 6.283185307179586 -> FunCall(Op "*", [Float (2., ""); FunCall(Var "acos", [Float (-1., "")])])
+    | Float(f, _) when f = 1.5707963267948966 -> FunCall(Var "acos", [Float (0., "")])
+
     | e -> e
 
 // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
