@@ -26,3 +26,7 @@
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
+
+# Optimization tests
+
+--no-renaming --format text -o tests/unit/pi.frag.expected tests/unit/pi.frag

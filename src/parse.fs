@@ -59,6 +59,7 @@ module private ParseImpl =
 
     let anyNumber =
         let n = (hexa <|> octal <|> number) <?> "number"
+        // number suffixes: float, long float, unsigned, long, half. FIXME: test the last two
         let suffix = ["f"; "F"; "LF"; "lf"; "u"; "U"; "l"; "L"; "h"; "H"]
                      |> List.map str |> choice
         let suffix = suffix <?> "suffix"
