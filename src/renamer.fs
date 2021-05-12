@@ -4,19 +4,48 @@ open System.Collections.Generic
 open Ast
 open Options.Globals
 
-type RenameMode = Unambiguous | Frequency | Context
+// Environment for renamer
+// This object is useful to separate the AST walking from the renaming strategy.
+// Maybe we could use a single mutable object, instead of creating envs all the time.
+// TODO: create a real class.
+[<NoComparison; NoEquality>]
+type Env = {
+    // Map from an old variable name to the new one.
+    map: Map<Ident, Ident>
+    // Map from an old function name and function arity to the new name.
+    fct: Map<Ident, Map<int, Ident>>
+    // List of names that are still available.
+    reusable: Ident list
+
+    // Used only for optimizeFrequency.
+    max: int
+
+    // Whether multiple functions can have the same name (but different arity).
+    allowOverloading: bool
+    // Function that decides a name (and returns the new Env).
+    newId: Env -> Ident -> (Env * string)
+    // Function called when we enter a function, optionally updates the Env.
+    enterFunction: Env -> Stmt -> Env
+}
+with
+    static member Create(reusable, allowOverloading, newId, enterFunction) = {
+        map = Map.empty
+        max = 0
+        fct = Map.empty
+        reusable = reusable
+        allowOverloading = allowOverloading
+        newId = newId
+        enterFunction = enterFunction
+    }
+
 
       (* Contextual renaming *)
-
-// TODO: put contextTable in Env.
-let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
 
 // TODO: put forbiddenNames in Env.
 let mutable private forbiddenNames = [ "if"; "in"; "do" ]
 let addForbiddenName(s: string) = forbiddenNames <- s :: forbiddenNames
 
 let reset () =
-    contextTable.Clear()
     forbiddenNames <- [ "if"; "in"; "do" ]
 
 // This function is called when all 1-char ident are already used
@@ -30,16 +59,18 @@ let make2LetterIdent =
         string(chars.[first]) + string(chars.[second])
 
 let computeContextTable text =
+    let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
     Seq.pairwise text |> Seq.iter (fun (prev, next) ->
         match contextTable.TryFind (prev, next) with
         | Some n -> contextTable.[(prev, next)] <- n + 1
         | None -> contextTable.[(prev, next)] <- 1
     )
+    contextTable
     //let chars, n = Seq.maxBy snd [for pair in contextTable -> pair.Key, pair.Value]
     //printfn "max occ: %A -> %d" chars n
 
 // /!\ This function is a performance bottleneck.
-let chooseIdent ident candidates =
+let chooseIdent (contextTable: HashMultiMap<(char*char), int>) ident candidates =
     let allChars = [char 32 .. char 127] // printable chars
     let prevs = allChars |> Seq.choose (fun c ->
         match contextTable.TryFind (c, ident) with
@@ -95,36 +126,13 @@ let chooseIdent ident candidates =
 
                                 (* ** Renamer ** *)
 
-// Environment for renamer
-// This object is useful to separate the AST walking from the renaming strategy.
-// Maybe we could use a single mutable object, instead of creating envs all the time.
-// TODO: create a real class.
-[<NoComparison; NoEquality>]
-type Env = {
-    // Map from an old variable name to the new one.
-    map: Map<Ident, Ident>
-    // Used only for optimizeFrequency.
-    max: int
-    // Map from an old function name and function arity to the new name.
-    fct: Map<Ident, Map<int, Ident>>
-    // List of names that are still available.
-    reusable: Ident list
-    // Whether multiple functions can have the same name (but different arity).
-    allowOverloading: bool
-    // Function that decides a name (and returns the new Env).
-    newId: Env -> Ident -> (Env * string)
-    // Function called when we enter a function, optionally updates the Env.
-    enterFunction: Env -> Stmt -> Env
-    // Used only for alwaysNewName
-    numberOfUsedIdents: int ref
-}
-
-let alwaysNewName env id =
-    incr env.numberOfUsedIdents
-    let newName = sprintf "%04d" !env.numberOfUsedIdents
+let alwaysNewName (numberOfUsedIdents: int ref) env id =
+    incr numberOfUsedIdents
+    let newName = sprintf "%04d" !numberOfUsedIdents
     let env = {env with map = Map.add id newName env.map}
     env, newName
 
+// TODO: expose this renaming strategy
 let optimizeFrequency env id =
     match env.reusable with
     | [] -> // create a new variable
@@ -135,9 +143,9 @@ let optimizeFrequency env id =
         {env with map = Map.add id e env.map; reusable = l}, e
 
 // FIXME: handle 2-letter names
-let optimizeContext env id =
+let optimizeContext contextTable (env: Env) (id: Ident) =
     let cid = char (1000 + int id)
-    let newName = chooseIdent cid env.reusable
+    let newName = chooseIdent contextTable cid env.reusable
     let l = env.reusable |> List.filter (fun x -> x.[0] <> newName.[0])
     {env with map = Map.add id newName env.map; reusable = l}, newName
 
@@ -289,27 +297,7 @@ let rec doNotOverload env = function
         let env = {env with map = Map.add name name env.map; reusable = re}
         doNotOverload env li
 
-let renameTopLevel li mode (identTable: string[]) =
-    let idents = identTable |> Array.toList
-              |> List.filter (fun x -> x.Length = 1)
-              |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
-    let newId =
-        match mode with
-        | Unambiguous -> alwaysNewName
-        | Frequency -> optimizeFrequency
-        | Context -> optimizeContext
-
-    let env = {
-        map = Map.empty
-        max = 0
-        fct = Map.empty
-        reusable = idents
-        numberOfUsedIdents = ref 0
-        allowOverloading = mode <> Unambiguous
-        newId = newId
-        enterFunction =
-           if mode <> Unambiguous then shadowVariables else fun env _ -> env
-    }
+let renameTopLevel li env =
     // Rename top-level values first
     let env = doNotOverload env options.noRenamingList
     let env, li = renList env renTopLevelName li
@@ -337,8 +325,19 @@ let computeFrequencyIdentTable text =
 
 // TODO: rename should take a list of ASTs (not just one).
 let rename code =
-    let code = renameTopLevel code Unambiguous [||]
+    // First rename: give a unique id to each variable.
+    let numberOfUsedIdents = ref 0
+    let env1 = Env.Create([], false, alwaysNewName numberOfUsedIdents, fun env _ -> env)
+    let code = renameTopLevel code env1
+
+    // Get data about the context
     let text = Printer.printText code
     let identTable = computeFrequencyIdentTable text
-    computeContextTable text
-    renameTopLevel code Context identTable
+    let contextTable = computeContextTable text
+    
+    // Second rename: use the context.
+    let idents = identTable |> Array.toList
+              |> List.filter (fun x -> x.Length = 1)
+              |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+    let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
+    renameTopLevel code env2
