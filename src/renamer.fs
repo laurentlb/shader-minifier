@@ -143,7 +143,7 @@ let optimizeFrequency env id =
         {env with map = Map.add id e env.map; reusable = l}, e
 
 // FIXME: handle 2-letter names
-let optimizeContext contextTable (env: Env) (id: Ident) =
+let optimizeContext contextTable env id =
     let cid = char (1000 + int id)
     let newName = chooseIdent contextTable cid env.reusable
     let l = env.reusable |> List.filter (fun x -> x.[0] <> newName.[0])
