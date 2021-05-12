@@ -5,39 +5,9 @@ open System.IO
 open Microsoft.FSharp.Text
 open Options.Globals
 
-// Compute table of variables names, based on frequency
-let computeFrequencyIdentTable li =
-    let str = Printer.printText li
-
-    let charCounts = Seq.countBy id str |> dict
-    let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
-    let letters = ['a'..'z']@['A'..'Z']
-
-    // First, use most frequent letters
-    let oneLetterIdentifiers = letters |> List.sortBy count |> List.rev |> List.map string
-
-    // Then, generate identifiers with 2 letters
-    let twoLettersIdentifiers =
-        [for c1 in letters do
-         for c2 in letters do
-         yield c1.ToString() + c2.ToString()]
-        |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
-
-    Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
-
 let printSize code =
     if options.verbose then
         printfn "Shader size is: %d" (Printer.printText code).Length
-
-let rename codes =
-    let codes = Renamer.renameTopLevel codes Renamer.Unambiguous [||]
-    let identTable = computeFrequencyIdentTable codes
-    Renamer.computeContextTable codes
-
-    let codes = Renamer.renameTopLevel codes Renamer.Context identTable
-    vprintf "%d identifiers renamed. " Renamer.numberOfUsedIdents
-    printSize codes
-    codes
 
 let readFile file =
     let stream =
@@ -57,7 +27,10 @@ let minify(filename, content: string) =
 
     let code =
         if options.noRenaming then code
-        else rename code
+        else
+            let code = Renamer.rename code
+            vprintf "Identifiers renamed. "; printSize code
+            code
 
     vprintf "Minification of '%s' finished.\n" filename
     code
