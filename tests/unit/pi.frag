@@ -1,3 +1,4 @@
+#version 400
 
 void main() {
     double pi = 3.141592653589793;
