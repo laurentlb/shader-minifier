@@ -8,8 +8,10 @@ type RenameMode = Unambiguous | Frequency | Context
 
       (* Contextual renaming *)
 
+// TODO: put contextTable in Env.
 let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
 
+// TODO: put forbiddenNames in Env.
 let mutable private forbiddenNames = [ "if"; "in"; "do" ]
 let addForbiddenName(s: string) = forbiddenNames <- s :: forbiddenNames
 
@@ -18,7 +20,7 @@ let reset () =
     forbiddenNames <- [ "if"; "in"; "do" ]
 
 // This function is called when all 1-char ident are already used
-let makeLetterIdent =
+let make2LetterIdent =
     let chars = [| 'a' .. 'z' |]
     let mutable first = 0
     let mutable second = 0
@@ -27,8 +29,8 @@ let makeLetterIdent =
         if second >= chars.Length then second <- 0; first <- first + 1
         string(chars.[first]) + string(chars.[second])
 
-let computeContextTable code =
-    Printer.printText code |> Seq.pairwise |> Seq.iter (fun (prev, next) ->
+let computeContextTable text =
+    Seq.pairwise text |> Seq.iter (fun (prev, next) ->
         match contextTable.TryFind (prev, next) with
         | Some n -> contextTable.[(prev, next)] <- n + 1
         | None -> contextTable.[(prev, next)] <- 1
@@ -71,7 +73,7 @@ let chooseIdent ident candidates =
           //           "If it is a problem for you, please send a bug report!")
     let bestS =
         if fst best = -1000 then
-            makeLetterIdent ()
+            make2LetterIdent ()
         else
             snd best
 
@@ -97,7 +99,7 @@ let chooseIdent ident candidates =
 // This object is useful to separate the AST walking from the renaming strategy.
 // Maybe we could use a single mutable object, instead of creating envs all the time.
 // TODO: create a real class.
-[<NoComparison>]
+[<NoComparison; NoEquality>]
 type Env = {
     // Map from an old variable name to the new one.
     map: Map<Ident, Ident>
@@ -113,13 +115,13 @@ type Env = {
     newId: Env -> Ident -> (Env * string)
     // Function called when we enter a function, optionally updates the Env.
     enterFunction: Env -> Stmt -> Env
+    // Used only for alwaysNewName
+    numberOfUsedIdents: int ref
 }
 
-let mutable numberOfUsedIdents = 0
-
 let alwaysNewName env id =
-    numberOfUsedIdents <- numberOfUsedIdents + 1
-    let newName = sprintf "%04d" numberOfUsedIdents
+    incr env.numberOfUsedIdents
+    let newName = sprintf "%04d" !env.numberOfUsedIdents
     let env = {env with map = Map.add id newName env.map}
     env, newName
 
@@ -128,7 +130,6 @@ let optimizeFrequency env id =
     | [] -> // create a new variable
         let newName = sprintf "%04d" env.max
         let env = {env with map = Map.add id newName env.map; max = env.max + 1}
-        numberOfUsedIdents <- max numberOfUsedIdents env.max
         env, newName
     | e::l -> // reuse a variable name
         {env with map = Map.add id e env.map; reusable = l}, e
@@ -288,7 +289,7 @@ let rec doNotOverload env = function
         let env = {env with map = Map.add name name env.map; reusable = re}
         doNotOverload env li
 
-let rec renameTopLevel li mode (identTable: string[]) =
+let renameTopLevel li mode (identTable: string[]) =
     let idents = identTable |> Array.toList
               |> List.filter (fun x -> x.Length = 1)
               |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
@@ -303,6 +304,7 @@ let rec renameTopLevel li mode (identTable: string[]) =
         max = 0
         fct = Map.empty
         reusable = idents
+        numberOfUsedIdents = ref 0
         allowOverloading = mode <> Unambiguous
         newId = newId
         enterFunction =
@@ -314,3 +316,29 @@ let rec renameTopLevel li mode (identTable: string[]) =
 
     // Then, rename local values
     List.map (renTopLevelBody env) li
+
+// Compute table of variables names, based on frequency
+let computeFrequencyIdentTable text =
+    let charCounts = Seq.countBy id text |> dict
+    let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
+    let letters = ['a'..'z']@['A'..'Z']
+
+    // First, use most frequent letters
+    let oneLetterIdentifiers = letters |> List.sortBy count |> List.rev |> List.map string
+
+    // Then, generate identifiers with 2 letters
+    let twoLettersIdentifiers =
+        [for c1 in letters do
+         for c2 in letters do
+         yield c1.ToString() + c2.ToString()]
+        |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
+
+    Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
+
+// TODO: rename should take a list of ASTs (not just one).
+let rename code =
+    let code = renameTopLevel code Unambiguous [||]
+    let text = Printer.printText code
+    let identTable = computeFrequencyIdentTable text
+    computeContextTable text
+    renameTopLevel code Context identTable
