@@ -73,9 +73,10 @@ let testPerformance files =
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
 let runCommand argv =
+    let cleanString (s: string) = s.Replace("\r\n", "\n").Trim()
     if not(options.init(argv)) then failwith "init failed"
     let expected =
-        try (File.ReadAllText options.outputName).Replace("\r\n", "\n")
+        try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
     let result =
@@ -85,7 +86,7 @@ let runCommand argv =
         Renamer.reset ()
         let codes = Array.map Main.minifyFile options.filenames
         Formatter.print out (Array.zip options.filenames codes) options.outputFormat
-        out.ToString().Replace("\r\n", "\n")
+        out.ToString() |> cleanString
     if result = expected then
         printfn "Success: %s" options.outputName
     else
