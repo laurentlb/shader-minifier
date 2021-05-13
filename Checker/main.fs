@@ -75,7 +75,7 @@ let testPerformance files =
 let runCommand argv =
     if not(options.init(argv)) then failwith "init failed"
     let expected =
-        try File.ReadAllText options.outputName
+        try (File.ReadAllText options.outputName).Replace("\r\n", "\n")
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
     let result =
@@ -85,7 +85,7 @@ let runCommand argv =
         Renamer.reset ()
         let codes = Array.map Main.minifyFile options.filenames
         Formatter.print out (Array.zip options.filenames codes) options.outputFormat
-        out.ToString()
+        out.ToString().Replace("\r\n", "\n")
     if result = expected then
         printfn "Success: %s" options.outputName
     else
