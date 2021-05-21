@@ -17,23 +17,23 @@ let readFile file =
 
 let minify(filename, content: string) =
     vprintf "Input file size is: %d\n" (content.Length)
-    let code = Parse.runParser filename content
-    vprintf "File parsed. "; printSize code
+    let shader = Parse.runParser filename content
+    vprintf "File parsed. "; printSize shader.code
 
-    let code = Rewriter.reorder code
+    shader.code <- Rewriter.reorder shader.code
 
-    let code = Rewriter.simplify code
-    vprintf "Rewrite tricks applied. "; printSize code
+    shader.code <- Rewriter.simplify shader.code
+    vprintf "Rewrite tricks applied. "; printSize shader.code
 
-    let code =
-        if options.noRenaming then code
+    shader.code <-
+        if options.noRenaming then shader.code
         else
-            let code = Renamer.rename code
+            let code = Renamer.rename shader
             vprintf "Identifiers renamed. "; printSize code
             code
 
     vprintf "Minification of '%s' finished.\n" filename
-    code
+    shader.code
 
 let minifyFile file =
     let content = readFile file
