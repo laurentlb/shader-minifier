@@ -1,0 +1,9 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+
+// tests/unit/minus-zero.frag
+"void main()"
+ "{"
+   "float a=0.;"
+ "}",

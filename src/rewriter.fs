@@ -112,6 +112,7 @@ let rec private simplifyExpr env = function
     | FunCall(Op "/", [Int (i1, su); Int (i2, _)]) -> Int (i1 / i2, su)
     | FunCall(Op "%", [Int (i1, su); Int (i2, _)]) -> Int (i1 % i2, su)
 
+    | FunCall(Op "-", [Float (0.0,su)]) -> Float (0.0, su)
     | FunCall(Op "-", [Float (f1,su)]) -> Float (-f1, su)
     | FunCall(Op "-", [Float (i1,su); Float (i2,_)]) -> Float (i1 - i2, su)
     | FunCall(Op "+", [Float (i1,su); Float (i2,_)]) -> Float (i1 + i2, su)
