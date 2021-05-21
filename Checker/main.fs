@@ -89,6 +89,7 @@ let runCommand argv =
         out.ToString() |> cleanString
     if result = expected then
         printfn "Success: %s" options.outputName
+        1
     else
         printfn "Fail: %A" argv
         if cliArgs.Contains(Update_Golden) then
@@ -96,6 +97,7 @@ let runCommand argv =
         else
             printfn "Got %d: %A" result.Length result
             printfn "Expected %d: %A" expected.Length expected
+        0
 
 let testGolden () =
     let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
@@ -105,14 +107,12 @@ let testGolden () =
         else
             Some (line.Split([|' '|]))
     )
-    for cmd in commands do
-        runCommand cmd
+    commands |> Array.sumBy runCommand
 
 [<EntryPoint>]
 let main argv =
     initOpenTK()
-    let mutable failures = 0
-    testGolden ()
+    let mutable failures = testGolden()
     if not(options.init([|"--format"; "text"; "fake.frag"|])) then failwith "init failed"
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
