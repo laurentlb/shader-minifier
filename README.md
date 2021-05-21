@@ -1,5 +1,6 @@
 # Shader Minifier
 
+[![Build status](https://ci.appveyor.com/api/projects/status/chwlpnssgd5kdl4x/branch/master?svg=true)](https://ci.appveyor.com/project/laurentlb/shader-minifier/branch/master)
 
 Shader Minifier is a tool that minifies and obfuscates shader code
 (GLSL and HLSL). Its original use-case is for the
