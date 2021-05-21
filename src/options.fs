@@ -72,7 +72,7 @@ type Options() =
         args.Contains(Smoothstep)
 
     member this.canonicalFieldNames =
-        args.GetResult(FieldNames, defaultValue = XYZW).ToString().ToLower()
+        (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
 
     member this.preserveExternals =
         args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)

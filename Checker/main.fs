@@ -92,7 +92,7 @@ let runCommand argv =
     else
         printfn "Fail: %A" argv
         if cliArgs.Contains(Update_Golden) then
-            File.WriteAllText(options.outputName, result)
+            File.WriteAllText(options.outputName, result + "\n")
         else
             printfn "Got %d: %A" result.Length result
             printfn "Expected %d: %A" expected.Length expected
@@ -125,5 +125,5 @@ let main argv =
     else
         printfn "%d failures." failures
     
-    System.Console.ReadLine() |> ignore
+    //System.Console.ReadLine() |> ignore
     if failures = 0 then 0 else 1
