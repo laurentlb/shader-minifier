@@ -73,9 +73,10 @@ let testPerformance files =
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
 let runCommand argv =
+    let cleanString (s: string) = s.Replace("\r\n", "\n").Trim()
     if not(options.init(argv)) then failwith "init failed"
     let expected =
-        try File.ReadAllText options.outputName
+        try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
     let result =
@@ -85,13 +86,13 @@ let runCommand argv =
         Renamer.reset ()
         let codes = Array.map Main.minifyFile options.filenames
         Formatter.print out (Array.zip options.filenames codes) options.outputFormat
-        out.ToString()
+        out.ToString() |> cleanString
     if result = expected then
         printfn "Success: %s" options.outputName
     else
         printfn "Fail: %A" argv
         if cliArgs.Contains(Update_Golden) then
-            File.WriteAllText(options.outputName, result)
+            File.WriteAllText(options.outputName, result + "\n")
         else
             printfn "Got %d: %A" result.Length result
             printfn "Expected %d: %A" expected.Length expected
@@ -124,5 +125,5 @@ let main argv =
     else
         printfn "%d failures." failures
     
-    System.Console.ReadLine() |> ignore
+    //System.Console.ReadLine() |> ignore
     if failures = 0 then 0 else 1
