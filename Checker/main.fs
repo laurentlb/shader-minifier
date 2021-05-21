@@ -89,7 +89,7 @@ let runCommand argv =
         out.ToString() |> cleanString
     if result = expected then
         printfn "Success: %s" options.outputName
-        1
+        0
     else
         printfn "Fail: %A" argv
         if cliArgs.Contains(Update_Golden) then
@@ -97,7 +97,7 @@ let runCommand argv =
         else
             printfn "Got %d: %A" result.Length result
             printfn "Expected %d: %A" expected.Length expected
-        0
+        1
 
 let testGolden () =
     let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
