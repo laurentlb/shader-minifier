@@ -1,4 +1,5 @@
-﻿open OpenTK.Graphics.OpenGL
+﻿open System.Runtime.InteropServices
+open OpenTK.Graphics.OpenGL
 open Options.Globals
 open System
 open System.Diagnostics
@@ -123,6 +124,13 @@ let main argv =
         printfn "All good."
     else
         printfn "%d failures." failures
-    
-    System.Console.ReadLine() |> ignore
+
+    runCommand("--no-renaming --format c-variables -o tests/real/chocolux.expected tests/real/chocolux.frag".Split([| ' ' |]))
+    System.Console.WriteLine(
+        if RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then "Windows"
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then "Linux"
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then "OSX"
+        elif RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) then "FreeBSD"
+        else "")
+    //System.Console.ReadLine() |> ignore
     if failures = 0 then 0 else 1
