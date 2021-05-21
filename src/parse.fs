@@ -271,6 +271,8 @@ module private ParseImpl =
 
     let skipComment = skipMany (commentLine <|> commentBlock)
 
+    let mutable private forbiddenNames = [ "if"; "in"; "do" ]
+
     let macro =
         let nl = skipComment >>. skipMany (pchar '\\' >>. newline)
         let line = manyCharsTill (anyChar .>> nl) newline
@@ -278,7 +280,7 @@ module private ParseImpl =
         let ident = manyChars (pchar '_' <|> asciiLetter <|> digit)
         // parse the #define macros to get the macro name
         let define = pipe2 (keyword "define" >>. ident) line
-                       (fun id line -> Renamer.addForbiddenName id; "define " + id + line)
+                       (fun id line -> forbiddenNames <- id :: forbiddenNames; "define " + id + line)
         pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s)
 
     let verbatim = parse {
@@ -344,10 +346,11 @@ module private ParseImpl =
 
     let parse = ws >>. toplevel .>> eof
 
-    let runParser streamName content =
+    let runParser streamName content : Ast.Shader =
+        forbiddenNames <- [ "if"; "in"; "do" ]
         let res = runParserOnString parse () streamName content
         match res with
-        | Success(r,_,_) -> r
+        | Success(r,_,_) -> { Ast.Shader.code = r; forbiddenNames = forbiddenNames }
         | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
 

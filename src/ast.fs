@@ -77,6 +77,10 @@ let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=ini
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
+type Shader = {
+    mutable code: TopLevel list
+    forbiddenNames: string list
+}
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting variable declarations along the way.

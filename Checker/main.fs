@@ -19,6 +19,7 @@ type CliArguments =
             | Skip_Performance_Tests _ -> "Skip the tests of performance"
 
 let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine()
+//let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine([|"--update-golden"|])
 
 let initOpenTK () =
     // OpenTK requires a GameWindow
@@ -83,7 +84,6 @@ let runCommand argv =
         use out = new StringWriter()
         // Reinitialize the global state :(
         Formatter.reset ()
-        Renamer.reset ()
         let codes = Array.map Main.minifyFile options.filenames
         Formatter.print out (Array.zip options.filenames codes) options.outputFormat
         out.ToString() |> cleanString
@@ -111,6 +111,7 @@ let testGolden () =
 
 [<EntryPoint>]
 let main argv =
+    //ignore(runCommand("--no-renaming --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag".Split([|' '|]))); exit 0
     initOpenTK()
     let mutable failures = testGolden()
     if not(options.init([|"--format"; "text"; "fake.frag"|])) then failwith "init failed"
