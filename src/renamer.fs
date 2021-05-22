@@ -13,31 +13,31 @@ module private RenamerImpl =
     [<NoComparison; NoEquality>]
     type Env = {
         // Map from an old variable name to the new one.
-        map: Map<Ident, Ident>
-        // Map from an old function name and function arity to the new name.
-        fct: Map<Ident, Map<int, Ident>>
-        // List of names that are still available.
-        reusable: Ident list
+        varRenames: Map<Ident, Ident>
+        // Map from a new function name and function arity to the old name.
+        funRenames: Map<Ident, Map<int, Ident>>
+        // List of names that are still available after having been used before.
+        reusableNames: Ident list
 
         // Used only for optimizeFrequency.
-        max: int
+        nextID: int
 
         // Whether multiple functions can have the same name (but different arity).
         allowOverloading: bool
-        // Function that decides a name (and returns the new Env).
-        newId: Env -> Ident -> (Env * string)
+        // Function that decides a name (and returns the modified Env).
+        newName: Env -> Ident -> (Env * string)
         // Function called when we enter a function, optionally updates the Env.
-        enterFunction: Env -> Stmt -> Env
+        onEnterFunction: Env -> Stmt -> Env
     }
     with
-        static member Create(reusable, allowOverloading, newId, enterFunction) = {
-            map = Map.empty
-            max = 0
-            fct = Map.empty
-            reusable = reusable
+        static member Create(reusableNames, allowOverloading, newName, onEnterFunction) = {
+            varRenames = Map.empty
+            nextID = 0
+            funRenames = Map.empty
+            reusableNames = reusableNames
             allowOverloading = allowOverloading
-            newId = newId
-            enterFunction = enterFunction
+            newName = newName
+            onEnterFunction = onEnterFunction
         }
 
 
@@ -124,53 +124,56 @@ module private RenamerImpl =
     let alwaysNewName (numberOfUsedIdents: int ref) env id =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
-        let env = {env with map = Map.add id newName env.map}
+        let env = {env with varRenames = Map.add id newName env.varRenames}
         env, newName
 
     // TODO: expose this renaming strategy
     let optimizeFrequency env id =
-        match env.reusable with
+        match env.reusableNames with
         | [] -> // create a new variable
-            let newName = sprintf "%04d" env.max
-            let env = {env with map = Map.add id newName env.map; max = env.max + 1}
+            let newName = sprintf "%04d" env.nextID
+            let env = {env with varRenames = Map.add id newName env.varRenames; nextID = env.nextID + 1}
             env, newName
         | e::l -> // reuse a variable name
-            {env with map = Map.add id e env.map; reusable = l}, e
+            {env with varRenames = Map.add id e env.varRenames; reusableNames = l}, e
 
     // FIXME: handle 2-letter names
     let optimizeContext contextTable env id =
         let cid = char (1000 + int id)
-        let newName = chooseIdent contextTable cid env.reusable
-        let l = env.reusable |> List.filter (fun x -> x.[0] <> newName.[0])
-        {env with map = Map.add id newName env.map; reusable = l}, newName
+        let newName = chooseIdent contextTable cid env.reusableNames
+        let l = env.reusableNames |> List.filter (fun x -> x.[0] <> newName.[0])
+        {env with varRenames = Map.add id newName env.varRenames; reusableNames = l}, newName
 
     let renFunction env nbArgs id =
         if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
         else
             // we're looking for a function name, already used before,
             // but not with the same number of arg, and which is not in options.noRenamingList.
-            let search (x: KeyValuePair<Ident,Map<int,Ident>>) =
+            let isFunctionNameAvailableForThisArity (x: KeyValuePair<Ident,Map<int,Ident>>) =
                 not (x.Value.ContainsKey nbArgs ||
                      List.exists ((=) x.Key) options.noRenamingList)
 
-            match env.fct |> Seq.tryFind search with
+            match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisArity with
             | Some res when env.allowOverloading ->
+                // overload an existing function name used with a different arity
                 let newName = res.Key
-                let fct = env.fct.Add (res.Key, res.Value.Add(nbArgs, id))
-                let env = {env with fct = fct; map = env.map.Add(id, newName)}
+                let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id))
+                let env = {env with funRenames = funRenames; varRenames = env.varRenames.Add(id, newName)}
                 env, newName
             | _ ->
-                let env, newName = env.newId env id
-                let env = {env with fct = env.fct.Add (newName, Map.empty.Add(nbArgs, id))}
+                // find a new function name
+                let env, newName = env.newName env id
+                let funRenames = env.funRenames.Add (newName, Map.empty.Add(nbArgs, id))
+                let env = {env with funRenames = funRenames}
                 env, newName
 
     let renFctName env (f: FunctionType) =
-        let ext = options.hlsl && f.semantics <> []
-        if (ext && options.preserveExternals) || options.preserveAllGlobals then
+        let isExternal = options.hlsl && f.semantics <> []
+        if (isExternal && options.preserveExternals) || options.preserveAllGlobals then
             env, f
         else
             let newEnv, newName = renFunction env (List.length f.args) f.fName
-            if ext then Formatter.export "F" f.fName newName
+            if isExternal then Formatter.export "F" f.fName newName
             newEnv, {f with fName = newName}
 
     let renList env fct li =
@@ -183,7 +186,7 @@ module private RenamerImpl =
 
     let rec renExpr env =
         let mapper _ = function
-            | Var v -> Var (defaultArg (Map.tryFind v env.map) v)
+            | Var v -> Var (defaultArg (Map.tryFind v env.varRenames) v)
             | e -> e
         mapExpr (mapEnv mapper id)
 
@@ -197,13 +200,13 @@ module private RenamerImpl =
                     | None -> false
                 if isTopLevel && (ext || options.hlsl || options.preserveAllGlobals) then
                     if options.preserveExternals then
-                        {env with reusable = List.filter ((<>)decl.name) env.reusable}, decl.name
+                        {env with reusableNames = List.filter ((<>)decl.name) env.reusableNames}, decl.name
                     else
-                        let env, newName = env.newId env decl.name
+                        let env, newName = env.newName env decl.name
                         Formatter.export "" decl.name newName // TODO: first argument seems now useless
                         env, newName
                 else
-                    env.newId env decl.name
+                    env.newName env decl.name
 
             let init = Option.map (renExpr env) decl.init
             let size = Option.map (renExpr env) decl.size
@@ -221,17 +224,17 @@ module private RenamerImpl =
                 if not (mEnv.vars.ContainsKey(id)) then d.Add id |> ignore
                 e
             | FunCall(Var id, li) as e ->
-                match env.fct.TryFind id with
+                match env.funRenames.TryFind id with
                 | Some m -> if not (m.ContainsKey li.Length) then d.Add id |> ignore
                 | None -> d.Add id |> ignore
                 e
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore
-        let set = HashSet(Seq.choose env.map.TryFind d)
-        let map, reusable = Map.partition (fun _ id -> set.Contains id) env.map
-        let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
-        let merge = [for i in reusable -> i.Value] @ env.reusable |> Seq.distinct |> Seq.toList // |> List.sort
-        {env with map=map; reusable=merge}
+        let set = HashSet(Seq.choose env.varRenames.TryFind d)
+        let varRenames, availableNames = Map.partition (fun _ id -> set.Contains id) env.varRenames
+        let availableNames = availableNames |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
+        let merged = [for i in availableNames -> i.Value] @ env.reusableNames |> Seq.distinct |> Seq.toList // |> List.sort
+        {env with varRenames=varRenames; reusableNames=merged}
 
     let rec renStmt env =
         let renOpt o = Option.map (renExpr env) o
@@ -277,7 +280,7 @@ module private RenamerImpl =
 
     let rec renTopLevelBody (env: Env) = function
         | Function(fct, body) ->
-            let env = env.enterFunction env body
+            let env = env.onEnterFunction env body
             let env, args = renList env (renDecl false) fct.args
             let _env, body = renStmt env body
             Function({fct with args=args}, body)
@@ -288,8 +291,8 @@ module private RenamerImpl =
     let rec doNotOverload env = function
         | [] -> env
         | name::li ->
-            let re = env.reusable |> List.filter (fun x -> x <> name)
-            let env = {env with map = Map.add name name env.map; reusable = re}
+            let names = env.reusableNames |> List.filter ((<>) name)
+            let env = {env with varRenames = Map.add name name env.varRenames; reusableNames = names}
             doNotOverload env li
 
     let renameTopLevel li env =
