@@ -43,7 +43,8 @@ let canBeCompiled content =
             false
 
 let doMinify content =
-    Printer.printText(Main.minify("input", content))
+    let arr = Main.minify [|"input", content|] |> Array.map (fun s -> s.code)
+    Printer.printText arr.[0]
 
 let testMinifyAndCompile (file: string) =
     try
@@ -84,7 +85,7 @@ let runCommand argv =
         use out = new StringWriter()
         // Reinitialize the global state :(
         Formatter.reset ()
-        let codes = Array.map Main.minifyFile options.filenames
+        let codes = Main.minifyFiles options.filenames |> Array.map (fun s -> s.code)
         Formatter.print out (Array.zip options.filenames codes) options.outputFormat
         out.ToString() |> cleanString
     if result = expected then

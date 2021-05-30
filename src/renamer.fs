@@ -340,4 +340,9 @@ module private RenamerImpl =
         let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
         renameTopLevel code env2
 
-let rename = RenamerImpl.rename
+    let renameAll shaders =
+        for shader in shaders do
+            shader.code <- rename shader
+        shaders
+
+let rename = RenamerImpl.renameAll
