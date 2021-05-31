@@ -85,8 +85,8 @@ let runCommand argv =
         use out = new StringWriter()
         // Reinitialize the global state :(
         Formatter.reset ()
-        let codes = Main.minifyFiles options.filenames |> Array.map (fun s -> s.code)
-        Formatter.print out (Array.zip options.filenames codes) options.outputFormat
+        let shaders = Main.minifyFiles options.filenames
+        Formatter.print out shaders options.outputFormat
         out.ToString() |> cleanString
     if result = expected then
         printfn "Success: %s" options.outputName
