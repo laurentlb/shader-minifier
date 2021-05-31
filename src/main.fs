@@ -42,10 +42,6 @@ let minifyFiles files =
     minify files
 
 let run files =
-    let fail (exn:exn) s =
-          printfn "%s" s;
-          printfn "%s" exn.StackTrace
-          1
     use out =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
         else new StreamWriter(options.outputName) :> TextWriter
@@ -53,9 +49,9 @@ let run files =
         let shaders = minifyFiles files
         Formatter.print out shaders options.outputFormat
         0
-    with
-        | Failure s as exn -> fail exn s
-        | exn -> fail exn exn.Message
+    with exn ->
+        printfn "%s" (exn.ToString())
+        1
 
 [<EntryPoint>]
 let main argv =
