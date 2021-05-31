@@ -50,8 +50,8 @@ let run files =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
         else new StreamWriter(options.outputName) :> TextWriter
     try
-        let codes = minifyFiles files |> Array.map (fun s -> s.code)
-        Formatter.print out (Array.zip files codes) options.outputFormat
+        let shaders = minifyFiles files
+        Formatter.print out shaders options.outputFormat
         0
     with
         | Failure s as exn -> fail exn s
