@@ -77,8 +77,8 @@ let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=ini
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
-// TODO: store the filename in Shader.
 type Shader = {
+    filename: string
     mutable code: TopLevel list
     forbiddenNames: string list
 }
