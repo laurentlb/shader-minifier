@@ -30,7 +30,7 @@ let minify (files: (string*string)[]) =
     if options.noRenaming then
         shaders
     else
-        let shaders = Renamer.rename shaders
+        Renamer.rename shaders
         vprintf "Identifiers renamed. "; printSize shaders
         shaders
 

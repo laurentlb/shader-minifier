@@ -43,15 +43,19 @@ module private RenamerImpl =
 
           (* Contextual renaming *)
 
+    let chars = [| 'a' .. 'z' |]
+    let mutable first = 0
+    let mutable second = 0
+
+    let reset () =
+        first <- 0
+        second <- 0
+
     // This function is called when all 1-char ident are already used
-    let make2LetterIdent =
-        let chars = [| 'a' .. 'z' |]
-        let mutable first = 0
-        let mutable second = 0
-        fun () ->
-            second <- second + 1
-            if second >= chars.Length then second <- 0; first <- first + 1
-            string(chars.[first]) + string(chars.[second])
+    let make2LetterIdent () =
+        second <- second + 1
+        if second >= chars.Length then second <- 0; first <- first + 1
+        string(chars.[first]) + string(chars.[second])
 
     let computeContextTable text =
         let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
@@ -321,28 +325,28 @@ module private RenamerImpl =
 
         Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
-    // TODO: rename should take a list of ASTs (not just one).
-    let rename shader =
+    let renameAll shaders =
+        reset ()
+
         // First rename: give a unique id to each variable.
-        let numberOfUsedIdents = ref 0
-        let env1 = Env.Create([], false, alwaysNewName numberOfUsedIdents, fun env _ -> env)
-        let code = renameTopLevel shader.code env1
+        let phase1 shader =
+            let numberOfUsedIdents = ref 0
+            let env1 = Env.Create([], false, alwaysNewName numberOfUsedIdents, fun env _ -> env)
+            let code = renameTopLevel shader.code env1
+            (shader, code)
+        let things = Array.map phase1 shaders
 
         // Get data about the context
-        let text = Printer.printText code
+        let text = Array.concat (Array.map (fun x -> (Printer.printText (snd x)).ToCharArray()) things)
         let identTable = computeFrequencyIdentTable text
         let contextTable = computeContextTable text
-        
-        // Second rename: use the context.
-        let idents = identTable |> Array.toList
-                  |> List.filter (fun x -> x.Length = 1)
-                  |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
-        let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
-        renameTopLevel code env2
 
-    let renameAll shaders =
-        for shader in shaders do
-            shader.code <- rename shader
-        shaders
+        // Second rename: use the context.
+        for (shader, code) in things do
+            let idents = identTable |> Array.toList
+                      |> List.filter (fun x -> x.Length = 1)
+                      |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
+            let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
+            shader.code <- renameTopLevel code env2
 
 let rename = RenamerImpl.renameAll
