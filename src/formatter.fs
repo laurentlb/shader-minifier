@@ -19,7 +19,7 @@ let export ty name (newName:string) =
     else
         exportedValues <- (ty, name, newName) :: exportedValues
 
-let private printHeader out data asAList =
+let private printHeader out (shaders: Ast.Shader[]) asAList =
     let fileName =
         if options.outputName = "" || options.outputName = "-" then "shader_code.h"
         else Path.GetFileName options.outputName
@@ -41,22 +41,22 @@ let private printHeader out data asAList =
             fprintfn out "# define %c_%s \"%s\"" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
 
     fprintfn out ""
-    for file : string, code in data do
-        let name = (Path.GetFileName file).Replace(".", "_")
+    for shader in shaders do
+        let name = (Path.GetFileName shader.filename).Replace(".", "_")
         if asAList then
-            fprintfn out "// %s" file
-            fprintfn out "\"%s\"," (Printer.print code)
+            fprintfn out "// %s" shader.filename
+            fprintfn out "\"%s\"," (Printer.print shader.code)
         else
-            fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (Printer.print code)
+            fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (Printer.print shader.code)
         fprintfn out ""
 
     if not asAList then fprintfn out "#endif // %s" macroName
 
-let private printNoHeader out data =
-    let str = [for _, code in data -> Printer.print code] |> String.concat "\n"
+let private printNoHeader out (shaders: Ast.Shader[]) =
+    let str = [for shader in shaders -> Printer.print shader.code] |> String.concat "\n"
     fprintf out "%s" str
 
-let private printJSHeader out data =
+let private printJSHeader out (shaders: Ast.Shader[]) =
     fprintfn out "/* File generated with Shader Minifier %s" Options.version
     fprintfn out " * http://www.ctrl-alt-test.fr"
     fprintfn out " */"
@@ -68,12 +68,12 @@ let private printJSHeader out data =
             fprintfn out "var %c_%s = \"%s\"" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
 
     fprintfn out ""
-    for file : string, code in data do
-        let name = (Path.GetFileName file).Replace(".", "_")
-        fprintfn out "var %s = `%s`" name (Printer.print code)
+    for shader in shaders do
+        let name = (Path.GetFileName shader.filename).Replace(".", "_")
+        fprintfn out "var %s = `%s`" name (Printer.print shader.code)
         fprintfn out ""
 
-let private printNasmHeader out data =
+let private printNasmHeader out (shaders: Ast.Shader[]) =
     fprintfn out "; File generated with Shader Minifier %s" Options.version
     fprintfn out "; http://www.ctrl-alt-test.fr"
 
@@ -84,14 +84,14 @@ let private printNasmHeader out data =
             fprintfn out "_%c_%s: db '%s', 0" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
 
     fprintfn out ""
-    for file : string, code in data do
-        let name = (Path.GetFileName file).Replace(".", "_")
-        fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (Printer.print code)
+    for shader in shaders do
+        let name = (Path.GetFileName shader.filename).Replace(".", "_")
+        fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (Printer.print shader.code)
         fprintfn out ""
 
-let print out data = function
-    | Options.Text -> printNoHeader out data
-    | Options.CHeader -> printHeader out data false
-    | Options.CList -> printHeader out data true
-    | Options.JS -> printJSHeader out data
-    | Options.Nasm -> printNasmHeader out data
+let print out shaders = function
+    | Options.Text -> printNoHeader out shaders
+    | Options.CHeader -> printHeader out shaders false
+    | Options.CList -> printHeader out shaders true
+    | Options.JS -> printJSHeader out shaders
+    | Options.Nasm -> printNasmHeader out shaders
