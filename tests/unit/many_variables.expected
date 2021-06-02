@@ -1,0 +1,17 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+
+// tests/unit/many_variables.frag
+"int t(float t,float o,float l,float f,float a,float n,float i,float r,float u,float e,float Z,float Y)"
+ "{"
+   "float X=t,W=o,V=l,U=f,T=a,S=n;"
+   "int R=1,Q=2,P=3,O=4,N=5,M=6,L=7,K=8;"
+   "float J=i,I=r,H=u,G=e,F=Z,E=Y;"
+   "int D=1,C=2,B=3,A=4,z=5,y=6,x=7,w=8;"
+   "float v=0.;"
+   "int s=1,q=2,p=3,m=4,k=5,j=6,h=7,g=8;"
+   "float d=0.;"
+   "int c=1,b=2,ab=3,ac=4,ad=5,ae=6,af=7,ag=8;"
+   "return K+w+g+ag;"
+ "}",
