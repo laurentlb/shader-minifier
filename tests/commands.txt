@@ -22,6 +22,7 @@
 
 # Tests with full renaming
 
+--format c-array -o tests/unit/many_variables.expected tests/unit/many_variables.frag
 --hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
 -o tests/real/lunaquatic.frag.expected tests/real/lunaquatic.frag
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
