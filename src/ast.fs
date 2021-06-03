@@ -77,10 +77,19 @@ let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=ini
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
+// An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
+// values). We need to provide accessors for the developer (e.g. create macros for C/C++).
+type ExportedName = {
+    ty: string  // "F" for hlsl functions, empty for vars
+    name: string
+    newName: string
+}
+       
 type Shader = {
     filename: string
     mutable code: TopLevel list
     forbiddenNames: string list
+    mutable exportedNames: ExportedName list
 }
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
@@ -116,7 +125,7 @@ let rec mapExpr env = function
     | e -> env.fExpr env e
 
 and mapDecl env (ty, vars) =
-    let aux env decl =
+    let aux env (decl: DeclElt) =
         let env = {env with vars = env.vars.Add(decl.name, (ty, decl.size, decl.init))}
         env, {decl with
                 size=Option.map (mapExpr env) decl.size

@@ -57,7 +57,7 @@ let private stripSpaces str =
     result.ToString()
 
 let private hasInlinePrefix (s:string) = s.StartsWith("i_")
-let private declsNotToInline d = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
+let private declsNotToInline (d: Ast.DeclElt list) = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
 
 let private bool = function
     | true -> Var "true" // Int (1, "")

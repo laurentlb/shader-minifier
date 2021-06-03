@@ -4,30 +4,6 @@ open System
 open System.IO
 open Options.Globals
 
-// An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
-// values). We need to provide accessors for the developer (e.g. create macros for C/C++).
-type ExportedName = {
-    ty: string  // "F" for hlsl functions, empty for vars
-    name: string
-    newName: string
-}
-
-// TODO: make exportedNames not global.
-let mutable private exportedNames = ([] : ExportedName list)
-
-let reset () = exportedNames <- []
-
-// TODO: move to Renamer.
-let export ty name (newName:string) =
-    if System.Char.IsDigit newName.[0] then
-        exportedNames <- {ty = ty; name = name; newName = newName} :: exportedNames
-    else
-        exportedNames <-
-            [for value in exportedNames ->
-                if ty = value.ty && name = value.newName then
-                    {value with ty = ty; name = value.name; newName = newName}
-                else value]
-
 let private printHeader out (shaders: Ast.Shader[]) asAList =
     let fileName =
         if options.outputName = "" || options.outputName = "-" then "shader_code.h"
@@ -42,7 +18,7 @@ let private printHeader out (shaders: Ast.Shader[]) asAList =
         fprintfn out "#ifndef %s" macroName
         fprintfn out "# define %s" macroName
 
-    for value in List.sort exportedNames do
+    for value in List.sort shaders.[0].exportedNames do
         // let newName = Printer.identTable.[int newName]
         if value.ty = "" then
             fprintfn out "# define VAR_%s \"%s\"" (value.name.ToUpper()) value.newName
@@ -70,7 +46,7 @@ let private printJSHeader out (shaders: Ast.Shader[]) =
     fprintfn out " * http://www.ctrl-alt-test.fr"
     fprintfn out " */"
 
-    for value in List.sort exportedNames do
+    for value in List.sort shaders.[0].exportedNames do
         if value.ty = "" then
             fprintfn out "var var_%s = \"%s\"" (value.name.ToUpper()) value.newName
         else
@@ -86,7 +62,7 @@ let private printNasmHeader out (shaders: Ast.Shader[]) =
     fprintfn out "; File generated with Shader Minifier %s" Options.version
     fprintfn out "; http://www.ctrl-alt-test.fr"
 
-    for value in List.sort exportedNames do
+    for value in List.sort shaders.[0].exportedNames do
         if value.ty = "" then
             fprintfn out "_var_%s: db '%s', 0" (value.name.ToUpper()) value.newName
         else
