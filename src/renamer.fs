@@ -120,7 +120,7 @@ module private RenamerImpl =
 
                                     (* ** Renamer ** *)
 
-    let alwaysNewName (numberOfUsedIdents: int ref) (env: Env) id =
+    let newTemporaryId (numberOfUsedIdents: int ref) (env: Env) id =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
         env.Rename(id, newName), newName
@@ -140,7 +140,7 @@ module private RenamerImpl =
         env
 
     let export env ty name (newName:string) =
-        if System.Char.IsDigit newName.[0] then
+        if isTemporaryId newName then
             env.exportedNames := {ty = ty; name = name; newName = newName} :: !env.exportedNames
         else
             env.exportedNames :=
@@ -321,7 +321,7 @@ module private RenamerImpl =
     let rename shader =
         // First rename: give a unique id to each variable.
         let numberOfUsedIdents = ref 0
-        let env1 = Env.Create([], false, alwaysNewName numberOfUsedIdents, fun env _ -> env)
+        let env1 = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
         let code = renameTopLevel shader.code env1
 
         // Get data about the context
