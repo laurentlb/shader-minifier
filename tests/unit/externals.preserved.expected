@@ -1,0 +1,25 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef EXTERNALS_PRESERVED_EXPECTED_
+# define EXTERNALS_PRESERVED_EXPECTED_
+
+const char *externals_frag =
+ "uniform int i,n,e;"
+ "int t()"
+ "{"
+   "int t,r,u,o,m;"
+   "return i;"
+ "}"
+ "int r()"
+ "{"
+   "int t,r,u,o,m;"
+   "return n;"
+ "}"
+ "int u()"
+ "{"
+   "int t,r,u,o,m;"
+   "return e;"
+ "}";
+
+#endif // EXTERNALS_PRESERVED_EXPECTED_

@@ -1,0 +1,28 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef EXTERNALS_EXPECTED_
+# define EXTERNALS_EXPECTED_
+# define VAR_E "t"
+# define VAR_I "i"
+# define VAR_N "n"
+
+const char *externals_frag =
+ "uniform int i,n,t;"
+ "int r()"
+ "{"
+   "int n,t,r,u,e;"
+   "return i;"
+ "}"
+ "int u()"
+ "{"
+   "int i,t,r,u,e;"
+   "return n;"
+ "}"
+ "int e()"
+ "{"
+   "int i,r,u,n,e;"
+   "return t;"
+ "}";
+
+#endif // EXTERNALS_EXPECTED_
