@@ -16,11 +16,8 @@ module private RenamerImpl =
         varRenames: Map<Ident, Ident>
         // Map from a new function name and function arity to the old name.
         funRenames: Map<Ident, Map<int, Ident>>
-        // List of names that are still available after having been used before.
-        reusableNames: Ident list
-
-        // Used only for optimizeFrequency.
-        nextID: int
+        // List of names that are still available.
+        availableNames: Ident list
 
         // Whether multiple functions can have the same name (but different arity).
         allowOverloading: bool
@@ -30,11 +27,10 @@ module private RenamerImpl =
         onEnterFunction: Env -> Stmt -> Env
     }
     with
-        static member Create(reusableNames, allowOverloading, newName, onEnterFunction) = {
+        static member Create(availableNames, allowOverloading, newName, onEnterFunction) = {
             varRenames = Map.empty
-            nextID = 0
             funRenames = Map.empty
-            reusableNames = reusableNames
+            availableNames = availableNames
             allowOverloading = allowOverloading
             newName = newName
             onEnterFunction = onEnterFunction
@@ -120,26 +116,16 @@ module private RenamerImpl =
         let env = {env with varRenames = Map.add id newName env.varRenames}
         env, newName
 
-    // TODO: expose this renaming strategy
-    let optimizeFrequency env id =
-        match env.reusableNames with
-        | [] -> // create a new variable
-            let newName = sprintf "%04d" env.nextID
-            let env = {env with varRenames = Map.add id newName env.varRenames; nextID = env.nextID + 1}
-            env, newName
-        | e::l -> // reuse a variable name
-            {env with varRenames = Map.add id e env.varRenames; reusableNames = l}, e
-
     // FIXME: handle 2-letter names
     let optimizeContext contextTable env id =
         let cid = char (1000 + int id)
-        let newName = chooseIdent contextTable cid env.reusableNames
-        let l = env.reusableNames |> List.filter (fun x -> x <> newName)
-        {env with varRenames = Map.add id newName env.varRenames; reusableNames = l}, newName
+        let newName = chooseIdent contextTable cid env.availableNames
+        let l = env.availableNames |> List.filter (fun x -> x <> newName)
+        {env with varRenames = Map.add id newName env.varRenames; availableNames = l}, newName
 
     let dontRename env name =
-        let names = env.reusableNames |> List.filter ((<>) name)
-        {env with varRenames = env.varRenames.Add(name, name); reusableNames = names}
+        let names = env.availableNames |> List.filter ((<>) name)
+        {env with varRenames = env.varRenames.Add(name, name); availableNames = names}
 
     let dontRenameList env names =
         let mutable env = env
@@ -233,10 +219,10 @@ module private RenamerImpl =
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore
         let set = HashSet(Seq.choose env.varRenames.TryFind d)
-        let varRenames, availableNames = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
-        let availableNames = availableNames |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
-        let merged = [for i in availableNames -> i.Value] @ env.reusableNames |> Seq.distinct |> Seq.toList
-        {env with varRenames=varRenames; reusableNames=merged}
+        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
+        let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
+        let allAvailable = [for i in reusable -> i.Value] @ env.availableNames |> Seq.distinct |> Seq.toList
+        {env with varRenames = varRenames; availableNames = allAvailable}
 
     let rec renStmt env =
         let renOpt o = Option.map (renExpr env) o
