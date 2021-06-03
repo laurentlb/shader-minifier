@@ -36,6 +36,13 @@ module private RenamerImpl =
             onEnterFunction = onEnterFunction
         }
 
+        member this.Rename(oldName, newName) =
+            let names = this.availableNames |> List.filter ((<>) newName)
+            {this with varRenames = this.varRenames.Add(oldName, newName); availableNames = names}
+
+        member this.Update(varRenames, funRenames, availableNames) = 
+            {this with varRenames = varRenames; funRenames = funRenames; availableNames = availableNames}
+
 
           (* Contextual renaming *)
 
@@ -74,18 +81,18 @@ module private RenamerImpl =
             for c, _ in prevs do
                 match contextTable.TryFind (c, firstLetter) with
                 | None -> ()
-                | Some occ2 -> score <- score + occ2 // * occ
+                | Some occ -> score <- score + occ
 
             for c, _ in nexts do
                 match contextTable.TryFind (lastLetter, c) with
                 | None -> ()
-                | Some occ2 -> score <- score + occ2 // * occ
+                | Some occ -> score <- score + occ
 
             if word.Length > 1 then
                 score <- score - 1000 // avoid long names if there are 1-letter names available
                 match contextTable.TryFind (firstLetter, lastLetter) with
                 | None -> ()
-                | Some occ2 -> score <- score + occ2
+                | Some occ -> score <- score + occ
 
             if score > fst best then best <- score, word
 
@@ -110,22 +117,19 @@ module private RenamerImpl =
 
                                     (* ** Renamer ** *)
 
-    let alwaysNewName (numberOfUsedIdents: int ref) env id =
+    let alwaysNewName (numberOfUsedIdents: int ref) (env: Env) id =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
-        let env = {env with varRenames = Map.add id newName env.varRenames}
-        env, newName
+        env.Rename(id, newName), newName
 
     // FIXME: handle 2-letter names
     let optimizeContext contextTable env id =
         let cid = char (1000 + int id)
         let newName = chooseIdent contextTable cid env.availableNames
-        let l = env.availableNames |> List.filter (fun x -> x <> newName)
-        {env with varRenames = Map.add id newName env.varRenames; availableNames = l}, newName
+        env.Rename(id, newName), newName
 
-    let dontRename env name =
-        let names = env.availableNames |> List.filter ((<>) name)
-        {env with varRenames = env.varRenames.Add(name, name); availableNames = names}
+    let dontRename (env: Env) name =
+        env.Rename(name, name)
 
     let dontRenameList env names =
         let mutable env = env
@@ -146,13 +150,13 @@ module private RenamerImpl =
                 // overload an existing function name used with a different arity
                 let newName = res.Key
                 let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id))
-                let env = {env with funRenames = funRenames; varRenames = env.varRenames.Add(id, newName)}
+                let env = env.Update(env.varRenames.Add(id, newName), funRenames, env.availableNames)
                 env, newName
             | _ ->
                 // find a new function name
                 let env, newName = env.newName env id
                 let funRenames = env.funRenames.Add (newName, Map.empty.Add(nbArgs, id))
-                let env = {env with funRenames = funRenames}
+                let env = env.Update(env.varRenames, funRenames, env.availableNames)
                 env, newName
 
     let renFctName env (f: FunctionType) =
@@ -222,7 +226,7 @@ module private RenamerImpl =
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
         let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
         let allAvailable = [for i in reusable -> i.Value] @ env.availableNames |> Seq.distinct |> Seq.toList
-        {env with varRenames = varRenames; availableNames = allAvailable}
+        env.Update(varRenames, env.funRenames, allAvailable)
 
     let rec renStmt env =
         let renOpt o = Option.map (renExpr env) o
