@@ -4,6 +4,9 @@ open Options.Globals
 
 type Ident = string
 
+// Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
+let isTemporaryId (ident: Ident) = System.Char.IsDigit ident.[0]
+
 [<RequireQualifiedAccess>]
 type JumpKeyword = Break | Continue | Discard | Return
 let jumpKeywordToString = function

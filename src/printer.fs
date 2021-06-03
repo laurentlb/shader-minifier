@@ -38,7 +38,7 @@ module private PrinterImpl =
 
     let idToS (id: string) =
         // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
-        if System.Char.IsDigit id.[0] then
+        if isTemporaryId id then
             string (char (1000 + int id))
         else id
 
