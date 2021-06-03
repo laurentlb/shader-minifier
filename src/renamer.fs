@@ -144,6 +144,15 @@ module private RenamerImpl =
         let l = env.reusableNames |> List.filter (fun x -> x.[0] <> newName.[0])
         {env with varRenames = Map.add id newName env.varRenames; reusableNames = l}, newName
 
+    let dontRename env name =
+        let names = env.reusableNames |> List.filter ((<>) name)
+        {env with varRenames = env.varRenames.Add(name, name); reusableNames = names}
+
+    let dontRenameList env names =
+        let mutable env = env
+        for name in names do env <- dontRename env name
+        env
+
     let renFunction env nbArgs id =
         if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
         else
@@ -200,7 +209,7 @@ module private RenamerImpl =
                     | None -> false
                 if isTopLevel && (ext || options.hlsl || options.preserveAllGlobals) then
                     if options.preserveExternals then
-                        {env with reusableNames = List.filter ((<>)decl.name) env.reusableNames}, decl.name
+                        dontRename env decl.name, decl.name
                     else
                         let env, newName = env.newName env decl.name
                         Formatter.export "" decl.name newName // TODO: first argument seems now useless
@@ -231,9 +240,9 @@ module private RenamerImpl =
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore
         let set = HashSet(Seq.choose env.varRenames.TryFind d)
-        let varRenames, availableNames = Map.partition (fun _ id -> set.Contains id) env.varRenames
+        let varRenames, availableNames = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
         let availableNames = availableNames |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
-        let merged = [for i in availableNames -> i.Value] @ env.reusableNames |> Seq.distinct |> Seq.toList // |> List.sort
+        let merged = [for i in availableNames -> i.Value] @ env.reusableNames |> Seq.distinct |> Seq.toList
         {env with varRenames=varRenames; reusableNames=merged}
 
     let rec renStmt env =
@@ -286,18 +295,9 @@ module private RenamerImpl =
             Function({fct with args=args}, body)
         | e -> e
 
-    // Remove the values from the env
-    // so that the functions are not overloaded
-    let rec doNotOverload env = function
-        | [] -> env
-        | name::li ->
-            let names = env.reusableNames |> List.filter ((<>) name)
-            let env = {env with varRenames = Map.add name name env.varRenames; reusableNames = names}
-            doNotOverload env li
-
     let renameTopLevel li env =
         // Rename top-level values first
-        let env = doNotOverload env options.noRenamingList
+        let env = dontRenameList env options.noRenamingList
         let env, li = renList env renTopLevelName li
 
         // Then, rename local values
