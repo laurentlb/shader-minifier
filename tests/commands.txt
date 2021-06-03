@@ -19,6 +19,7 @@
 --preserve-externals --format c-variables -o tests/real/mandelbulb.expected tests/real/mandelbulb.frag
 --preserve-all-globals --format c-variables -o tests/real/to_the_road_of_ribbon.expected tests/real/to_the_road_of_ribbon.frag
 --no-renaming-list rotatey --format c-variables -o tests/real/sult.expected tests/real/sult.frag
+--preserve-externals -o tests/unit/externals.preserved.expected tests/unit/externals.frag
 
 # Tests with full renaming
 
@@ -28,6 +29,8 @@
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
+-o tests/unit/function_overload.expected tests/unit/function_overload.frag
+-o tests/unit/externals.expected tests/unit/externals.frag
 
 # Optimization tests
 
