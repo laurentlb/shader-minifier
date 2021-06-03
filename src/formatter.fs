@@ -4,20 +4,29 @@ open System
 open System.IO
 open Options.Globals
 
-// Values to export in the C code (uniform and attribute values)
-let mutable private exportedValues = ([] : (string * string * string) list)
+// An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
+// values). We need to provide accessors for the developer (e.g. create macros for C/C++).
+type ExportedName = {
+    ty: string  // "F" for hlsl functions, empty for vars
+    name: string
+    newName: string
+}
 
-let reset () = exportedValues <- []
+// TODO: make exportedNames not global.
+let mutable private exportedNames = ([] : ExportedName list)
 
-// 'ty' is a prefix for the type of shader param. Nothing (VAR) for vars, "F" for hlsl functions
+let reset () = exportedNames <- []
+
+// TODO: move to Renamer.
 let export ty name (newName:string) =
-    if newName.[0] <> '0' then
-        exportedValues <- exportedValues |> List.map (fun (ty2, name2, newName2 as arg) ->
-            if ty = ty2 && name = newName2 then ty, name2, newName
-            else arg
-        )
+    if System.Char.IsDigit newName.[0] then
+        exportedNames <- {ty = ty; name = name; newName = newName} :: exportedNames
     else
-        exportedValues <- (ty, name, newName) :: exportedValues
+        exportedNames <-
+            [for value in exportedNames ->
+                if ty = value.ty && name = value.newName then
+                    {value with ty = ty; name = value.name; newName = newName}
+                else value]
 
 let private printHeader out (shaders: Ast.Shader[]) asAList =
     let fileName =
@@ -33,12 +42,12 @@ let private printHeader out (shaders: Ast.Shader[]) asAList =
         fprintfn out "#ifndef %s" macroName
         fprintfn out "# define %s" macroName
 
-    for ty, name, newName in List.sort exportedValues do
+    for value in List.sort exportedNames do
         // let newName = Printer.identTable.[int newName]
-        if ty = "" then
-            fprintfn out "# define VAR_%s \"%s\"" (name.ToUpper()) newName
+        if value.ty = "" then
+            fprintfn out "# define VAR_%s \"%s\"" (value.name.ToUpper()) value.newName
         else
-            fprintfn out "# define %c_%s \"%s\"" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
+            fprintfn out "# define %s_%s \"%s\"" value.ty (value.name.ToUpper()) value.newName
 
     fprintfn out ""
     for shader in shaders do
@@ -61,11 +70,11 @@ let private printJSHeader out (shaders: Ast.Shader[]) =
     fprintfn out " * http://www.ctrl-alt-test.fr"
     fprintfn out " */"
 
-    for ty, name, newName in List.sort exportedValues do
-        if ty = "" then
-            fprintfn out "var var_%s = \"%s\"" (name.ToUpper()) newName
+    for value in List.sort exportedNames do
+        if value.ty = "" then
+            fprintfn out "var var_%s = \"%s\"" (value.name.ToUpper()) value.newName
         else
-            fprintfn out "var %c_%s = \"%s\"" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
+            fprintfn out "var %s_%s = \"%s\"" value.ty (value.name.ToUpper()) value.newName
 
     fprintfn out ""
     for shader in shaders do
@@ -77,11 +86,11 @@ let private printNasmHeader out (shaders: Ast.Shader[]) =
     fprintfn out "; File generated with Shader Minifier %s" Options.version
     fprintfn out "; http://www.ctrl-alt-test.fr"
 
-    for ty, name, newName in List.sort exportedValues do
-        if ty = "" then
-            fprintfn out "_var_%s: db '%s', 0" (name.ToUpper()) newName
+    for value in List.sort exportedNames do
+        if value.ty = "" then
+            fprintfn out "_var_%s: db '%s', 0" (value.name.ToUpper()) value.newName
         else
-            fprintfn out "_%c_%s: db '%s', 0" (System.Char.ToUpper ty.[0]) (name.ToUpper()) newName
+            fprintfn out "_%s_%s: db '%s', 0" value.ty (value.name.ToUpper()) value.newName
 
     fprintfn out ""
     for shader in shaders do
