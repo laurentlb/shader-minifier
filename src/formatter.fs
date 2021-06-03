@@ -23,7 +23,7 @@ let export ty name (newName:string) =
         exportedNames <- {ty = ty; name = name; newName = newName} :: exportedNames
     else
         exportedNames <-
-            [for value in exportedNames do
+            [for value in exportedNames ->
                 if ty = value.ty && name = value.newName then
                     {value with ty = ty; name = value.name; newName = newName}
                 else value]
