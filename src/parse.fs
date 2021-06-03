@@ -350,7 +350,7 @@ module private ParseImpl =
         forbiddenNames <- [ "if"; "in"; "do" ]
         let res = runParserOnString parse () streamName content
         match res with
-        | Success(r,_,_) -> { Ast.Shader.filename = streamName; code = r; forbiddenNames = forbiddenNames }
+        | Success(r,_,_) -> { Ast.Shader.filename = streamName; code = r; forbiddenNames = forbiddenNames; exportedNames = [] }
         | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
 

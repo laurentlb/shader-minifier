@@ -19,6 +19,8 @@ module private RenamerImpl =
         // List of names that are still available.
         availableNames: Ident list
 
+        exportedNames: Ast.ExportedName list ref
+
         // Whether multiple functions can have the same name (but different arity).
         allowOverloading: bool
         // Function that decides a name (and returns the modified Env).
@@ -31,6 +33,7 @@ module private RenamerImpl =
             varRenames = Map.empty
             funRenames = Map.empty
             availableNames = availableNames
+            exportedNames = ref []
             allowOverloading = allowOverloading
             newName = newName
             onEnterFunction = onEnterFunction
@@ -136,6 +139,16 @@ module private RenamerImpl =
         for name in names do env <- dontRename env name
         env
 
+    let export env ty name (newName:string) =
+        if System.Char.IsDigit newName.[0] then
+            env.exportedNames := {ty = ty; name = name; newName = newName} :: !env.exportedNames
+        else
+            env.exportedNames :=
+                [for value in !env.exportedNames ->
+                    if ty = value.ty && name = value.newName then
+                        {value with ty = ty; name = value.name; newName = newName}
+                    else value]
+    
     let renFunction env nbArgs id =
         if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
         else
@@ -165,7 +178,7 @@ module private RenamerImpl =
             env, f
         else
             let newEnv, newName = renFunction env (List.length f.args) f.fName
-            if isExternal then Formatter.export "F" f.fName newName
+            if isExternal then export env "F" f.fName newName
             newEnv, {f with fName = newName}
 
     let renList env fct li =
@@ -183,7 +196,7 @@ module private RenamerImpl =
         mapExpr (mapEnv mapper id)
 
     let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
-        let aux env decl =
+        let aux env (decl: Ast.DeclElt) =
             let env, newName =
                 let ext =
                     match ty.typeQ with
@@ -195,7 +208,7 @@ module private RenamerImpl =
                         dontRename env decl.name, decl.name
                     else
                         let env, newName = env.newName env decl.name
-                        Formatter.export "" decl.name newName // TODO: first argument seems now useless
+                        export env "" decl.name newName
                         env, newName
                 else
                     env.newName env decl.name
@@ -320,11 +333,13 @@ module private RenamerImpl =
         let idents = identTable |> Array.toList
                   |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
         let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
-        renameTopLevel code env2
+        env2.exportedNames := !env1.exportedNames
+        shader.code <- renameTopLevel code env2
+        shader.exportedNames <- !env2.exportedNames
 
     let renameAll shaders =
         for shader in shaders do
-            shader.code <- rename shader
+            rename shader
         shaders
 
 let rename = RenamerImpl.renameAll

@@ -83,8 +83,6 @@ let runCommand argv =
            | _ -> reraise ()
     let result =
         use out = new StringWriter()
-        // Reinitialize the global state :(
-        Formatter.reset ()
         let shaders = Main.minifyFiles options.filenames
         Formatter.print out shaders options.outputFormat
         out.ToString() |> cleanString
