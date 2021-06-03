@@ -44,14 +44,19 @@ module private RenamerImpl =
           (* Contextual renaming *)
 
     // This function is called when all 1-char ident are already used
-    let make2LetterIdent =
+    let make2LetterIdent, reset2LetterIdent =
         let chars = [| 'a' .. 'z' |]
         let mutable first = 0
         let mutable second = 0
-        fun () ->
+        // make2LetterIdent
+        (fun () ->
             second <- second + 1
             if second >= chars.Length then second <- 0; first <- first + 1
-            string(chars.[first]) + string(chars.[second])
+            string(chars.[first]) + string(chars.[second])),
+        // reset2LetterIdent
+        (fun () ->
+            first <- 0
+            second <- 0)
 
     let computeContextTable text =
         let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
@@ -334,6 +339,7 @@ module private RenamerImpl =
         let contextTable = computeContextTable text
         
         // Second rename: use the context.
+        reset2LetterIdent ()
         let idents = identTable |> Array.toList
                   |> List.filter (fun x -> x.Length = 1)
                   |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
