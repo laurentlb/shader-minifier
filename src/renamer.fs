@@ -43,21 +43,6 @@ module private RenamerImpl =
 
           (* Contextual renaming *)
 
-    // This function is called when all 1-char ident are already used
-    let make2LetterIdent, reset2LetterIdent =
-        let chars = [| 'a' .. 'z' |]
-        let mutable first = 0
-        let mutable second = 0
-        // make2LetterIdent
-        (fun () ->
-            second <- second + 1
-            if second >= chars.Length then second <- 0; first <- first + 1
-            string(chars.[first]) + string(chars.[second])),
-        // reset2LetterIdent
-        (fun () ->
-            first <- 0
-            second <- 0)
-
     let computeContextTable text =
         let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
         Seq.pairwise text |> Seq.iter (fun (prev, next) ->
@@ -83,45 +68,48 @@ module private RenamerImpl =
             | None -> None
         )
 
-        let mutable best = -1000, "a"
-        for word in candidates do
-            let letter = (word : string).[0] // FIXME: use both first and last letter to compute stats
+        let mutable best = -10000, ""
+        // For performance, consider at most 25 candidates.
+        for word: string in candidates |> Seq.take 25 do
+            let firstLetter = word.[0]
+            let lastLetter = word.[word.Length - 1]
             let mutable score = 0
+
             for c, _ in prevs do
-                match contextTable.TryFind (c, letter) with
+                match contextTable.TryFind (c, firstLetter) with
                 | None -> ()
                 | Some occ2 -> score <- score + occ2 // * occ
 
             for c, _ in nexts do
-                match contextTable.TryFind (letter, c) with
+                match contextTable.TryFind (lastLetter, c) with
                 | None -> ()
                 | Some occ2 -> score <- score + occ2 // * occ
 
+            if word.Length > 1 then
+                score <- score - 1000 // avoid long names if there are 1-letter names available
+                match contextTable.TryFind (firstLetter, lastLetter) with
+                | None -> ()
+                | Some occ2 -> score <- score + occ2
+
             if score > fst best then best <- score, word
 
-              // failwith ("No 1-letter name available. " +
-              //           "Try to remove identifiers or reduce scope of variables. " +
-              //           "If it is a problem for you, please send a bug report!")
-        let bestS =
-            if fst best = -1000 then
-                make2LetterIdent ()
-            else
-                snd best
-
-        let bestC = bestS.[0] // FIXME: doesn't work when ident have more than 1-char!
+        let best = snd best
+        assert (best.Length > 0)
+        let firstLetter = best.[0]
+        let lastLetter = best.[best.Length - 1]
 
         // update table
         for c in allChars do
-          match contextTable.TryFind (c, ident), contextTable.TryFind (c, bestC) with
-          | None, _ -> ()
-          | Some n1, None -> contextTable.[(c, bestC)] <- n1
-          | Some n1, Some n2 -> contextTable.[(c, bestC)] <- n1 + n2
-          match contextTable.TryFind (ident, c), contextTable.TryFind (bestC, c) with
-          | None, _ -> ()
-          | Some n1, None -> contextTable.[(bestC, c)] <- n1
-          | Some n1, Some n2 -> contextTable.[(bestC, c)] <- n1 + n2
-
-        bestS
+            match contextTable.TryFind (c, ident), contextTable.TryFind (c, firstLetter) with
+            | None, _ -> ()
+            | Some n1, None -> contextTable.[(c, firstLetter)] <- n1
+            | Some n1, Some n2 -> contextTable.[(c, firstLetter)] <- n1 + n2
+            match contextTable.TryFind (ident, c), contextTable.TryFind (lastLetter, c) with
+            | None, _ -> ()
+            | Some n1, None -> contextTable.[(lastLetter, c)] <- n1
+            | Some n1, Some n2 -> contextTable.[(lastLetter, c)] <- n1 + n2
+          
+        best
 
 
                                     (* ** Renamer ** *)
@@ -146,7 +134,7 @@ module private RenamerImpl =
     let optimizeContext contextTable env id =
         let cid = char (1000 + int id)
         let newName = chooseIdent contextTable cid env.reusableNames
-        let l = env.reusableNames |> List.filter (fun x -> x.[0] <> newName.[0])
+        let l = env.reusableNames |> List.filter (fun x -> x <> newName)
         {env with varRenames = Map.add id newName env.varRenames; reusableNames = l}, newName
 
     let dontRename env name =
@@ -339,9 +327,7 @@ module private RenamerImpl =
         let contextTable = computeContextTable text
         
         // Second rename: use the context.
-        reset2LetterIdent ()
         let idents = identTable |> Array.toList
-                  |> List.filter (fun x -> x.Length = 1)
                   |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
         let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
         renameTopLevel code env2
