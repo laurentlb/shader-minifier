@@ -1,0 +1,30 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef MACROS_EXPECTED_
+# define MACROS_EXPECTED_
+
+const char *macros_frag =
+ "#define a$\n"
+ "#define b ($+)\n"
+ "#define c$+\n"
+ "#define d abc def+ghi ()\n"
+ "#define e$\n"
+ "#define f$\n"
+ "#define g$\n"
+ "#define h$\n"
+ "#define i$\n"
+ "#define j$\n"
+ "#define k$\n"
+ "#define l$\n"
+ "#define m$\n"
+ "#define n$\n"
+ "#define o$\n"
+ "#define p$\n"
+ "int t()"
+ "{"
+   "int t=1,r=2,u=3,Z=4,Y=5,X=6,W=7,V=8,U=9,T=10,S=11,R=12;"
+   "return t+Y+R;"
+ "}";
+
+#endif // MACROS_EXPECTED_
