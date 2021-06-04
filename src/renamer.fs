@@ -364,7 +364,7 @@ module private RenamerImpl =
         for shader in shaders do
             shader.code <- List.map (renTopLevelBody env) shader.code
 
-        exportedNames
+        !env.exportedNames
 
         let idents = identTable |> Array.toList
                    |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
