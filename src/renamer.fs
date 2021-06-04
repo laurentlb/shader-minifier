@@ -24,7 +24,7 @@ module private RenamerImpl =
         // Whether multiple functions can have the same name (but different arity).
         allowOverloading: bool
         // Function that decides a name (and returns the modified Env).
-        newName: Env -> Ident -> (Env * string)
+        newName: Env -> Ident -> (Env * Ident)
         // Function called when we enter a function, optionally updates the Env.
         onEnterFunction: Env -> Stmt -> Env
     }
@@ -76,7 +76,8 @@ module private RenamerImpl =
 
         let mutable best = -10000, ""
         // For performance, consider at most 25 candidates.
-        for word: string in candidates |> Seq.take 25 do
+        for id: Ident in candidates |> Seq.take 25 do
+            let word = id.name
             let firstLetter = word.[0]
             let lastLetter = word.[word.Length - 1]
             let mutable score = 0
@@ -114,20 +115,20 @@ module private RenamerImpl =
             | None, _ -> ()
             | Some n1, None -> contextTable.[(lastLetter, c)] <- n1
             | Some n1, Some n2 -> contextTable.[(lastLetter, c)] <- n1 + n2
-          
-        best
+
+        makeIdent best
 
 
                                     (* ** Renamer ** *)
 
     let newTemporaryId (numberOfUsedIdents: int ref) (env: Env) id =
         incr numberOfUsedIdents
-        let newName = sprintf "%04d" !numberOfUsedIdents
+        let newName = makeIdent (sprintf "%04d" !numberOfUsedIdents)
         env.Rename(id, newName), newName
 
     // FIXME: handle 2-letter names
-    let optimizeContext contextTable env id =
-        let cid = char (1000 + int id)
+    let optimizeContext contextTable env (id: Ident) =
+        let cid = char (1000 + int (id.name))
         let newName = chooseIdent contextTable cid env.availableNames
         env.Rename(id, newName), newName
 
@@ -139,7 +140,7 @@ module private RenamerImpl =
         for name in names do env <- dontRename env name
         env
 
-    let export env ty name (newName:string) =
+    let export env ty name (newName: Ident) =
         if isTemporaryId newName then
             env.exportedNames := {ty = ty; name = name; newName = newName} :: !env.exportedNames
         else
@@ -149,14 +150,14 @@ module private RenamerImpl =
                         {value with ty = ty; name = value.name; newName = newName}
                     else value]
     
-    let renFunction env nbArgs id =
-        if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
+    let renFunction env nbArgs (id: Ident): Env * Ident =
+        if List.exists ((=) id.name) options.noRenamingList then env, id // don't rename "main"
         else
             // we're looking for a function name, already used before,
             // but not with the same number of arg, and which is not in options.noRenamingList.
             let isFunctionNameAvailableForThisArity (x: KeyValuePair<Ident,Map<int,Ident>>) =
                 not (x.Value.ContainsKey nbArgs ||
-                     List.exists ((=) x.Key) options.noRenamingList)
+                     List.exists ((=) x.Key.name) options.noRenamingList)
 
             match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisArity with
             | Some res when env.allowOverloading ->
@@ -236,8 +237,8 @@ module private RenamerImpl =
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore
         let set = HashSet(Seq.choose env.varRenames.TryFind d)
-        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
-        let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
+        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.name.Length > 2 || set.Contains id)
+        let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value.name) options.noRenamingList))
         let allAvailable = [for i in reusable -> i.Value] @ env.availableNames |> Seq.distinct |> Seq.toList
         env.Update(varRenames, env.funRenames, allAvailable)
 
@@ -293,7 +294,7 @@ module private RenamerImpl =
 
     let renameTopLevel li env =
         // Rename top-level values first
-        let env = dontRenameList env options.noRenamingList
+        let env = dontRenameList env (options.noRenamingList |> List.map makeIdent)
         let env, li = renList env renTopLevelName li
 
         // Then, rename local values
@@ -315,7 +316,7 @@ module private RenamerImpl =
              yield c1.ToString() + c2.ToString()]
             |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
-        Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
+        Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers) |> Array.map makeIdent
 
     // TODO: rename should take a list of ASTs (not just one).
     let rename shader =
@@ -331,7 +332,7 @@ module private RenamerImpl =
         
         // Second rename: use the context.
         let idents = identTable |> Array.toList
-                  |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
+                  |> List.filter (fun x -> not <| List.exists ((=) x.name) shader.forbiddenNames)
         let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
         env2.exportedNames := !env1.exportedNames
         shader.code <- renameTopLevel code env2

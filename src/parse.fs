@@ -73,12 +73,12 @@ module private ParseImpl =
         let inner = sepBy exprNoComma (ch ',')
         between (ch '{') (ch '}') inner |>> Ast.VectorExp
 
-    let prim' = choice [vectorExp; parenExp; ident |>> Ast.Var; anyNumber]
+    let prim' = choice [vectorExp; parenExp; ident |>> (fun s -> Ast.Var (Ast.makeIdent s)); anyNumber]
                <?> "expression"
 
     let cast =
         let op = between (ch '(') (ch ')') ident
-        pipe2 op prim' (fun id e -> Ast.Cast(id, e)) <?> "cast"
+        pipe2 op prim' (fun id e -> Ast.Cast(Ast.makeIdent id, e)) <?> "cast"
 
     let prim = attempt cast <|> prim'
 
@@ -88,7 +88,7 @@ module private ParseImpl =
                 (fun args fct -> Ast.FunCall(fct, args))
     let subscript = between (ch '[') (ch ']') (opt expr) |>>
                     (fun ind arr -> Ast.Subscript(arr, ind))
-    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field))
+    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, Ast.makeIdent field))
     let post = (dot <|> subscript <|> fcall) <?> ""
 
     let simpleExpr = pipe2 prim (many post)
@@ -155,13 +155,13 @@ module private ParseImpl =
         let check ((_,l) as arg : Ast.Decl) =
             List.iter (fun (decl:Ast.DeclElt) ->
                 if decl.name <> Rewriter.renameField decl.name then
-                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name) l
+                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name.name) l
             arg
 
         let decls = many (declaration .>> ch ';' |>> check)
         let name = opt ident
         pipe2 name (between (ch '{') (ch '}') decls)
-            (fun n d -> Ast.TypeStruct(prefix, n, d))
+            (fun n d -> Ast.TypeStruct(prefix, Option.map Ast.makeIdent n, d))
 
     let structSpecifier = parse {
         let! str = keyword "struct"
@@ -232,7 +232,7 @@ module private ParseImpl =
     let singleDeclaration =
         let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
         pipe4 specifiedType ident (opt bracket) semantics
-            (fun ty id brack sem -> (ty, [Ast.makeDecl id brack sem None]))
+            (fun ty id brack sem -> (ty, [Ast.makeDecl (Ast.makeIdent id) brack sem None]))
 
     // GLSL, eg. "uniform Transform { ... };"
     let interfaceBlock = parse {

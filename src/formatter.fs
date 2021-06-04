@@ -21,9 +21,9 @@ let private printHeader out (shaders: Ast.Shader[]) asAList =
     for value in List.sort shaders.[0].exportedNames do
         // let newName = Printer.identTable.[int newName]
         if value.ty = "" then
-            fprintfn out "# define VAR_%s \"%s\"" (value.name.ToUpper()) value.newName
+            fprintfn out "# define VAR_%s \"%s\"" (value.name.name.ToUpper()) value.newName.name
         else
-            fprintfn out "# define %s_%s \"%s\"" value.ty (value.name.ToUpper()) value.newName
+            fprintfn out "# define %s_%s \"%s\"" value.ty (value.name.name.ToUpper()) value.newName.name
 
     fprintfn out ""
     for shader in shaders do
@@ -48,9 +48,9 @@ let private printJSHeader out (shaders: Ast.Shader[]) =
 
     for value in List.sort shaders.[0].exportedNames do
         if value.ty = "" then
-            fprintfn out "var var_%s = \"%s\"" (value.name.ToUpper()) value.newName
+            fprintfn out "var var_%s = \"%s\"" (value.name.name.ToUpper()) value.newName.name
         else
-            fprintfn out "var %s_%s = \"%s\"" value.ty (value.name.ToUpper()) value.newName
+            fprintfn out "var %s_%s = \"%s\"" value.ty (value.name.name.ToUpper()) value.newName.name
 
     fprintfn out ""
     for shader in shaders do
@@ -64,9 +64,9 @@ let private printNasmHeader out (shaders: Ast.Shader[]) =
 
     for value in List.sort shaders.[0].exportedNames do
         if value.ty = "" then
-            fprintfn out "_var_%s: db '%s', 0" (value.name.ToUpper()) value.newName
+            fprintfn out "_var_%s: db '%s', 0" (value.name.name.ToUpper()) value.newName.name
         else
-            fprintfn out "_%s_%s: db '%s', 0" value.ty (value.name.ToUpper()) value.newName
+            fprintfn out "_%s_%s: db '%s', 0" value.ty (value.name.name.ToUpper()) value.newName.name
 
     fprintfn out ""
     for shader in shaders do

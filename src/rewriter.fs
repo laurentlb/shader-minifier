@@ -8,18 +8,18 @@ open Options.Globals
                                 (* ** Rewrite tricks ** *)
 
 
-let renameField field =
+let renameField (field: Ident) =
     let transform = function
         | 'r' | 'x' | 's' -> options.canonicalFieldNames.[0]
         | 'g' | 'y' | 't' -> options.canonicalFieldNames.[1]
         | 'b' | 'z' | 'p' -> options.canonicalFieldNames.[2]
         | 'a' | 'w' | 'q' -> options.canonicalFieldNames.[3]
         | c -> failwithf "Internal error: transform('%c')" c
-    if Seq.forall (fun c -> Seq.exists ((=) c) "rgba") field ||
-        Seq.forall (fun c -> Seq.exists ((=) c) "xyzw") field ||
-        Seq.forall (fun c -> Seq.exists ((=) c) "stpq") field
+    if Seq.forall (fun c -> Seq.exists ((=) c) "rgba") field.name ||
+        Seq.forall (fun c -> Seq.exists ((=) c) "xyzw") field.name ||
+        Seq.forall (fun c -> Seq.exists ((=) c) "stpq") field.name
     then
-        field |> String.map transform
+        field.name |> String.map transform |> makeIdent
     else field
 
 // Remove useless spaces in macros
@@ -56,12 +56,11 @@ let private stripSpaces str =
     if macro then result.Append("\n") |> ignore
     result.ToString()
 
-let private hasInlinePrefix (s:string) = s.StartsWith("i_")
 let private declsNotToInline (d: Ast.DeclElt list) = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
 
 let private bool = function
-    | true -> Var "true" // Int (1, "")
-    | false -> Var "false" // Int (0, "")
+    | true -> Var (makeIdent "true") // Int (1, "")
+    | false -> Var (makeIdent "false") // Int (0, "")
 
 let rec private simplifyExpr env = function
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
@@ -257,12 +256,12 @@ let private computeDependencies block =
             e
         | e -> e
     mapStmt (mapEnv collect id) block |> ignore
-    d |> Seq.toList
+    d |> Seq.map (fun id -> id.name) |> Seq.toList
 
 // This function assumes that functions are NOT overloaded
 let private computeAllDependencies code =
     let fct = code |> List.choose (function
-        | Function(fct, block) as f -> Some (fct.fName, block, f)
+        | Function(fct, block) as f -> Some (fct.fName.name, block, f)
         | _ -> None)
     let deps = fct |> List.map (fun (name, block, f) ->
         let dep = computeDependencies block

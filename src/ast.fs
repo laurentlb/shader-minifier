@@ -2,10 +2,12 @@
 
 open Options.Globals
 
-type Ident = string
+type Ident = { name: string }
+let makeIdent name = { Ident.name = name }
 
+let hasInlinePrefix (s:Ident) = s.name.StartsWith("i_")
 // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
-let isTemporaryId (ident: Ident) = System.Char.IsDigit ident.[0]
+let isTemporaryId (ident: Ident) = System.Char.IsDigit ident.name.[0]
 
 [<RequireQualifiedAccess>]
 type JumpKeyword = Break | Continue | Discard | Return
@@ -84,8 +86,8 @@ let makeFunctionType ty name args sem =
 // values). We need to provide accessors for the developer (e.g. create macros for C/C++).
 type ExportedName = {
     ty: string  // "F" for hlsl functions, empty for vars
-    name: string
-    newName: string
+    name: Ident
+    newName: Ident
 }
        
 type Shader = {
