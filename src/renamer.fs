@@ -319,6 +319,12 @@ module private RenamerImpl =
             env <- newEnv
             shader.code <- code
 
+        for shader in shaders do
+            shader.code <- List.map (renTopLevelBody env) shader.code
+        !env.exportedNames
+
+    let rename shaders =
+        let mutable exportedNames = assignTemporaryIds shaders
         // Rename local variables.
         for shader in shaders do
             shader.code <- List.map (renTopLevelBody env) shader.code
@@ -340,6 +346,26 @@ module private RenamerImpl =
 
         // TODO: combine from all shaders
         let forbiddenNames = (Seq.head shaders).forbiddenNames
+
+        let idents = identTable |> Array.toList
+                   |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+
+        let mutable env = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
+        env <- dontRenameList env options.noRenamingList
+        env.exportedNames := exportedNames
+
+        // First, rename top-level values.
+        for shader in shaders do
+            let newEnv, code = renList env renTopLevelName shader.code
+            env <- newEnv
+            shader.code <- code
+
+        // Rename local variables.
+        for shader in shaders do
+            shader.code <- List.map (renTopLevelBody env) shader.code
+            exportedNames <- !env.exportedNames
+
+        exportedNames
 
         let idents = identTable |> Array.toList
                    |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
