@@ -351,6 +351,6 @@ module private RenamerImpl =
         for shader in shaders do
             shader.code <- List.map (renTopLevelBody env) shader.code
 
-        exportedNames
+        !env.exportedNames
 
 let rename = RenamerImpl.rename
