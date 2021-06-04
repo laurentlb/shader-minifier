@@ -1,0 +1,72 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef INOUT_EXPECTED_
+# define INOUT_EXPECTED_
+# define VAR_AMBIENTLIGHT "0032"
+# define VAR_DIFFUSECOLOR "0033"
+# define VAR_EMISSIVECOLOR "0034"
+# define VAR_FRAGMENTCOLOR "0038"
+# define VAR_FRAGMENTCOLOR "f"
+# define VAR_MEDIUMDENSITY "0031"
+# define VAR_NORMAL "0036"
+# define VAR_NORMAL "m"
+# define VAR_SPECULARCOLOR "0035"
+# define VAR_TEXTURE0 "0030"
+# define VAR_TEXTURE0 "v"
+# define VAR_VIEWVEC "0037"
+# define VAR_VIEWVEC "d"
+
+const char *inout_frag =
+ "#version 330\n"
+ "uniform samplerCube v;"
+ "in vec3 m,d;"
+ "out vec4 f;"
+ "void main()"
+ "{"
+   "vec3 c=normalize(d),r=normalize(m),p=vec3(.1,.2,.3),e=vec3(.5,.5,.5);"
+   "float s=1.5;"
+   "vec3 z=texture(v,reflect(-c,r)).xyz,o=texture(v,refract(-c,r,1./s)).xyz,t=mix(p*o,z,.1);"
+   "f=vec4(t,1.);"
+ "}"
+ "vec3 e(vec3 v,vec3 m,vec3 r)"
+ "{"
+   "float s=1.-clamp(dot(m,r),0.,1.);"
+   "return s*s*s*s*s*(1.-v)+v;"
+ "}"
+ "vec3 e(vec3 v,vec3 m,vec3 r,vec3 n,vec3 d,float s)"
+ "{"
+   "vec3 c=normalize(v+m);"
+   "float f=1.+2048.*(1.-s)*(1.-s);"
+   "vec3 z=n,o=vec3(pow(clamp(dot(c,r),0.,1.),f)*(f+4.)/8.),t=e(d,v,c);"
+   "return mix(z,o,t);"
+ "}";
+
+const char *inout2_frag =
+ "#version 330\n"
+ "uniform samplerCube v;"
+ "uniform float m;"
+ "uniform vec3 r,n,t,f;"
+ "in vec3 d,c;"
+ "out vec4 s;"
+ "vec3 e(vec3 v,vec3 m,vec3 r)"
+ "{"
+   "float s=1.-clamp(dot(m,r),0.,1.);"
+   "return s*s*s*s*s*(1.-v)+v;"
+ "}"
+ "void main()"
+ "{"
+   "vec3 v=normalize(c),o=normalize(d),p=n,z=f;"
+   "float m=.5;"
+   "vec3 e=t+mix(p*r,r,m);"
+   "s=vec4(e,1.);"
+ "}"
+ "vec3 e(vec3 v,vec3 m,vec3 r,vec3 n,vec3 d,float s)"
+ "{"
+   "vec3 c=normalize(v+m);"
+   "float f=1.+2048.*(1.-s)*(1.-s);"
+   "vec3 z=n,o=vec3(pow(clamp(dot(c,r),0.,1.),f)*(f+4.)/8.),t=e(d,v,c);"
+   "return mix(z,o,t);"
+ "}";
+
+#endif // INOUT_EXPECTED_
