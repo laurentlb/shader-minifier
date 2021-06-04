@@ -106,9 +106,6 @@ type Options() =
         if this.filenames.Length = 0 then
             printfn "%s" (argParser.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
             false
-        elif this.filenames.Length > 1 && not this.preserveExternals then
-            printfn "When compressing multiple files, you must use the --preserve-externals option."
-            false
         else
             true
 

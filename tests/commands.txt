@@ -21,6 +21,10 @@
 --no-renaming-list rotatey --format c-variables -o tests/real/sult.expected tests/real/sult.frag
 --preserve-externals -o tests/unit/externals.preserved.expected tests/unit/externals.frag
 
+# Multifile tests
+
+--format c-variables -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
+
 # Tests with full renaming
 
 --format c-array -o tests/unit/many_variables.expected tests/unit/many_variables.frag
