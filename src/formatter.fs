@@ -4,7 +4,7 @@ open System
 open System.IO
 open Options.Globals
 
-let private printHeader out (shaders: Ast.Shader[]) asAList =
+let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
     let fileName =
         if options.outputName = "" || options.outputName = "-" then "shader_code.h"
         else Path.GetFileName options.outputName
@@ -18,7 +18,7 @@ let private printHeader out (shaders: Ast.Shader[]) asAList =
         fprintfn out "#ifndef %s" macroName
         fprintfn out "# define %s" macroName
 
-    for value in List.sort shaders.[0].exportedNames do
+    for value: Ast.ExportedName in List.sort exportedNames do
         // let newName = Printer.identTable.[int newName]
         if value.ty = "" then
             fprintfn out "# define VAR_%s \"%s\"" (value.name.ToUpper()) value.newName
@@ -41,12 +41,12 @@ let private printNoHeader out (shaders: Ast.Shader[]) =
     let str = [for shader in shaders -> Printer.print shader.code] |> String.concat "\n"
     fprintf out "%s" str
 
-let private printJSHeader out (shaders: Ast.Shader[]) =
+let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out "/* File generated with Shader Minifier %s" Options.version
     fprintfn out " * http://www.ctrl-alt-test.fr"
     fprintfn out " */"
 
-    for value in List.sort shaders.[0].exportedNames do
+    for value: Ast.ExportedName in List.sort exportedNames do
         if value.ty = "" then
             fprintfn out "var var_%s = \"%s\"" (value.name.ToUpper()) value.newName
         else
@@ -58,11 +58,11 @@ let private printJSHeader out (shaders: Ast.Shader[]) =
         fprintfn out "var %s = `%s`" name (Printer.print shader.code)
         fprintfn out ""
 
-let private printNasmHeader out (shaders: Ast.Shader[]) =
+let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out "; File generated with Shader Minifier %s" Options.version
     fprintfn out "; http://www.ctrl-alt-test.fr"
 
-    for value in List.sort shaders.[0].exportedNames do
+    for value: Ast.ExportedName in List.sort exportedNames do
         if value.ty = "" then
             fprintfn out "_var_%s: db '%s', 0" (value.name.ToUpper()) value.newName
         else
@@ -74,9 +74,9 @@ let private printNasmHeader out (shaders: Ast.Shader[]) =
         fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (Printer.print shader.code)
         fprintfn out ""
 
-let print out shaders = function
+let print out shaders exportedNames = function
     | Options.Text -> printNoHeader out shaders
-    | Options.CHeader -> printHeader out shaders false
-    | Options.CList -> printHeader out shaders true
-    | Options.JS -> printJSHeader out shaders
-    | Options.Nasm -> printNasmHeader out shaders
+    | Options.CHeader -> printHeader out shaders false exportedNames
+    | Options.CList -> printHeader out shaders true exportedNames
+    | Options.JS -> printJSHeader out shaders exportedNames
+    | Options.Nasm -> printNasmHeader out shaders exportedNames

@@ -43,7 +43,7 @@ let canBeCompiled content =
             false
 
 let doMinify content =
-    let arr = Main.minify [|"input", content|] |> Array.map (fun s -> s.code)
+    let arr = Main.minify [|"input", content|] |> fst |> Array.map (fun s -> s.code)
     Printer.printText arr.[0]
 
 let testMinifyAndCompile (file: string) =
@@ -83,8 +83,8 @@ let runCommand argv =
            | _ -> reraise ()
     let result =
         use out = new StringWriter()
-        let shaders = Main.minifyFiles options.filenames
-        Formatter.print out shaders options.outputFormat
+        let shaders, exportedNames = Main.minifyFiles options.filenames
+        Formatter.print out shaders exportedNames options.outputFormat
         out.ToString() |> cleanString
     if result = expected then
         printfn "Success: %s" options.outputName
