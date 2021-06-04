@@ -148,7 +148,7 @@ module private RenamerImpl =
                     if ty = value.ty && name = value.newName then
                         {value with ty = ty; name = value.name; newName = newName}
                     else value]
-    
+
     let renFunction env nbArgs id =
         if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
         else
@@ -196,7 +196,7 @@ module private RenamerImpl =
         mapExpr (mapEnv mapper id)
 
     let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
-        let aux env (decl: Ast.DeclElt) =
+        let aux (env: Env) (decl: Ast.DeclElt) =
             let env, newName =
                 let ext =
                     match ty.typeQ with
@@ -206,6 +206,8 @@ module private RenamerImpl =
                 if isTopLevel && (ext || options.hlsl || options.preserveAllGlobals) then
                     if options.preserveExternals then
                         dontRename env decl.name, decl.name
+                    elif env.varRenames.ContainsKey(decl.name) then
+                        env, env.varRenames.TryFind(decl.name) |> Option.get
                     else
                         let env, newName = env.newName env decl.name
                         export env "" decl.name newName
@@ -291,13 +293,6 @@ module private RenamerImpl =
             Function({fct with args=args}, body)
         | e -> e
 
-    let renameTopLevel li env =
-        // Rename top-level values first
-        let env, li = renList env renTopLevelName li
-
-        // Then, rename local values
-        List.map (renTopLevelBody env) li
-
     // Compute table of variables names, based on frequency
     let computeFrequencyIdentTable text =
         let charCounts = Seq.countBy id text |> dict
@@ -316,39 +311,46 @@ module private RenamerImpl =
 
         Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
-    let rename shaders =
-        // First rename: give a unique id to each variable.
-        // TODO: newTemporaryId should give the same ID to exported values of the same name
-        // (e.g. when two files declare the same uniform)
+    let assignTemporaryIds shaders =
         let numberOfUsedIdents = ref 0
-        let env1 = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
+        let mutable env = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
         for shader in shaders do
-            shader.code <- renameTopLevel shader.code env1
+            let newEnv, code = renList env renTopLevelName shader.code
+            env <- newEnv
+            shader.code <- code
+
+        for shader in shaders do
+            shader.code <- List.map (renTopLevelBody env) shader.code
+        !env.exportedNames
+
+    let rename shaders =
+        let mutable exportedNames = assignTemporaryIds shaders
 
         // Get data about the context
         let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
         let identTable = computeFrequencyIdentTable text
         let contextTable = computeContextTable text
 
-        let mutable exportedNames = !env1.exportedNames
+        // TODO: combine from all shaders
+        let forbiddenNames = (Seq.head shaders).forbiddenNames
 
-        // Second rename: use the context.
-        // TODO: first go through all top-level declarations in all files. Then, visit the
-        // function bodies. In other words, split renameTopLevel in two.
+        let idents = identTable |> Array.toList
+                   |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+
+        let mutable env = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
+        env <- dontRenameList env options.noRenamingList
+        env.exportedNames := exportedNames
+
+        // First, rename top-level values.
         for shader in shaders do
-            // TODO: combine forbiddenNames. If a name is forbidden in a file, it shouldn't be used in
-            // exported values of another file.
-            let idents = identTable |> Array.toList
-                       |> List.filter (fun x -> not <| List.exists ((=) x) shader.forbiddenNames)
-            // TODO: optimizeContext should give the same name to exported values of the same name
-            // (e.g. when two files declare the same uniform)
-            let env2 = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
-            let env2 = dontRenameList env2 options.noRenamingList
+            let newEnv, code = renList env renTopLevelName shader.code
+            env <- newEnv
+            shader.code <- code
 
-            // TODO: merge the exportedNames, make sure they don't have duplicates.
-            env2.exportedNames := exportedNames
-            shader.code <- renameTopLevel shader.code env2
-            exportedNames <- !env2.exportedNames
+        // Rename local variables.
+        for shader in shaders do
+            shader.code <- List.map (renTopLevelBody env) shader.code
+            exportedNames <- !env.exportedNames
 
         exportedNames
 
