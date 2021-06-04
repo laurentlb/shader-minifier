@@ -349,7 +349,5 @@ module private RenamerImpl =
             shader.code <- renameTopLevel shader.code env2
             shader.exportedNames <- !env2.exportedNames
 
-        shaders
-
 
 let rename = RenamerImpl.rename

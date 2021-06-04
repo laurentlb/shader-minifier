@@ -27,12 +27,10 @@ let minify (files: (string*string)[]) =
         shader.code <- Rewriter.simplify shader.code
     vprintf "Rewrite tricks applied. "; printSize shaders
 
-    if options.noRenaming then
-        shaders
-    else
-        let shaders = Renamer.rename shaders
+    if not options.noRenaming then
+        Renamer.rename shaders
         vprintf "Identifiers renamed. "; printSize shaders
-        shaders
+    shaders
 
 let minifyFiles files =
     let files = files |> Array.map (fun f ->
