@@ -330,6 +330,8 @@ module private RenamerImpl =
         let identTable = computeFrequencyIdentTable text
         let contextTable = computeContextTable text
 
+        let mutable exportedNames = !env1.exportedNames
+
         // Second rename: use the context.
         // TODO: first go through all top-level declarations in all files. Then, visit the
         // function bodies. In other words, split renameTopLevel in two.
@@ -344,10 +346,10 @@ module private RenamerImpl =
             let env2 = dontRenameList env2 options.noRenamingList
 
             // TODO: merge the exportedNames, make sure they don't have duplicates.
-            env2.exportedNames := !env1.exportedNames
-
+            env2.exportedNames := exportedNames
             shader.code <- renameTopLevel shader.code env2
-            shader.exportedNames <- !env2.exportedNames
+            exportedNames <- !env2.exportedNames
 
+        exportedNames
 
 let rename = RenamerImpl.rename

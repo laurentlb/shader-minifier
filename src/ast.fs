@@ -92,7 +92,6 @@ type Shader = {
     filename: string
     mutable code: TopLevel list
     forbiddenNames: string list
-    mutable exportedNames: ExportedName list
 }
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,

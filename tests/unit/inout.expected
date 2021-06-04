@@ -3,18 +3,18 @@
  */
 #ifndef INOUT_EXPECTED_
 # define INOUT_EXPECTED_
-# define VAR_AMBIENTLIGHT "0032"
-# define VAR_DIFFUSECOLOR "0033"
-# define VAR_EMISSIVECOLOR "0034"
-# define VAR_FRAGMENTCOLOR "0038"
+# define VAR_AMBIENTLIGHT "r"
+# define VAR_DIFFUSECOLOR "n"
+# define VAR_EMISSIVECOLOR "t"
 # define VAR_FRAGMENTCOLOR "f"
-# define VAR_MEDIUMDENSITY "0031"
-# define VAR_NORMAL "0036"
+# define VAR_FRAGMENTCOLOR "s"
+# define VAR_MEDIUMDENSITY "m"
+# define VAR_NORMAL "d"
 # define VAR_NORMAL "m"
-# define VAR_SPECULARCOLOR "0035"
-# define VAR_TEXTURE0 "0030"
+# define VAR_SPECULARCOLOR "f"
 # define VAR_TEXTURE0 "v"
-# define VAR_VIEWVEC "0037"
+# define VAR_TEXTURE0 "v"
+# define VAR_VIEWVEC "c"
 # define VAR_VIEWVEC "d"
 
 const char *inout_frag =

@@ -27,10 +27,12 @@ let minify (files: (string*string)[]) =
         shader.code <- Rewriter.simplify shader.code
     vprintf "Rewrite tricks applied. "; printSize shaders
 
-    if not options.noRenaming then
-        Renamer.rename shaders
+    if options.noRenaming then
+        shaders, []
+    else
+        let exportedNames = Renamer.rename shaders
         vprintf "Identifiers renamed. "; printSize shaders
-    shaders
+        shaders, exportedNames
 
 let minifyFiles files =
     let files = files |> Array.map (fun f ->
@@ -44,8 +46,8 @@ let run files =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
         else new StreamWriter(options.outputName) :> TextWriter
     try
-        let shaders = minifyFiles files
-        Formatter.print out shaders options.outputFormat
+        let shaders, exportedNames = minifyFiles files
+        Formatter.print out shaders exportedNames options.outputFormat
         0
     with exn ->
         printfn "%s" (exn.ToString())
