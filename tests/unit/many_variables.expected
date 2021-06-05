@@ -12,6 +12,6 @@
    "float v=0.;"
    "int s=1,q=2,p=3,m=4,k=5,j=6,h=7,g=8;"
    "float d=0.;"
-   "int c=1,b=2,fl=3,at=4,lo=5,oa=6,ft=7,fa=8;"
-   "return K+w+g+fa;"
+   "int c=1,b=2,at=3,ab=4,ac=5,ad=6,ag=7,ah=8;"
+   "return K+w+g+ah;"
  "}",

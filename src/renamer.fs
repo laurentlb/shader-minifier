@@ -143,7 +143,7 @@ module private RenamerImpl =
         env.Rename(id, newName)
 
     // A renaming strategy that's bijective: if (and only if) two variables had the same old name,
-    // they will the same new name.
+    // they will get the same new name.
     // This leads to a slightly longer output (because lots of names are created, most of them 
     // have two chars). However, this preserves similarities from the input code, so that can be
     // compression-friendly.
