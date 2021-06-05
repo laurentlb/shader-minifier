@@ -24,7 +24,7 @@ module private RenamerImpl =
         // Whether multiple functions can have the same name (but different arity).
         allowOverloading: bool
         // Function that decides a name (and returns the modified Env).
-        newName: Env -> Ident -> (Env * Ident)
+        newName: Env -> Ident -> Env
         // Function called when we enter a function, optionally updates the Env.
         onEnterFunction: Env -> Stmt -> Env
     }
@@ -39,9 +39,11 @@ module private RenamerImpl =
             onEnterFunction = onEnterFunction
         }
 
-        member this.Rename(oldName, newName) =
+        member this.Rename(id: Ident, newName) =
+            let prevName = id.Name
             let names = this.availableNames |> List.filter ((<>) newName)
-            {this with varRenames = this.varRenames.Add(oldName, newName); availableNames = names}
+            id.Rename(newName)
+            {this with varRenames = this.varRenames.Add(prevName, newName); availableNames = names}
 
         member this.Update(varRenames, funRenames, availableNames) = 
             {this with varRenames = varRenames; funRenames = funRenames; availableNames = availableNames}
@@ -123,7 +125,7 @@ module private RenamerImpl =
     let newUniqueId (numberOfUsedIdents: int ref) (env: Env) (id: Ident) =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
-        env.Rename(id.Name, newName), Ident(newName)
+        env.Rename(id, newName)
 
     // A renaming strategy that considers how a variable is used. It optimizes the frequency of
     // adjacent characters, which can make the output more compression-friendly. This is best
@@ -131,32 +133,26 @@ module private RenamerImpl =
     let optimizeContext contextTable env (id: Ident) =
         let cid = char (1000 + int id.Name)
         let newName = chooseIdent contextTable cid env.availableNames
-        env.Rename(id.Name, newName), Ident(newName)
+        env.Rename(id, newName)
 
     // A renaming strategy that always picks the first available name. This optimizes the
     // frequency of a few variables. It also ensures that two identical functions will use the
     // same names for local variables, which can be very important in some multifile scenarios.
     let optimizeNameFrequency (env: Env) (id: Ident) =
         let newName = env.availableNames.Head
-        env.Rename(id.Name, newName), Ident(newName)
+        env.Rename(id, newName)
 
-    let dontRename (env: Env) name =
-        env.Rename(name, name)
+    let dontRename (env: Env) (id: Ident) =
+        env.Rename(id, id.Name)
 
     let dontRenameList env names =
         let mutable env = env
-        for name in names do env <- dontRename env name
+        for name in names do env <- dontRename env (Ident name)
         env
 
-    let export env ty name (newName: Ident) =
-        if isUniqueId newName then
-            env.exportedNames := {ty = ty; name = name; newName = newName.Name} :: !env.exportedNames
-        else
-            env.exportedNames :=
-                [for value in !env.exportedNames ->
-                    if ty = value.ty && name = value.newName then
-                        {value with ty = ty; name = value.name; newName = newName.Name}
-                    else value]
+    let export env ty (id: Ident) =
+        if not (isUniqueId id) then
+            env.exportedNames := {ty = ty; name = id.OldName; newName = id.Name} :: !env.exportedNames
 
     let renFunction env nbArgs (id: Ident) =
         // we're looking for a function name, already used before,
@@ -171,13 +167,15 @@ module private RenamerImpl =
             let newName = res.Key
             let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id.Name))
             let env = env.Update(env.varRenames.Add(id.Name, newName), funRenames, env.availableNames)
-            env, Ident(newName)
+            id.Rename(newName)
+            env
         | _ ->
             // find a new function name
-            let env, newName = env.newName env id
-            let funRenames = env.funRenames.Add (newName.Name, Map.empty.Add(nbArgs, id.Name))
+            let prevName = id.Name
+            let env = env.newName env id
+            let funRenames = env.funRenames.Add (id.Name, Map.empty.Add(nbArgs, prevName))
             let env = env.Update(env.varRenames, funRenames, env.availableNames)
-            env, newName
+            env
 
     let renFctName env (f: FunctionType) =
         let isExternal = options.hlsl && f.semantics <> []
@@ -189,9 +187,9 @@ module private RenamerImpl =
             match env.varRenames.TryFind(f.fName.Name) with
             | Some name -> env, {f with fName = Ident(name)}
             | None ->
-                let newEnv, newName = renFunction env (List.length f.args) f.fName
-                if isExternal then export env "F" f.fName.Name newName
-                newEnv, {f with fName = newName}
+                let newEnv = renFunction env (List.length f.args) f.fName
+                if isExternal then export env "F" f.fName
+                newEnv, f
 
     let renList env fct li =
         let mutable env = env
@@ -215,24 +213,26 @@ module private RenamerImpl =
                                 |> List.exists (fun s -> tyQ.Contains(s))
                 | None -> false
             let isExternal = isTopLevel && (ext || options.hlsl)
-            let env, newName =
+            let env =
                 if isTopLevel && options.preserveAllGlobals then
-                    dontRename env decl.name.Name, decl.name
+                    dontRename env decl.name
                 elif not isExternal then
                     env.newName env decl.name
                 elif options.preserveExternals then
-                    dontRename env decl.name.Name, decl.name
+                    dontRename env decl.name
                 else
                     match env.varRenames.TryFind(decl.name.Name) with
-                    | Some name -> env, Ident(name)
+                    | Some name ->
+                        decl.name.Rename(name)
+                        env
                     | None ->
-                        let env, newName = env.newName env decl.name
-                        export env "" decl.name.Name newName
-                        env, newName
+                        let env = env.newName env decl.name
+                        export env "" decl.name
+                        env
 
             let init = Option.map (renExpr env) decl.init
             let size = Option.map (renExpr env) decl.size
-            env, {decl with name=newName; size=size; init=init}
+            env, {decl with size=size; init=init}
 
         let env, res = renList env aux vars
         env, (ty, res)
