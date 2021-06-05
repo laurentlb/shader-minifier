@@ -125,10 +125,19 @@ module private RenamerImpl =
         let newName = sprintf "%04d" !numberOfUsedIdents
         env.Rename(id, newName), newName
 
-    // FIXME: handle 2-letter names
+    // A renaming strategy that considers how a variable is used. It optimizes the frequency of
+    // adjacent characters, which can make the output more compression-friendly. This is best
+    // suited when minifying a single file.
     let optimizeContext contextTable env id =
         let cid = char (1000 + int id)
         let newName = chooseIdent contextTable cid env.availableNames
+        env.Rename(id, newName), newName
+
+    // A renaming strategy that always picks the first available name. This optimizes the
+    // frequency of a few variables. It also ensures that two identical functions will use the
+    // same names for local variables, which can be very important in some multifile scenarios.
+    let optimizeNameFrequency (env: Env) id =
+        let newName = env.availableNames.Head
         env.Rename(id, newName), newName
 
     let dontRename (env: Env) name =
@@ -336,17 +345,20 @@ module private RenamerImpl =
     let rename shaders =
         let exportedNames = assignUniqueIds shaders
 
-        // Get data about the context
-        let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
-        let names = computeListOfNames text
-        let contextTable = computeContextTable text
-
         // TODO: combine from all shaders
         let forbiddenNames = (Seq.head shaders).forbiddenNames
 
-        let names = names |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+        // Compute the list of variable names to use
+        let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
+        let names = computeListOfNames text
+                 |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
 
-        let mutable env = Env.Create(names, true, optimizeContext contextTable, shadowVariables)
+        let mutable env =
+            if Array.length shaders > 1 then
+                Env.Create(names, true, optimizeNameFrequency, shadowVariables)
+            else
+                let contextTable = computeContextTable text
+                Env.Create(names, true, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames := exportedNames
         renameAsts shaders env
