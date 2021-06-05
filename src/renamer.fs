@@ -293,8 +293,8 @@ module private RenamerImpl =
             Function({fct with args=args}, body)
         | e -> e
 
-    // Compute table of variables names, based on frequency
-    let computeFrequencyIdentTable text =
+    // Compute list of variables names, based on frequency
+    let computeListOfNames text =
         let charCounts = Seq.countBy id text |> dict
         let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
         let letters = ['a'..'z']@['A'..'Z']
@@ -309,7 +309,7 @@ module private RenamerImpl =
              yield c1.ToString() + c2.ToString()]
             |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
-        Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
+        oneLetterIdentifiers @ twoLettersIdentifiers
 
     let renameAsts shaders env =
         let mutable env = env
@@ -341,16 +341,15 @@ module private RenamerImpl =
 
         // Get data about the context
         let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
-        let identTable = computeFrequencyIdentTable text
+        let names = computeListOfNames text
         let contextTable = computeContextTable text
 
         // TODO: combine from all shaders
         let forbiddenNames = (Seq.head shaders).forbiddenNames
 
-        let idents = identTable |> Array.toList
-                   |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+        let names = names |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
 
-        let mutable env = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
+        let mutable env = Env.Create(names, true, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames := exportedNames
 
