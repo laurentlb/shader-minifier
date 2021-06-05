@@ -30,12 +30,12 @@ const char *inout_frag =
    "float o=1.-clamp(dot(c,v),0.,1.);"
    "return o*o*o*o*o*(1.-e)+e;"
  "}"
- "vec3 r(vec3 e,vec3 c,vec3 v,vec3 o,vec3 r,float t)"
+ "vec3 r(vec3 e,vec3 c,vec3 v,vec3 o,vec3 t,float a)"
  "{"
-   "vec3 a=normalize(e+c);"
-   "float m=1.+2048.*(1.-t)*(1.-t);"
-   "vec3 l=o,i=vec3(pow(clamp(dot(a,v),0.,1.),m)*(m+4.)/8.),f=n(r,e,a);"
-   "return mix(l,i,f);"
+   "vec3 m=normalize(e+c);"
+   "float l=1.+2048.*(1.-a)*(1.-a);"
+   "vec3 i=o,n=vec3(pow(clamp(dot(m,v),0.,1.),l)*(l+4.)/8.),f=r(t,e,m);"
+   "return mix(i,n,f);"
  "}";
 
 const char *inout2_frag =
@@ -45,7 +45,7 @@ const char *inout2_frag =
  "uniform vec3 a,m,l,i;"
  "in vec3 c,v;"
  "out vec4 o;"
- "vec3 n(vec3 e,vec3 c,vec3 v)"
+ "vec3 r(vec3 e,vec3 c,vec3 v)"
  "{"
    "float o=1.-clamp(dot(c,v),0.,1.);"
    "return o*o*o*o*o*(1.-e)+e;"
@@ -57,12 +57,12 @@ const char *inout2_frag =
    "vec3 u=l+mix(t*a,a,f);"
    "o=vec4(u,1.);"
  "}"
- "vec3 n(vec3 e,vec3 c,vec3 v,vec3 o,vec3 r,float t)"
+ "vec3 r(vec3 e,vec3 c,vec3 v,vec3 o,vec3 t,float a)"
  "{"
-   "vec3 a=normalize(e+c);"
-   "float m=1.+2048.*(1.-t)*(1.-t);"
-   "vec3 l=o,i=vec3(pow(clamp(dot(a,v),0.,1.),m)*(m+4.)/8.),f=n(r,e,a);"
-   "return mix(l,i,f);"
+   "vec3 m=normalize(e+c);"
+   "float l=1.+2048.*(1.-a)*(1.-a);"
+   "vec3 i=o,n=vec3(pow(clamp(dot(m,v),0.,1.),l)*(l+4.)/8.),f=r(t,e,m);"
+   "return mix(i,n,f);"
  "}";
 
 #endif // INOUT_EXPECTED_
