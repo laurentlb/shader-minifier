@@ -323,6 +323,7 @@ module private RenamerImpl =
             env <- newEnv
             shader.code <- code
 
+        // Rename local variables.
         for shader in shaders do
             shader.code <- List.map (renTopLevelBody env) shader.code
         !env.exportedNames
