@@ -120,7 +120,7 @@ module private RenamerImpl =
 
                                     (* ** Renamer ** *)
 
-    let newTemporaryId (numberOfUsedIdents: int ref) (env: Env) id =
+    let newUniqueId (numberOfUsedIdents: int ref) (env: Env) id =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
         env.Rename(id, newName), newName
@@ -140,7 +140,7 @@ module private RenamerImpl =
         env
 
     let export env ty name (newName:string) =
-        if isTemporaryId newName then
+        if isUniqueId newName then
             env.exportedNames := {ty = ty; name = name; newName = newName} :: !env.exportedNames
         else
             env.exportedNames :=
@@ -323,21 +323,13 @@ module private RenamerImpl =
             shader.code <- List.map (renTopLevelBody env) shader.code
         !env.exportedNames
 
-    let rename shaders =
-        let mutable exportedNames = assignTemporaryIds shaders
-        // Rename local variables.
-        for shader in shaders do
-            shader.code <- List.map (renTopLevelBody env) shader.code
-
-        !env.exportedNames
-
-    let assignTemporaryIds shaders =
+    let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
+        let mutable env = Env.Create([], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
         renameAsts shaders env
 
     let rename shaders =
-        let exportedNames = assignTemporaryIds shaders
+        let exportedNames = assignUniqueIds shaders
 
         // Get data about the context
         let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
@@ -350,25 +342,6 @@ module private RenamerImpl =
         let names = names |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
 
         let mutable env = Env.Create(names, true, optimizeContext contextTable, shadowVariables)
-        env <- dontRenameList env options.noRenamingList
-        env.exportedNames := exportedNames
-
-        // First, rename top-level values.
-        for shader in shaders do
-            let newEnv, code = renList env renTopLevelName shader.code
-            env <- newEnv
-            shader.code <- code
-
-        // Rename local variables.
-        for shader in shaders do
-            shader.code <- List.map (renTopLevelBody env) shader.code
-
-        !env.exportedNames
-
-        let idents = identTable |> Array.toList
-                   |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
-
-        let mutable env = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames := exportedNames
         renameAsts shaders env
