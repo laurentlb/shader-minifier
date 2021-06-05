@@ -159,36 +159,39 @@ module private RenamerImpl =
                     else value]
 
     let renFunction env nbArgs id =
-        if List.exists ((=) id) options.noRenamingList then env, id // don't rename "main"
-        else
-            // we're looking for a function name, already used before,
-            // but not with the same number of arg, and which is not in options.noRenamingList.
-            let isFunctionNameAvailableForThisArity (x: KeyValuePair<Ident,Map<int,Ident>>) =
-                not (x.Value.ContainsKey nbArgs ||
-                     List.exists ((=) x.Key) options.noRenamingList)
+        // we're looking for a function name, already used before,
+        // but not with the same number of arg, and which is not in options.noRenamingList.
+        let isFunctionNameAvailableForThisArity (x: KeyValuePair<Ident,Map<int,Ident>>) =
+            not (x.Value.ContainsKey nbArgs ||
+                    List.exists ((=) x.Key) options.noRenamingList)
 
-            match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisArity with
-            | Some res when env.allowOverloading ->
-                // overload an existing function name used with a different arity
-                let newName = res.Key
-                let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id))
-                let env = env.Update(env.varRenames.Add(id, newName), funRenames, env.availableNames)
-                env, newName
-            | _ ->
-                // find a new function name
-                let env, newName = env.newName env id
-                let funRenames = env.funRenames.Add (newName, Map.empty.Add(nbArgs, id))
-                let env = env.Update(env.varRenames, funRenames, env.availableNames)
-                env, newName
+        match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisArity with
+        | Some res when env.allowOverloading ->
+            // overload an existing function name used with a different arity
+            let newName = res.Key
+            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id))
+            let env = env.Update(env.varRenames.Add(id, newName), funRenames, env.availableNames)
+            env, newName
+        | _ ->
+            // find a new function name
+            let env, newName = env.newName env id
+            let funRenames = env.funRenames.Add (newName, Map.empty.Add(nbArgs, id))
+            let env = env.Update(env.varRenames, funRenames, env.availableNames)
+            env, newName
 
     let renFctName env (f: FunctionType) =
         let isExternal = options.hlsl && f.semantics <> []
         if (isExternal && options.preserveExternals) || options.preserveAllGlobals then
             env, f
+        elif List.exists ((=) f.fName) options.noRenamingList then
+            env, f
         else
-            let newEnv, newName = renFunction env (List.length f.args) f.fName
-            if isExternal then export env "F" f.fName newName
-            newEnv, {f with fName = newName}
+            match env.varRenames.TryFind(f.fName) with
+            | Some name -> env, {f with fName = name}
+            | None ->
+                let newEnv, newName = renFunction env (List.length f.args) f.fName
+                if isExternal then export env "F" f.fName newName
+                newEnv, {f with fName = newName}
 
     let renList env fct li =
         let mutable env = env
