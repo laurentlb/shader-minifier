@@ -311,20 +311,27 @@ module private RenamerImpl =
 
         Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
 
-    let assignTemporaryIds shaders =
-        let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
+    let renameAsts shaders env =
+        let mutable env = env
+        // First, rename top-level values.
         for shader in shaders do
             let newEnv, code = renList env renTopLevelName shader.code
             env <- newEnv
             shader.code <- code
 
+        // Rename local variables.
         for shader in shaders do
             shader.code <- List.map (renTopLevelBody env) shader.code
+
         !env.exportedNames
 
+    let assignTemporaryIds shaders =
+        let numberOfUsedIdents = ref 0
+        let mutable env = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
+        renameAsts shaders env
+
     let rename shaders =
-        let mutable exportedNames = assignTemporaryIds shaders
+        let exportedNames = assignTemporaryIds shaders
 
         // Get data about the context
         let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
@@ -340,17 +347,6 @@ module private RenamerImpl =
         let mutable env = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames := exportedNames
-
-        // First, rename top-level values.
-        for shader in shaders do
-            let newEnv, code = renList env renTopLevelName shader.code
-            env <- newEnv
-            shader.code <- code
-
-        // Rename local variables.
-        for shader in shaders do
-            shader.code <- List.map (renTopLevelBody env) shader.code
-
-        !env.exportedNames
+        renameAsts shaders env
 
 let rename = RenamerImpl.rename
