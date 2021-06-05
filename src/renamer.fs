@@ -120,7 +120,7 @@ module private RenamerImpl =
 
                                     (* ** Renamer ** *)
 
-    let newTemporaryId (numberOfUsedIdents: int ref) (env: Env) id =
+    let newUniqueId (numberOfUsedIdents: int ref) (env: Env) id =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
         env.Rename(id, newName), newName
@@ -140,7 +140,7 @@ module private RenamerImpl =
         env
 
     let export env ty name (newName:string) =
-        if isTemporaryId newName then
+        if isUniqueId newName then
             env.exportedNames := {ty = ty; name = name; newName = newName} :: !env.exportedNames
         else
             env.exportedNames :=
@@ -197,27 +197,31 @@ module private RenamerImpl =
 
     let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
         let aux (env: Env) (decl: Ast.DeclElt) =
+            let ext =
+                match ty.typeQ with
+                | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
+                                |> List.exists (fun s -> tyQ.Contains(s))
+                | None -> false
+            let isExternal = isTopLevel && (ext || options.hlsl)
             let env, newName =
-                let ext =
-                    match ty.typeQ with
-                    | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
-                                 |> List.exists (fun s -> tyQ.Contains(s))
-                    | None -> false
-                if isTopLevel && (ext || options.hlsl || options.preserveAllGlobals) then
-                    if options.preserveExternals then
-                        dontRename env decl.name, decl.name
-                    elif env.varRenames.ContainsKey(decl.name) then
-                        env, env.varRenames.TryFind(decl.name) |> Option.get
-                    else
+                if isTopLevel && options.preserveAllGlobals then
+                    dontRename env decl.name, decl.name
+                elif not isExternal then
+                    env.newName env decl.name
+                elif options.preserveExternals then
+                    dontRename env decl.name, decl.name
+                else
+                    match env.varRenames.TryFind(decl.name) with
+                    | Some name -> env, name
+                    | None ->
                         let env, newName = env.newName env decl.name
                         export env "" decl.name newName
                         env, newName
-                else
-                    env.newName env decl.name
 
             let init = Option.map (renExpr env) decl.init
             let size = Option.map (renExpr env) decl.size
             env, {decl with name=newName; size=size; init=init}
+
         let env, res = renList env aux vars
         env, (ty, res)
 
@@ -293,8 +297,8 @@ module private RenamerImpl =
             Function({fct with args=args}, body)
         | e -> e
 
-    // Compute table of variables names, based on frequency
-    let computeFrequencyIdentTable text =
+    // Compute list of variables names, based on frequency
+    let computeListOfNames text =
         let charCounts = Seq.countBy id text |> dict
         let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
         let letters = ['a'..'z']@['A'..'Z']
@@ -309,7 +313,7 @@ module private RenamerImpl =
              yield c1.ToString() + c2.ToString()]
             |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
-        Array.ofList (oneLetterIdentifiers @ twoLettersIdentifiers)
+        oneLetterIdentifiers @ twoLettersIdentifiers
 
     let renameAsts shaders env =
         let mutable env = env
@@ -322,29 +326,27 @@ module private RenamerImpl =
         // Rename local variables.
         for shader in shaders do
             shader.code <- List.map (renTopLevelBody env) shader.code
-
         !env.exportedNames
 
-    let assignTemporaryIds shaders =
+    let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], false, newTemporaryId numberOfUsedIdents, fun env _ -> env)
+        let mutable env = Env.Create([], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
         renameAsts shaders env
 
     let rename shaders =
-        let exportedNames = assignTemporaryIds shaders
+        let exportedNames = assignUniqueIds shaders
 
         // Get data about the context
         let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
-        let identTable = computeFrequencyIdentTable text
+        let names = computeListOfNames text
         let contextTable = computeContextTable text
 
         // TODO: combine from all shaders
         let forbiddenNames = (Seq.head shaders).forbiddenNames
 
-        let idents = identTable |> Array.toList
-                   |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+        let names = names |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
 
-        let mutable env = Env.Create(idents, true, optimizeContext contextTable, shadowVariables)
+        let mutable env = Env.Create(names, true, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames := exportedNames
         renameAsts shaders env
