@@ -197,27 +197,31 @@ module private RenamerImpl =
 
     let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
         let aux (env: Env) (decl: Ast.DeclElt) =
+            let ext =
+                match ty.typeQ with
+                | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
+                                |> List.exists (fun s -> tyQ.Contains(s))
+                | None -> false
+            let isExternal = isTopLevel && (ext || options.hlsl)
             let env, newName =
-                let ext =
-                    match ty.typeQ with
-                    | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
-                                 |> List.exists (fun s -> tyQ.Contains(s))
-                    | None -> false
-                if isTopLevel && (ext || options.hlsl || options.preserveAllGlobals) then
-                    if options.preserveExternals then
-                        dontRename env decl.name, decl.name
-                    elif env.varRenames.ContainsKey(decl.name) then
-                        env, env.varRenames.TryFind(decl.name) |> Option.get
-                    else
+                if isTopLevel && options.preserveAllGlobals then
+                    dontRename env decl.name, decl.name
+                elif not isExternal then
+                    env.newName env decl.name
+                elif options.preserveExternals then
+                    dontRename env decl.name, decl.name
+                else
+                    match env.varRenames.TryFind(decl.name) with
+                    | Some name -> env, name
+                    | None ->
                         let env, newName = env.newName env decl.name
                         export env "" decl.name newName
                         env, newName
-                else
-                    env.newName env decl.name
 
             let init = Option.map (renExpr env) decl.init
             let size = Option.map (renExpr env) decl.size
             env, {decl with name=newName; size=size; init=init}
+
         let env, res = renList env aux vars
         env, (ty, res)
 
