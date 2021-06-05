@@ -57,11 +57,11 @@ let private stripSpaces str =
     result.ToString()
 
 let private hasInlinePrefix (s:string) = s.StartsWith("i_")
-let private declsNotToInline (d: Ast.DeclElt list) = d |> List.filter (fun x -> not (hasInlinePrefix x.name))
+let private declsNotToInline (d: Ast.DeclElt list) = d |> List.filter (fun x -> not (hasInlinePrefix x.name.Name))
 
 let private bool = function
-    | true -> Var "true" // Int (1, "")
-    | false -> Var "false" // Int (0, "")
+    | true -> Var (Ident "true") // Int (1, "")
+    | false -> Var (Ident "false") // Int (0, "")
 
 let rec private simplifyExpr env = function
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
@@ -123,24 +123,24 @@ let rec private simplifyExpr env = function
         else div
 
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
-    | FunCall(Var "smoothstep", [Float (0.,_); Float (1.,_); _]) as e -> e
-    | FunCall(Var "smoothstep", [a; b; x]) when options.smoothstepTrick ->
+    | FunCall(Var var, [Float (0.,_); Float (1.,_); _]) as e when var.Name = "smoothstep" -> e
+    | FunCall(Var var, [a; b; x]) when var.Name = "smoothstep" && options.smoothstepTrick ->
         let sub1 = FunCall(Op "-", [x; a])
         let sub2 = FunCall(Op "-", [b; a])
         let div  = FunCall(Op "/", [sub1; sub2]) |> mapExpr env
-        FunCall(Var "smoothstep",  [Float (0.,""); Float (1.,""); div])
+        FunCall(Var (Ident "smoothstep"),  [Float (0.,""); Float (1.,""); div])
 
     | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
-    | Var s as e when hasInlinePrefix s ->
-      match Map.tryFind s env.vars with
+    | Var s as e when hasInlinePrefix s.Name ->
+      match Map.tryFind s.Name env.vars with
         | Some (_, _, Some init) -> init
         | _ -> e
 
     // pi is acos(-1), pi/2 is acos(0)
-    | Float(f, _) when f = 3.141592653589793 -> FunCall(Var "acos", [Float (-1., "")])
-    | Float(f, _) when f = 6.283185307179586 -> FunCall(Op "*", [Float (2., ""); FunCall(Var "acos", [Float (-1., "")])])
-    | Float(f, _) when f = 1.5707963267948966 -> FunCall(Var "acos", [Float (0., "")])
+    | Float(f, _) when f = 3.141592653589793 -> FunCall(Var (Ident "acos"), [Float (-1., "")])
+    | Float(f, _) when f = 6.283185307179586 -> FunCall(Op "*", [Float (2., ""); FunCall(Var (Ident "acos"), [Float (-1., "")])])
+    | Float(f, _) when f = 1.5707963267948966 -> FunCall(Var (Ident "acos"), [Float (0., "")])
 
     | e -> e
 
@@ -198,9 +198,9 @@ let private simplifyStmt = function
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
     | ForD((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, body)
     // FIXME: properly handle booleans
-    | If(Var "true", e1, _) -> e1
-    | If(Var "false", _, Some e2) -> e2
-    | If(Var "false", _, None) -> Block []
+    | If(Var var, e1, _) when var.Name = "true" -> e1
+    | If(Var var, _, Some e2) when var.Name = "false" -> e2
+    | If(Var var, _, None) when var.Name = "false" -> Block []
     | If(c, b, Some (Block [])) -> If(c, b, None)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
@@ -240,7 +240,7 @@ let private graphReorder deps =
     let mutable lastName = ""
 
     let rec loop deps =
-        let deps = findRemove (fun s x -> lastName <- s; list <- x :: list) deps
+        let deps = findRemove (fun (s: Ident) x -> lastName <- s.Name; list <- x :: list) deps
         let deps = deps |> List.map (fun (n, d, c) -> n, List.filter ((<>) lastName) d, c)
         if deps <> [] then loop deps
 
@@ -253,7 +253,7 @@ let private computeDependencies block =
     let d = HashSet()
     let collect mEnv = function
         | Var id as e ->
-            if not (mEnv.vars.ContainsKey(id)) then d.Add id |> ignore
+            if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore
             e
         | e -> e
     mapStmt (mapEnv collect id) block |> ignore
@@ -266,7 +266,7 @@ let private computeAllDependencies code =
         | _ -> None)
     let deps = fct |> List.map (fun (name, block, f) ->
         let dep = computeDependencies block
-                  |> List.filter (fun name -> List.exists (fun (x,_,_) -> name = x) fct)
+                  |> List.filter (fun name -> fct |> List.exists (fun (x,_,_) -> name = x.Name))
         name, dep, f)
     deps
 

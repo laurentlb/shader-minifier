@@ -36,11 +36,11 @@ module private PrinterImpl =
         |> List.concat
         |> dict
 
-    let idToS (id: string) =
+    let idToS (id: Ident) =
         // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
         if isUniqueId id then
-            string (char (1000 + int id))
-        else id
+            string (char (1000 + int id.Name))
+        else id.Name
 
     let commaListToS toS li =
         List.map toS li |> String.concat ","
@@ -95,7 +95,7 @@ module private PrinterImpl =
             out "%s[%s]" (exprToS arr) (exprToSOpt "" ind)
         | Cast(id, e) ->
             // Cast seems to have the same precedence as unary minus
-            out "(%s)%s" id (exprToSLevel precedence.["_-"] e)
+            out "(%s)%s" id.Name (exprToSLevel precedence.["_-"] e)
         | VectorExp(li) ->
             out "{%s}" (commaListToS exprToS li)
         | Dot(e, field) ->
@@ -123,7 +123,7 @@ module private PrinterImpl =
         if res = "" then res else ":" + res
 
     let rec structToS prefix id decls =
-        let name = match id with None -> "" | Some s -> " " + s
+        let name = match id with None -> "" | Some (s: Ident) -> " " + s.Name
         let d = decls |> List.map (fun s -> declToS s + ";") |> String.concat ""
         out "%s{%s}" (sp2 prefix name) d
 
