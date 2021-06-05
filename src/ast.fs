@@ -2,9 +2,12 @@
 
 open Options.Globals
 
-[<Struct; CustomEquality; CustomComparison>]
 type Ident(name: string) =
-    member this.Name = name
+    let mutable newName = name
+    member this.Name = newName
+    member this.OldName = name
+    member this.Rename(n) = newName <- n
+
     interface System.IComparable with
         member this.CompareTo other =
             match other with
