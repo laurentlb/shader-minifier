@@ -2,10 +2,23 @@
 
 open Options.Globals
 
-type Ident = string
+[<Struct; CustomEquality; CustomComparison>]
+type Ident(name: string) =
+    member this.Name = name
+    interface System.IComparable with
+        member this.CompareTo other =
+            match other with
+            | :? Ident as o -> this.Name.CompareTo(o.Name)
+            | _ -> failwith "not comparable"
+    override this.Equals other =
+        match other with
+        | :? Ident as o -> this.Name = o.Name  
+        | _ -> false
+    override this.GetHashCode() = name.GetHashCode()
+
 
 // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
-let isUniqueId (ident: Ident) = System.Char.IsDigit ident.[0]
+let isUniqueId (ident: Ident) = System.Char.IsDigit ident.Name.[0]
 
 [<RequireQualifiedAccess>]
 type JumpKeyword = Break | Continue | Discard | Return
@@ -28,7 +41,7 @@ type Expr =
     | Op of string
     | FunCall of Expr * Expr list
     | Subscript of Expr * Expr option
-    | Dot of Expr * Ident
+    | Dot of Expr * string
     | Cast of Ident * Expr  // hlsl
     | VectorExp of Expr list // hlsl
 
@@ -101,7 +114,7 @@ type Shader = {
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<Ident, Type * Expr option * Expr option >
+    vars: Map<string, Type * Expr option * Expr option >
 }
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty}
@@ -128,7 +141,7 @@ let rec mapExpr env = function
 
 and mapDecl env (ty, vars) =
     let aux env (decl: DeclElt) =
-        let env = {env with vars = env.vars.Add(decl.name, (ty, decl.size, decl.init))}
+        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl.size, decl.init))}
         env, {decl with
                 size=Option.map (mapExpr env) decl.size
                 init=Option.map (mapExpr env) decl.init}

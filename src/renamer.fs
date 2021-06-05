@@ -13,18 +13,18 @@ module private RenamerImpl =
     [<NoComparison; NoEquality>]
     type Env = {
         // Map from an old variable name to the new one.
-        varRenames: Map<Ident, Ident>
+        varRenames: Map<string, string>
         // Map from a new function name and function arity to the old name.
-        funRenames: Map<Ident, Map<int, Ident>>
+        funRenames: Map<string, Map<int, string>>
         // List of names that are still available.
-        availableNames: Ident list
+        availableNames: string list
 
         exportedNames: Ast.ExportedName list ref
 
         // Whether multiple functions can have the same name (but different arity).
         allowOverloading: bool
         // Function that decides a name (and returns the modified Env).
-        newName: Env -> Ident -> (Env * string)
+        newName: Env -> Ident -> (Env * Ident)
         // Function called when we enter a function, optionally updates the Env.
         onEnterFunction: Env -> Stmt -> Env
     }
@@ -120,25 +120,25 @@ module private RenamerImpl =
 
                                     (* ** Renamer ** *)
 
-    let newUniqueId (numberOfUsedIdents: int ref) (env: Env) id =
+    let newUniqueId (numberOfUsedIdents: int ref) (env: Env) (id: Ident) =
         incr numberOfUsedIdents
         let newName = sprintf "%04d" !numberOfUsedIdents
-        env.Rename(id, newName), newName
+        env.Rename(id.Name, newName), Ident(newName)
 
     // A renaming strategy that considers how a variable is used. It optimizes the frequency of
     // adjacent characters, which can make the output more compression-friendly. This is best
     // suited when minifying a single file.
-    let optimizeContext contextTable env id =
-        let cid = char (1000 + int id)
+    let optimizeContext contextTable env (id: Ident) =
+        let cid = char (1000 + int id.Name)
         let newName = chooseIdent contextTable cid env.availableNames
-        env.Rename(id, newName), newName
+        env.Rename(id.Name, newName), Ident(newName)
 
     // A renaming strategy that always picks the first available name. This optimizes the
     // frequency of a few variables. It also ensures that two identical functions will use the
     // same names for local variables, which can be very important in some multifile scenarios.
-    let optimizeNameFrequency (env: Env) id =
+    let optimizeNameFrequency (env: Env) (id: Ident) =
         let newName = env.availableNames.Head
-        env.Rename(id, newName), newName
+        env.Rename(id.Name, newName), Ident(newName)
 
     let dontRename (env: Env) name =
         env.Rename(name, name)
@@ -148,20 +148,20 @@ module private RenamerImpl =
         for name in names do env <- dontRename env name
         env
 
-    let export env ty name (newName:string) =
+    let export env ty name (newName: Ident) =
         if isUniqueId newName then
-            env.exportedNames := {ty = ty; name = name; newName = newName} :: !env.exportedNames
+            env.exportedNames := {ty = ty; name = name; newName = newName.Name} :: !env.exportedNames
         else
             env.exportedNames :=
                 [for value in !env.exportedNames ->
                     if ty = value.ty && name = value.newName then
-                        {value with ty = ty; name = value.name; newName = newName}
+                        {value with ty = ty; name = value.name; newName = newName.Name}
                     else value]
 
-    let renFunction env nbArgs id =
+    let renFunction env nbArgs (id: Ident) =
         // we're looking for a function name, already used before,
         // but not with the same number of arg, and which is not in options.noRenamingList.
-        let isFunctionNameAvailableForThisArity (x: KeyValuePair<Ident,Map<int,Ident>>) =
+        let isFunctionNameAvailableForThisArity (x: KeyValuePair<string, Map<int,string>>) =
             not (x.Value.ContainsKey nbArgs ||
                     List.exists ((=) x.Key) options.noRenamingList)
 
@@ -169,13 +169,13 @@ module private RenamerImpl =
         | Some res when env.allowOverloading ->
             // overload an existing function name used with a different arity
             let newName = res.Key
-            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id))
-            let env = env.Update(env.varRenames.Add(id, newName), funRenames, env.availableNames)
-            env, newName
+            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id.Name))
+            let env = env.Update(env.varRenames.Add(id.Name, newName), funRenames, env.availableNames)
+            env, Ident(newName)
         | _ ->
             // find a new function name
             let env, newName = env.newName env id
-            let funRenames = env.funRenames.Add (newName, Map.empty.Add(nbArgs, id))
+            let funRenames = env.funRenames.Add (newName.Name, Map.empty.Add(nbArgs, id.Name))
             let env = env.Update(env.varRenames, funRenames, env.availableNames)
             env, newName
 
@@ -183,14 +183,14 @@ module private RenamerImpl =
         let isExternal = options.hlsl && f.semantics <> []
         if (isExternal && options.preserveExternals) || options.preserveAllGlobals then
             env, f
-        elif List.exists ((=) f.fName) options.noRenamingList then
+        elif List.exists ((=) f.fName.Name) options.noRenamingList then
             env, f
         else
-            match env.varRenames.TryFind(f.fName) with
-            | Some name -> env, {f with fName = name}
+            match env.varRenames.TryFind(f.fName.Name) with
+            | Some name -> env, {f with fName = Ident(name)}
             | None ->
                 let newEnv, newName = renFunction env (List.length f.args) f.fName
-                if isExternal then export env "F" f.fName newName
+                if isExternal then export env "F" f.fName.Name newName
                 newEnv, {f with fName = newName}
 
     let renList env fct li =
@@ -203,7 +203,7 @@ module private RenamerImpl =
 
     let rec renExpr env =
         let mapper _ = function
-            | Var v -> Var (defaultArg (Map.tryFind v env.varRenames) v)
+            | Var v -> Var (Ident (defaultArg (Map.tryFind v.Name env.varRenames) v.Name))
             | e -> e
         mapExpr (mapEnv mapper id)
 
@@ -217,17 +217,17 @@ module private RenamerImpl =
             let isExternal = isTopLevel && (ext || options.hlsl)
             let env, newName =
                 if isTopLevel && options.preserveAllGlobals then
-                    dontRename env decl.name, decl.name
+                    dontRename env decl.name.Name, decl.name
                 elif not isExternal then
                     env.newName env decl.name
                 elif options.preserveExternals then
-                    dontRename env decl.name, decl.name
+                    dontRename env decl.name.Name, decl.name
                 else
-                    match env.varRenames.TryFind(decl.name) with
-                    | Some name -> env, name
+                    match env.varRenames.TryFind(decl.name.Name) with
+                    | Some name -> env, Ident(name)
                     | None ->
                         let env, newName = env.newName env decl.name
-                        export env "" decl.name newName
+                        export env "" decl.name.Name newName
                         env, newName
 
             let init = Option.map (renExpr env) decl.init
@@ -244,12 +244,12 @@ module private RenamerImpl =
         let d = HashSet()
         let collect mEnv = function
             | Var id as e ->
-                if not (mEnv.vars.ContainsKey(id)) then d.Add id |> ignore
+                if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore
                 e
             | FunCall(Var id, li) as e ->
-                match env.funRenames.TryFind id with
-                | Some m -> if not (m.ContainsKey li.Length) then d.Add id |> ignore
-                | None -> d.Add id |> ignore
+                match env.funRenames.TryFind id.Name with
+                | Some m -> if not (m.ContainsKey li.Length) then d.Add id.Name |> ignore
+                | None -> d.Add id.Name |> ignore
                 e
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore

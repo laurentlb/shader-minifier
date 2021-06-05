@@ -27,7 +27,7 @@ module private ParseImpl =
 
     let ident =
         let nonDigit = asciiLetter <|> pchar '_'
-        let p = pipe2 nonDigit (manyChars (nonDigit <|> digit <?> "")) (fun c s -> c.ToString() + s)
+        let p = pipe2 nonDigit (manyChars (nonDigit <|> digit <?> "")) (fun c s -> Ast.Ident (c.ToString() + s))
         (p .>> ws) <?> "identifier"
 
     let opp = new OperatorPrecedenceParser<_,_,_>()
@@ -88,7 +88,7 @@ module private ParseImpl =
                 (fun args fct -> Ast.FunCall(fct, args))
     let subscript = between (ch '[') (ch ']') (opt expr) |>>
                     (fun ind arr -> Ast.Subscript(arr, ind))
-    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field))
+    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field.Name))
     let post = (dot <|> subscript <|> fcall) <?> ""
 
     let simpleExpr = pipe2 prim (many post)
@@ -154,8 +154,8 @@ module private ParseImpl =
         // Restriction on field names
         let check ((_,l) as arg : Ast.Decl) =
             List.iter (fun (decl:Ast.DeclElt) ->
-                if decl.name <> Rewriter.renameField decl.name then
-                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name) l
+                if decl.name.Name <> Rewriter.renameField decl.name.Name then
+                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name.Name) l
             arg
 
         let decls = many (declaration .>> ch ';' |>> check)
@@ -188,7 +188,7 @@ module private ParseImpl =
                      |>> (function s -> "layout(" + s + ")")
         let qualifier = many (storage <|> layout)
                         |>> (function [] -> None | li -> Some (String.concat " " li))
-        let typeSpec = structSpecifier <|> (ident |>> Ast.TypeName)
+        let typeSpec = structSpecifier <|> (ident |>> (fun id -> Ast.TypeName id.Name))
         pipe2 qualifier typeSpec (fun tyQ name -> Ast.makeType name tyQ)
 
     let specifiedTypeHLSL =
@@ -206,7 +206,7 @@ module private ParseImpl =
         let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
                    |> opt
                    |>> (function Some s -> "<" + s + ">" | None -> "")
-        let typeName = pipe2 ident generic (+)
+        let typeName = pipe2 (ident |>> (fun id -> id.Name)) generic (+)
         let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
         pipe3 qualifier typeSpec generic (fun tyQ name _ -> Ast.makeType name tyQ)
 
