@@ -142,6 +142,24 @@ module private RenamerImpl =
         let newName = env.availableNames.Head
         env.Rename(id, newName)
 
+    // A renaming strategy that's bijective: if (and only if) two variables had the same old name,
+    // they will the same new name.
+    // This leads to a slightly longer output (because lots of names are created, most of them 
+    // have two chars). However, this preserves similarities from the input code, so that can be
+    // compression-friendly.
+    let bijectiveRenaming (allNames: string list) =
+        let mutable allNames = allNames
+        let d = new HashMultiMap<string, string>(HashIdentity.Structural)
+        fun (env: Env) (id: Ident) ->
+            match d.TryFind(id.OldName) with
+            | Some name ->
+                env.Rename(id, name)
+            | None ->
+                let newName = allNames.Head
+                allNames <- allNames.Tail
+                d.[id.OldName] <- newName
+                env.Rename(id, newName)
+
     let dontRename (env: Env) (id: Ident) =
         env.Rename(id, id.Name)
 
@@ -323,7 +341,6 @@ module private RenamerImpl =
             [for c1 in letters do
              for c2 in letters do
              yield c1.ToString() + c2.ToString()]
-            |> List.sortByDescending (fun s -> count s.[0] + count s.[1])
 
         oneLetterIdentifiers @ twoLettersIdentifiers
 
@@ -358,7 +375,7 @@ module private RenamerImpl =
 
         let mutable env =
             if Array.length shaders > 1 then
-                Env.Create(names, true, optimizeNameFrequency, shadowVariables)
+                Env.Create(names, true, bijectiveRenaming names, shadowVariables)
             else
                 let contextTable = computeContextTable text
                 Env.Create(names, true, optimizeContext contextTable, shadowVariables)
