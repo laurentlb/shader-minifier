@@ -4,10 +4,13 @@ open Options.Globals
 
 type Ident(name: string) =
     let mutable newName = name
+    let mutable inlined = newName.StartsWith("i_")
+
     member this.Name = newName
     member this.OldName = name
     member this.Rename(n) = newName <- n
-    member this.MustBeInlined = this.Name.StartsWith("i_")
+    member this.ToBeInlined = inlined
+    member this.Inline() = inlined <- true
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]

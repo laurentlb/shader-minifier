@@ -7,22 +7,20 @@ in vec3 c,v;
 out vec4 o;
 void main()
 {
-  vec3 n=normalize(v),f=normalize(c),u=vec3(.1,.2,.3),z=vec3(.5,.5,.5);
-  float x=1.5;
-  vec3 p=texture(e,reflect(-n,f)).xyz,d=texture(e,refract(-n,f,1./x)).xyz,s=mix(u*d,p,.1);
-  o=vec4(s,1.);
+  vec3 l=normalize(v),u=normalize(c),f=vec3(.1,.2,.3),z=vec3(.5,.5,.5),x=texture(e,reflect(-l,u)).xyz,p=texture(e,refract(-l,u,1./1.5)).xyz,d=mix(f*p,x,.1);
+  o=vec4(d,1.);
 }
-vec3 r(vec3 z,vec3 n,vec3 C)
+vec3 r(vec3 z,vec3 l,vec3 s)
 {
-  float y=1.-clamp(dot(n,C),0.,1.);
-  return y*y*y*y*y*(1.-z)+z;
+  float C=1.-clamp(dot(l,s),0.,1.);
+  return C*C*C*C*C*(1.-z)+z;
 }
-vec3 r(vec3 n,vec3 w,vec3 f,vec3 u,vec3 z,float b)
+vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 z,float w)
 {
-  vec3 C=normalize(n+w);
-  float Z=1.+2048.*(1.-b)*(1.-b);
-  vec3 Y=u,X=vec3(pow(clamp(dot(C,f),0.,1.),Z)*(Z+4.)/8.),W=r(z,n,C);
-  return mix(Y,X,W);
+  vec3 s=normalize(l+y);
+  float b=1.+2048.*(1.-w)*(1.-w);
+  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(z,l,s);
+  return mix(Z,Y,X);
 }
 
 // tests/unit/inout2.frag
@@ -31,25 +29,23 @@ vec3 r(vec3 n,vec3 w,vec3 f,vec3 u,vec3 z,float b)
 
 uniform samplerCube e;
 uniform float t;
-uniform vec3 a,m,l,i;
+uniform vec3 m,i,a,n;
 in vec3 c,v;
 out vec4 o;
-vec3 r(vec3 z,vec3 n,vec3 C)
+vec3 r(vec3 z,vec3 l,vec3 s)
 {
-  float y=1.-clamp(dot(n,C),0.,1.);
-  return y*y*y*y*y*(1.-z)+z;
+  float C=1.-clamp(dot(l,s),0.,1.);
+  return C*C*C*C*C*(1.-z)+z;
 }
 void main()
 {
-  vec3 n=normalize(v),f=normalize(c),u=m,z=i;
-  float V=.5;
-  vec3 s=l+mix(u*a,a,V);
-  o=vec4(s,1.);
+  vec3 l=normalize(v),u=normalize(c),f=i,z=n,d=a+mix(f*m,m,.5);
+  o=vec4(d,1.);
 }
-vec3 r(vec3 n,vec3 w,vec3 f,vec3 u,vec3 z,float b)
+vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 z,float w)
 {
-  vec3 C=normalize(n+w);
-  float Z=1.+2048.*(1.-b)*(1.-b);
-  vec3 Y=u,X=vec3(pow(clamp(dot(C,f),0.,1.),Z)*(Z+4.)/8.),W=r(z,n,C);
-  return mix(Y,X,W);
+  vec3 s=normalize(l+y);
+  float b=1.+2048.*(1.-w)*(1.-w);
+  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(z,l,s);
+  return mix(Z,Y,X);
 }

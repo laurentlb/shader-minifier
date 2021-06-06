@@ -20,3 +20,11 @@ int vars(int arg, int arg2)
   int i_c = i_a + i_b;
   return i_a * i_c;
 }
+
+int arithmetic2()
+{
+  int a = 2;
+  int b = 3;
+  int c = a + b;
+  return 4 * a * c;
+}
