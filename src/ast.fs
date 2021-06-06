@@ -118,7 +118,7 @@ type Shader = {
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<string, Type * Expr option * Expr option >
+    vars: Map<string, Type * DeclElt>
 }
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty}
@@ -145,7 +145,7 @@ let rec mapExpr env = function
 
 and mapDecl env (ty, vars) =
     let aux env (decl: DeclElt) =
-        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl.size, decl.init))}
+        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
         env, {decl with
                 size=Option.map (mapExpr env) decl.size
                 init=Option.map (mapExpr env) decl.init}

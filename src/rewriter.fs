@@ -133,8 +133,8 @@ let rec private simplifyExpr env = function
     | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
     | Var s as e when s.MustBeInlined ->
-      match env.vars.TryFind s.Name with
-        | Some (_, _, Some init) -> init |> mapExpr env
+        match env.vars.TryFind s.Name with
+        | Some (_, {init = Some init}) -> init |> mapExpr env
         | _ -> e
 
     // pi is acos(-1), pi/2 is acos(0)

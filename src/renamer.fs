@@ -228,35 +228,32 @@ module private RenamerImpl =
 
     let renDecl isTopLevel env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
+            Option.iter (renExpr env) decl.init
+            Option.iter (renExpr env) decl.size
             let ext =
                 match ty.typeQ with
                 | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
                                 |> List.exists (fun s -> tyQ.Contains(s))
                 | None -> false
             let isExternal = isTopLevel && (ext || options.hlsl)
-            let env =
-                if isTopLevel && options.preserveAllGlobals then
-                    dontRename env decl.name
-                elif not isExternal then
-                    env.newName env decl.name
-                elif options.preserveExternals then
-                    dontRename env decl.name
-                else
-                    match env.varRenames.TryFind(decl.name.Name) with
-                    | Some name ->
-                        decl.name.Rename(name)
-                        env
-                    | None ->
-                        let env = env.newName env decl.name
-                        export env "" decl.name
-                        env
 
-            Option.iter (renExpr env) decl.init
-            Option.iter (renExpr env) decl.size
-            env
+            if isTopLevel && options.preserveAllGlobals then
+                dontRename env decl.name
+            elif not isExternal then
+                env.newName env decl.name
+            elif options.preserveExternals then
+                dontRename env decl.name
+            else
+                match env.varRenames.TryFind(decl.name.Name) with
+                | Some name ->
+                    decl.name.Rename(name)
+                    env
+                | None ->
+                    let env = env.newName env decl.name
+                    export env "" decl.name
+                    env
 
-        let env = renList env aux vars
-        env
+        renList env aux vars
 
     // "Garbage collection": remove names that are not used in the block
     // so that we can reuse them. In other words, this function allows us
@@ -285,19 +282,18 @@ module private RenamerImpl =
         function
         | Expr e -> renExpr env e; env
         | Decl d ->
-            let env = renDecl false env d
-            env
+            renDecl false env d
         | Block b ->
-            renList env renStmt b |> ignore
+            renList env renStmt b |> ignore<Env>
             env
         | If(cond, th, el) ->
-            renStmt env th |> ignore
-            Option.iter (renStmt env >> ignore) el
+            renStmt env th |> ignore<Env>
+            Option.iter (renStmt env >> ignore<Env>) el
             renExpr env cond
             env
         | ForD(init, cond, inc, body) ->
             let newEnv = renDecl false env init
-            renStmt newEnv body |> ignore
+            renStmt newEnv body |> ignore<Env>
             Option.iter (renExpr newEnv) cond
             Option.iter (renExpr newEnv) inc
             if options.hlsl then newEnv
@@ -306,15 +302,15 @@ module private RenamerImpl =
             renOpt init
             renOpt cond
             renOpt inc
-            renStmt env body |> ignore
+            renStmt env body |> ignore<Env>
             env
         | While(cond, body) ->
             renExpr env cond
-            renStmt env body |> ignore
+            renStmt env body |> ignore<Env>
             env
         | DoWhile(cond, body) ->
             renExpr env cond
-            renStmt env body |> ignore
+            renStmt env body |> ignore<Env>
             env
         | Jump(_, e) -> renOpt e; env
         | Verbatim _ -> env
@@ -328,25 +324,23 @@ module private RenamerImpl =
         | Function(fct, body) ->
             let env = env.onEnterFunction env body
             let env = renList env (renDecl false) fct.args
-            renStmt env body |> ignore
+            renStmt env body |> ignore<Env>
         | _ -> ()
 
     // Compute list of variables names, based on frequency
     let computeListOfNames text =
         let charCounts = Seq.countBy id text |> dict
-        let count c = let ok, res = charCounts.TryGetValue(c) in if ok then res else 0
-        let letters = ['a'..'z']@['A'..'Z']
+        let count c = match charCounts.TryGetValue(c) with true, res -> res | _ -> 0
+        let letters = ['a'..'z'] @ ['A'..'Z']
+        [
+            // First, use most frequent letters
+            yield! letters |> List.sortBy count |> List.rev |> List.map string
 
-        // First, use most frequent letters
-        let oneLetterIdentifiers = letters |> List.sortBy count |> List.rev |> List.map string
-
-        // Then, generate identifiers with 2 letters
-        let twoLettersIdentifiers =
-            [for c1 in letters do
-             for c2 in letters do
-             yield c1.ToString() + c2.ToString()]
-
-        oneLetterIdentifiers @ twoLettersIdentifiers
+            // Then, generate identifiers with 2 letters
+            for c1 in letters do
+                for c2 in letters do
+                    yield c1.ToString() + c2.ToString()
+        ]
 
     let renameAsts shaders env =
         let mutable env = env
