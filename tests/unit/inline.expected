@@ -1,0 +1,23 @@
+/* File generated with Shader Minifier 1.1.6
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef INLINE_EXPECTED_
+# define INLINE_EXPECTED_
+
+const char *inline_frag =
+ "void main()"
+ "{"
+   "float x=.5,a=x*(.6*x);"
+ "}"
+ "int arithmetic()"
+ "{"
+   ""
+   "return 40;"
+ "}"
+ "int vars(int arg,int arg2)"
+ "{"
+   ""
+   "return arg*(arg+arg2);"
+ "}";
+
+#endif // INLINE_EXPECTED_
