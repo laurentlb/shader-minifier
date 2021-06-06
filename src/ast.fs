@@ -7,6 +7,10 @@ type Ident(name: string) =
     member this.Name = newName
     member this.OldName = name
     member this.Rename(n) = newName <- n
+    member this.MustBeInlined = this.Name.StartsWith("i_")
+
+     // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
+    member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
 
     interface System.IComparable with
         member this.CompareTo other =
@@ -19,9 +23,6 @@ type Ident(name: string) =
         | _ -> false
     override this.GetHashCode() = name.GetHashCode()
 
-
-// Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
-let isUniqueId (ident: Ident) = System.Char.IsDigit ident.Name.[0]
 
 [<RequireQualifiedAccess>]
 type JumpKeyword = Break | Continue | Discard | Return

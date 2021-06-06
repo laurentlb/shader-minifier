@@ -169,7 +169,7 @@ module private RenamerImpl =
         env
 
     let export env ty (id: Ident) =
-        if not (isUniqueId id) then
+        if not id.IsUniqueId then
             env.exportedNames := {ty = ty; name = id.OldName; newName = id.Name} :: !env.exportedNames
 
     let renFunction env nbArgs (id: Ident) =
