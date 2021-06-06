@@ -161,12 +161,14 @@ module private PrinterImpl =
         else
             let spaces = new string(' ', indent * 2 + 1)
             match outputFormat with
+            | Options.IndentedText -> Environment.NewLine + new string(' ', indent * 2)
             | Options.Text | Options.JS -> ""
             | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
             | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
 
     let escape (s: string) =
         match outputFormat with
+        | Options.IndentedText -> s
         | Options.Text -> s
         | Options.JS -> s
         | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")

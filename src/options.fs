@@ -9,6 +9,7 @@ let debugMode = false
 
 type OutputFormat =
     | [<CustomCommandLine("text")>] Text
+    | [<CustomCommandLine("indented")>] IndentedText
     | [<CustomCommandLine("c-variables")>] CHeader
     | [<CustomCommandLine("c-array")>] CList
     | [<CustomCommandLine("js")>] JS
