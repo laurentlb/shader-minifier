@@ -13,6 +13,7 @@
 --no-renaming --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
 --no-renaming --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
 --no-renaming --format indented -o tests/unit/inline.expected tests/unit/inline.frag
+--no-renaming --format c-array -o tests/unit/float.frag.expected tests/unit/float.frag
 
 # Partial renaming tests
 

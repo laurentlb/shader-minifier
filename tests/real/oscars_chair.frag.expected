@@ -88,7 +88,7 @@ const char *oscars_chair_frag =
  "void main()"
  "{"
    "if(gl_TexCoord[0].y==0)"
-     "gl_FragColor.xyz=vec3(gl_TexCoord[0].xx,fract(sin(float((int(gl_FragCoord.x)*19349663^int(gl_FragCoord.y)*83492791)%38069))*43758.5));"
+     "gl_FragColor.xyz=vec3(gl_TexCoord[0].xx,fract(sin(float((int(gl_FragCoord.x)*19349663^int(gl_FragCoord.y)*83492791)%38069))*43758.545));"
    "else"
      " if(gl_TexCoord[0].y==1)"
        "{"

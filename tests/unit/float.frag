@@ -1,3 +1,9 @@
+void precision() {
+  float a = 0.00000012345;
+  float b = 1.234567891234;
+  float c = 1234567.891234;
+}
+
 void main()
 {
 float f1 = 1.5;
@@ -10,8 +16,5 @@ float f7 = 2E-9;
 float f8 = 2E+6;
 float f9 = 2e10;
 
-float n = 1. / (f1 + f2 + f3 + f4 + f5);
-float o = 1. / (f6 * f8 * f7 * f9);
-
-gl_FragColor=vec4(n,o,n,0.);
+gl_FragColor=vec4(0.);
 }

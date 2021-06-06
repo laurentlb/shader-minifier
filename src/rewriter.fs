@@ -71,7 +71,7 @@ let rec private simplifyExpr env = function
     | FunCall(Op ",", [e1; FunCall(Op ",", [e2; e3])]) ->
         FunCall(Op ",", [simplifyExpr env (FunCall(Op ",", [e1; e2])); e3])
 
-    | FunCall(Op "-", [x; Float (f, s)]) when f < 0. ->
+    | FunCall(Op "-", [x; Float (f, s)]) when f < 0.M ->
         FunCall(Op "+", [x; Float (-f, s)]) |> simplifyExpr env
     | FunCall(Op "-", [x; Int (i, s)]) when i < 0 ->
         FunCall(Op "+", [x; Int (-i, s)]) |> simplifyExpr env
@@ -92,15 +92,15 @@ let rec private simplifyExpr env = function
     | FunCall(Op "!=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <> i2)
 
     // Stupid simplifications (they can be useful to simplify rewritten code)
-    | FunCall(Op "/", [e; Float (1.,_)]) -> e
-    | FunCall(Op "*", [e; Float (1.,_)]) -> e
-    | FunCall(Op "*", [Float (1.,_); e]) -> e
-    | FunCall(Op "*", [_; Float (0.,_) as e]) -> e
-    | FunCall(Op "*", [Float (0.,_) as e; _]) -> e
-    | FunCall(Op "+", [e; Float (0.,_)]) -> e
-    | FunCall(Op "+", [Float (0.,_); e]) -> e
-    | FunCall(Op "-", [e; Float (0.,_)]) -> e
-    | FunCall(Op "-", [Float (0.,_); e]) -> FunCall(Op "-", [e])
+    | FunCall(Op "/", [e; Float (1.M,_)]) -> e
+    | FunCall(Op "*", [e; Float (1.M,_)]) -> e
+    | FunCall(Op "*", [Float (1.M,_); e]) -> e
+    | FunCall(Op "*", [_; Float (0.M,_) as e]) -> e
+    | FunCall(Op "*", [Float (0.M,_) as e; _]) -> e
+    | FunCall(Op "+", [e; Float (0.M,_)]) -> e
+    | FunCall(Op "+", [Float (0.M,_); e]) -> e
+    | FunCall(Op "-", [e; Float (0.M,_)]) -> e
+    | FunCall(Op "-", [Float (0.M,_); e]) -> FunCall(Op "-", [e])
 
     // No simplification when numbers have different suffixes
     | FunCall(_, [Int (_, su1); Int (_, su2)]) as e when su1 <> su2 -> e
@@ -112,7 +112,7 @@ let rec private simplifyExpr env = function
     | FunCall(Op "/", [Int (i1, su); Int (i2, _)]) -> Int (i1 / i2, su)
     | FunCall(Op "%", [Int (i1, su); Int (i2, _)]) -> Int (i1 % i2, su)
 
-    | FunCall(Op "-", [Float (0.0,su)]) -> Float (0.0, su)
+    | FunCall(Op "-", [Float (0.M,su)]) -> Float (0.M, su)
     | FunCall(Op "-", [Float (f1,su)]) -> Float (-f1, su)
     | FunCall(Op "-", [Float (i1,su); Float (i2,_)]) -> Float (i1 - i2, su)
     | FunCall(Op "+", [Float (i1,su); Float (i2,_)]) -> Float (i1 + i2, su)
@@ -123,12 +123,12 @@ let rec private simplifyExpr env = function
         else div
 
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
-    | FunCall(Var var, [Float (0.,_); Float (1.,_); _]) as e when var.Name = "smoothstep" -> e
+    | FunCall(Var var, [Float (0.M,_); Float (1.M,_); _]) as e when var.Name = "smoothstep" -> e
     | FunCall(Var var, [a; b; x]) when var.Name = "smoothstep" && options.smoothstepTrick ->
         let sub1 = FunCall(Op "-", [x; a])
         let sub2 = FunCall(Op "-", [b; a])
         let div  = FunCall(Op "/", [sub1; sub2]) |> mapExpr env
-        FunCall(Var (Ident "smoothstep"),  [Float (0.,""); Float (1.,""); div])
+        FunCall(Var (Ident "smoothstep"),  [Float (0.M,""); Float (1.M,""); div])
 
     | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
@@ -138,9 +138,9 @@ let rec private simplifyExpr env = function
         | _ -> e
 
     // pi is acos(-1), pi/2 is acos(0)
-    | Float(f, _) when f = 3.141592653589793 -> FunCall(Var (Ident "acos"), [Float (-1., "")])
-    | Float(f, _) when f = 6.283185307179586 -> FunCall(Op "*", [Float (2., ""); FunCall(Var (Ident "acos"), [Float (-1., "")])])
-    | Float(f, _) when f = 1.5707963267948966 -> FunCall(Var (Ident "acos"), [Float (0., "")])
+    | Float(f, _) when float f = 3.141592653589793 -> FunCall(Var (Ident "acos"), [Float (-1.M, "")])
+    | Float(f, _) when float f = 6.283185307179586 -> FunCall(Op "*", [Float (2.M, ""); FunCall(Var (Ident "acos"), [Float (-1.M, "")])])
+    | Float(f, _) when float f = 1.5707963267948966 -> FunCall(Var (Ident "acos"), [Float (0.M, "")])
 
     | e -> e
 

@@ -3,6 +3,7 @@
 open System
 open Ast
 open Options.Globals
+open System.Text.RegularExpressions
 
 module private PrinterImpl =
 
@@ -46,13 +47,17 @@ module private PrinterImpl =
         List.map toS li |> String.concat ","
 
     let floatToS f =
-        let si = if f < 0. then "-" else ""
-        let test = out "%g" (abs f)
-        // display "3." instead of "3"
-        if fst (System.Int32.TryParse test) then (out "%g." f)
-        // display ".5" instead of "0.5"
-        else if test.[0] = '0' then si + (test.[1..])
-        else si + test
+        let si = if f < 0.M then "-" else ""
+        let f = abs (float f)
+        let str = f.ToString("g", System.Globalization.CultureInfo.InvariantCulture)
+        let str = if str.EndsWith(".0") then str.[0..str.Length-2] else str
+
+        if Regex.Match(str, "^\\d+$").Success then
+            si + str + "." // display "3." instead of "3"
+        elif str.[0] = '0' && str.Length > 2 then
+            si + (str.[1..]) // display ".5" instead of "0.5"
+        else
+            si + str
 
     let rec exprToS exp = exprToSLevel 0 exp
 
