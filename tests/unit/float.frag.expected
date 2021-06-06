@@ -1,14 +1,14 @@
 /* File generated with Shader Minifier 1.1.6
  * http://www.ctrl-alt-test.fr
  */
-#ifndef FLOAT_FRAG_EXPECTED_
-# define FLOAT_FRAG_EXPECTED_
 
-const char *float_frag =
+// tests/unit/float.frag
+"void precision()"
+ "{"
+   "float a=1.2345e-07,b=1.234567891234,c=1234567.891234;"
+ "}"
  "void main()"
  "{"
-   "float e=1.5,r=3e-07,o=.42,a=0.,l=0.,g=-.002,i=2e-09,v=2e+06,c=2e+10,d=1./(e+r+o+a+l),f=1./(g*v*i*c);"
-   "gl_FragColor=vec4(d,f,d,0.);"
- "}";
-
-#endif // FLOAT_FRAG_EXPECTED_
+   "float f1=1.5,f2=3e-07,f3=.42,f4=0.,f5=0.,f6=-.002,f7=2e-09,f8=2000000.,f9=20000000000.;"
+   "gl_FragColor=vec4(0.);"
+ "}",
