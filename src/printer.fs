@@ -38,7 +38,7 @@ module private PrinterImpl =
 
     let idToS (id: Ident) =
         // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
-        if isUniqueId id then
+        if id.IsUniqueId then
             string (char (1000 + int id.Name))
         else id.Name
 
