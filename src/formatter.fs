@@ -41,6 +41,14 @@ let private printNoHeader out (shaders: Ast.Shader[]) =
     let str = [for shader in shaders -> Printer.print shader.code] |> String.concat "\n"
     fprintf out "%s" str
 
+let private printIndented out (shaders: Ast.Shader[]) =
+    [for shader in shaders do
+        if shaders.Length > 1 then
+            yield "// " + shader.filename
+        yield Printer.print shader.code]
+    |> String.concat "\n\n"
+    |> fprintf out "%s"
+
 let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out "/* File generated with Shader Minifier %s" Options.version
     fprintfn out " * http://www.ctrl-alt-test.fr"
@@ -75,6 +83,7 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out ""
 
 let print out shaders exportedNames = function
+    | Options.IndentedText -> printIndented out shaders
     | Options.Text -> printNoHeader out shaders
     | Options.CHeader -> printHeader out shaders false exportedNames
     | Options.CList -> printHeader out shaders true exportedNames
