@@ -198,32 +198,35 @@ module private RenamerImpl =
     let renFctName env (f: FunctionType) =
         let isExternal = options.hlsl && f.semantics <> []
         if (isExternal && options.preserveExternals) || options.preserveAllGlobals then
-            env, f
+            env
         elif List.exists ((=) f.fName.Name) options.noRenamingList then
-            env, f
+            env
         else
             match env.varRenames.TryFind(f.fName.Name) with
-            | Some name -> env, {f with fName = Ident(name)}
+            | Some name ->
+                f.fName.Rename(name)
+                env
             | None ->
                 let newEnv = renFunction env (List.length f.args) f.fName
                 if isExternal then export env "F" f.fName
-                newEnv, f
+                newEnv
 
     let renList env fct li =
         let mutable env = env
-        let res = li |> List.map (fun i ->
-            let x = fct env i
-            env <- fst x
-            snd x)
-        env, res
+        for i in li do
+            env <- fct env i
+        env
 
-    let rec renExpr env =
+    let rec renExpr (env: Env) expr =
         let mapper _ = function
-            | Var v -> Var (Ident (defaultArg (Map.tryFind v.Name env.varRenames) v.Name))
+            | Var v ->
+                match env.varRenames.TryFind(v.Name) with
+                | Some name -> v.Rename(name); Var v
+                | None -> Var v
             | e -> e
-        mapExpr (mapEnv mapper id)
+        mapExpr (mapEnv mapper id) expr |> ignore
 
-    let renDecl isTopLevel env (ty:Type, vars) : Env * Decl =
+    let renDecl isTopLevel env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
             let ext =
                 match ty.typeQ with
@@ -248,12 +251,12 @@ module private RenamerImpl =
                         export env "" decl.name
                         env
 
-            let init = Option.map (renExpr env) decl.init
-            let size = Option.map (renExpr env) decl.size
-            env, {decl with size=size; init=init}
+            Option.iter (renExpr env) decl.init
+            Option.iter (renExpr env) decl.size
+            env
 
-        let env, res = renList env aux vars
-        env, (ty, res)
+        let env = renList env aux vars
+        env
 
     // "Garbage collection": remove names that are not used in the block
     // so that we can reuse them. In other words, this function allows us
@@ -278,54 +281,55 @@ module private RenamerImpl =
         env.Update(varRenames, env.funRenames, allAvailable)
 
     let rec renStmt env =
-        let renOpt o = Option.map (renExpr env) o
+        let renOpt o = Option.iter (renExpr env) o
         function
-        | Expr e -> env, Expr (renExpr env e)
+        | Expr e -> renExpr env e; env
         | Decl d ->
-            let env, res = renDecl false env d
-            env, Decl res
+            let env = renDecl false env d
+            env
         | Block b ->
-            let _, res = renList env renStmt b
-            env, Block res
+            renList env renStmt b |> ignore
+            env
         | If(cond, th, el) ->
-            let _, th = renStmt env th
-            let el = Option.map (fun x -> snd (renStmt env x)) el
-            env, If(renExpr env cond, th, el)
+            renStmt env th |> ignore
+            Option.iter (renStmt env >> ignore) el
+            renExpr env cond
+            env
         | ForD(init, cond, inc, body) ->
-            let newEnv, init = renDecl false env init
-            let _, body = renStmt newEnv body
-            let cond = Option.map (renExpr newEnv) cond
-            let inc = Option.map (renExpr newEnv) inc
-            if options.hlsl then newEnv, ForD(init, renOpt cond, renOpt inc, body)
-            else env, ForD(init, renOpt cond, renOpt inc, body)
+            let newEnv = renDecl false env init
+            renStmt newEnv body |> ignore
+            Option.iter (renExpr newEnv) cond
+            Option.iter (renExpr newEnv) inc
+            if options.hlsl then newEnv
+            else env
         | ForE(init, cond, inc, body) ->
-            let _, body = renStmt env body
-            env, ForE(renOpt init, renOpt cond, renOpt inc, body)
+            renOpt init
+            renOpt cond
+            renOpt inc
+            renStmt env body |> ignore
+            env
         | While(cond, body) ->
-            let _, body = renStmt env body
-            env, While(renExpr env cond, body)
+            renExpr env cond
+            renStmt env body |> ignore
+            env
         | DoWhile(cond, body) ->
-            let _, body = renStmt env body
-            env, DoWhile(renExpr env cond, body)
-        | Jump(k, e) -> env, Jump(k, renOpt e)
-        | Verbatim _ as v -> env, v
+            renExpr env cond
+            renStmt env body |> ignore
+            env
+        | Jump(_, e) -> renOpt e; env
+        | Verbatim _ -> env
 
     let rec renTopLevelName env = function
-        | TLDecl d ->
-            let env, res = renDecl true env d
-            env, TLDecl res
-        | Function(fct, body) ->
-            let env, res = renFctName env fct
-            env, Function(res, body)
-        | e -> env, e
+        | TLDecl d -> renDecl true env d
+        | Function(fct, _) -> renFctName env fct
+        | _ -> env
 
     let rec renTopLevelBody (env: Env) = function
         | Function(fct, body) ->
             let env = env.onEnterFunction env body
-            let env, args = renList env (renDecl false) fct.args
-            let _env, body = renStmt env body
-            Function({fct with args=args}, body)
-        | e -> e
+            let env = renList env (renDecl false) fct.args
+            renStmt env body |> ignore
+        | _ -> ()
 
     // Compute list of variables names, based on frequency
     let computeListOfNames text =
@@ -348,13 +352,11 @@ module private RenamerImpl =
         let mutable env = env
         // First, rename top-level values.
         for shader in shaders do
-            let newEnv, code = renList env renTopLevelName shader.code
-            env <- newEnv
-            shader.code <- code
+            env <- renList env renTopLevelName shader.code
 
         // Rename local variables.
         for shader in shaders do
-            shader.code <- List.map (renTopLevelBody env) shader.code
+            List.iter (renTopLevelBody env) shader.code
         !env.exportedNames
 
     let assignUniqueIds shaders =
