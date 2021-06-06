@@ -57,7 +57,7 @@ let private stripSpaces str =
     result.ToString()
 
 
-let private declsNotToInline (d: Ast.DeclElt list) = d |> List.filter (fun x -> not x.name.MustBeInlined)
+let private declsNotToInline (d: Ast.DeclElt list) = d |> List.filter (fun x -> not x.name.ToBeInlined)
 
 let private bool = function
     | true -> Var (Ident "true") // Int (1, "")
@@ -132,9 +132,9 @@ let rec private simplifyExpr env = function
 
     | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
-    | Var s as e when s.MustBeInlined ->
+    | Var s as e ->
         match env.vars.TryFind s.Name with
-        | Some (_, {init = Some init}) -> init |> mapExpr env
+        | Some (_, {name = id; init = Some init}) when id.ToBeInlined -> init |> mapExpr env
         | _ -> e
 
     // pi is acos(-1), pi/2 is acos(0)
@@ -165,6 +165,56 @@ let private rwTypeSpec = function
 let rwType (ty: Type) =
     makeType (rwTypeSpec ty.name) (Option.map stripSpaces ty.typeQ)
 
+// Return the list of variables used in the statements, with the number of references.
+let collectReferences stmtList =
+    let count = Dictionary<string, int>()
+    let collectLocalUses _ = function
+        | Var v as e ->
+            match count.TryGetValue(v.Name) with
+            | true, n -> count.[v.Name] <- n + 1
+            | false, _ -> count.[v.Name] <- 1
+            e
+        | e -> e
+    for expr in stmtList do
+        mapStmt (mapEnv collectLocalUses id) expr |> ignore
+    count
+
+// Mark variables as inlinable when possible.
+// For now, only mark a variable when:
+//  - the variable is used only once in the current block
+//  - the variable is not used in a sub-block (e.g. inside a loop)
+//  - the init value is trivial (doesn't depend on a variable)
+let findInlinable block =
+    // Variables that are defined in this scope.
+    let localDefs = Dictionary<string, Ident>()
+    // List of expressions in the current block. Do not look in sub-blocks.
+    let mutable localExpr = []
+    for stmt: Stmt in block do
+        match stmt with
+        | Decl (_, li) ->
+            for def in li do
+                // can only inline if it has a value
+                match def.init with
+                | None -> ()
+                | Some init ->
+                    localExpr <- init :: localExpr
+                    // Inline only if the init value doesn't depend on other variables.
+                    let deps = collectReferences [Expr init]
+                    if deps.Count = 0 then
+                        localDefs.[def.name.Name] <- def.name
+        | Expr e
+        | Jump (_, Some e) -> localExpr <- e :: localExpr
+        | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ -> ()
+
+    let localReferences = collectReferences (List.map Expr localExpr)
+    let allReferences = collectReferences block
+    
+    for def in localDefs do
+        if not def.Value.ToBeInlined then
+            match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
+            | (true, 1), (true, 1) -> def.Value.Inline()
+            | _ -> ()
+
 let private simplifyStmt = function
     | Block [] as e -> e
     | Block b ->
@@ -174,6 +224,8 @@ let private simplifyStmt = function
 
         // Remove inner empty blocks
         let b = b |> List.filter (function Block [] | Decl (_, []) -> false | _ -> true)
+        
+        findInlinable b
 
         // Try to remove blocks by using the comma operator
         let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
@@ -215,6 +267,8 @@ let reorderTopLevel t =
 let simplify li =
     li
     |> reorderTopLevel
+    |> mapTopLevel (mapEnv simplifyExpr simplifyStmt)
+    // A second pass, because some variables might now be inlinable.
     |> mapTopLevel (mapEnv simplifyExpr simplifyStmt)
     |> List.map (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)

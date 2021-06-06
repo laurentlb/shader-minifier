@@ -10,3 +10,8 @@ int vars(int arg,int arg2)
 {
   return arg*(arg+arg2);
 }
+int arithmetic2()
+{
+  int a=2,c=a+3;
+  return 4*a*c;
+}
