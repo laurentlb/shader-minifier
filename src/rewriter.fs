@@ -173,7 +173,7 @@ let private simplifyStmt = function
         let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
 
         // Remove inner empty blocks
-        let b = b |> List.filter (function Block [] -> false | _ -> true)
+        let b = b |> List.filter (function Block [] | Decl (_, []) -> false | _ -> true)
 
         // Try to remove blocks by using the comma operator
         let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
