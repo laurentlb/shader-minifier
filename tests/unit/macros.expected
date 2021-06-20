@@ -23,8 +23,8 @@ const char *macros_frag =
  "#define p$\n"
  "int t()"
  "{"
-   "int t=1,r=2,u=3,Z=4,Y=5,X=6,W=7,V=8,U=9,T=10,S=11,R=12;"
-   "return t+Y+R;"
+   "int t=2,r=3,u=4,Z=6,Y=7,X=8,W=9,V=10,U=11;"
+   "return 18;"
  "}";
 
 #endif // MACROS_EXPECTED_
