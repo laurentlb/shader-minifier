@@ -252,9 +252,9 @@ shader and make it more compression friendly.
 - Don't use overloaded functions.
 - Avoid macros that contain references to other variables.
 
-Please give feedback in the bugtracker. If something is blocking you, you can
-file a bug or update an existing bug. We rely on your feedback to prioritize the
-work.
+Please give feedback in the [bugtracker](https://github.com/laurentlb/Shader_Minifier/issues).
+If something is blocking you, you can file a bug or update an existing bug. We
+rely on your feedback to prioritize the work.
 
 ---------
 
