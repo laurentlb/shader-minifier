@@ -6,7 +6,7 @@
 void GSScene( triangleadj GSSceneIn input[6], inout TriangleStream<PSSceneIn> OutputStream )
 {   
     PSSceneIn output = (PSSceneIn)0;
-
+int n = //[3.14159265358979323846264338327950288419716939937510//];
     for( uint i=0; i<6; i+=2 )
     {
         output.Pos = input[i].Pos;

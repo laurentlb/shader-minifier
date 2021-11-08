@@ -51,6 +51,7 @@ type Expr =
     | Dot of Expr * string
     | Cast of Ident * Expr  // hlsl
     | VectorExp of Expr list // hlsl
+    | VerbatimExp of string
 
 and TypeSpec =
     | TypeName of string

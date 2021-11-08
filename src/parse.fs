@@ -22,6 +22,15 @@ module private ParseImpl =
 
     let ws = (many (choice [spaces1; commentLine; commentBlock] <?> "") |>> ignore)
 
+    let skipComment = skipMany (commentLine <|> commentBlock)
+
+    let verbatim = parse {
+        do! skipString "//["
+        do! skipComment
+        let! content = manyCharsTill (anyChar .>> skipComment) (pstring "//]")
+        do! ws
+        return content }
+
     let ch c = skipChar c >>. ws
     let str s = pstring s .>> ws
 
@@ -31,8 +40,10 @@ module private ParseImpl =
         (p .>> ws) <?> "identifier"
 
     let opp = new OperatorPrecedenceParser<_,_,_>()
-    let exprNoComma = opp.ExpressionParser
+    let exprNoCommaNoVerbatim = opp.ExpressionParser
+    let exprNoComma = choice [exprNoCommaNoVerbatim; verbatim |>> Ast.VerbatimExp]
     let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Op ",", [acc;e])))
+
     let parenExp = between (ch '(') (ch ')') expr
 
     // Primitives
@@ -269,8 +280,6 @@ module private ParseImpl =
         let list = many statement |>> Ast.Block
         between (ch '{') (ch '}') list
 
-    let skipComment = skipMany (commentLine <|> commentBlock)
-
     let mutable private forbiddenNames = [ "if"; "in"; "do" ]
 
     let macro =
@@ -282,13 +291,6 @@ module private ParseImpl =
         let define = pipe2 (keyword "define" >>. ident) line
                        (fun id line -> forbiddenNames <- id :: forbiddenNames; "define " + id + line)
         pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s)
-
-    let verbatim = parse {
-        do! skipString "//["
-        do! skipComment
-        let! content = manyCharsTill (anyChar .>> skipComment) (pstring "//]")
-        do! ws
-        return content }
 
     // HLSL attribute, eg. [maxvertexcount(12)]
     let attribute =
