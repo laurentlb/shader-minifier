@@ -100,6 +100,7 @@ module private PrinterImpl =
             out "{%s}" (commaListToS exprToS li)
         | Dot(e, field) ->
             out "%s.%s" (exprToSLevel precedence.["."] e) field
+        | VerbatimExp s -> s
 
     // Add a space if needed
     let sp (s: string) =
