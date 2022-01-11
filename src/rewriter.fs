@@ -225,7 +225,8 @@ let private simplifyStmt = function
         // Remove inner empty blocks
         let b = b |> List.filter (function Block [] | Decl (_, []) -> false | _ -> true)
         
-        findInlinable b
+        if not options.noInlining then
+            findInlinable b
 
         // Try to remove blocks by using the comma operator
         let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
