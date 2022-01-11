@@ -1,0 +1,17 @@
+void main()
+{
+  float x=.5,a=x*(.6*x);
+}
+int arithmetic()
+{
+  return 40;
+}
+int vars(int arg,int arg2)
+{
+  return arg*(arg+arg2);
+}
+int arithmetic2()
+{
+  int a=2,b=3,c=a+b;
+  return 4*a*c;
+}
