@@ -186,7 +186,8 @@ let collectReferences stmtList =
 //  - the init value is trivial (doesn't depend on a variable)
 let findInlinable block =
     // Variables that are defined in this scope.
-    let localDefs = Dictionary<string, Ident>()
+    // The boolean indicates if the variable initialization has dependencies.
+    let localDefs = Dictionary<string, (Ident * bool)>()
     // List of expressions in the current block. Do not look in sub-blocks.
     let mutable localExpr = []
     for stmt: Stmt in block do
@@ -200,8 +201,7 @@ let findInlinable block =
                     localExpr <- init :: localExpr
                     // Inline only if the init value doesn't depend on other variables.
                     let deps = collectReferences [Expr init]
-                    if deps.Count = 0 then
-                        localDefs.[def.name.Name] <- def.name
+                    localDefs.[def.name.Name] <- (def.name, deps.Count > 0)
         | Expr e
         | Jump (_, Some e) -> localExpr <- e :: localExpr
         | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ -> ()
@@ -210,9 +210,11 @@ let findInlinable block =
     let allReferences = collectReferences block
     
     for def in localDefs do
-        if not def.Value.ToBeInlined then
+        let ident, hasInitDeps = def.Value
+        if not ident.ToBeInlined then
             match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-            | (true, 1), (true, 1) -> def.Value.Inline()
+            | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline()
+            | (false, _), (false, _) -> ident.Inline()
             | _ -> ()
 
 let private simplifyStmt = function

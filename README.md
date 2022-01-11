@@ -37,6 +37,7 @@ the same name using function overloading.
 - Analyze the context and make statistics to compute the variable name that will
 be the most compression-friendly.
 - Inline variables.
+- Remove unused local variables.
 
 ## Example output
 

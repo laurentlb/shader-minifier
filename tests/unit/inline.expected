@@ -1,6 +1,8 @@
+float result;
 void main()
 {
   float x=.5,a=x*(.6*x);
+  result=a;
 }
 int arithmetic()
 {
@@ -14,4 +16,13 @@ int arithmetic2()
 {
   int a=2,c=a+3;
   return 4*a*c;
+}
+int unusedVars()
+{
+  int d=30;
+  return d;
+}
+int unusedVars2()
+{
+  return 18;
 }
