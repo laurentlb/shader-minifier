@@ -10,9 +10,11 @@
 
 --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
 --hlsl --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
---no-renaming --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
---no-renaming --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
+--no-renaming --no-inlining --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
+--no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
 --no-renaming --format indented -o tests/unit/inline.expected tests/unit/inline.frag
+--no-renaming --format indented --no-inlining -o tests/unit/inline.no.expected tests/unit/inline.frag
+--no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
 
 # Partial renaming tests
 
@@ -28,7 +30,7 @@
 
 # Tests with full renaming
 
---format c-array -o tests/unit/many_variables.expected tests/unit/many_variables.frag
+--format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
 --hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
 -o tests/real/lunaquatic.frag.expected tests/real/lunaquatic.frag
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
@@ -36,8 +38,8 @@
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
 -o tests/unit/function_overload.expected tests/unit/function_overload.frag
 -o tests/unit/externals.expected tests/unit/externals.frag
--o tests/unit/macros.expected tests/unit/macros.frag
+-o tests/unit/macros.expected --no-inlining tests/unit/macros.frag
 
 # Optimization tests
 
---no-renaming --format text -o tests/unit/pi.frag.expected tests/unit/pi.frag
+--no-renaming --no-inlining --format text -o tests/unit/pi.frag.expected tests/unit/pi.frag

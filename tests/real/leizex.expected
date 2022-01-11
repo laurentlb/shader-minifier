@@ -17,7 +17,7 @@ _leizex_frag:
 	db   'f=f*f*(3.-2.*f);'
 	db   'int n=ip.x+ip.y*57+113*ip.z+sem;'
 	db   'float res=mix(mix(mix(coolfFunc3d2(n+0),coolfFunc3d2(n+1),f.x),mix(coolfFunc3d2(n+57),coolfFunc3d2(n+58),f.x),f.y),mix(mix(coolfFunc3d2(n+113),coolfFunc3d2(n+114),f.x),mix(coolfFunc3d2(n+170),coolfFunc3d2(n+171),f.x),f.y),f.z);'
-	db   'return 1.-res*9.31323e-10;'
+	db   'return 1.-res*(1./1073741824.);'
 	db '}'
 	db 'vec2 celular(in vec3 x)'
 	db '{'
@@ -29,7 +29,7 @@ _leizex_frag:
 	db       'for(int i=-1;i<=1;i++)'
 	db         '{'
 	db           'int nn=ip.x+i+57*(ip.y+j)+113*(ip.z+k);'
-	db           'vec3 di=vec3(float(i),float(j),float(k))-f+vec3(coolfFunc3d2(nn),coolfFunc3d2(nn+1217),coolfFunc3d2(nn+2513))/2.14748e+09;'
+	db           'vec3 di=vec3(float(i),float(j),float(k))-f+vec3(coolfFunc3d2(nn),coolfFunc3d2(nn+1217),coolfFunc3d2(nn+2513))/2147483647.;'
 	db           'float d2=dot(di,di);'
 	db           'if(d2<dmin.x)'
 	db             'dmin.y=dmin.x,dmin.x=d2;'
@@ -67,7 +67,7 @@ _leizex_frag:
 	db   'float r2=s.x*s.x*.32+s.y*s.y;'
 	db   'vec2 d=s*(7.-sqrt(37.5-11.5*r2))/(r2+1.);'
 	db   'vec3 rayTar=vec3(0.,1.5,2.);'
-	db   'rayPos=rayTar+vec3(-sin(6.28319*ftime/20.),.75*cos(6.28319*ftime/20.+.5),-cos(6.28319*ftime/20.));'
+	db   'rayPos=rayTar+vec3(-sin(6.2831853*ftime/20.),.75*cos(6.2831853*ftime/20.+.5),-cos(6.2831853*ftime/20.));'
 	db   'rayTar+=.075*vec3(noise3f(vec3(2.*ftime,0.,.5),0),noise3f(vec3(2.*ftime,.1,.4),7),noise3f(vec3(2.*ftime,.2,.3),9));'
 	db   'float roll=.1*noise3f(vec3(2.*ftime,0.,0.),13);'
 	db   'vec3 up=vec3(0.,cos(roll),sin(roll)),dd=normalize(rayTar-rayPos),rr=normalize(cross(dd,up)),uu=normalize(cross(rr,dd));'
@@ -105,4 +105,3 @@ _leizex_frag:
 	db   'col*=.5+.5*(1.-p.x)*(1.+p.x);'
 	db   'gl_FragColor=vec4(col,1.);'
 	db '}', 0
-

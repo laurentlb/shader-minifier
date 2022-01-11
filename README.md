@@ -36,7 +36,8 @@ same name as a global variable not used in the function; two functions may have
 the same name using function overloading.
 - Analyze the context and make statistics to compute the variable name that will
 be the most compression-friendly.
-- Optionally inline variables.
+- Inline variables.
+- Remove unused local variables.
 
 ## Example output
 
@@ -101,6 +102,7 @@ OPTIONS:
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
+    --no-inlining         Do not automatically inline variables
     --no-renaming         Do not rename anything
     --no-renaming-list <string>
                           Comma-separated list of functions to preserve
@@ -131,7 +133,7 @@ shader_minifier.exe -o shader_code.h fragment.glsl
 ```
 
 We recommend that you frequently check the output of Shader Minifier to make
-sure there are no obvious problems. Use inlining where possible.
+sure there are no obvious problems. Use [inlining](#inlining) where possible.
 
 If you desperately need to save a few bytes, try another value of
 `--field-names`. It can affect the size after compression.
@@ -199,7 +201,21 @@ void GSScene( triangleadj GSSceneIn input[6], inout TriangleStream<PSSceneIn> Ou
 
 ## Inlining
 
-Shader Minifier will inline any variable that starts with `i_`. Inlining can allow the Minifier to simplify the code further.
+### Automatic inlining
+
+Shader Minifier 1.7 and above will try to automatically inline some variables.
+This happens when:
+- the variable is used only once in the current block,
+- and the variable is not used in a sub-block (e.g. inside a loop),
+- and the init value is trivial (doesn't depend on a variable).
+
+If inlining causes a bug in your code, you can disable it with `--no-inlining`
+and please report a bug.
+
+### Explicit Inlining
+
+Shader Minifier will always inline variables that starts with `i_`. Inlining can allow
+the Minifier to simplify the code further.
 
 For example, this input:
 
@@ -225,11 +241,7 @@ int foo(int x,int y)
 }
 ```
 
-It's often a good idea to inline the variables that are used only once. The
-minifier currently doesn't this trick automatically because this can be unsafe
-(in presence of side effects).
-
-If you want to aggressively reduce the size of your shader, try inlining other
+If you want to aggressively reduce the size of your shader, try inlining more
 variables. Inlining can have performance implications though (if the variable
 stored the result of a computation), so be careful with it.
 
@@ -252,9 +264,9 @@ shader and make it more compression friendly.
 - Don't use overloaded functions.
 - Avoid macros that contain references to other variables.
 
-Please give feedback in the bugtracker. If something is blocking you, you can
-file a bug or update an existing bug. We rely on your feedback to prioritize the
-work.
+Please give feedback in the [bugtracker](https://github.com/laurentlb/Shader_Minifier/issues).
+If something is blocking you, you can file a bug or update an existing bug. We
+rely on your feedback to prioritize the work.
 
 ---------
 

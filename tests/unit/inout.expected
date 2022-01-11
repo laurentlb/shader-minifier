@@ -7,19 +7,19 @@ in vec3 c,v;
 out vec4 o;
 void main()
 {
-  vec3 l=normalize(v),u=normalize(c),f=vec3(.1,.2,.3),z=vec3(.5,.5,.5),x=texture(e,reflect(-l,u)).xyz,p=texture(e,refract(-l,u,1./1.5)).xyz,d=mix(f*p,x,.1);
-  o=vec4(d,1.);
+  vec3 l=normalize(v),u=normalize(c),f=vec3(.1,.2,.3),x=texture(e,reflect(-l,u)).xyz,p=texture(e,refract(-l,u,1./1.5)).xyz,z=mix(f*p,x,.1);
+  o=vec4(z,1.);
 }
-vec3 r(vec3 z,vec3 l,vec3 s)
+vec3 r(vec3 d,vec3 l,vec3 s)
 {
   float C=1.-clamp(dot(l,s),0.,1.);
-  return C*C*C*C*C*(1.-z)+z;
+  return C*C*C*C*C*(1.-d)+d;
 }
-vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 z,float w)
+vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)
 {
   vec3 s=normalize(l+y);
   float b=1.+2048.*(1.-w)*(1.-w);
-  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(z,l,s);
+  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);
   return mix(Z,Y,X);
 }
 
@@ -32,20 +32,20 @@ uniform float t;
 uniform vec3 m,i,a,n;
 in vec3 c,v;
 out vec4 o;
-vec3 r(vec3 z,vec3 l,vec3 s)
+vec3 r(vec3 d,vec3 l,vec3 s)
 {
   float C=1.-clamp(dot(l,s),0.,1.);
-  return C*C*C*C*C*(1.-z)+z;
+  return C*C*C*C*C*(1.-d)+d;
 }
 void main()
 {
-  vec3 l=normalize(v),u=normalize(c),f=i,z=n,d=a+mix(f*m,m,.5);
-  o=vec4(d,1.);
+  vec3 f=i,z=a+mix(f*m,m,.5);
+  o=vec4(z,1.);
 }
-vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 z,float w)
+vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)
 {
   vec3 s=normalize(l+y);
   float b=1.+2048.*(1.-w)*(1.-w);
-  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(z,l,s);
+  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);
   return mix(Z,Y,X);
 }

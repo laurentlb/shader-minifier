@@ -43,7 +43,7 @@ let stringToJumpKeyword = function
 
 type Expr =
     | Int of int * string
-    | Float of float * string
+    | Float of decimal * string
     | Var of Ident
     | Op of string
     | FunCall of Expr * Expr list

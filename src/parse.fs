@@ -65,7 +65,7 @@ module private ParseImpl =
         let conv s =
             let ok, res = System.Int32.TryParse(s : string)
             if ok then Ast.Int (res, "")
-            else Ast.Float (try float s, "" with _ -> failwith ("invalid number: " + s))
+            else Ast.Float (try decimal s, "" with _ -> failwith ("invalid number: " + s))
         regex r .>> ws |>> conv
 
     let anyNumber =

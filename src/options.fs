@@ -30,6 +30,7 @@ type CliArguments =
     | [<CustomCommandLine("--field-names")>] FieldNames of FieldSet
     | [<CustomCommandLine("--preserve-externals")>] PreserveExternals
     | [<CustomCommandLine("--preserve-all-globals")>] PreserveAllGlobals
+    | [<CustomCommandLine("--no-inlining")>] NoInlining
     | [<CustomCommandLine("--no-renaming")>] NoRenaming
     | [<CustomCommandLine("--no-renaming-list")>] NoRenamingList of string
     | [<CustomCommandLine("--no-sequence")>] NoSequence
@@ -46,6 +47,7 @@ type CliArguments =
             | FieldNames _ -> "Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'"
             | PreserveExternals _ -> "Do not rename external values (e.g. uniform)"
             | PreserveAllGlobals _ -> "Do not rename functions and global variables"
+            | NoInlining -> "Do not automatically inline variables"
             | NoRenaming -> "Do not rename anything"
             | NoRenamingList _ -> "Comma-separated list of functions to preserve"
             | NoSequence -> "Do not use the comma operator trick"
@@ -86,6 +88,9 @@ type Options() =
 
     member this.hlsl =
         args.Contains(Hlsl)
+
+    member this.noInlining =
+        args.Contains(NoInlining)
 
     member this.noSequence =
         args.Contains(NoSequence)

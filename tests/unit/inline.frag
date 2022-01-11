@@ -1,8 +1,11 @@
+float result;
+
 void main()
 {
   float x = 0.5;
   float i_y = 0.6*x;
   float a = x * i_y;
+  result = a;
 }
 
 int arithmetic()
@@ -27,4 +30,18 @@ int arithmetic2()
   int b = 3;
   int c = a + b;
   return 4 * a * c;
+}
+
+int unusedVars() {
+  int a = arithmetic();
+  int b = 13;
+  int c = 10;
+  int d = c * 3;
+  return d;
+}
+
+int unusedVars2() {
+  int var1 = 1, var2 = 2, var3 = 3, var4 = 4, var5 = 5, var6 = 6;
+  int var7 = 7, var8 = 8, var9 = 9, var10 = 10, var11 = 11, var12 = 12;
+  return var1 + var5 + var12;
 }
