@@ -76,7 +76,7 @@
  "}"
  "float intersect(in vec3 ro,in vec3 rd,out vec4 obj,out vec4 col)"
  "{"
-   "float tmin=10000.,t;"
+   "float tmin=1e4,t;"
    "col.w=-1.;"
    "bool isok;"
    "t=esfera(fpar00[0],ro,rd);"

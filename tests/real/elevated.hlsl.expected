@@ -76,7 +76,7 @@ const char *elevated_hlsl =
    "float3 w=normalize(mul(z,float4(f.x*2-1,-f.y*2+1,1,1)));"
    "float2 s=w.xz/w.y;"
    "float c=(2*s.y+1000)%8;"
-   "float3 r=float3(.55,.65,.75)+.1*D(s+t[3].w*.2,10)+.5*pow(1-w.y,8)+pow(saturate(mul(w,t[3])),16)*float3(.4,.3,.1)+float4(1+.4*c,2,3+.5*c,0)*(1-cos(12.5664*s.y))*saturate(1-abs(s.y)/10-abs(s.x+t[5+c].x*.0012-8)/20)*exp(-t[5+c].x*.0002);"
+   "float3 r=float3(.55,.65,.75)+.1*D(s+t[3].w*.2,10)+.5*pow(1-w.y,8)+pow(saturate(mul(w,t[3])),16)*float3(.4,.3,.1)+float4(1+.4*c,2,3+.5*c,0)*(1-cos(12.5664*s.y))*saturate(1-abs(s.y)/10-abs(s.x+t[5+c].x*.0012-8)/20)*exp(-t[5+c].x*2e-4);"
    "if(y.w>.5)"
      "{"
        "float p=length(y.xyz-t[4].xyz),d=t[1].w-y.y;"

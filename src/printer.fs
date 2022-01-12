@@ -49,13 +49,15 @@ module private PrinterImpl =
     let floatToS f =
         let si = if f < 0.M then "-" else ""
         let f = abs (float f)
-        let str = f.ToString("g", System.Globalization.CultureInfo.InvariantCulture)
-        let str = if str.EndsWith(".0") then str.[0..str.Length-2] else str
 
-        if Regex.Match(str, "^\\d+$").Success then
+        let str1 = f.ToString("#.################", System.Globalization.CultureInfo.InvariantCulture)
+        let str2 = f.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
+        let str = [str1; str2] |> List.minBy(fun x -> x.Length)
+
+        if str = "" then
+            "0."
+        elif Regex.Match(str, "^\\d+$").Success then
             si + str + "." // display "3." instead of "3"
-        elif str.[0] = '0' && str.Length > 2 then
-            si + (str.[1..]) // display ".5" instead of "0.5"
         else
             si + str
 
