@@ -60,7 +60,6 @@
   <ItemGroup>
     <Compile Include="main.fs" />
     <None Include="App.config" />
-    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">
