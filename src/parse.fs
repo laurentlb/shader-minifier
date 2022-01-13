@@ -127,7 +127,7 @@ module private ParseImpl =
     ]
 
     // Add all the operators in the OperatorParser
-    let makeOperator =
+    let () =
         // we start with operators with highest priority, then we decrement the counter.
         let mutable precCounter = 20 //(we have at most 20 different priorities)
         let addInfix li =
@@ -164,9 +164,9 @@ module private ParseImpl =
 
         // Restriction on field names
         let check ((_,l) as arg : Ast.Decl) =
-            List.iter (fun (decl:Ast.DeclElt) ->
+            for decl in l do
                 if decl.name.Name <> Rewriter.renameField decl.name.Name then
-                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name.Name) l
+                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name.Name
             arg
 
         let decls = many (declaration .>> ch ';' |>> check)
@@ -280,7 +280,7 @@ module private ParseImpl =
         let list = many statement |>> Ast.Block
         between (ch '{') (ch '}') list
 
-    let mutable private forbiddenNames = [ "if"; "in"; "do" ]
+    let mutable private forbiddenNames = []
 
     let macro =
         let nl = skipComment >>. skipMany (pchar '\\' >>. newline)

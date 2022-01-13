@@ -53,14 +53,11 @@ module private RenamerImpl =
 
     let computeContextTable text =
         let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
-        Seq.pairwise text |> Seq.iter (fun (prev, next) ->
+        for prev, next in Seq.pairwise text do
             match contextTable.TryFind (prev, next) with
             | Some n -> contextTable.[(prev, next)] <- n + 1
             | None -> contextTable.[(prev, next)] <- 1
-        )
         contextTable
-        //let chars, n = Seq.maxBy snd [for pair in contextTable -> pair.Key, pair.Value]
-        //printfn "max occ: %A -> %d" chars n
 
     // /!\ This function is a performance bottleneck.
     let chooseIdent (contextTable: HashMultiMap<(char*char), int>) ident candidates =
