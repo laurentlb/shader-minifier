@@ -52,25 +52,25 @@ module private RenamerImpl =
           (* Contextual renaming *)
 
     let computeContextTable text =
-        let contextTable = new HashMultiMap<(char*char), int>(HashIdentity.Structural)
+        let contextTable = new Dictionary<(char*char), int>()
         for prev, next in Seq.pairwise text do
-            match contextTable.TryFind (prev, next) with
-            | Some n -> contextTable.[(prev, next)] <- n + 1
-            | None -> contextTable.[(prev, next)] <- 1
+            match contextTable.TryGetValue((prev, next)) with
+            | true, n -> contextTable.[(prev, next)] <- n + 1
+            | false, _ -> contextTable.[(prev, next)] <- 1
         contextTable
 
     // /!\ This function is a performance bottleneck.
-    let chooseIdent (contextTable: HashMultiMap<(char*char), int>) ident candidates =
+    let chooseIdent (contextTable: Dictionary<(char*char), int>) ident candidates =
         let allChars = [char 32 .. char 127] // printable chars
         let prevs = allChars |> Seq.choose (fun c ->
-            match contextTable.TryFind (c, ident) with
-            | Some occ -> Some (c, occ)
-            | None -> None
+            match contextTable.TryGetValue((c, ident)) with
+            | true, occ -> Some (c, occ)
+            | false, _ -> None
         )
         let nexts = allChars |> Seq.choose (fun c ->
-            match contextTable.TryFind (ident, c) with
-            | Some occ -> Some (c, occ)
-            | None -> None
+            match contextTable.TryGetValue((ident, c)) with
+            | true, occ -> Some (c, occ)
+            | false, _-> None
         )
 
         let mutable best = -10000, ""
@@ -81,20 +81,20 @@ module private RenamerImpl =
             let mutable score = 0
 
             for c, _ in prevs do
-                match contextTable.TryFind (c, firstLetter) with
-                | None -> ()
-                | Some occ -> score <- score + occ
+                match contextTable.TryGetValue((c, firstLetter)) with
+                | false, _ -> ()
+                | true, occ -> score <- score + occ
 
             for c, _ in nexts do
-                match contextTable.TryFind (lastLetter, c) with
-                | None -> ()
-                | Some occ -> score <- score + occ
+                match contextTable.TryGetValue((lastLetter, c)) with
+                | false, _ -> ()
+                | true, occ -> score <- score + occ
 
             if word.Length > 1 then
                 score <- score - 1000 // avoid long names if there are 1-letter names available
-                match contextTable.TryFind (firstLetter, lastLetter) with
-                | None -> ()
-                | Some occ -> score <- score + occ
+                match contextTable.TryGetValue((firstLetter, lastLetter)) with
+                | false, _ -> ()
+                | true, occ -> score <- score + occ
 
             if score > fst best then best <- score, word
 
@@ -105,14 +105,14 @@ module private RenamerImpl =
 
         // update table
         for c in allChars do
-            match contextTable.TryFind (c, ident), contextTable.TryFind (c, firstLetter) with
-            | None, _ -> ()
-            | Some n1, None -> contextTable.[(c, firstLetter)] <- n1
-            | Some n1, Some n2 -> contextTable.[(c, firstLetter)] <- n1 + n2
-            match contextTable.TryFind (ident, c), contextTable.TryFind (lastLetter, c) with
-            | None, _ -> ()
-            | Some n1, None -> contextTable.[(lastLetter, c)] <- n1
-            | Some n1, Some n2 -> contextTable.[(lastLetter, c)] <- n1 + n2
+            match contextTable.TryGetValue((c, ident)), contextTable.TryGetValue((c, firstLetter)) with
+            | (false, _), _ -> ()
+            | (true, n1), (false, _) -> contextTable.[(c, firstLetter)] <- n1
+            | (true, n1), (true, n2) -> contextTable.[(c, firstLetter)] <- n1 + n2
+            match contextTable.TryGetValue((ident, c)), contextTable.TryGetValue((lastLetter, c)) with
+            | (false, _), _ -> ()
+            | (true, n1), (false, _) -> contextTable.[(lastLetter, c)] <- n1
+            | (true, n1), (true, n2) -> contextTable.[(lastLetter, c)] <- n1 + n2
           
         best
 
@@ -146,12 +146,12 @@ module private RenamerImpl =
     // compression-friendly.
     let bijectiveRenaming (allNames: string list) =
         let mutable allNames = allNames
-        let d = new HashMultiMap<string, string>(HashIdentity.Structural)
+        let d = Dictionary<string, string>()
         fun (env: Env) (id: Ident) ->
-            match d.TryFind(id.OldName) with
-            | Some name ->
+            match d.TryGetValue(id.OldName) with
+            | true, name ->
                 env.Rename(id, name)
-            | None ->
+            | false, _ ->
                 let newName = allNames.Head
                 allNames <- allNames.Tail
                 d.[id.OldName] <- newName
