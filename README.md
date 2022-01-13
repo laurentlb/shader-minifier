@@ -82,9 +82,10 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: shader_minifier.exe [--help] [-o <string>] [-v] [--hlsl] [--format <text|c-variables|c-array|js|nasm>]
+USAGE: shader_minifier.exe [--help] [-o <string>] [-v] [--hlsl] [--format <text|indented|c-variables|c-array|js|nasm>]
                            [--field-names <rgba|xyzw|stpq>] [--preserve-externals] [--preserve-all-globals]
-                           [--no-renaming] [--no-renaming-list <string>] [--no-sequence] [--smoothstep] [<filename>...]
+                           [--no-inlining] [--no-renaming] [--no-renaming-list <string>] [--no-sequence] [--smoothstep]
+                           [<filename>...]
 
 FILENAMES:
 
@@ -95,7 +96,7 @@ OPTIONS:
     -o <string>           Set the output filename (default is shader_code.h)
     -v                    Verbose, display additional information
     --hlsl                Use HLSL (default is GLSL)
-    --format <text|c-variables|c-array|js|nasm>
+    --format <text|indented|c-variables|c-array|js|nasm>
                           Choose to format the output (use none if you want just the shader)
     --field-names <rgba|xyzw|stpq>
                           Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'
@@ -203,7 +204,7 @@ void GSScene( triangleadj GSSceneIn input[6], inout TriangleStream<PSSceneIn> Ou
 
 ### Automatic inlining
 
-Shader Minifier 1.7 and above will try to automatically inline some variables.
+Shader Minifier will try to automatically inline some variables.
 This happens when:
 - the variable is used only once in the current block,
 - and the variable is not used in a sub-block (e.g. inside a loop),
