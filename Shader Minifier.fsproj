@@ -61,7 +61,6 @@
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Content Include="OpenTK.dll.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">

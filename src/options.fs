@@ -1,6 +1,5 @@
 ﻿module Options
 
-open System.Collections.Generic
 open System.IO
 open Argu
 
