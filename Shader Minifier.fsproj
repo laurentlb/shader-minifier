@@ -72,9 +72,6 @@
     <Reference Include="FParsecCS">
       <HintPath>lib\FParsecCS.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.PowerPack">
-      <HintPath>lib\FSharp.PowerPack.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core">
