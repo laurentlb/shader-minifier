@@ -11,7 +11,7 @@
     <AssemblyName>Checker</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFSharpCoreVersion>4.4.3.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>6.0.0.0</TargetFSharpCoreVersion>
     <Name>Checker</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
