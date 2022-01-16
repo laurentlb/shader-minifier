@@ -65,13 +65,21 @@
     <Reference Include="Argu">
       <HintPath>..\lib\Argu.dll</HintPath>
     </Reference>
-    <Reference Include="mscorlib" />
+    <Reference Include="FParsec">
+      <HintPath>..\lib\FParsec.dll</HintPath>
+    </Reference>
+    <Reference Include="FParsecCS">
+      <HintPath>..\lib\FParsecCS.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\lib\FSharp.Core.dll</HintPath>
+    </Reference>
     <Reference Include="OpenTK">
       <HintPath>..\lib\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
+    <Reference Include="System.ValueTuple" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Shader Minifier.fsproj">
       <Name>Shader Minifier</Name>
       <Project>{059c6af3-1877-4698-be34-bf7eb55d060a}</Project>
