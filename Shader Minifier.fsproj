@@ -58,9 +58,6 @@
     <Compile Include="src\rewriter.fs" />
     <Compile Include="src\parse.fs" />
     <Compile Include="src\main.fs" />
-    <None Include="App.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">

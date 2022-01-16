@@ -59,7 +59,6 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="main.fs" />
-    <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">
