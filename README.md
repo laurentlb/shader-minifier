@@ -3,10 +3,10 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/chwlpnssgd5kdl4x/branch/master?svg=true)](https://ci.appveyor.com/project/laurentlb/shader-minifier/branch/master)
 
 Shader Minifier is a tool that minifies and obfuscates shader code
-(GLSL and HLSL). Its original use-case is for the
-[demoscene](https://en.wikipedia.org/wiki/Demoscene), for optimizing
-4k and 64k intros. It is also suitable for reducing the size of the
-shaders in other applications (e.g. webgl, games).
+(GLSL and HLSL) without affecting its behaviour. Its original use-case
+is for the [demoscene](https://en.wikipedia.org/wiki/Demoscene), for
+optimizing 4k and 64k intros. It is also suitable for reducing the size
+of the shaders in other applications (e.g. webgl, games).
 
 In the context of 4kB intros, Shader Minifier help developers maintain and
 iterate on human-readable files, while shipping optimized code. Even when a
@@ -259,23 +259,37 @@ the output. If two functions have a different number of arguments, they may have
 the same name in the output. This reduces the number of identifiers used by the
 shader and make it more compression friendly.
 
+## Shader behaviour
+
+Shader Minifer works by applying to the
+[AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) modifications
+that produce a transformed but semantically equivalent AST. The
+resulting assembly may be different, but the minified shader should
+have the same behaviour as the original one. Or at least that's the
+intent.
+
+However certain rules, especially floating point arithmetic, can be
+tricky. If you observe differences, don't hesitate to
+[report a bug](#Feedback).
+
 ## Bugs and limitations
 
 - The parser is not complete. Some constructs are not yet supported.
 - Don't use overloaded functions.
 - Avoid macros that contain references to other variables.
 
+## Feedback
+
 Please give feedback in the [bugtracker](https://github.com/laurentlb/Shader_Minifier/issues).
 If something is blocking you, you can file a bug or update an existing bug. We
 rely on your feedback to prioritize the work.
+
+Contributions are welcome.
 
 ---------
 
 Slightly outdated user manual:
   http://www.ctrl-alt-test.fr/?page_id=7
-
-Contributions are welcome.
-
 
 Created by Laurent Le Brun (LLB / Ctrl-Alt-Test).
 
