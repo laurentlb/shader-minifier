@@ -269,7 +269,8 @@ have the same behaviour as the original one. Or at least that's the
 intent.
 
 However certain rules, especially floating point arithmetic, can be
-tricky. If you observe differences, don't hesitate to report a bug.
+tricky. If you observe differences, don't hesitate to
+[report a bug](#Feedback).
 
 ## Bugs and limitations
 
@@ -277,17 +278,18 @@ tricky. If you observe differences, don't hesitate to report a bug.
 - Don't use overloaded functions.
 - Avoid macros that contain references to other variables.
 
+## Feedback
+
 Please give feedback in the [bugtracker](https://github.com/laurentlb/Shader_Minifier/issues).
 If something is blocking you, you can file a bug or update an existing bug. We
 rely on your feedback to prioritize the work.
+
+Contributions are welcome.
 
 ---------
 
 Slightly outdated user manual:
   http://www.ctrl-alt-test.fr/?page_id=7
-
-Contributions are welcome.
-
 
 Created by Laurent Le Brun (LLB / Ctrl-Alt-Test).
 
