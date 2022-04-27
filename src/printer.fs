@@ -121,9 +121,9 @@ module private PrinterImpl =
 
     let backslashN() =
         match outputFormat with
-        | Options.Text | Options.JS -> "\n"
+        | Options.Text | Options.JS | Options.IndentedText -> "\n"
         | Options.Nasm -> "', 10, '"
-        | _ ->  "\\n"
+        | Options.CHeader | Options.CList ->  "\\n"
 
     // Print HLSL semantics
     let semToS sem =
