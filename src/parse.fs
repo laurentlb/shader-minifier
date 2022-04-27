@@ -5,7 +5,6 @@ open Options.Globals
 module private ParseImpl =
 
     // TODO: true, false
-    // TODO: switch case
 
     open FParsec.Primitives
     open FParsec.CharParsers
@@ -280,6 +279,18 @@ module private ParseImpl =
         let list = many statement |>> Ast.Block
         between (ch '{') (ch '}') list
 
+    let caseLabel =
+        let keywCase = keyword "case" >>. expr |>> (fun e -> Ast.Case e)
+        let keywDefault = keyword "default" |>> (fun _ -> Ast.Default)
+        attempt keywCase <|> keywDefault .>> ch ':'
+
+    let case =
+        pipe2 caseLabel (many (attempt statement)) (fun l sl -> (l, sl))
+
+    let switch =
+      let body = between (ch '{') (ch '}') (many case)
+      pipe2 (keyword "switch" >>. parenExp) body (fun e cl -> Ast.Switch(e, cl))
+
     let mutable private forbiddenNames = []
 
     let macro =
@@ -316,6 +327,7 @@ module private ParseImpl =
         ifStatement
         whileLoop
         doWhileLoop
+        switch
         verbatim |>> Ast.Verbatim
         macro |>> Ast.Verbatim
         attribute |>> Ast.Verbatim

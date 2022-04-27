@@ -204,7 +204,7 @@ let findInlinable block =
                     localDefs.[def.name.Name] <- (def.name, deps.Count > 0)
         | Expr e
         | Jump (_, Some e) -> localExpr <- e :: localExpr
-        | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ -> ()
+        | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
 
     let localReferences = collectReferences (List.map Expr localExpr)
     let allReferences = collectReferences block
