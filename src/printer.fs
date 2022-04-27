@@ -215,6 +215,15 @@ module private PrinterImpl =
             let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
             if s <> "" && s.[0] = '#' then out "%s%s" (backslashN()) (escape s)
             else escape s
+        | Switch(e, cl) ->
+            let labelToS = function
+                | Case e -> out "case %s:" (exprToS e)
+                | Default -> out "default:"
+            let caseToS (l, sl) =
+                let stmts = List.map (stmtToS (indent+2)) sl |> String.concat ""
+                out "%s%s%s" (nl (indent+1)) (labelToS l) stmts
+            let body = List.map caseToS cl |> String.concat ""
+            out "%s(%s){%s%s}" "switch" (exprToS e) body (nl indent)
 
     and stmtToS indent i =
         out "%s%s" (nl indent) (stmtToS' indent i)

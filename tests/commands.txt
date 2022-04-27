@@ -39,6 +39,7 @@
 -o tests/unit/function_overload.expected tests/unit/function_overload.frag
 -o tests/unit/externals.expected tests/unit/externals.frag
 -o tests/unit/macros.expected --no-inlining tests/unit/macros.frag
+--format indented -o tests/unit/switch.expected tests/unit/switch.frag
 
 # Optimization tests
 

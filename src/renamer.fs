@@ -311,6 +311,17 @@ module private RenamerImpl =
             env
         | Jump(_, e) -> renOpt e; env
         | Verbatim _ -> env
+        | Switch(e, cl) ->
+            let renLabel = function
+                | Case e -> renExpr env e
+                | Default -> ()
+            let renCase env (l, sl) =
+                renLabel l
+                renList env renStmt sl |> ignore<Env>
+                env
+            renExpr env e
+            renList env renCase cl |> ignore<Env>
+            env
 
     let rec renTopLevelName env = function
         | TLDecl d -> renDecl true env d

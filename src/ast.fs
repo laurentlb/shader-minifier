@@ -82,6 +82,11 @@ and Stmt =
     | DoWhile of Expr * Stmt
     | Jump of JumpKeyword * Expr option (*break, continue, return (expr)?, discard*)
     | Verbatim of string
+    | Switch of Expr * (CaseLabel * Stmt list) list
+
+and CaseLabel =
+    | Case of Expr
+    | Default
 
 and FunctionType = {
     retType: Type (*return*)
@@ -184,6 +189,14 @@ let rec mapStmt env i =
         | Jump(k, e) ->
             env, Jump (k, Option.map (mapExpr env) e)
         | Verbatim _ as v -> env, v
+        | Switch(e, cl) ->
+            let mapLabel = function
+                | Case e -> Case (mapExpr env e)
+                | Default -> Default
+            let mapCase (l, sl) =
+                let _, sl = foldList env mapStmt sl
+                (mapLabel l, sl)
+            env, Switch (mapExpr env e, List.map mapCase cl)
     let env, res = aux i
     env, env.fStmt res
 
