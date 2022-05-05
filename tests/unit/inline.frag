@@ -45,3 +45,11 @@ int unusedVars2() {
   int var7 = 7, var8 = 8, var9 = 9, var10 = 10, var11 = 11, var12 = 12;
   return var1 + var5 + var12;
 }
+
+int multiPass()
+{
+  int one = 1;
+  int two = one * 2;
+  int three = two + 1;
+  return three;
+}

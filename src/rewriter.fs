@@ -184,7 +184,7 @@ let collectReferences stmtList =
 //  - the variable is used only once in the current block
 //  - the variable is not used in a sub-block (e.g. inside a loop)
 //  - the init value is trivial (doesn't depend on a variable)
-let findInlinable block =
+let findInlinable foundInlinable block =
     // Variables that are defined in this scope.
     // The boolean indicates if the variable initialization has dependencies.
     let localDefs = Dictionary<string, (Ident * bool)>()
@@ -213,8 +213,8 @@ let findInlinable block =
         let ident, hasInitDeps = def.Value
         if not ident.ToBeInlined then
             match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-            | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline()
-            | (false, _), (false, _) -> ident.Inline()
+            | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline(); foundInlinable := true
+            | (false, _), (false, _) -> ident.Inline(); foundInlinable := true
             | _ -> ()
 
 let private simplifyStmt = function
@@ -227,9 +227,6 @@ let private simplifyStmt = function
         // Remove inner empty blocks
         let b = b |> List.filter (function Block [] | Decl (_, []) -> false | _ -> true)
         
-        if not options.noInlining then
-            findInlinable b
-
         // Try to remove blocks by using the comma operator
         let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
         let canOptimize = b |> List.forall (function
@@ -267,12 +264,25 @@ let reorderTopLevel t =
     else
         t
 
+let rec iterateSimplifyAndInline li =
+    let foundInlinable =
+        if options.noInlining then
+            false
+        else
+            let foundInlinableRef = ref false
+            let mapExpr _ e = e
+            let mapStmt = function
+                | Block b as e -> findInlinable foundInlinableRef b; e
+                | e -> e
+            mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
+            !foundInlinableRef
+    let simplified = mapTopLevel (mapEnv simplifyExpr simplifyStmt) li
+    if foundInlinable then iterateSimplifyAndInline simplified else simplified
+
 let simplify li =
     li
     |> reorderTopLevel
-    |> mapTopLevel (mapEnv simplifyExpr simplifyStmt)
-    // A second pass, because some variables might now be inlinable.
-    |> mapTopLevel (mapEnv simplifyExpr simplifyStmt)
+    |> iterateSimplifyAndInline
     |> List.map (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)
         | TLVerbatim s -> TLVerbatim (stripSpaces s)
