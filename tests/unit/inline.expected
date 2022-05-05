@@ -19,10 +19,13 @@ int arithmetic2()
 }
 int unusedVars()
 {
-  int d=30;
-  return d;
+  return 30;
 }
 int unusedVars2()
 {
   return 18;
+}
+int multiPass()
+{
+  return 3;
 }
