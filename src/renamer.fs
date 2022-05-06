@@ -228,10 +228,9 @@ module private RenamerImpl =
             Option.iter (renExpr env) decl.init
             Option.iter (renExpr env) decl.size
             let ext =
-                match ty.typeQ with
-                | Some tyQ -> ["in"; "out"; "attribute"; "varying"; "uniform"]
-                                |> List.exists (fun s -> tyQ.Contains(s))
-                | None -> false
+                let tyQSet = Set.ofList ty.typeQ
+                let extQ = ["in"; "out"; "attribute"; "varying"; "uniform"]
+                List.exists (fun s -> Set.contains s tyQSet) extQ
             let isExternal = isTopLevel && (ext || options.hlsl)
 
             if isTopLevel && options.preserveAllGlobals then

@@ -59,7 +59,7 @@ and TypeSpec =
 
 and Type = {
     name: TypeSpec // e.g. int
-    typeQ: string option // e.g. const, uniform
+    typeQ: string list // e.g. const, uniform
 }
 
 and DeclElt = {

@@ -140,7 +140,9 @@ module private PrinterImpl =
         | TypeStruct(prefix, id, decls) -> structToS prefix id decls
 
     and typeToS (ty: Type) =
-        let get = Option.fold (fun _ s -> s + " ") ""
+        let get = function
+            | [] -> ""
+            | li -> (String.concat " " li) + " "
         let typeSpec = typeSpecToS ty.name
         out "%s%s" (get ty.typeQ) typeSpec
 

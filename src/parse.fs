@@ -197,7 +197,6 @@ module private ParseImpl =
         let layout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
                      |>> (function s -> "layout(" + s + ")")
         let qualifier = many (storage <|> layout)
-                        |>> (function [] -> None | li -> Some (String.concat " " li))
         let typeSpec = structSpecifier <|> (ident |>> (fun id -> Ast.TypeName id.Name))
         pipe2 qualifier typeSpec (fun tyQ name -> Ast.makeType name tyQ)
 
@@ -212,7 +211,7 @@ module private ParseImpl =
                        "point"; "line"; "triangle"; "lineadj"; "triangleadj"
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
-        let qualifier = many storage |>> (function [] -> None | li -> Some (String.concat " " li))
+        let qualifier = many storage
         let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
                    |> opt
                    |>> (function Some s -> "<" + s + ">" | None -> "")
