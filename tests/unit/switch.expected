@@ -37,8 +37,8 @@ float G()
       float k=2.4;
       return i+k;
     case 43:
-      float i=4.3;
-      return i+3.4;
+      float G=4.3;
+      return G+3.4;
     default:
       return 0.;
   }
