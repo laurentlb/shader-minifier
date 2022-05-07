@@ -317,8 +317,7 @@ module private RenamerImpl =
                 | Default -> ()
             let renCase env (l, sl) =
                 renLabel l
-                renList env renStmt sl |> ignore<Env>
-                env
+                renList env renStmt sl
             renExpr env e
             renList env renCase cl |> ignore<Env>
             env
