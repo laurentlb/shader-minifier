@@ -1,0 +1,23 @@
+/* File generated with Shader Minifier 1.2
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef QUALIFIERS_EXPECTED_
+# define QUALIFIERS_EXPECTED_
+# define VAR_FOO "f"
+
+const char *qualifiers_frag =
+ "in vec3 f;"
+ "float v(float f)"
+ "{"
+   "return f;"
+ "}"
+ "float t(const float f)"
+ "{"
+   "return f;"
+ "}"
+ "float o(inout float f)"
+ "{"
+   "return f;"
+ "}";
+
+#endif // QUALIFIERS_EXPECTED_

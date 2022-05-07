@@ -163,7 +163,13 @@ let private rwTypeSpec = function
     | x -> x // structs
 
 let rwType (ty: Type) =
-    makeType (rwTypeSpec ty.name) (Option.map stripSpaces ty.typeQ)
+    makeType (rwTypeSpec ty.name) (List.map stripSpaces ty.typeQ)
+
+let rwFType fct =
+    // The default for function parameters is "in", we don't need it.
+    let rwFTypeType ty = {ty with typeQ = List.except ["in"] ty.typeQ}
+    let rwFDecl (ty, elts) = (rwFTypeType ty, elts)
+    {fct with args = List.map rwFDecl fct.args}
 
 // Return the list of variables used in the statements, with the number of references.
 let collectReferences stmtList =
@@ -286,6 +292,7 @@ let simplify li =
     |> List.map (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)
         | TLVerbatim s -> TLVerbatim (stripSpaces s)
+        | Function (fct, body) -> Function (rwFType fct, body)
         | e -> e
     )
     |> squeezeTLDeclarations
