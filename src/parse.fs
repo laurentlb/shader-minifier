@@ -10,6 +10,8 @@ module private ParseImpl =
     open FParsec.CharParsers
     open FParsec
 
+    let mutable private forbiddenNames = []
+
     let private commentLine = parse {
         do! skipString "//" // .>> noneOf "[")) // (pchar '[')) // <?> "comment, not verbatim code"
         do! notFollowedBy (anyOf "[]") <?> "not a verbatim code"
@@ -171,7 +173,9 @@ module private ParseImpl =
         let decls = many (declaration .>> ch ';' |>> check)
         let name = opt ident
         pipe2 name (between (ch '{') (ch '}') decls)
-            (fun n d -> Ast.TypeStruct(prefix, n, d))
+            (fun n d ->
+                Option.iter (fun (i:Ast.Ident) -> forbiddenNames <- i.Name::forbiddenNames) n
+                Ast.TypeStruct(prefix, n, d))
 
     let structSpecifier = parse {
         let! str = keyword "struct"
@@ -289,8 +293,6 @@ module private ParseImpl =
     let switch =
       let body = between (ch '{') (ch '}') (many case)
       pipe2 (keyword "switch" >>. parenExp) body (fun e cl -> Ast.Switch(e, cl))
-
-    let mutable private forbiddenNames = []
 
     let macro =
         let nl = skipComment >>. skipMany (pchar '\\' >>. newline)
