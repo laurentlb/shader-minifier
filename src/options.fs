@@ -30,6 +30,7 @@ type CliArguments =
     | [<CustomCommandLine("--preserve-externals")>] PreserveExternals
     | [<CustomCommandLine("--preserve-all-globals")>] PreserveAllGlobals
     | [<CustomCommandLine("--no-inlining")>] NoInlining
+    | [<CustomCommandLine("--aggressive-inlining")>] AggroInlining
     | [<CustomCommandLine("--no-renaming")>] NoRenaming
     | [<CustomCommandLine("--no-renaming-list")>] NoRenamingList of string
     | [<CustomCommandLine("--no-sequence")>] NoSequence
@@ -42,11 +43,12 @@ type CliArguments =
             | OutputName _ -> "Set the output filename (default is shader_code.h)"
             | Verbose -> "Verbose, display additional information"
             | Hlsl -> "Use HLSL (default is GLSL)"
-            | FormatArg _ -> "Choose to format the output (use none if you want just the shader)"
+            | FormatArg _ -> "Choose to format the output (use 'text' if you want just the shader)"
             | FieldNames _ -> "Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'"
             | PreserveExternals _ -> "Do not rename external values (e.g. uniform)"
             | PreserveAllGlobals _ -> "Do not rename functions and global variables"
             | NoInlining -> "Do not automatically inline variables"
+            | AggroInlining -> "Aggressively inline constants. This can reduce output size due to better constant folding. It can also increase output size due to repeated inlined constants, but this increased redundancy can be beneficial to gzip leading to a smaller final compressed size anyway. Does nothing if inlining is disabled."
             | NoRenaming -> "Do not rename anything"
             | NoRenamingList _ -> "Comma-separated list of functions to preserve"
             | NoSequence -> "Do not use the comma operator trick"
@@ -90,6 +92,9 @@ type Options() =
 
     member this.noInlining =
         args.Contains(NoInlining)
+
+    member this.aggroInlining =
+        args.Contains(AggroInlining) && not this.noInlining
 
     member this.noSequence =
         args.Contains(NoSequence)

@@ -34,8 +34,8 @@ float switchMultiple() {
       float otherVar = 2.4;
       return someVar + otherVar;
     case 43:
-      float someVar = 4.3;
-      return someVar + 3.4;
+      float anotherVar = 4.3;
+      return anotherVar + 3.4;
     default:
       return 0.0;
   }
