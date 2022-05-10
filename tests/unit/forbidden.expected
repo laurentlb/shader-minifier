@@ -1,0 +1,4 @@
+struct f{float f;};float t()
+{
+  return 42.;
+}
