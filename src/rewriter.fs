@@ -186,10 +186,14 @@ let collectReferences stmtList =
     count
 
 // Mark variables as inlinable when possible.
-// For now, only mark a variable when:
+// Variables are always safe to inline when all of:
 //  - the variable is used only once in the current block
 //  - the variable is not used in a sub-block (e.g. inside a loop)
 //  - the init value is trivial (doesn't depend on a variable)
+// When aggressive inlining is enabled, additionally inline when all of:
+//  - the variable never appears in an lvalue position (is never written to
+//    after initalization)
+//  - the init value is trivial
 let findInlinable foundInlinable block =
     // Variables that are defined in this scope.
     // The boolean indicates if the variable initialization has dependencies.
@@ -218,6 +222,8 @@ let findInlinable foundInlinable block =
     for def in localDefs do
         let ident, hasInitDeps = def.Value
         if not ident.ToBeInlined then
+            if options.aggroInlining && not hasInitDeps && not ident.IsLValue then
+                ident.Inline(); foundInlinable := true
             match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
             | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline(); foundInlinable := true
             | (false, _), (false, _) -> ident.Inline(); foundInlinable := true
@@ -285,8 +291,75 @@ let rec iterateSimplifyAndInline li =
     let simplified = mapTopLevel (mapEnv simplifyExpr simplifyStmt) li
     if foundInlinable then iterateSimplifyAndInline simplified else simplified
 
+let inlineAllConsts li =
+    let mapInnerDecl = function
+        // Unconditional inlining of anything marked "const" -- trust that the
+        // compiler would have yelled if it weren't really really const, so we
+        // can brutishly just inline it.
+        | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
+            for (def:DeclElt) in defs do def.name.Inline()
+            d
+        | d -> d
+    let mapStmt = function
+        | Decl d -> Decl (mapInnerDecl d)
+        | s -> s
+    let mapExpr _ e = e
+    let mapTLDecl = function
+        | TLDecl d -> TLDecl (mapInnerDecl d)
+        | d -> d
+    li
+    |> mapTopLevel (mapEnv mapExpr mapStmt)
+    |> List.map mapTLDecl
+
+let markLValues li =
+    // Helpers for the bodies of functions: find any expression of the form
+    // "foo = ..." or "foo += ..." etc, then scan through all of "foo" marking
+    // any variable seen there as potentially in an lvalue position. This will
+    // over-mark things, e.g., "x[i]" both "x" and "i" will get marked even
+    // though the latter does not need to be, but it is simple.
+    let markVars env = function
+        | Var v as e ->
+            match env.vars.TryFind v.Name with
+            | Some (_, {name = vv}) -> vv.MarkLValue(); e
+            | _ -> e
+        | e -> e
+    let assignOps = Set.ofList ["="; "+="; "-="; "*="; "/="; "%=";
+        "<<="; ">>="; "&="; "^="; "|="; "_++"; "_--"; "$++"; "$--"]
+    let findWrites env = function
+        | FunCall(Op o, e::args) when Set.contains o assignOps ->
+            let newEnv = {env with fExpr = markVars}
+            FunCall(Op o, (mapExpr newEnv e)::args)
+        | FunCall(Var v, _) as e ->
+            match env.fns.TryFind v.Name with
+            | Some fct when fct.fName.IsLValue ->
+                let newEnv = {env with fExpr = markVars}
+                mapExpr newEnv e
+            | _ -> e
+        | e -> e
+    // Helpers for function declarations: if any parameter to the function
+    // could be written to (e.g., "out"), mark the entire function. We don't
+    // attempt to match up param-for-param but just mark everything if anything
+    // could write, for simplicity.
+    let maybeMarkFct {fName = id; args = args} =
+        let assignQuals = Set.ofList ["out"; "inout"]
+        let argAssigns (ty, _) =
+            List.exists (fun tyQ -> Set.contains tyQ assignQuals) ty.typeQ
+        if List.exists argAssigns args then id.MarkLValue()
+    let processTl = function
+        | Function(fct, _) -> maybeMarkFct fct
+        | _ -> ()
+    // Mark functions then bodies; order is important since, when scanning
+    // bodies, we need to look up which functions might write via "out"
+    // parameters.
+    List.iter processTl li
+    mapTopLevel (mapEnv findWrites id) li
+
 let simplify li =
     li
+    // markLValues doesn't change the AST so we could do it unconditionally,
+    // but we only need the information for aggroInlining so don't bother if
+    // it's off.
+    |> if options.aggroInlining then markLValues >> inlineAllConsts else id
     |> reorderTopLevel
     |> iterateSimplifyAndInline
     |> List.map (function

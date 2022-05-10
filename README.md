@@ -82,10 +82,13 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: shader_minifier.exe [--help] [-o <string>] [-v] [--hlsl] [--format <text|indented|c-variables|c-array|js|nasm>]
-                           [--field-names <rgba|xyzw|stpq>] [--preserve-externals] [--preserve-all-globals]
-                           [--no-inlining] [--no-renaming] [--no-renaming-list <string>] [--no-sequence] [--smoothstep]
-                           [<filename>...]
+USAGE: shader_minifier [--help] [-o <string>] [-v] [--hlsl]
+                       [--format <text|indented|c-variables|c-array|js|nasm>]
+                       [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
+                       [--preserve-all-globals] [--no-inlining]
+                       [--aggressive-inlining] [--no-renaming]
+                       [--no-renaming-list <string>] [--no-sequence]
+                       [--smoothstep] [<filename>...]
 
 FILENAMES:
 
@@ -97,13 +100,22 @@ OPTIONS:
     -v                    Verbose, display additional information
     --hlsl                Use HLSL (default is GLSL)
     --format <text|indented|c-variables|c-array|js|nasm>
-                          Choose to format the output (use none if you want just the shader)
+                          Choose to format the output (use 'text' if you want
+                          just the shader)
     --field-names <rgba|xyzw|stpq>
-                          Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'
+                          Choose the field names for vectors: 'rgba', 'xyzw',
+                          or 'stpq'
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
     --no-inlining         Do not automatically inline variables
+    --aggressive-inlining Aggressively inline constants. This can reduce output
+                          size due to better constant folding. It can also
+                          increase output size due to repeated inlined
+                          constants, but this increased redundancy can be
+                          beneficial to gzip leading to a smaller final
+                          compressed size anyway. Does nothing if inlining is
+                          disabled.
     --no-renaming         Do not rename anything
     --no-renaming-list <string>
                           Comma-separated list of functions to preserve
@@ -213,7 +225,17 @@ This happens when:
 If inlining causes a bug in your code, you can disable it with `--no-inlining`
 and please report a bug.
 
-### Explicit Inlining
+### Aggressive inlining
+
+Shader Minifier can optionally/experimentally inline even more aggressively.
+Along with the above cases, it will inline *any* variable marked `const`, and
+also when:
+- the variable is never written to after initalization
+- and the init value is trivial (doesn't depend on a variable).
+
+This is enabled with `--aggressive-inlining`.
+
+### Explicit inlining
 
 Shader Minifier will always inline variables that starts with `i_`. Inlining can allow
 the Minifier to simplify the code further.
@@ -245,6 +267,8 @@ int foo(int x,int y)
 If you want to aggressively reduce the size of your shader, try inlining more
 variables. Inlining can have performance implications though (if the variable
 stored the result of a computation), so be careful with it.
+
+### Compression
 
 Inlining can lead to repetition in the shader code, which may make the shader
 longer (but the output may be more compression-friendly).

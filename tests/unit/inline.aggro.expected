@@ -1,0 +1,29 @@
+float result;
+void main()
+{
+  result=.15;
+}
+int arithmetic()
+{
+  return 40;
+}
+int vars(int arg,int arg2)
+{
+  return arg*(arg+arg2);
+}
+int arithmetic2()
+{
+  return 40;
+}
+int unusedVars()
+{
+  return 30;
+}
+int unusedVars2()
+{
+  return 18;
+}
+int multiPass()
+{
+  return 3;
+}

@@ -5,12 +5,15 @@ open Options.Globals
 type Ident(name: string) =
     let mutable newName = name
     let mutable inlined = newName.StartsWith("i_")
+    let mutable lValue = false
 
     member this.Name = newName
     member this.OldName = name
     member this.Rename(n) = newName <- n
     member this.ToBeInlined = inlined
     member this.Inline() = inlined <- true
+    member this.IsLValue = lValue
+    member this.MarkLValue() = lValue <- true
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -128,9 +131,10 @@ type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
+    fns: Map<string, FunctionType>
 }
 
-let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty}
+let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty}
 
 let foldList env fct li =
     let mutable env = env
@@ -206,6 +210,8 @@ let mapTopLevel env li =
         | TLDecl t ->
             let env, res = mapDecl env t
             env, TLDecl res
-        | Function(fct, body) -> env, Function(fct, snd (mapStmt env body))
+        | Function(fct, body) ->
+            let env = {env with fns = env.fns.Add(fct.fName.Name, fct)}
+            env, Function(fct, snd (mapStmt env body))
         | e -> env, e)
     res
