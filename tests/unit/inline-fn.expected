@@ -1,0 +1,22 @@
+float a()
+{
+  return vec3(2.,3.,4.).x+vec3(2.,3.,4.).y;
+}
+float b(float g)
+{
+  float x=(g+10.)*vec3(20.,30.,40.).x+vec3(20.,30.,40.).y,y=(g+10.1)*vec3(20.1,30.1,40.1).x+vec3(20.1,30.1,40.1).y;
+  return x+y;
+}
+float c()
+{
+  return 154.;
+}
+float d()
+{
+  float f=7.,g=f*f+1.;
+  return g+4.;
+}
+float e()
+{
+  return 84.;
+}

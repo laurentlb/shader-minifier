@@ -237,8 +237,8 @@ This is enabled with `--aggressive-inlining`.
 
 ### Explicit inlining
 
-Shader Minifier will always inline variables that starts with `i_`. Inlining can allow
-the Minifier to simplify the code further.
+Shader Minifier will always inline variables and functions that start with
+`i_`. Inlining can allow the Minifier to simplify the code further.
 
 For example, this input:
 
@@ -263,6 +263,31 @@ int foo(int x,int y)
   return 10*x;
 }
 ```
+
+And this input:
+
+```c
+float i_foo(float f, float g, float x) {
+  return f*x + g*x + f*g;
+}
+
+float bar(float a) {
+  return i_foo(2.0, 3.0, sin(sqrt(a)));
+}
+```
+
+will be simplified into:
+
+```c
+float bar(float a)
+{
+  return 2.*sin(sqrt(a))+3.*sin(sqrt(a))+6.;
+}
+```
+
+Note that the function inlining is very simplistic, only supporting functions
+which consist of a single return statement. (Basically, cases where you would
+use a macro, except this gives the minifier full visibility through it.)
 
 If you want to aggressively reduce the size of your shader, try inlining more
 variables. Inlining can have performance implications though (if the variable
