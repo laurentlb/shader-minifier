@@ -53,3 +53,9 @@ int multiPass()
   int three = two + 1;
   return three;
 }
+
+float multiPass2() {
+  float i_a = 4.0;
+  float b = i_a + 5.0;
+  return b;
+}

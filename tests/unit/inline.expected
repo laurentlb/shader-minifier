@@ -29,3 +29,7 @@ int multiPass()
 {
   return 3;
 }
+float multiPass2()
+{
+  return 9.;
+}
