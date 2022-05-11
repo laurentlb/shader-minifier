@@ -32,3 +32,8 @@ int multiPass()
   int one=1,two=one*2,three=two+1;
   return three;
 }
+float multiPass2()
+{
+  float b=9.;
+  return b;
+}

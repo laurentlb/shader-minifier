@@ -63,18 +63,18 @@ let private bool = function
     | true -> Var (Ident "true") // Int (1, "")
     | false -> Var (Ident "false") // Int (0, "")
 
-let rec private simplifyExpr env = function
+let rec private simplifyExpr didInline env = function
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
     | FunCall(Op "+", [e]) -> e
 
     | FunCall(Op ",", [e1; FunCall(Op ",", [e2; e3])]) ->
-        FunCall(Op ",", [simplifyExpr env (FunCall(Op ",", [e1; e2])); e3])
+        FunCall(Op ",", [env.fExpr env (FunCall(Op ",", [e1; e2])); e3])
 
     | FunCall(Op "-", [x; Float (f, s)]) when f < 0.M ->
-        FunCall(Op "+", [x; Float (-f, s)]) |> simplifyExpr env
+        FunCall(Op "+", [x; Float (-f, s)]) |> env.fExpr env
     | FunCall(Op "-", [x; Int (i, s)]) when i < 0 ->
-        FunCall(Op "+", [x; Int (-i, s)]) |> simplifyExpr env
+        FunCall(Op "+", [x; Int (-i, s)]) |> env.fExpr env
 
     // Boolean simplifications (let's ignore the suffix)
     | FunCall(Op "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
@@ -134,7 +134,9 @@ let rec private simplifyExpr env = function
 
     | Var s as e ->
         match env.vars.TryFind s.Name with
-        | Some (_, {name = id; init = Some init}) when id.ToBeInlined -> init |> mapExpr env
+        | Some (_, {name = id; init = Some init}) when id.ToBeInlined ->
+            didInline := true
+            init |> mapExpr env
         | _ -> e
 
     // pi is acos(-1), pi/2 is acos(0)
@@ -194,7 +196,7 @@ let collectReferences stmtList =
 //  - the variable never appears in an lvalue position (is never written to
 //    after initalization)
 //  - the init value is trivial
-let findInlinable foundInlinable block =
+let findInlinable block =
     // Variables that are defined in this scope.
     // The boolean indicates if the variable initialization has dependencies.
     let localDefs = Dictionary<string, (Ident * bool)>()
@@ -223,10 +225,10 @@ let findInlinable foundInlinable block =
         let ident, hasInitDeps = def.Value
         if not ident.ToBeInlined then
             if options.aggroInlining && not hasInitDeps && not ident.IsLValue then
-                ident.Inline(); foundInlinable := true
+                ident.Inline()
             match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-            | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline(); foundInlinable := true
-            | (false, _), (false, _) -> ident.Inline(); foundInlinable := true
+            | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline()
+            | (false, _), (false, _) -> ident.Inline()
             | _ -> ()
 
 let private simplifyStmt = function
@@ -277,19 +279,15 @@ let reorderTopLevel t =
         t
 
 let rec iterateSimplifyAndInline li =
-    let foundInlinable =
-        if options.noInlining then
-            false
-        else
-            let foundInlinableRef = ref false
-            let mapExpr _ e = e
-            let mapStmt = function
-                | Block b as e -> findInlinable foundInlinableRef b; e
-                | e -> e
-            mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
-            !foundInlinableRef
-    let simplified = mapTopLevel (mapEnv simplifyExpr simplifyStmt) li
-    if foundInlinable then iterateSimplifyAndInline simplified else simplified
+    if not options.noInlining then
+        let mapExpr _ e = e
+        let mapStmt = function
+            | Block b as e -> findInlinable b; e
+            | e -> e
+        mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
+    let didInline = ref false
+    let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
+    if !didInline then iterateSimplifyAndInline simplified else simplified
 
 let inlineAllConsts li =
     let mapInnerDecl = function
