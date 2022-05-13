@@ -131,7 +131,7 @@ type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
-    fns: Map<string, FunctionType>
+    fns: Map<string, FunctionType * Stmt>
 }
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty}
@@ -211,7 +211,7 @@ let mapTopLevel env li =
             let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let env = {env with fns = env.fns.Add(fct.fName.Name, fct)}
+            let env = {env with fns = env.fns.Add(fct.fName.Name, (fct, body))}
             env, Function(fct, snd (mapStmt env body))
         | e -> env, e)
     res

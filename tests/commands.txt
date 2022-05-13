@@ -12,12 +12,17 @@
 --hlsl --no-inlining --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
 --no-renaming --no-inlining --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
 --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
+--no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
+
+# Inlining unit tests
+
 --no-renaming --format indented -o tests/unit/inline.expected tests/unit/inline.frag
 --no-renaming --format indented --aggressive-inlining -o tests/unit/inline.aggro.expected tests/unit/inline.frag
 --no-renaming --format indented --no-inlining -o tests/unit/inline.no.expected tests/unit/inline.frag
 --no-renaming --format indented -o tests/unit/inline-aggro.expected tests/unit/inline-aggro.frag
 --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-aggro.aggro.expected tests/unit/inline-aggro.frag
---no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
+--no-renaming --format indented -o tests/unit/inline-fn.expected tests/unit/inline-fn.frag
+--no-renaming --format indented --aggressive-inlining -o tests/unit/inline-fn.aggro.expected tests/unit/inline-fn.frag
 
 # Partial renaming tests
 

@@ -63,7 +63,34 @@ let private bool = function
     | true -> Var (Ident "true") // Int (1, "")
     | false -> Var (Ident "false") // Int (0, "")
 
+let private inlineFn (declArgs:Decl list) passedArgs bodyExpr =
+    let mutable argMap = Map.empty
+    for declArg, passedArg in List.zip declArgs passedArgs do
+        let declElt = List.exactlyOne (snd declArg)
+        argMap <- argMap.Add(declElt.name.Name, passedArg)
+    let mapInline _ = function
+        | Var iv as ie ->
+            match argMap.TryFind iv.Name with
+            | Some inlinedExpr -> inlinedExpr
+            | _ -> ie
+        | ie -> ie
+    mapExpr (mapEnv mapInline id) bodyExpr
+
 let rec private simplifyExpr didInline env = function
+    | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
+        match env.fns.TryFind v.Name with
+        | None -> e
+        | Some ({args = declArgs}, body) ->
+            match body with
+            | Jump (JumpKeyword.Return, Some bodyExpr)
+            | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
+                didInline := true
+                inlineFn declArgs passedArgs bodyExpr
+            // Don't yell if we've done some inlining this pass -- maybe it
+            // turned the function into a one-liner, so allow trying again on
+            // the next pass. (If it didn't, we'll yell next pass.)
+            | _ when !didInline -> e
+            | _ -> failwithf "Cannot inline %s since it consists of more than a single return" v.Name
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
     | FunCall(Op "+", [e]) -> e
@@ -329,7 +356,7 @@ let markLValues li =
             FunCall(Op o, (mapExpr newEnv e)::args)
         | FunCall(Var v, _) as e ->
             match env.fns.TryFind v.Name with
-            | Some fct when fct.fName.IsLValue ->
+            | Some (fct, _) when fct.fName.IsLValue ->
                 let newEnv = {env with fExpr = markVars}
                 mapExpr newEnv e
             | _ -> e
@@ -360,11 +387,12 @@ let simplify li =
     |> if options.aggroInlining then markLValues >> inlineAllConsts else id
     |> reorderTopLevel
     |> iterateSimplifyAndInline
-    |> List.map (function
-        | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li)
-        | TLVerbatim s -> TLVerbatim (stripSpaces s)
-        | Function (fct, body) -> Function (rwFType fct, body)
-        | e -> e
+    |> List.choose (function
+        | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some
+        | TLVerbatim s -> TLVerbatim (stripSpaces s) |> Some
+        | Function (fct, _) when fct.fName.ToBeInlined -> None
+        | Function (fct, body) -> Function (rwFType fct, body) |> Some
+        | e -> e |> Some
     )
     |> squeezeTLDeclarations
 
