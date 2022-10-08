@@ -233,7 +233,7 @@ module private ParseImpl =
         many (ch ':' >>. simpleExpr)
 
     // eg. "int foo[] = exp, bar = 3"
-    declRef := (
+    declRef.Value <- (
         let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
         let init = ch '=' >>. exprNoComma
         let var = pipe4 ident (opt bracket) semantics (opt init) Ast.makeDecl
@@ -321,7 +321,7 @@ module private ParseImpl =
         (key <|> ret) .>> ch ';'
 
     // A statement
-    stmtRef := choice [
+    stmtRef.Value <- choice [
         block
         jump
         forLoop

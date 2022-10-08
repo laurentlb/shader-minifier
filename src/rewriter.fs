@@ -76,7 +76,7 @@ let private inlineFn (declArgs:Decl list) passedArgs bodyExpr =
         | ie -> ie
     mapExpr (mapEnv mapInline id) bodyExpr
 
-let rec private simplifyExpr didInline env = function
+let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
         match env.fns.TryFind v.Name with
         | None -> e
@@ -84,12 +84,12 @@ let rec private simplifyExpr didInline env = function
             match body with
             | Jump (JumpKeyword.Return, Some bodyExpr)
             | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
-                didInline := true
+                didInline.Value <- true
                 inlineFn declArgs passedArgs bodyExpr
             // Don't yell if we've done some inlining this pass -- maybe it
             // turned the function into a one-liner, so allow trying again on
             // the next pass. (If it didn't, we'll yell next pass.)
-            | _ when !didInline -> e
+            | _ when didInline.Value -> e
             | _ -> failwithf "Cannot inline %s since it consists of more than a single return" v.Name
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
@@ -162,7 +162,7 @@ let rec private simplifyExpr didInline env = function
     | Var s as e ->
         match env.vars.TryFind s.Name with
         | Some (_, {name = id; init = Some init}) when id.ToBeInlined ->
-            didInline := true
+            didInline.Value <- true
             init |> mapExpr env
         | _ -> e
 
@@ -314,7 +314,7 @@ let rec iterateSimplifyAndInline li =
         mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
     let didInline = ref false
     let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
-    if !didInline then iterateSimplifyAndInline simplified else simplified
+    if didInline.Value then iterateSimplifyAndInline simplified else simplified
 
 let inlineAllConsts li =
     let mapInnerDecl = function
