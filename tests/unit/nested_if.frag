@@ -36,7 +36,7 @@ int dandling_else(int x) {
       if (x > 0) {
         return 0;
       } else {
-        if (x == 0) return 1; // dandling
+        if (x == 0) return 1; // dangling
       }
   } else {
     return 2;
