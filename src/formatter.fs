@@ -21,9 +21,9 @@ let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
     for value: Ast.ExportedName in List.sort exportedNames do
         // let newName = Printer.identTable.[int newName]
         if value.ty = "" then
-            fprintfn out "# define VAR_%s \"%s\"" (value.name.ToUpper()) value.newName
+            fprintfn out "# define VAR_%s \"%s\"" value.name value.newName
         else
-            fprintfn out "# define %s_%s \"%s\"" value.ty (value.name.ToUpper()) value.newName
+            fprintfn out "# define %s_%s \"%s\"" value.ty value.name value.newName
 
     fprintfn out ""
     for shader in shaders do

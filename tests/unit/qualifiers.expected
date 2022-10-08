@@ -3,7 +3,7 @@
  */
 #ifndef QUALIFIERS_EXPECTED_
 # define QUALIFIERS_EXPECTED_
-# define VAR_FOO "f"
+# define VAR_foo "f"
 
 const char *qualifiers_frag =
  "in vec3 f;"

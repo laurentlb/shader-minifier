@@ -3,8 +3,8 @@
  */
 #ifndef SULT_EXPECTED_
 # define SULT_EXPECTED_
-# define VAR_RESOLUTION "m"
-# define VAR_TIME "c"
+# define VAR_resolution "m"
+# define VAR_time "c"
 
 const char *sult_frag =
  "float v=5.,z=.9,y=0.,a=90.,x=0.;"

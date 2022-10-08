@@ -3,7 +3,7 @@
  */
 #ifndef OSCARS_CHAIR_FRAG_EXPECTED_
 # define OSCARS_CHAIR_FRAG_EXPECTED_
-# define VAR_TEX1 "a"
+# define VAR_tex1 "a"
 
 const char *oscars_chair_frag =
  "#version 130\n"

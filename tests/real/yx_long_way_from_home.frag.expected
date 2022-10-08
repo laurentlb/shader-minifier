@@ -3,7 +3,7 @@
  */
 #ifndef YX_LONG_WAY_FROM_HOME_FRAG_EXPECTED_
 # define YX_LONG_WAY_FROM_HOME_FRAG_EXPECTED_
-# define VAR_ICHANNEL1 "v"
+# define VAR_iChannel1 "v"
 
 const char *yx_long_way_from_home_frag =
  "#version 130\n"
