@@ -3,8 +3,8 @@
  */
 #ifndef LUNAQUATIC_FRAG_EXPECTED_
 # define LUNAQUATIC_FRAG_EXPECTED_
-# define VAR_RESOLUTION "z"
-# define VAR_TIME "m"
+# define VAR_resolution "z"
+# define VAR_time "m"
 
 const char *lunaquatic_frag =
  "#extension GL_EXT_gpu_shader4:enable\n"

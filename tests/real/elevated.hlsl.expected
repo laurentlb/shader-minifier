@@ -3,16 +3,16 @@
  */
 #ifndef ELEVATED_HLSL_EXPECTED_
 # define ELEVATED_HLSL_EXPECTED_
-# define VAR_Q "t"
-# define VAR_T0 "f"
-# define VAR_T1 "m"
-# define VAR_T2 "y"
-# define VAR_V "z"
-# define F_M0 "l"
-# define F_M1 "l"
-# define F_M2 "p"
-# define F_M3 "e"
-# define F_M4 "s"
+# define VAR_q "t"
+# define VAR_t0 "f"
+# define VAR_t1 "m"
+# define VAR_t2 "y"
+# define VAR_v "z"
+# define F_m0 "l"
+# define F_m1 "l"
+# define F_m2 "p"
+# define F_m3 "e"
+# define F_m4 "s"
 
 const char *elevated_hlsl =
  "sampler f,m,y;"

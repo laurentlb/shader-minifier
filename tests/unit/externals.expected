@@ -3,9 +3,9 @@
  */
 #ifndef EXTERNALS_EXPECTED_
 # define EXTERNALS_EXPECTED_
-# define VAR_E "t"
-# define VAR_I "i"
-# define VAR_N "n"
+# define VAR_e "t"
+# define VAR_i "i"
+# define VAR_n "n"
 
 const char *externals_frag =
  "uniform int i,n,t;"

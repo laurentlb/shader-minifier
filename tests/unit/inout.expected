@@ -1,51 +1,60 @@
+/* File generated with Shader Minifier 1.2
+ * http://www.ctrl-alt-test.fr
+ */
+# define VAR_ambientLight "m"
+# define VAR_diffuseColor "i"
+# define VAR_emissiveColor "a"
+# define VAR_fragmentColor "o"
+# define VAR_mediumDensity "t"
+# define VAR_normal "c"
+# define VAR_specularColor "n"
+# define VAR_texture0 "e"
+# define VAR_viewVec "v"
+
 // tests/unit/inout.frag
-
-#version 330
-
-uniform samplerCube e;
-in vec3 c,v;
-out vec4 o;
-void main()
-{
-  vec3 l=normalize(v),u=normalize(c),f=vec3(.1,.2,.3),x=texture(e,reflect(-l,u)).xyz,p=texture(e,refract(-l,u,1./1.5)).xyz,z=mix(f*p,x,.1);
-  o=vec4(z,1.);
-}
-vec3 r(vec3 d,vec3 l,vec3 s)
-{
-  float C=1.-clamp(dot(l,s),0.,1.);
-  return C*C*C*C*C*(1.-d)+d;
-}
-vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)
-{
-  vec3 s=normalize(l+y);
-  float b=1.+2048.*(1.-w)*(1.-w);
-  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);
-  return mix(Z,Y,X);
-}
+"#version 330\n"
+ "uniform samplerCube e;"
+ "in vec3 c,v;"
+ "out vec4 o;"
+ "void main()"
+ "{"
+   "vec3 l=normalize(v),u=normalize(c),f=vec3(.1,.2,.3),x=texture(e,reflect(-l,u)).xyz,p=texture(e,refract(-l,u,1./1.5)).xyz,z=mix(f*p,x,.1);"
+   "o=vec4(z,1.);"
+ "}"
+ "vec3 r(vec3 d,vec3 l,vec3 s)"
+ "{"
+   "float C=1.-clamp(dot(l,s),0.,1.);"
+   "return C*C*C*C*C*(1.-d)+d;"
+ "}"
+ "vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)"
+ "{"
+   "vec3 s=normalize(l+y);"
+   "float b=1.+2048.*(1.-w)*(1.-w);"
+   "vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);"
+   "return mix(Z,Y,X);"
+ "}",
 
 // tests/unit/inout2.frag
-
-#version 330
-
-uniform samplerCube e;
-uniform float t;
-uniform vec3 m,i,a,n;
-in vec3 c,v;
-out vec4 o;
-vec3 r(vec3 d,vec3 l,vec3 s)
-{
-  float C=1.-clamp(dot(l,s),0.,1.);
-  return C*C*C*C*C*(1.-d)+d;
-}
-void main()
-{
-  vec3 f=i,z=a+mix(f*m,m,.5);
-  o=vec4(z,1.);
-}
-vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)
-{
-  vec3 s=normalize(l+y);
-  float b=1.+2048.*(1.-w)*(1.-w);
-  vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);
-  return mix(Z,Y,X);
-}
+"#version 330\n"
+ "uniform samplerCube e;"
+ "uniform float t;"
+ "uniform vec3 m,i,a,n;"
+ "in vec3 c,v;"
+ "out vec4 o;"
+ "vec3 r(vec3 d,vec3 l,vec3 s)"
+ "{"
+   "float C=1.-clamp(dot(l,s),0.,1.);"
+   "return C*C*C*C*C*(1.-d)+d;"
+ "}"
+ "void main()"
+ "{"
+   "vec3 f=i,z=a+mix(f*m,m,.5);"
+   "o=vec4(z,1.);"
+ "}"
+ "vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)"
+ "{"
+   "vec3 s=normalize(l+y);"
+   "float b=1.+2048.*(1.-w)*(1.-w);"
+   "vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);"
+   "return mix(Z,Y,X);"
+ "}",

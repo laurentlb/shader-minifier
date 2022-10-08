@@ -34,7 +34,7 @@
 
 # Multifile tests
 
---format indented -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
+--format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
 
 # Tests with full renaming
 
