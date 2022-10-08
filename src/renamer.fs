@@ -120,8 +120,8 @@ module private RenamerImpl =
                                     (* ** Renamer ** *)
 
     let newUniqueId (numberOfUsedIdents: int ref) (env: Env) (id: Ident) =
-        incr numberOfUsedIdents
-        let newName = sprintf "%04d" !numberOfUsedIdents
+        numberOfUsedIdents.Value <- numberOfUsedIdents.Value + 1
+        let newName = sprintf "%04d" numberOfUsedIdents.Value
         env.Rename(id, newName)
 
     // A renaming strategy that considers how a variable is used. It optimizes the frequency of
@@ -167,7 +167,7 @@ module private RenamerImpl =
 
     let export env ty (id: Ident) =
         if not id.IsUniqueId then
-            env.exportedNames := {ty = ty; name = id.OldName; newName = id.Name} :: !env.exportedNames
+            env.exportedNames.Value <- {ty = ty; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
 
     let renFunction env nbArgs (id: Ident) =
         // we're looking for a function name, already used before,
@@ -357,7 +357,7 @@ module private RenamerImpl =
         // Rename local variables.
         for shader in shaders do
             List.iter (renTopLevelBody env) shader.code
-        !env.exportedNames
+        env.exportedNames.Value
 
     let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
@@ -382,7 +382,7 @@ module private RenamerImpl =
                 let contextTable = computeContextTable text
                 Env.Create(names, true, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
-        env.exportedNames := exportedNames
+        env.exportedNames.Value <- exportedNames
         renameAsts shaders env
 
 let rename = RenamerImpl.rename
