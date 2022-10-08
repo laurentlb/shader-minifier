@@ -30,7 +30,7 @@ int no_braces1(int x) {
   }
 }
 
-int dandling_else(int x) {
+int dangling_else(int x) {
   if (x < 0) {
     for (;;)
       if (x > 0) {
