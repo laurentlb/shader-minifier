@@ -184,6 +184,22 @@ module private PrinterImpl =
         | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
         | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
 
+    /// Detect if the current statement might accept a dangling else.
+    /// Note that the function needs to be recursive to detect things like:
+    ///   if(a) for(;;) if(b) {} else {}
+    /// https://github.com/laurentlb/Shader_Minifier/issues/143
+    let rec hasDanglingElseProblem = function
+        | If(_, _, None) ->
+            true
+        | If(_, _, Some body)
+        | While(_, body)
+        | DoWhile(_, body)
+        | ForD(_, _, _, body)
+        | ForE(_, _, _, body) ->
+            hasDanglingElseProblem body
+        | _ ->
+            false
+
     let rec stmtToS' indent = function
         | Block [] -> ";"
         | Block b ->
@@ -193,9 +209,10 @@ module private PrinterImpl =
         | Decl d -> out "%s;" (declToS d)
         | Expr e -> out "%s;" (exprToS e)
         | If(cond, th, el) ->
+            let th = if el <> None && hasDanglingElseProblem th then Block [th] else th
             let el = match el with
                      | None -> ""
-                     | Some el -> out "%s%s%s%s" (nl indent) "else" (nl (indent+1)) (stmtToS' (indent+1) el |> sp)
+                     | Some el -> out "%selse%s%s" (nl indent) (nl (indent+1)) (stmtToS' (indent+1) el |> sp)
             out "if(%s)%s%s" (exprToS cond) (stmtToSInd indent th) el
         | ForD(init, cond, inc, body) ->
             let cond = exprToSOpt "" cond
@@ -230,7 +247,7 @@ module private PrinterImpl =
     and stmtToS indent i =
         out "%s%s" (nl indent) (stmtToS' indent i)
 
-    // print indented statement
+    /// print indented statement
     and stmtToSInd indent i = stmtToS (indent+1) i
 
     let funToS (f: FunctionType) =
