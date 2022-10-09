@@ -11,3 +11,12 @@ void main()
   f = 1.4 / 3.;
   float g = mod(8., 3.);
 }
+
+int no_parens(int a, int b, int c) {
+	return a + (b + c) + a + (b * c);
+}
+
+int no_parens2(int a, int b, int c) {
+	int d = a*(b*c);
+	return a - (b - 1) - (d - c);
+}

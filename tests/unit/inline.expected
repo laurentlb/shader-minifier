@@ -1,7 +1,7 @@
 float result;
 void main()
 {
-  float x=.5,a=x*(.6*x);
+  float x=.5,a=.6*x*x;
   result=a;
 }
 int arithmetic()

@@ -42,7 +42,7 @@ const char *chocolux_frag =
          "}"
        "t+=5.;"
      "}"
-   "gl_FragColor=c+vec4(.1,.2,.5,1.)*(t*.025);"
+   "gl_FragColor=c+t*.025*vec4(.1,.2,.5,1.);"
  "}";
 
 #endif // CHOCOLUX_EXPECTED_
