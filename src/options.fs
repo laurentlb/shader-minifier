@@ -55,28 +55,32 @@ type CliArguments =
             | Smoothstep -> "Use IQ's smoothstep trick"
             | Filenames _ -> "List of files to minify" 
 
+
+type Options() =
+    member val outputName = "shader_code.h" with get, set
+    member val outputFormat = CHeader with get, set
+    member val verbose = false with get, set
+    member val smoothstepTrick = false with get, set
+    member val canonicalFieldNames = "xyzw" with get, set
+    member val preserveExternals = false with get, set
+    member val preserveAllGlobals = false with get, set
+    member val reorderDeclarations = false with get, set
+    member val reorderFunctions = false with get, set
+    member val hlsl = false with get, set
+    member val noInlining = false with get, set
+    member val aggroInlining = false with get, set
+    member val noSequence = false with get, set
+    member val noRenaming = false with get, set
+    member val noRenamingList = ["main"] with get, set
+    member val filenames = ([||]: string[]) with get, set
+
 module Globals =
-    let mutable options = {|
-        outputName = "shader_code.h"
-        outputFormat = CHeader
-        verbose = false
-        smoothstepTrick = false
-        canonicalFieldNames = "xyzw"
-        preserveExternals = false
-        preserveAllGlobals = false
-        reorderDeclarations = ref false
-        reorderFunctions = ref false
-        hlsl = false
-        noInlining = false
-        aggroInlining = false
-        noSequence = false
-        noRenaming = false
-        noRenamingList = ["main"]
-        filenames = ([||]: string[])
-    |}
+    let options = Options()
 
     // like printfn when verbose option is set
     let vprintf fmt = fprintf (if options.verbose then stdout else TextWriter.Null) fmt
+
+open Globals
 
 let init(argv) =
     let argParser = ArgumentParser.Create<CliArguments>(
@@ -93,22 +97,20 @@ let init(argv) =
         printfn "%s" (argParser.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
         false
     else
-        Globals.options <- {|
-            outputName = args.GetResult(OutputName, defaultValue = "shader_code.h")
-            outputFormat = args.GetResult(FormatArg, defaultValue = CHeader)
-            verbose = args.Contains(Verbose)
-            smoothstepTrick = args.Contains(Smoothstep)
-            canonicalFieldNames = (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
-            preserveExternals = args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
-            preserveAllGlobals = args.Contains(PreserveAllGlobals)
-            reorderDeclarations = ref false
-            reorderFunctions = ref false
-            hlsl = args.Contains(Hlsl)
-            noInlining = args.Contains(NoInlining)
-            aggroInlining = args.Contains(AggroInlining) && not (args.Contains(NoInlining))
-            noSequence = args.Contains(NoSequence)
-            noRenaming = args.Contains(NoRenaming)
-            noRenamingList = noRenamingList
-            filenames = filenames
-        |}
+        options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
+        options.outputFormat <- args.GetResult(FormatArg, defaultValue = CHeader)
+        options.verbose <- args.Contains(Verbose)
+        options.smoothstepTrick <- args.Contains(Smoothstep)
+        options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
+        options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
+        options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
+        options.reorderDeclarations <- false
+        options.reorderFunctions <- false
+        options.hlsl <- args.Contains(Hlsl)
+        options.noInlining <- args.Contains(NoInlining)
+        options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
+        options.noSequence <- args.Contains(NoSequence)
+        options.noRenaming <- args.Contains(NoRenaming)
+        options.noRenamingList <- noRenamingList
+        options.filenames <- filenames
         true

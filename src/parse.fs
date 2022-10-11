@@ -356,7 +356,7 @@ module private ParseImpl =
                     attempt interfaceBlock
                     pfunction
         ]
-        let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> options.reorderFunctions.Value <- true)
+        let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> options.reorderFunctions <- true)
         many ((attempt forwardDecl|>>fun _ -> None) <|> (item|>>Some)) |>> List.choose id // FIXME: use skip?
 
     let parse = ws >>. toplevel .>> eof

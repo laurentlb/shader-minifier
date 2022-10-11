@@ -319,7 +319,7 @@ let private simplifyStmt = function
     | e -> e
 
 let reorderTopLevel t =
-    if options.reorderDeclarations.Value then
+    if options.reorderDeclarations then
         let externals, functions = List.partition (function TLDecl _ -> true | _ -> false) t
         List.sort externals @ functions
     else
@@ -465,7 +465,7 @@ let private computeAllDependencies code =
 
 // reorder functions if there were forward declarations
 let reorder code =
-    if options.reorderFunctions.Value then
+    if options.reorderFunctions then
         if options.verbose then
             printfn "Reordering functions because of forward declarations."
         let order = code |> computeAllDependencies |> graphReorder

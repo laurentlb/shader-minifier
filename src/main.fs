@@ -57,7 +57,7 @@ let run files =
 let main argv =
     let err =
         try
-            if options.init argv then 
+            if Options.init argv then 
                 if options.verbose then
                     printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
                 run options.filenames
