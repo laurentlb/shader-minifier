@@ -55,7 +55,6 @@ type CliArguments =
             | Smoothstep -> "Use IQ's smoothstep trick"
             | Filenames _ -> "List of files to minify" 
 
-
 type Options() =
     member val outputName = "shader_code.h" with get, set
     member val outputFormat = CHeader with get, set
@@ -72,7 +71,7 @@ type Options() =
     member val noSequence = false with get, set
     member val noRenaming = false with get, set
     member val noRenamingList = ["main"] with get, set
-    member val filenames = ([||]: string[]) with get, set
+    member val filenames = [||]: string[] with get, set
 
 module Globals =
     let options = Options()
