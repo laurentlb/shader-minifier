@@ -76,7 +76,7 @@ let testPerformance files =
 
 let runCommand argv =
     let cleanString (s: string) = s.Replace("\r\n", "\n").Trim()
-    if not(options.init(argv)) then failwith "init failed"
+    if not(Options.init(argv)) then failwith "init failed"
     let expected =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
@@ -113,7 +113,7 @@ let main argv =
     //ignore(runCommand("--no-renaming --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag".Split([|' '|]))); exit 0
     initOpenTK()
     let mutable failures = testGolden()
-    if not(options.init([|"--format"; "text"; "fake.frag"|])) then failwith "init failed"
+    if not(Options.init([|"--format"; "text"; "fake.frag"|])) then failwith "init failed"
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
     for f in unitTests do
