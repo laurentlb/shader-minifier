@@ -12,11 +12,11 @@ float inl2(float x)
 }
 float inl3()
 {
-  return.75*(2.*acos(-1.));
+  return 2.*acos(-1.)*.75;
 }
 float inl4()
 {
-  return.75*(2.*acos(-1.));
+  return 2.*acos(-1.)*.75;
 }
 float inl5()
 {
@@ -24,7 +24,7 @@ float inl5()
 }
 float inl6()
 {
-  return 2.*(2.*acos(-1.));
+  return 2.*acos(-1.)*2.;
 }
 void notevil(float x)
 {
