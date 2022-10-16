@@ -5,12 +5,12 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{7a0b4487-c3f6-4753-9c8d-fee09049f52d}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <ProjectGuid>{059c6af3-1877-4698-be34-bf7eb55d060a}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <RootNamespace>glsl_minifier</RootNamespace>
-    <AssemblyName>shader_minifier</AssemblyName>
+    <AssemblyName>shader_minifier_lib</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <Name>Shader Minifier</Name>
+    <Name>Shader Minifier Library</Name>
     <TargetFrameworkProfile />
     <TargetFSharpCoreVersion>6.0.0.0</TargetFSharpCoreVersion>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -34,7 +34,8 @@
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <StartArguments>-o "" ../../tests\unit\empty_block.frag --smoothstep</StartArguments>
-    <OtherFlags>--standalone</OtherFlags>
+    <OtherFlags>
+    </OtherFlags>
   </PropertyGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '11.0'">
@@ -50,7 +51,14 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
   <ItemGroup>
-    <Compile Include="src\main.fs" />
+    <Compile Include="src\options.fs" />
+    <Compile Include="src\ast.fs" />
+    <Compile Include="src\printer.fs" />
+    <Compile Include="src\formatter.fs" />
+    <Compile Include="src\renamer.fs" />
+    <Compile Include="src\rewriter.fs" />
+    <Compile Include="src\parse.fs" />
+    <Compile Include="src\api.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">
@@ -66,13 +74,6 @@
       <HintPath>lib\FSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Shader Minifier Library.fsproj">
-      <Name>Shader Minifier Library</Name>
-      <Project>{059c6af3-1877-4698-be34-bf7eb55d060a}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
 	     Other similar extension points exist, see Microsoft.Common.targets.
