@@ -58,7 +58,7 @@
     <Compile Include="src\renamer.fs" />
     <Compile Include="src\rewriter.fs" />
     <Compile Include="src\parse.fs" />
-    <Compile Include="src\main.fs" />
+    <Compile Include="src\api.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">
