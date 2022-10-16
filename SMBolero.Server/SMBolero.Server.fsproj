@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Index.fs" />
+    <Compile Include="Startup.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SMBolero.Client\SMBolero.Client.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Bolero.Server" Version="0.*" />
+    <PackageReference Include="Bolero.HotReload.Server" Version="0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.*" />
+  </ItemGroup>
+</Project>

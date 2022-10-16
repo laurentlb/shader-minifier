@@ -1,0 +1,72 @@
+<div class="header">Ctrl-Alt-Test - Shader Minifier</div>
+ 
+<div class="columns">
+  <aside class="left column sidebar is-narrow">
+    <h1>Menu</h1>
+    <section id="menu" class="section">
+      <nav class="menu">
+        <ul class="menu-list">
+          ${Menu}
+          <template id="MenuItem">
+            <li><a href="${Url}">${Text}</a></li>
+          </template>
+        </ul>
+      </nav>
+    </section>
+  </aside>
+  <div class="center">
+    <section id="content">
+      ${Body}
+
+      <div id="notification-area">
+        <div>${Error}</div>
+      </div>
+
+      <template id="Home">
+        <h1 class="title">Shader Minifier</h1>
+        <p>
+            <textarea cols="80" rows="15" id="input" bind="${ShaderInput}"></textarea>
+            <button onclick="${Minify}" class="button">Minify!</button>
+            <textarea cols="80" rows="15" readonly>${ShaderOutput}</textarea>
+        </p>
+      </template>
+
+      <template id="About">
+          <h1 class="title">About</h1>
+          <div class="content">
+
+              <p>
+                  This is a simple web interface for Shader Minifier.
+                  Shader Minifier is a tool for minifying shader code (GLSL or HLSL).
+              </p>
+
+              <p>
+                  See <a href="https://github.com/laurentlb/Shader_Minifier">Shader Minifier</a>
+                  on GitHub for more information about the tool.
+                  If you use it frequently, you might want to download Shader Minifier and run it on your computer.
+                  as it has more features and can be integrated in your toolchain.
+              </p>
+
+              <p>
+                  This version of Shader Minifier was compiled to WebAssembly, and can be used offline.
+                  Some features are still missing, in particular settings are not yet available here.
+                  Follow <a href="https://github.com/laurentlb/Shader_Minifier/issues/145">issue #145</a> on GitHub for updates.
+              </p>
+
+              <p>
+                  If you find any bug, please report it on <a href="https://github.com/laurentlb/Shader_Minifier/issues">Github</a>.
+              </p>
+
+          </div>
+      </template>
+
+      <template id="ErrorNotification">
+        <div class="notification is-warning">
+          <button class="delete ${HideClass}" onclick="${Hide}"></button>
+          ${Text}
+        </div>
+      </template>
+
+    </section>
+  </div>
+</div>

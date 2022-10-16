@@ -1,0 +1,328 @@
+:root {
+    --bg-main: #f1b99c;
+    --bg-light: #ffece3;
+    --border: #971f1f;
+}
+
+body {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    margin: 0px;
+    margin-bottom: 10px;
+    color: #333;
+    background-color: var(--bg-main);
+}
+
+#conteneur {
+    width: 100%;
+}
+
+.header {
+    background-color: black;
+    color: var(--bg-light);
+    padding-left: 188px;
+    padding-right: 0px;
+    line-height: 1.6em;
+}
+
+.left h1 {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    text-align: center;
+    border-bottom: solid 1px var(--border);
+}
+
+.left {
+    font-size: 1em;
+    width: 164px;
+    background: var(--bg-light) repeat-x top;
+    border-bottom: solid 3px black;
+    border-right: solid 3px black;
+    border-left: solid 1px black;
+    border-top: none;
+    position: absolute;
+    padding-top: 6px;
+    top: 0px;
+    left: 10px;
+}
+
+.center h1 {
+    font-size: 1.4em;
+    border-bottom: solid 2px var(--border);
+    text-align: right;
+    margin-top: 0px;
+    padding-top: 0px;
+}
+
+.center h2 {
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-top: 1.5em;
+    font-size: 1.3em;
+    text-align: center;
+    background: var(--bg-light);
+    font-variant: small-caps;
+    letter-spacing: 2px;
+}
+
+.center form div {
+    margin-bottom: 5px;
+}
+
+.center h3 {
+    font-size: 1.1em;
+    margin-top: 1em;
+}
+
+.center h4 {
+    margin-bottom: 0.5em;
+    font-size: 1em;
+    font-weight: bold;
+}
+
+h5 {
+    font-size: 1em;
+}
+
+h6 {
+    font-size: 1em;
+}
+
+label {
+    display: inline-block;
+    min-width: 150px;
+    font-variant: small-caps;
+    text-align: right;
+}
+
+.center big {
+    margin-top: 8px;
+}
+
+.center {
+    margin-top: 10px;
+    margin-left: 188px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+#content {
+    background-color: white;
+    border-left: solid 1px black;
+    border-top: solid 1px black;
+    border-right: solid 3px black;
+    border-bottom: solid 3px black;
+    max-width: 800px;
+    margin: 0px auto;
+    padding: 10px 20px;
+}
+
+#menu ul, #menu li {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+#menu a {
+    display: block;
+    margin: 0;
+    margin-left: 4px;
+    /*  border-left: 4px transparent solid; */
+    border-bottom: 1px dashed #A0C0F0;
+    text-decoration: none;
+    color: #333;
+    padding-left: 5px;
+}
+
+    #menu a:hover {
+        margin-left: 0px;
+        border-left: 4px solid #002299;
+        border-bottom: 1px solid #3388AA;
+        background-color: var(--bg-main);
+        color: black;
+    }
+
+.field legend:hover {
+    color: white;
+    background-color: var(--border);
+    border: solid 1px #225;
+}
+
+.center a {
+    color: #338;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+    .center a:visited {
+        color: #068;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .center a:hover {
+        color: black;
+        text-decoration: underline;
+        font-weight: bold;
+    }
+
+.center .field a:hover {
+    text-decoration: none;
+}
+
+.center p {
+    margin-right: 25px;
+    margin-left: 10px;
+}
+
+.center .item, .center .block, fieldset {
+    margin-bottom: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    background-color: white;
+    padding: 4px;
+    border: solid 1px var(--border);
+    display: block;
+}
+
+.center .item a {
+    background-color: #AADDFF;
+}
+
+.center .item a:after {
+    content: ':';
+}
+
+
+textarea {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+#display {
+    width: 50em;
+    background-color: black;
+    display: block;
+    color: white;
+    font-family: monospace;
+    font-size: 11px;
+    border: 1px solid white;
+}
+
+.code {
+    font-size: 11px;
+    white-space: pre;
+    font-family: monospace;
+    border-left: 3px double black;
+    margin: 5px;
+    padding-left: 5px;
+}
+
+.center pre {
+    font-size: 11px;
+    white-space: pre;
+    font-family: monospace;
+    border-left: solid 3px #666;
+    white-space: pre-wrap;
+    margin: 5px;
+    padding-left: 8px;
+}
+
+.box {
+    border: 2px black solid;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 0.8em;
+    padding: 6px;
+    background-color: #EEEEEE;
+    color: black;
+    font-variant: normal;
+}
+
+.box h4 {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    border: 0px black;
+    font-variant: normal;
+    color: white;
+    background-color: #AAAAAA;
+    text-align: center;
+}
+
+.box2 {
+    border: 1px black solid;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 0.8em;
+    padding: 4px;
+    background-color: #EEEEEE;
+    color: black;
+    font-variant: normal;
+}
+
+
+.center ul {
+    list-style-type: square;
+}
+
+legend {
+    font-weight: bold;
+    border: solid 1px var(--border);
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+img {
+    border: none;
+    background: transparent;
+}
+
+
+
+
+/* Let's be modern and support mobile*/
+@media (max-width: 750px) {
+    .left {
+        font-size: 1em;
+        position: static;
+        background-color: var(--bg-light);
+        margin: 1em;
+        padding: 10px;
+        left: 0px;
+        width: auto;
+        border-top: solid 1px black;
+    }
+
+    #menu {
+        visibility: hidden;
+        position: fixed;
+    }
+
+    .left h1:before {
+        content: "☰ ";
+    }
+
+    #menu h1:before {
+        content: "";
+    }
+
+    .left:hover #menu {
+        visibility: visible;
+        position: static;
+        /* to avoid clicking on the links when opening the menu */
+        margin-top: 1em;
+    }
+
+    .center {
+        margin: 1em;
+    }
+
+    #header {
+        padding-left: 1em;
+    }
+
+    .left h1 {
+        border: 0;
+        margin: 0;
+    }
+}
