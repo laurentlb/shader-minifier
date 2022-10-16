@@ -73,8 +73,8 @@
     <Reference Include="System.ValueTuple" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Shader Minifier.fsproj">
-      <Name>Shader Minifier</Name>
+    <ProjectReference Include="..\Shader Minifier Library.fsproj">
+      <Name>Shader Minifier Library</Name>
       <Project>{059c6af3-1877-4698-be34-bf7eb55d060a}</Project>
       <Private>True</Private>
     </ProjectReference>

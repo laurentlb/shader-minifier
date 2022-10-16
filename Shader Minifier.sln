@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32819.101
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Shader Minifier", "Shader Minifier.fsproj", "{059C6AF3-1877-4698-BE34-BF7EB55D060A}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Shader Minifier Library", "Shader Minifier Library.fsproj", "{059C6AF3-1877-4698-BE34-BF7EB55D060A}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Checker", "Checker\Checker.fsproj", "{CF735CB3-7698-41DA-9E91-69D0057087CB}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -27,5 +27,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0FF87597-650A-442F-BCAD-095B520AF893}
 	EndGlobalSection
 EndGlobal
