@@ -12,6 +12,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Checker", "Checker\Checker.
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Shader Minifier", "Shader Minifier.fsproj", "{7A0B4487-C3F6-4753-9C8D-FEE09049F52D}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SMBolero.Client", "SMBolero.Client\SMBolero.Client.fsproj", "{2DF47B2C-A68C-430C-B23F-BF51F68DF74D}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SMBolero.Server", "SMBolero.Server\SMBolero.Server.fsproj", "{C1A4652F-0F92-4530-B1C8-2AAC9C383650}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +34,14 @@ Global
 		{7A0B4487-C3F6-4753-9C8D-FEE09049F52D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A0B4487-C3F6-4753-9C8D-FEE09049F52D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A0B4487-C3F6-4753-9C8D-FEE09049F52D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DF47B2C-A68C-430C-B23F-BF51F68DF74D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DF47B2C-A68C-430C-B23F-BF51F68DF74D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DF47B2C-A68C-430C-B23F-BF51F68DF74D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DF47B2C-A68C-430C-B23F-BF51F68DF74D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1A4652F-0F92-4530-B1C8-2AAC9C383650}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1A4652F-0F92-4530-B1C8-2AAC9C383650}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1A4652F-0F92-4530-B1C8-2AAC9C383650}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1A4652F-0F92-4530-B1C8-2AAC9C383650}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

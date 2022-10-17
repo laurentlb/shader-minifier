@@ -83,6 +83,7 @@ open Globals
 
 let init(argv) =
     let argParser = ArgumentParser.Create<CliArguments>(
+        programName = "Shader Minifier",
         helpTextMessage =
             sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version)
 
