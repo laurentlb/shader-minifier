@@ -154,24 +154,24 @@ label {
     font-weight: bold;
 }
 
-    .center a:visited {
-        color: #068;
-        text-decoration: none;
-        font-weight: bold;
-    }
+.center a:visited {
+    color: #068;
+    text-decoration: none;
+    font-weight: bold;
+}
 
-    .center a:hover {
-        color: black;
-        text-decoration: underline;
-        font-weight: bold;
-    }
+.center a:hover {
+    color: black;
+    text-decoration: underline;
+    font-weight: bold;
+}
 
 .center .field a:hover {
     text-decoration: none;
 }
 
 .center p {
-    margin-right: 25px;
+    margin-right: 10px;
     margin-left: 10px;
 }
 
@@ -257,7 +257,6 @@ textarea {
     color: black;
     font-variant: normal;
 }
-
 
 .center ul {
     list-style-type: square;

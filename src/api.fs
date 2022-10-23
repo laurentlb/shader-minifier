@@ -5,13 +5,13 @@ open System.IO
 open Microsoft.FSharp.Text
 open Options.Globals
 
-let printSize (shaders: Ast.Shader[]) =
+let private printSize (shaders: Ast.Shader[]) =
     if options.verbose then
         let length = shaders |> Array.map (fun s -> Printer.printText s.code)
                    |> Array.sumBy (fun s -> s.Length)
         printfn "Shader size is: %d" length
 
-let readFile file =
+let private readFile file =
     let stream =
         if file = "" then new StreamReader(Console.OpenStandardInput())
         else new StreamReader(file)
