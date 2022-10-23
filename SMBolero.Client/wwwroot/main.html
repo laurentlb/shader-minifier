@@ -23,17 +23,25 @@
       </div>
 
       <template id="Home">
-        <h1 class="title">Shader Minifier</h1>
+        <h1>Shader Minifier</h1>
         <p>
             <textarea rows="15" id="input" bind="${ShaderInput}"></textarea>
             <input type="text" style="width: 50%" name="flags" bind="${Flags}" />
             <button onclick="${Minify}" class="button">Minify!</button>
             <textarea rows="15" readonly>${ShaderOutput}</textarea>
+        <p>
+            Tip: use the flags <code>--output=indented --no-renaming</code> for debugging.
         </p>
       </template>
 
+      <template id="FlagPage">
+          <h1>Flags</h1>
+
+          <pre>${FlagHelp}</pre>
+      </template>
+
       <template id="About">
-          <h1 class="title">About</h1>
+          <h1>About</h1>
           <div class="content">
 
               <p>
