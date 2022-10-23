@@ -14,9 +14,9 @@ shader is minified by hand by experienced demosceners, Shader Minifier is often
 able to optimize it further. See this
 [2010 report](https://www.ctrl-alt-test.fr/2010/glsl-minifier-smaller-and-smaller/).
 
-If your application uses multiple shaders, use the `--preserve-externals`
-option. Values such as the uniforms won't be renamed, which makes it easier to
-use in your application (at the expense of a slightly bigger shader).
+To be notified of new releases, use the watch feature of GitHub.
+
+Try the online version here: https://ctrl-alt-test.fr/minifier/
 
 ## Features
 
@@ -42,14 +42,14 @@ be the most compression-friendly.
 ## Example output
 
 ```c
-/* File generated with Shader Minifier 1.1.6
+/* File generated with Shader Minifier 1.3
  * http://www.ctrl-alt-test.fr
  */
 #ifndef HEART_FRAG_EXPECTED_
 # define HEART_FRAG_EXPECTED_
-# define VAR_MOUSE "f"
-# define VAR_RESOLUTION "y"
-# define VAR_TIME "v"
+# define VAR_mouse "f"
+# define VAR_resolution "y"
+# define VAR_time "v"
 
 const char *heart_frag =
  "uniform float v;"
@@ -61,8 +61,8 @@ const char *heart_frag =
    "float r=mod(v,2.)/2.,a=pow(r,.2)*.5+.5;"
    "a-=a*.2*sin(r*6.2831*5.)*exp(-r*6.);"
    "f*=vec2(.5,1.5)+a*vec2(.5,-.5);"
-   "float m=atan(f.x,f.y)/3.14159,x=length(f),e=abs(m),o=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),l=step(x,o)*pow(1.-x/o,.25);"
-   "gl_FragColor=vec4(l,0.,0.,1.);"
+   "float m=atan(f.x,f.y)/3.141593,x=length(f),e=abs(m),o=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),n=step(x,o)*pow(1.-x/o,.25);"
+   "gl_FragColor=vec4(n,0.,0.,1.);"
  "}";
 
 #endif // HEART_FRAG_EXPECTED_
@@ -156,7 +156,7 @@ If you desperately need to save a few bytes, try another value of
 The recommandation is to use:
 
 ```
-shader_minifier.exe --format c-array --preserve-externals *.frag -o shaders.h
+shader_minifier.exe --format c-array *.frag -o shaders.h
 ```
 
 Then, in your C or C++ code, include the file:
@@ -167,8 +167,9 @@ const char* shaderSources[] = {
 };
 ```
 
-Since the uniforms are not renamed, prefer shorter names when
-possible. Hopefully a future version of Shader Minifier will improve this.
+Note that uniforms will be renamed consistently across all the files. The
+`#define` lines will tell you how they were renamed. To disable this renaming,
+use `--preserve-externals`.
 
 ### Javascript
 
@@ -337,10 +338,7 @@ Contributions are welcome.
 
 ---------
 
-Slightly outdated user manual:
-  http://www.ctrl-alt-test.fr/?page_id=7
+Created by Laurent Le Brun (LLB / Ctrl-Alt-Test) and
+[other contributors](https://github.com/laurentlb/Shader_Minifier/graphs/contributors).
 
-Created by Laurent Le Brun (LLB / Ctrl-Alt-Test).
-
-  http://laurent.le-brun.eu
-  http://ctrl-alt-test.fr
+  http://laurent.le-brun.eu -- http://ctrl-alt-test.fr

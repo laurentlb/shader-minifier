@@ -1,11 +1,11 @@
-/* File generated with Shader Minifier 1.1.6
+/* File generated with Shader Minifier 1.3
  * http://www.ctrl-alt-test.fr
  */
 #ifndef HEART_FRAG_EXPECTED_
 # define HEART_FRAG_EXPECTED_
-# define VAR_MOUSE "f"
-# define VAR_RESOLUTION "y"
-# define VAR_TIME "v"
+# define VAR_mouse "f"
+# define VAR_resolution "y"
+# define VAR_time "v"
 
 const char *heart_frag =
  "uniform float v;"
@@ -17,8 +17,8 @@ const char *heart_frag =
    "float r=mod(v,2.)/2.,a=pow(r,.2)*.5+.5;"
    "a-=a*.2*sin(r*6.2831*5.)*exp(-r*6.);"
    "f*=vec2(.5,1.5)+a*vec2(.5,-.5);"
-   "float m=atan(f.x,f.y)/3.14159,x=length(f),e=abs(m),o=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),l=step(x,o)*pow(1.-x/o,.25);"
-   "gl_FragColor=vec4(l,0.,0.,1.);"
+   "float m=atan(f.x,f.y)/3.141593,x=length(f),e=abs(m),o=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),n=step(x,o)*pow(1.-x/o,.25);"
+   "gl_FragColor=vec4(n,0.,0.,1.);"
  "}";
 
 #endif // HEART_FRAG_EXPECTED_
