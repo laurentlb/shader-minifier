@@ -81,7 +81,7 @@ module Globals =
 
 open Globals
 
-let init(argv) =
+let private initPrivate argv needFiles =
     let argParser = ArgumentParser.Create<CliArguments>(
         programName = "Shader Minifier",
         helpTextMessage =
@@ -93,7 +93,7 @@ let init(argv) =
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
 
-    if filenames.Length = 0 then
+    if filenames.Length = 0 && needFiles then
         printfn "%s" (argParser.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
         false
     else
@@ -114,3 +114,6 @@ let init(argv) =
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
         true
+
+let init argv = initPrivate argv false |> ignore
+let initFiles argv = initPrivate argv true
