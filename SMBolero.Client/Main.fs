@@ -17,6 +17,7 @@ type Model =
         page: Page
         shaderInput: string
         shaderOutput: string
+        flags: string
         error: string option
     }
 
@@ -25,6 +26,7 @@ let initModel =
         page = Home
         shaderInput = "int foo() { return 6 * 7; }"
         shaderOutput = ""
+        flags = "--format text"
         error = None
     }
 
@@ -33,14 +35,17 @@ type Message =
     | SetPage of Page
     | Minify
     | SetShader of string
+    | SetFlags of string
     | Error of exn
     | ClearError
 
-let minifyTest content =
+let minify flags content =
     try
-        Options.init([|"--format"; "text"; "-v"; "dummy-file.frag"|]) |> ignore
-        let arr = ShaderMinifier.minify [|"input", content|] |> fst |> Array.map (fun s -> s.code)
-        Printer.print arr.[0]
+        Options.init flags
+        let shaders, exportedNames = ShaderMinifier.minify [|"input", content|]
+        let out = new System.IO.StringWriter()
+        Formatter.print out shaders exportedNames Options.Globals.options.outputFormat
+        out.ToString()
     with
         | e -> e.Message
 
@@ -48,12 +53,14 @@ let update message model =
     match message with
     | SetPage page ->
         { model with page = page }, Cmd.none
-
     | Minify ->
-        let out = minifyTest model.shaderInput
+        printfn "Minify %s" model.flags
+        let out = minify (model.flags.Split(' ')) model.shaderInput
         { model with shaderOutput = out }, Cmd.none
     | SetShader value ->
         { model with shaderInput = value }, Cmd.none
+    | SetFlags value ->
+        { model with flags = value }, Cmd.none
 
     | Error exn ->
         { model with error = Some exn.Message }, Cmd.none
@@ -74,6 +81,7 @@ let homePage model dispatch =
         .Minify(fun _ -> dispatch Minify)
         .ShaderInput(model.shaderInput, fun v -> dispatch (SetShader v))
         .ShaderOutput(model.shaderOutput)
+        .Flags(model.flags, fun v -> dispatch (SetFlags v))
         .Elt()
 
 let menuItem (model: Model) (page: Page) (text: string) =
