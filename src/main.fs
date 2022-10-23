@@ -6,7 +6,7 @@ open Options.Globals
 let main argv =
     let err =
         try
-            if Options.init argv then 
+            if Options.initFiles argv then 
                 if options.verbose then
                     printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
                 ShaderMinifier.run options.filenames
