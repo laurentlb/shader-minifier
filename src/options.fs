@@ -81,20 +81,22 @@ module Globals =
 
 open Globals
 
-let private initPrivate argv needFiles =
-    let argParser = ArgumentParser.Create<CliArguments>(
-        programName = "Shader Minifier",
-        helpTextMessage =
-            sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version)
+let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version
 
-    let args = argParser.Parse(argv)
+let private argParser = lazy (
+    ArgumentParser.Create<CliArguments>(
+        programName = "Shader Minifier",
+        helpTextMessage = helpTextMessage))
+
+let private initPrivate argv needFiles =
+    let args = argParser.Value.Parse(argv)
 
     let opt = args.GetResult(NoRenamingList, defaultValue = "main")
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
 
     if filenames.Length = 0 && needFiles then
-        printfn "%s" (argParser.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
+        printfn "%s" (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
         false
     else
         options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
@@ -114,6 +116,8 @@ let private initPrivate argv needFiles =
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
         true
+
+let flagsHelp = lazy (argParser.Value.PrintUsage(message = helpTextMessage))
 
 let init argv = initPrivate argv false |> ignore
 let initFiles argv = initPrivate argv true

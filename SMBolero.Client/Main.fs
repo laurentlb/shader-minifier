@@ -9,6 +9,7 @@ open Bolero.Templating.Client
 /// Routing endpoints definition.
 type Page =
     | [<EndPoint "?main">] Home
+    | [<EndPoint "?flags">] FlagPage
     | [<EndPoint "?help">] Help
 
 /// The Elmish application's model.
@@ -76,6 +77,11 @@ let aboutPage model dispatch =
     Main.About()
         .Elt()
 
+let flagPage model dispatch =
+    Main.FlagPage()
+        .FlagHelp(Options.flagsHelp.Value)
+        .Elt()
+
 let homePage model dispatch =
     Main.Home()
         .Minify(fun _ -> dispatch Minify)
@@ -94,12 +100,14 @@ let view model dispatch =
     Main()
         .Menu(concat {
             menuItem model Home "Minifier"
+            menuItem model FlagPage "Flags"
             menuItem model Help "Help"
         })
         .Body(
             cond model.page <| function
             | Home -> homePage model dispatch
             | Help -> aboutPage model dispatch
+            | FlagPage -> flagPage model dispatch
         )
         .Error(
             cond model.error <| function

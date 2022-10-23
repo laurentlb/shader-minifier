@@ -23,17 +23,25 @@
       </div>
 
       <template id="Home">
-        <h1 class="title">Shader Minifier</h1>
+        <h1>Shader Minifier</h1>
         <p>
             <textarea rows="15" id="input" bind="${ShaderInput}"></textarea>
             <input type="text" style="width: 50%" name="flags" bind="${Flags}" />
             <button onclick="${Minify}" class="button">Minify!</button>
             <textarea rows="15" readonly>${ShaderOutput}</textarea>
+        <p>
+            Tip: use the flags <code>--format indented --no-renaming</code> for debugging.
         </p>
       </template>
 
+      <template id="FlagPage">
+          <h1>Flags</h1>
+
+          <pre>${FlagHelp}</pre>
+      </template>
+
       <template id="About">
-          <h1 class="title">About</h1>
+          <h1>About</h1>
           <div class="content">
 
               <p>
@@ -44,14 +52,9 @@
               <p>
                   See <a href="https://github.com/laurentlb/Shader_Minifier">Shader Minifier</a>
                   on GitHub for more information about the tool.
-                  If you use it frequently, you might want to download Shader Minifier and run it on your computer.
-                  as it has more features and can be integrated in your toolchain.
-              </p>
-
-              <p>
-                  This version of Shader Minifier was compiled to WebAssembly, and can be used offline.
-                  Some features are still missing, in particular settings are not yet available here.
-                  Follow <a href="https://github.com/laurentlb/Shader_Minifier/issues/145">issue #145</a> on GitHub for updates.
+                  This version of Shader Minifier was compiled to WebAssembly, and runs entirely in the browser.
+                  If you use it frequently, you might want to download the Shader Minifier binary and run it on your computer,
+                  as it can be integrated in your toolchain.
               </p>
 
               <p>
