@@ -335,7 +335,7 @@ module private ParseImpl =
         macro |>> Ast.Verbatim
         attribute |>> Ast.Verbatim
         attempt ((declaration .>> ch ';') |>> Ast.Decl)
-        simpleStatement .>> ch ';'] <?> "instruction"
+        simpleStatement .>> ch ';'] <?> "statement"
 
     // e.g. "int foo(float a[], out int b) : color"
     let functionHeader =
@@ -347,6 +347,9 @@ module private ParseImpl =
     let pfunction =
         pipe2 functionHeader block (fun head body -> Ast.Function(head, body))
 
+    let precision =
+         keyword "precision" >>. (specifiedType |>> Ast.Precision) .>> ch ';'
+
     let toplevel =
         let decl = declaration .>> ch ';'
         let item = choice [
@@ -356,6 +359,7 @@ module private ParseImpl =
                     attempt decl |>> Ast.TLDecl
                     structDecl
                     attempt interfaceBlock
+                    precision
                     pfunction
         ]
         let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> options.reorderFunctions <- true)

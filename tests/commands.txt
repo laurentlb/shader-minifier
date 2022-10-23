@@ -14,6 +14,7 @@
 --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
 --no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
 --no-renaming --format indented --no-inlining -o tests/unit/nested_if.frag.expected tests/unit/nested_if.frag
+--format indented -o tests/unit/precision.frag.expected tests/unit/precision.frag
 
 # Inlining unit tests
 

@@ -261,6 +261,7 @@ module private PrinterImpl =
         | Function (fct, Block []) -> out "%s%s%s{}" (nl 0) (funToS fct) (nl 0)
         | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (stmtToS 0 body)
         | Function (fct, body) -> out "%s%s%s{%s%s}" (nl 0) (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
+        | Precision ty -> out "precision %s;" (typeToS ty);
         | TLDecl (_, []) -> ""
         | TLDecl decl -> out "%s%s;" (nl 0) (declToS decl)
         | TypeDecl t -> out "%s;" (typeSpecToS t)
