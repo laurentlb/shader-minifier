@@ -104,6 +104,7 @@ and TopLevel =
     | Function of FunctionType * Stmt
     | TLDecl of Decl
     | TypeDecl of TypeSpec // structs
+    | Precision of Type
 
 let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}
 let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=init}
