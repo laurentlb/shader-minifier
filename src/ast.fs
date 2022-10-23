@@ -63,6 +63,7 @@ and TypeSpec =
 and Type = {
     name: TypeSpec // e.g. int
     typeQ: string list // e.g. const, uniform
+    arraySizes: Expr list // e.g. [3][5]
 }
 
 and DeclElt = {
@@ -104,7 +105,7 @@ and TopLevel =
     | TLDecl of Decl
     | TypeDecl of TypeSpec // structs
 
-let makeType name tyQ = {Type.name=name; typeQ=tyQ}
+let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}
 let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=init}
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
