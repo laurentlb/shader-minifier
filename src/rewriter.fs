@@ -212,7 +212,7 @@ let private rwTypeSpec = function
     | x -> x // structs
 
 let rwType (ty: Type) =
-    makeType (rwTypeSpec ty.name) (List.map stripSpaces ty.typeQ)
+    makeType (rwTypeSpec ty.name) (List.map stripSpaces ty.typeQ) ty.arraySizes
 
 let rwFType fct =
     // The default for function parameters is "in", we don't need it.

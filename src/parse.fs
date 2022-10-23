@@ -187,7 +187,7 @@ module private ParseImpl =
         let semi = if options.hlsl then opt (ch ';') |>> ignore else ch ';'
         (structSpecifier .>> semi) |>> Ast.TypeDecl
 
-    // eg. "const out int", "uniform float"
+    // eg. "const out int", "uniform float", "int[2][3]"
     let specifiedTypeGLSL =
         let storage = ["const"; "inout"; "in"; "out"; "centroid"
                        "patch"; "sample"; "uniform"; "buffer"; "shared"; "coherent"
@@ -202,7 +202,8 @@ module private ParseImpl =
                      |>> (function s -> "layout(" + s + ")")
         let qualifier = many (storage <|> layout)
         let typeSpec = structSpecifier <|> (ident |>> (fun id -> Ast.TypeName id.Name))
-        pipe2 qualifier typeSpec (fun tyQ name -> Ast.makeType name tyQ)
+        let arraySizes = many (between (ch '[') (ch ']') expr)
+        pipe3 qualifier typeSpec arraySizes (fun tyQ name sizes -> Ast.makeType name tyQ sizes)
 
     let specifiedTypeHLSL =
         let storage = ["extern"; "nointerpolation"; "precise"; "shared"; "groupshared"
@@ -221,7 +222,8 @@ module private ParseImpl =
                    |>> (function Some s -> "<" + s + ">" | None -> "")
         let typeName = pipe2 (ident |>> (fun id -> id.Name)) generic (+)
         let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
-        pipe3 qualifier typeSpec generic (fun tyQ name _ -> Ast.makeType name tyQ)
+        let arraySizes = many (between (ch '[') (ch ']') expr)
+        pipe4 qualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
     let specifiedType = parse {
         let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
