@@ -369,7 +369,7 @@ let markLValues li =
             | _ -> e
         | e -> e
     let assignOps = Set.ofList ["="; "+="; "-="; "*="; "/="; "%=";
-        "<<="; ">>="; "&="; "^="; "|="; "_++"; "_--"; "$++"; "$--"]
+        "<<="; ">>="; "&="; "^="; "|="; "++"; "--"; "$++"; "$--"]
     let findWrites env = function
         | FunCall(Op o, e::args) when Set.contains o assignOps ->
             let newEnv = {env with fExpr = markVars}
