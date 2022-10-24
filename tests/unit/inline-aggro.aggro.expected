@@ -110,3 +110,10 @@ int noinl11(ivec3 x)
   x[i++]+=1;
   return x[i]+i;
 }
+float noinl12()
+{
+  int i=10;
+  while(--i>0)
+    ;
+  return 1;
+}
