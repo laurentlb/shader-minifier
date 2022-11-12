@@ -20,3 +20,7 @@ int no_parens2(int a, int b, int c) {
 	int d = a*(b*c);
 	return a - (b - 1) - (d - c);
 }
+
+int other(int a, int b, int c, int d) {
+    return (a*b)*(c*d)*(a*b);
+}

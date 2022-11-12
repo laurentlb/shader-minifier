@@ -78,7 +78,7 @@ let private inlineFn (declArgs:Decl list) passedArgs bodyExpr =
 
 /// Expression that doesn't need parentheses around it.
 let (|NoParen|_|) = function
-    | Int _ | Float _ | Dot _ | Var _ | FunCall _ | Subscript _ as x -> Some x
+    | Int _ | Float _ | Dot _ | Var _ | FunCall (Var _, _) | Subscript _ as x -> Some x
     | _ -> None
 
 let rec private simplifyExpr (didInline: bool ref) env = function
@@ -108,7 +108,7 @@ let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Op "-", [x; Int (i, s)]) when i < 0 ->
         FunCall(Op "+", [x; Int (-i, s)]) |> env.fExpr env
 
-    // Swap operands to get rid of parenthese
+    // Swap operands to get rid of parentheses
     // x*(y*z) -> y*z*x
     | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])]) ->
         FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
@@ -117,10 +117,10 @@ let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Op "+", [NoParen x; FunCall(Op ("+"|"-") as op, [y; z])]) ->
         FunCall(Op "+", [FunCall(op, [y; z]); x]) |> env.fExpr env
     // x-(y+z) -> x-y-z
-    | FunCall(Op "-", [NoParen x; FunCall(Op "+", [y; z])]) ->
+    | FunCall(Op "-", [x; FunCall(Op "+", [y; z])]) ->
         FunCall(Op "-", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
     // x-(y-z) -> x-y+z
-    | FunCall(Op "-", [NoParen x; FunCall(Op "-", [y; z])]) ->
+    | FunCall(Op "-", [x; FunCall(Op "-", [y; z])]) ->
         FunCall(Op "+", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
 
     // Boolean simplifications (let's ignore the suffix)

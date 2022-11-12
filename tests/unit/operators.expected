@@ -20,4 +20,8 @@
  "{"
    "int d=b*c*a;"
    "return a-b+1-d+c;"
+ "}"
+ "int other(int a,int b,int c,int d)"
+ "{"
+   "return a*b*(c*d)*(a*b);"
  "}",
