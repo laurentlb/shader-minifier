@@ -119,7 +119,7 @@ int noinl11(in ivec3 x) {
 	return x[i] + i;
 }
 
-float noinl12() {
+int noinl12() {
 	int i = 10;
 	while (--i > 0) {
 	}

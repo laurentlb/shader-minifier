@@ -5,6 +5,7 @@ open System.Diagnostics
 open System.IO
 
 open Argu
+open System.Text.RegularExpressions
 
 type CliArguments =
     | Update_Golden
@@ -74,8 +75,14 @@ let testPerformance files =
     let time = stopwatch.Elapsed
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
+// Generated files may contain the Shader Minifier version.
+// Ignore version changes in the tests.
+let versionRegex = new Regex(@"\bShader Minifier \d(\.\d+)+");
+
 let runCommand argv =
-    let cleanString (s: string) = s.Replace("\r\n", "\n").Trim()
+    let cleanString (s: string) =
+        let s = s.Replace("\r\n", "\n").Trim()
+        versionRegex.Replace(s, "")
     Options.init argv
     let expected =
         try File.ReadAllText options.outputName |> cleanString
