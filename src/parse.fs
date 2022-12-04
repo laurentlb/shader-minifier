@@ -27,8 +27,8 @@ module private ParseImpl =
 
     let verbatim = parse {
         do! skipString "//["
-        do! skipComment
-        let! content = manyCharsTill (anyChar .>> skipComment) (pstring "//]")
+        do! many spaces1 |>> ignore
+        let! content = manyCharsTill anyChar (pstring "//]")
         do! ws
         return content }
 
@@ -304,7 +304,7 @@ module private ParseImpl =
         // parse the #define macros to get the macro name
         let define = pipe2 (keyword "define" >>. ident) line
                        (fun id line -> forbiddenNames <- id :: forbiddenNames; "define " + id + line)
-        pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s)
+        pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s + "\n")
 
     // HLSL attribute, eg. [maxvertexcount(12)]
     let attribute =

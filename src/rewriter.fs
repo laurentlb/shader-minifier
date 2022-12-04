@@ -34,26 +34,24 @@ let private stripSpaces str =
     // hack because we can't remove space in "#define foo (1+1)"
 
     let mutable space = false
-    let mutable macro = false
+    let mutable wasNewline = false
     for c in str do
         if c = '\n' then
-            if macro then write '\n'
-            else space <- true
-            macro <- false
+            if not wasNewline then
+                write '\n'
+            space <- false
+            wasNewline <- true
 
         elif Char.IsWhiteSpace(c) then
             space <- true
+            wasNewline <- false
         else
-            if not macro && c = '#' then
-                macro <- true
-                if last <> '\n' then write '\n'
-
+            wasNewline <- false
             if space && isId c && isId last then
                 write ' '
             write c
             space <- false
 
-    if macro then result.Append("\n") |> ignore
     result.ToString()
 
 

@@ -1,11 +1,11 @@
-/* File generated with Shader Minifier 1.3
+/* File generated with 
  * http://www.ctrl-alt-test.fr
  */
 #ifndef GEOMETRY_HLSL_EXPECTED_
 # define GEOMETRY_HLSL_EXPECTED_
 
 const char *geometry_hlsl =
- "[maxvertexcount(3)]"
+ "[maxvertexcount(3)]\n"
  "void GSScene(triangleadj GSSceneIn input[6],inout TriangleStream<PSSceneIn> OutputStream)"
  "{"
    "PSSceneIn output=(PSSceneIn)0;"

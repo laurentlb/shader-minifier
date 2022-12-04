@@ -231,7 +231,7 @@ module private PrinterImpl =
         | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
-            let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
+            let s = if s.Length > 0 && System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
             if s <> "" && s.[0] = '#' then out "%s%s" (backslashN()) (escape s)
             else escape s
         | Switch(e, cl) ->
@@ -256,8 +256,8 @@ module private PrinterImpl =
     let topLevelToS = function
         | TLVerbatim s ->
             // add a space at end when it seems to be needed
-            let s = if System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
-            out "%s%s" (nl 0) (escape s)
+            let trailing = if s.Length > 0 && System.Char.IsLetterOrDigit s.[s.Length - 1] then " " else ""
+            out "%s%s%s" (nl 0) (escape s) trailing
         | Function (fct, Block []) -> out "%s%s%s{}" (nl 0) (funToS fct) (nl 0)
         | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (stmtToS 0 body)
         | Function (fct, body) -> out "%s%s%s{%s%s}" (nl 0) (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
