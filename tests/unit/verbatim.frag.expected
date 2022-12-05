@@ -1,0 +1,18 @@
+/* File generated with 
+ * http://www.ctrl-alt-test.fr
+ */
+
+// tests/unit/verbatim.frag
+"//Test case for https://github.com/laurentlb/Shader_Minifier/issues/168\n"
+ "int foo(int x){\nreturn 2;\n}\n"
+ "int my_function()"
+ "{"
+   "int i=2;"
+   "foo(1+1);\n"
+   "return i;"
+ "}"
+ "int verbatim_with_newlines()"
+ "{"
+   "int x;\nint y;\n"
+   "return x+y;"
+ "}",
