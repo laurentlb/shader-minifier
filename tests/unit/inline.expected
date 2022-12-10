@@ -1,8 +1,8 @@
 float result;
 void main()
 {
-  float x=.5,a=.6*x*x;
-  result=a;
+  float x=.5;
+  result=.6*x*x;
 }
 int arithmetic()
 {
@@ -14,8 +14,8 @@ int vars(int arg,int arg2)
 }
 int arithmetic2()
 {
-  int a=2,c=a+3;
-  return 4*a*c;
+  int a=2;
+  return 4*a*(a+3);
 }
 int unusedVars()
 {
@@ -32,4 +32,11 @@ int multiPass()
 float multiPass2()
 {
   return 9.;
+}
+uniform int time;
+in int sync;
+void dependOnConst()
+{
+  int x=time+sync;
+  return x*2*3;
 }

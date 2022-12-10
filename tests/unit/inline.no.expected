@@ -37,3 +37,10 @@ float multiPass2()
   float b=9.;
   return b;
 }
+uniform int time;
+in int sync;
+void dependOnConst()
+{
+  int x=time+sync,y=x*2;
+  return y*3;
+}

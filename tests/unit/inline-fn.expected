@@ -13,8 +13,8 @@ float c()
 }
 float d()
 {
-  float f=7.,g=f*f+1.;
-  return g+4.;
+  float f=7.;
+  return f*f+1.+4.;
 }
 float e()
 {
