@@ -236,15 +236,18 @@ let collectReferences stmtList =
 // Variables are always safe to inline when all of:
 //  - the variable is used only once in the current block
 //  - the variable is not used in a sub-block (e.g. inside a loop)
-//  - the init value is trivial (doesn't depend on a variable)
+//  - the init value refers only to constants
 // When aggressive inlining is enabled, additionally inline when all of:
 //  - the variable never appears in an lvalue position (is never written to
 //    after initalization)
-//  - the init value is trivial
+//  - the init value is has no dependency
+// The init is considered trivial when:
+//  - it doesn't depend on a variable
+//  - it depends only on variables proven constants
 let findInlinable block =
     // Variables that are defined in this scope.
-    // The boolean indicates if the variable initialization has dependencies.
-    let localDefs = Dictionary<string, (Ident * bool)>()
+    // The booleans indicate if the variable initialization has dependencies / unsafe dependencies.
+    let localDefs = Dictionary<string, (Ident * bool * bool)>()
     // List of expressions in the current block. Do not look in sub-blocks.
     let mutable localExpr = []
     for stmt: Stmt in block do
@@ -256,9 +259,16 @@ let findInlinable block =
                 | None -> ()
                 | Some init ->
                     localExpr <- init :: localExpr
-                    // Inline only if the init value doesn't depend on other variables.
                     let deps = collectReferences [Expr init]
-                    localDefs.[def.name.Name] <- (def.name, deps.Count > 0)
+                    let hasUnsafeDep = deps |> Seq.exists (fun kv ->
+                        if localDefs.ContainsKey kv.Key then
+                            // A local variable not reassigned is effectively constant.
+                            let ident, _, _ = localDefs.[kv.Key]
+                            ident.IsLValue
+                        else
+                            true
+                    )
+                    localDefs.[def.name.Name] <- (def.name, deps.Count > 0, hasUnsafeDep)
         | Expr e
         | Jump (_, Some e) -> localExpr <- e :: localExpr
         | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
@@ -267,13 +277,16 @@ let findInlinable block =
     let allReferences = collectReferences block
     
     for def in localDefs do
-        let ident, hasInitDeps = def.Value
+        let ident, hasInitDeps, hasUnsafeDeps = def.Value
         if not ident.ToBeInlined then
+            // AggroInlining could in theory do inlining when hasUnsafeDeps=false.
+            // However, it seems to increase the compressed size, and might affect performance.
             if options.aggroInlining && not hasInitDeps && not ident.IsLValue then
-                ident.Inline()
+                ident.ToBeInlined <- true
+
             match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-            | (true, 1), (true, 1) when not hasInitDeps -> ident.Inline()
-            | (false, _), (false, _) -> ident.Inline()
+            | (true, 1), (true, 1) when not hasUnsafeDeps -> ident.ToBeInlined <- true
+            | (false, _), (false, _) -> ident.ToBeInlined <- true
             | _ -> ()
 
 let private simplifyStmt = function
@@ -333,7 +346,7 @@ let inlineAllConsts li =
         // compiler would have yelled if it weren't really really const, so we
         // can brutishly just inline it.
         | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
-            for (def:DeclElt) in defs do def.name.Inline()
+            for (def:DeclElt) in defs do def.name.ToBeInlined <- true
             d
         | d -> d
     let mapStmt = function
@@ -356,7 +369,7 @@ let markLValues li =
     let markVars env = function
         | Var v as e ->
             match env.vars.TryFind v.Name with
-            | Some (_, {name = vv}) -> vv.MarkLValue(); e
+            | Some (_, {name = vv}) -> vv.IsLValue <- true; e
             | _ -> e
         | e -> e
     let assignOps = Set.ofList ["="; "+="; "-="; "*="; "/="; "%=";
@@ -380,7 +393,7 @@ let markLValues li =
         let assignQuals = Set.ofList ["out"; "inout"]
         let argAssigns (ty, _) =
             List.exists (fun tyQ -> Set.contains tyQ assignQuals) ty.typeQ
-        if List.exists argAssigns args then id.MarkLValue()
+        if List.exists argAssigns args then id.IsLValue <- true
     let processTl = function
         | Function(fct, _) -> maybeMarkFct fct
         | _ -> ()
@@ -395,7 +408,8 @@ let simplify li =
     // markLValues doesn't change the AST so we could do it unconditionally,
     // but we only need the information for aggroInlining so don't bother if
     // it's off.
-    |> if options.aggroInlining then markLValues >> inlineAllConsts else id
+    |> markLValues
+    |> if options.aggroInlining then inlineAllConsts else id
     |> iterateSimplifyAndInline
     |> List.choose (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some

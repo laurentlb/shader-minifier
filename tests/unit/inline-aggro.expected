@@ -1,7 +1,7 @@
 float inl1()
 {
-  float f=42.,g=2.*f;
-  return f+g;
+  float f=42.;
+  return f+2.*f;
 }
 float inl2(float x)
 {
@@ -14,13 +14,13 @@ float inl2(float x)
 }
 float inl3()
 {
-  const float f=acos(-1.),g=2.*f;
-  return.75*g;
+  const float f=acos(-1.);
+  return 2.*f*.75;
 }
 float inl4()
 {
-  const float f=acos(-1.),g=2.*f;
-  return.75*g;
+  const float f=acos(-1.);
+  return 2.*f*.75;
 }
 const float foo=123.;
 float inl5()
