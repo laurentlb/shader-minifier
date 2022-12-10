@@ -316,13 +316,6 @@ let private simplifyStmt = function
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
 
-let reorderTopLevel t =
-    if options.reorderDeclarations then
-        let externals, functions = List.partition (function TLDecl _ -> true | _ -> false) t
-        List.sort externals @ functions
-    else
-        t
-
 let rec iterateSimplifyAndInline li =
     if not options.noInlining then
         let mapExpr _ e = e
@@ -403,7 +396,6 @@ let simplify li =
     // but we only need the information for aggroInlining so don't bother if
     // it's off.
     |> if options.aggroInlining then markLValues >> inlineAllConsts else id
-    |> reorderTopLevel
     |> iterateSimplifyAndInline
     |> List.choose (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some
@@ -435,7 +427,7 @@ let private graphReorder deps =
         let deps = deps |> List.map (fun (n, d, c) -> n, List.filter ((<>) lastName) d, c)
         if deps <> [] then loop deps
 
-    loop deps
+    if deps <> [] then loop deps
     list |> List.rev
 
 
@@ -463,11 +455,8 @@ let private computeAllDependencies code =
 
 // reorder functions if there were forward declarations
 let reorder code =
-    if options.reorderFunctions then
-        if options.verbose then
-            printfn "Reordering functions because of forward declarations."
-        let order = code |> computeAllDependencies |> graphReorder
-        let rest = code |> List.filter (function Function _ -> false | _ -> true)
-        rest @ order
-    else
-        code
+    if options.verbose then
+        printfn "Reordering functions because of forward declarations."
+    let order = code |> computeAllDependencies |> graphReorder
+    let rest = code |> List.filter (function Function _ -> false | _ -> true)
+    rest @ order

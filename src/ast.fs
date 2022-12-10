@@ -123,6 +123,7 @@ type Shader = {
     filename: string
     mutable code: TopLevel list
     forbiddenNames: string list
+    reorderFunctions: bool  // set to true if we saw a forward declaration
 }
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
