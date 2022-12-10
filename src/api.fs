@@ -23,7 +23,8 @@ let minify (files: (string*string)[]) =
     vprintf "File parsed. "; printSize shaders
 
     for shader in shaders do
-        shader.code <- Rewriter.reorder shader.code
+        if shader.reorderFunctions then
+            shader.code <- Rewriter.reorder shader.code
         shader.code <- Rewriter.simplify shader.code
     vprintf "Rewrite tricks applied. "; printSize shaders
 

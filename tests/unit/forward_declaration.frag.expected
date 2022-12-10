@@ -1,0 +1,21 @@
+int x;
+void c()
+{
+  x;
+}
+void d()
+{
+  x;
+}
+void b()
+{
+  c(),d();
+}
+void a()
+{
+  b();
+}
+void e()
+{
+  a(),c();
+}

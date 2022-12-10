@@ -4,13 +4,13 @@ open Options.Globals
 
 module private ParseImpl =
 
-    // TODO: true, false
-
     open FParsec.Primitives
     open FParsec.CharParsers
     open FParsec
 
+    // TODO: Get rid of this global state. Not threadsafe.
     let mutable private forbiddenNames = []
+    let mutable reorderFunctions = false
 
     let private commentLine = parse {
         do! skipString "//" // .>> noneOf "[")) // (pchar '[')) // <?> "comment, not verbatim code"
@@ -362,16 +362,22 @@ module private ParseImpl =
                     precision
                     pfunction
         ]
-        let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> options.reorderFunctions <- true)
+        let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> reorderFunctions <- true)
         many ((attempt forwardDecl|>>fun _ -> None) <|> (item|>>Some)) |>> List.choose id // FIXME: use skip?
 
     let parse = ws >>. toplevel .>> eof
 
     let runParser streamName content : Ast.Shader =
         forbiddenNames <- [ "if"; "in"; "do" ]
+        reorderFunctions <- false
         let res = runParserOnString parse () streamName content
         match res with
-        | Success(r,_,_) -> { Ast.Shader.filename = streamName; code = r; forbiddenNames = forbiddenNames }
+        | Success(r,_,_) -> {
+            Ast.Shader.filename = streamName
+            code = r
+            forbiddenNames = forbiddenNames
+            reorderFunctions = reorderFunctions
+          }
         | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
 

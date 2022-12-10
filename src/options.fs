@@ -63,8 +63,6 @@ type Options() =
     member val canonicalFieldNames = "xyzw" with get, set
     member val preserveExternals = false with get, set
     member val preserveAllGlobals = false with get, set
-    member val reorderDeclarations = false with get, set
-    member val reorderFunctions = false with get, set
     member val hlsl = false with get, set
     member val noInlining = false with get, set
     member val aggroInlining = false with get, set
@@ -106,8 +104,6 @@ let private initPrivate argv needFiles =
         options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
         options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
-        options.reorderDeclarations <- false
-        options.reorderFunctions <- false
         options.hlsl <- args.Contains(Hlsl)
         options.noInlining <- args.Contains(NoInlining)
         options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
