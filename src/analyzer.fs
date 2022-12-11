@@ -69,10 +69,10 @@ let findInlinable block =
 
     for def in localDefs do
         let ident, hasInitDeps, hasUnsafeDeps = def.Value
-        if not ident.ToBeInlined then
+        if not ident.ToBeInlined && not ident.IsLValue then
             // AggroInlining could in theory do inlining when hasUnsafeDeps=false.
             // However, it seems to increase the compressed size, and might affect performance.
-            if options.aggroInlining && not hasInitDeps && not ident.IsLValue then
+            if options.aggroInlining && not hasInitDeps then
                 ident.ToBeInlined <- true
 
             match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with

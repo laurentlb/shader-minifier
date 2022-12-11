@@ -31,9 +31,15 @@ float multiPass2()
 {
   return 9.;
 }
+int dont_inline_lvalue()
+{
+  int a=1;
+  a=2;
+  return 3;
+}
 uniform int time;
 in int sync;
-void dependOnConst()
+int dependOnConst()
 {
   int x=time+sync;
   return x*2*3;
