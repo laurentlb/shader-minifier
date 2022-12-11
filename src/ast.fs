@@ -132,9 +132,16 @@ type MapEnv = {
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt>
+    isLValue: bool
 }
 
-let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty}
+let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isLValue = false}
+
+let assignOps = Set.ofList [
+    "="; "+="; "-="; "*="; "/="; "%="
+    "<<="; ">>="; "&="; "^="; "|="
+    "++"; "--"; "$++"; "$--"
+]
 
 let foldList env fct li =
     let mutable env = env
@@ -146,10 +153,15 @@ let foldList env fct li =
 
 // Applies env.fExpr recursively on all nodes of an expression.
 let rec mapExpr env = function
+    | FunCall(Op o as fct, first::args) when assignOps.Contains o ->
+        let first = mapExpr {env with isLValue = true} first
+        env.fExpr env (FunCall(mapExpr env fct, first :: List.map (mapExpr env) args))
     | FunCall(fct, args) ->
+        let env = {env with isLValue = false}
         env.fExpr env (FunCall(mapExpr env fct, List.map (mapExpr env) args))
     | Subscript(arr, ind) ->
-        env.fExpr env (Subscript(mapExpr env arr, Option.map (mapExpr env) ind))
+        let indexEnv = {env with isLValue = false}
+        env.fExpr env (Subscript(mapExpr env arr, Option.map (mapExpr indexEnv) ind))
     | Dot(e,  field) -> env.fExpr env (Dot(mapExpr env e, field))
     | Cast(id, e) -> env.fExpr env (Cast(id, mapExpr env e))
     | VectorExp(li) ->
