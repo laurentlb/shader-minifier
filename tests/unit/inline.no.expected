@@ -1,3 +1,5 @@
+#version 120
+
 float result;
 void main()
 {
@@ -42,6 +44,12 @@ int dont_inline_lvalue()
   int a=1;
   a=2;
   return 3;
+}
+float arr[]=float[](3.4,4.2);
+void lvalues()
+{
+  int a=1;
+  arr[a]=2.;
 }
 uniform int time;
 in int sync;

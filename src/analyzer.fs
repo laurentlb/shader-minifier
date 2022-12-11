@@ -100,34 +100,20 @@ let inlineAllConsts li =
     |> mapTopLevel (mapEnv mapExpr mapStmt)
     |> List.map mapTLDecl
 
-let assignOps = Set.ofList [
-    "="; "+="; "-="; "*="; "/="; "%="
-    "<<="; ">>="; "&="; "^="; "|="
-    "++"; "--"; "$++"; "$--"
-]
-
 let markLValues li =
-    // Helpers for the bodies of functions: find any expression of the form
-    // "foo = ..." or "foo += ..." etc, then scan through all of "foo" marking
-    // any variable seen there as potentially in an lvalue position. This will
-    // over-mark things, e.g., "x[i]" both "x" and "i" will get marked even
-    // though the latter does not need to be, but it is simple.
-    let markVars env = function
-        | Var v as e ->
+
+    let findWrites (env: MapEnv) = function
+        | Var v as e when env.isLValue ->
             match env.vars.TryFind v.Name with
             | Some (_, {name = vv}) -> vv.IsLValue <- true; e
             | _ -> e
-        | e -> e
-
-    let findWrites env = function
-        | FunCall(Op o, e::args) when assignOps.Contains o ->
-            let newEnv = {env with fExpr = markVars}
-            FunCall(Op o, (mapExpr newEnv e)::args)
-        | FunCall(Var v, _) as e ->
+        | FunCall(Var v, args) as e ->
             match env.fns.TryFind v.Name with
             | Some (fct, _) when fct.fName.IsLValue ->
-                let newEnv = {env with fExpr = markVars}
-                mapExpr newEnv e
+                let newEnv = {env with isLValue = true}
+                for arg in args do
+                    (mapExpr newEnv arg: Expr) |> ignore
+                e
             | _ -> e
         | e -> e
 

@@ -36,9 +36,7 @@ float inl7()
 }
 int inl8(ivec3 x)
 {
-  int i=1;
-  x[i]+=1;
-  return x[i]+i;
+  return x[1]+=1,x[1]+1;
 }
 float noinl1()
 {
