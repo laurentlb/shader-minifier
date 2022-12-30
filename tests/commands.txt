@@ -31,10 +31,10 @@
 # Partial renaming tests
 
 --no-remove-unused --no-renaming --format c-variables -o tests/unit/function_comma.expected tests/unit/function_comma.frag
---no-remove-unused --preserve-externals --format c-variables -o tests/real/mandelbulb.expected tests/real/mandelbulb.frag
+--preserve-externals --format c-variables -o tests/real/mandelbulb.expected tests/real/mandelbulb.frag
 --preserve-all-globals --format c-variables -o tests/real/to_the_road_of_ribbon.expected tests/real/to_the_road_of_ribbon.frag
---no-remove-unused --no-renaming-list rotatey --format c-variables -o tests/real/sult.expected tests/real/sult.frag
---preserve-externals -o tests/unit/externals.preserved.expected tests/unit/externals.frag
+--no-renaming-list rotatey --format c-variables -o tests/real/sult.expected tests/real/sult.frag
+--no-remove-unused --preserve-externals -o tests/unit/externals.preserved.expected tests/unit/externals.frag
 
 # Multifile tests
 
@@ -43,11 +43,11 @@
 # Tests with full renaming
 
 --no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
---no-remove-unused --hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
+--hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
 -o tests/real/lunaquatic.frag.expected tests/real/lunaquatic.frag
---no-remove-unused -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
+-o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
---no-remove-unused -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
+-o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
 --no-remove-unused -o tests/unit/function_overload.expected tests/unit/function_overload.frag
 --no-remove-unused -o tests/unit/externals.expected tests/unit/externals.frag
 --no-remove-unused -o tests/unit/qualifiers.expected tests/unit/qualifiers.frag
