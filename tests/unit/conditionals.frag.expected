@@ -1,0 +1,40 @@
+bool success()
+{
+  return true;
+}
+bool fail()
+{
+  return false;
+}
+bool ternary()
+{
+  return success();
+}
+bool ternary2()
+{
+  return success();
+}
+bool or()
+{
+  return true;
+}
+bool or2()
+{
+  return success();
+}
+bool or3()
+{
+  return success();
+}
+bool and()
+{
+  return success();
+}
+bool and2()
+{
+  return false;
+}
+bool and3()
+{
+  return success();
+}
