@@ -289,25 +289,32 @@ let simplify li =
           (* Reorder functions because of forward declarations *)
 
 
+type CallGraphNode = {
+    func: TopLevel
+    funcType: FunctionType
+    name: string
+    callees: string list
+}
+
 let rec private findRemove callback = function
-    | (name, [], content) :: l ->
+    | node :: l when node.callees.IsEmpty ->
         //printfn "=> %s" name
-        callback name content
+        callback node
         l
     | [] -> failwith "Cannot reorder functions (probably because of a recursion)."
     | x :: l -> x :: findRemove callback l
 
 // slow, but who cares?
-let private graphReorder deps =
+let private graphReorder nodes =
     let mutable list = []
     let mutable lastName = ""
 
-    let rec loop deps =
-        let deps = findRemove (fun (s: Ident) x -> lastName <- s.Name; list <- x :: list) deps
-        let deps = deps |> List.map (fun (n, d, c) -> n, List.filter ((<>) lastName) d, c)
-        if deps <> [] then loop deps
+    let rec loop nodes =
+        let nodes = findRemove (fun node -> lastName <- node.name; list <- node.func :: list) nodes
+        let nodes = nodes |> List.map (fun n -> { n with callees = List.filter ((<>) lastName) n.callees })
+        if nodes <> [] then loop nodes
 
-    if deps <> [] then loop deps
+    if nodes <> [] then loop nodes
     list |> List.rev
 
 
@@ -324,14 +331,27 @@ let private computeDependencies block =
 
 // This function assumes that functions are NOT overloaded
 let private computeAllDependencies code =
-    let fct = code |> List.choose (function
-        | Function(fct, block) as f -> Some (fct.fName, block, f)
+    let functions = code |> List.choose (function
+        | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
         | _ -> None)
-    let deps = fct |> List.map (fun (name, block, f) ->
-        let dep = computeDependencies block
-                  |> List.filter (fun name -> fct |> List.exists (fun (x,_,_) -> name = x.Name))
-        name, dep, f)
-    deps
+    let nodes = functions |> List.map (fun (funcType, name, block, f) ->
+        let callees = computeDependencies block
+                      |> List.filter (fun name2 -> functions |> List.exists (fun (_,n,_,_) -> name2 = n))
+        { CallGraphNode.func = f; funcType = funcType; name = name; callees = callees })
+    nodes
+
+
+let removeUnused code =
+    let nodes = computeAllDependencies code
+    let isUnused node =
+        let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
+        let isCalled = (nodes |> List.exists (fun n -> n.callees |> List.contains node.name))
+        let isExternal = options.hlsl && node.funcType.semantics <> []
+        canBeRenamed && not isCalled && not isExternal
+    let unused = set [for node in nodes do if isUnused node then yield node.func]
+    code |> List.filter (function
+        | Function _ as t -> not (unused |> Set.contains t)
+        | _ -> true)
 
 // reorder functions if there were forward declarations
 let reorder code =
