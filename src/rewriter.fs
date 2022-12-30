@@ -79,6 +79,16 @@ let (|NoParen|_|) = function
     | Int _ | Float _ | Dot _ | Var _ | FunCall (Var _, _) | Subscript _ as x -> Some x
     | _ -> None
 
+/// Expression that statically evaluates to boolean value.
+let (|True|False|NotABool|) = function
+    | Int (i, _) when i <> 0 -> True
+    | Int (i, _) when i = 0 -> False
+    | Float (f, _) when f <> 0.M -> True
+    | Float (f, _) when f = 0.M -> False
+    | Var var when var.Name = "true" -> True
+    | Var var when var.Name = "false" -> False
+    | _ -> NotABool
+
 let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
         match env.fns.TryFind v.Name with
@@ -135,6 +145,16 @@ let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Op ">=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
     | FunCall(Op "==", [Float (i1,_); Float (i2,_)]) -> bool(i1 = i2)
     | FunCall(Op "!=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <> i2)
+
+    // Conditionals
+    | FunCall(Op "?:", [True; x; _]) -> x
+    | FunCall(Op "?:", [False; _; x]) -> x
+    | FunCall(Op "&&", [True; x]) -> x
+    | FunCall(Op "&&", [False; _]) -> bool false
+    | FunCall(Op "&&", [x; True]) -> x
+    | FunCall(Op "||", [True; _]) -> bool true
+    | FunCall(Op "||", [False; x]) -> x
+    | FunCall(Op "||", [x; False]) -> x
 
     // Stupid simplifications (they can be useful to simplify rewritten code)
     | FunCall(Op "/", [e; Float (1.M,_)]) -> e
@@ -250,10 +270,9 @@ let private simplifyStmt = function
             | stmts -> Block stmts
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
     | ForD((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, body)
-    // FIXME: properly handle booleans
-    | If(Var var, e1, _) when var.Name = "true" -> e1
-    | If(Var var, _, Some e2) when var.Name = "false" -> e2
-    | If(Var var, _, None) when var.Name = "false" -> Block []
+    | If(True, e1, _) -> e1
+    | If(False, _, Some e2) -> e2
+    | If(False, _, None) -> Block []
     | If(c, b, Some (Block [])) -> If(c, b, None)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e

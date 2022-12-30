@@ -17,6 +17,7 @@
 --format indented -o tests/unit/precision.frag.expected tests/unit/precision.frag
 --no-remove-unused --format c-array --no-inlining --no-renaming -o tests/unit/verbatim.frag.expected tests/unit/verbatim.frag
 --no-remove-unused --format indented --no-renaming -o tests/unit/forward_declaration.frag.expected tests/unit/forward_declaration.frag
+--no-remove-unused --format indented --no-renaming -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
 
 # Inlining unit tests
 
