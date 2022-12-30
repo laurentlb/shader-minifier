@@ -289,25 +289,31 @@ let simplify li =
           (* Reorder functions because of forward declarations *)
 
 
+type CallGraphNode = {
+    func: TopLevel
+    fName: Ident
+    callees: string list
+}
+
 let rec private findRemove callback = function
-    | (name, [], content) :: l ->
+    | node :: l when node.callees.IsEmpty ->
         //printfn "=> %s" name
-        callback name content
+        callback node
         l
     | [] -> failwith "Cannot reorder functions (probably because of a recursion)."
     | x :: l -> x :: findRemove callback l
 
 // slow, but who cares?
-let private graphReorder deps =
+let private graphReorder nodes =
     let mutable list = []
     let mutable lastName = ""
 
-    let rec loop deps =
-        let deps = findRemove (fun (s: Ident) x -> lastName <- s.Name; list <- x :: list) deps
-        let deps = deps |> List.map (fun (n, d, c) -> n, List.filter ((<>) lastName) d, c)
-        if deps <> [] then loop deps
+    let rec loop nodes =
+        let nodes = findRemove (fun node -> lastName <- node.fName.Name; list <- node.func :: list) nodes
+        let nodes = nodes |> List.map (fun n -> { n with callees = List.filter ((<>) lastName) n.callees })
+        if nodes <> [] then loop nodes
 
-    if deps <> [] then loop deps
+    if nodes <> [] then loop nodes
     list |> List.rev
 
 
@@ -327,11 +333,24 @@ let private computeAllDependencies code =
     let fct = code |> List.choose (function
         | Function(fct, block) as f -> Some (fct.fName, block, f)
         | _ -> None)
-    let deps = fct |> List.map (fun (name, block, f) ->
-        let dep = computeDependencies block
-                  |> List.filter (fun name -> fct |> List.exists (fun (x,_,_) -> name = x.Name))
-        name, dep, f)
-    deps
+    let nodes = fct |> List.map (fun (name, block, f) ->
+        let callees = computeDependencies block
+                      |> List.filter (fun name -> fct |> List.exists (fun (x,_,_) -> name = x.Name))
+        { CallGraphNode.func = f; fName = name; callees = callees })
+    nodes
+
+let removeUnused code =
+    let nodes = computeAllDependencies code
+    let isUnused name =
+        name <> "main" &&
+            not options.preserveExternals &&
+            not options.preserveAllGlobals &&
+            not (options.noRenamingList |> List.contains name) &&
+            not (nodes |> List.exists (fun n -> n.callees |> List.contains name))
+    let unused = nodes |> List.filter (fun node -> isUnused node.fName.Name)
+    code |> List.filter (function
+        | Function _ as t -> not (unused |> List.map (fun node -> node.func) |> List.contains t)
+        | _ -> true)
 
 // reorder functions if there were forward declarations
 let reorder code =

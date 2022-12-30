@@ -35,6 +35,7 @@ type CliArguments =
     | [<CustomCommandLine("--no-renaming-list")>] NoRenamingList of string
     | [<CustomCommandLine("--no-sequence")>] NoSequence
     | [<CustomCommandLine("--smoothstep")>] Smoothstep
+    | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
     | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
@@ -53,6 +54,7 @@ type CliArguments =
             | NoRenamingList _ -> "Comma-separated list of functions to preserve"
             | NoSequence -> "Do not use the comma operator trick"
             | Smoothstep -> "Use IQ's smoothstep trick"
+            | NoRemoveUnused -> "Do not remove unused code"
             | Filenames _ -> "List of files to minify" 
 
 type Options() =
@@ -69,6 +71,7 @@ type Options() =
     member val noSequence = false with get, set
     member val noRenaming = false with get, set
     member val noRenamingList = ["main"] with get, set
+    member val noRemoveUnused = false with get, set
     member val filenames = [||]: string[] with get, set
 
 module Globals =
@@ -109,6 +112,7 @@ let private initPrivate argv needFiles =
         options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
         options.noSequence <- args.Contains(NoSequence)
         options.noRenaming <- args.Contains(NoRenaming)
+        options.noRemoveUnused <- args.Contains(NoRemoveUnused)
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
         true
