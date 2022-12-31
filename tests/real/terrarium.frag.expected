@@ -76,7 +76,7 @@ void main()
             p*=vec3(.1,.2,.1);
           else
              if(r<.66)
-              p+=vec3(0,-1-cos(time/20.)*.5,0),p*=vec3(.9,.8,.9)*(1.5+sin(time/10.)),r=2.51327408,p.xz=mat2(cos(r),sin(r),-sin(r),cos(r))*p.xz,p+=vec3(0,1.,0);
+              p+=vec3(0,-1-cos(time/20.)*.5,0),p*=vec3(.9,.8,.9)*(1.5+sin(time/10.)),r=2.51327408,p.xz=mat2(cos(r),sin(r),-sin(r),cos(r))*p.xz,p+=vec3(0,1,0);
             else
                if(r<1.)
                 r=125.663704/180.,p.xy=mat2(cos(r),sin(r),-sin(r),cos(r))*p.xy,p*=.7,p+=vec3(0,.6,0);
