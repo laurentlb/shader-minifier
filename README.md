@@ -22,8 +22,7 @@ Try the online version here: https://ctrl-alt-test.fr/minifier/
 
 - Parse and print the GLSL or HLSL code.
 - Generate a file (such as a C header) that can be embedded in an application.
-- Strip spaces, remove comments.
-- Remove useless parens.
+- Strip spaces, remove comments, remove useless parens.
 - Simplify constant expressions: `3.14159 * 2.` becomes `6.28318`.
 - Remove curly braces whenever possible: `if(test){v.x=4; return b++;}` is
 replaced with `if(test)return v.x=4,b++;`.
@@ -38,6 +37,8 @@ the same name using function overloading.
 be the most compression-friendly.
 - Inline variables.
 - Remove unused local variables.
+
+See the list of [transformations](#transformations) below for more information.
 
 ## Example output
 
@@ -67,6 +68,8 @@ const char *heart_frag =
 
 #endif // HEART_FRAG_EXPECTED_
 ```
+
+Multiple output formats are available.
 
 ## Usage
 
@@ -311,10 +314,60 @@ int dangling_else(int x)
 }
 ```
 
+### Literal numbers
+
+Numbers are rewritten to take less space without loss of precision.
+Additionally, constants that are approximately PI (with 8+ decimal digits) are
+are replaced with a call to `acos`.
+
+Input:
+```glsl
+0.4
+0.00000012345
+123456700000000
+3.14159265
+```
+
+Output:
+```glsl
+.4
+1.2345e-7
+1.234567e14
+acos(-1.)
+```
+
 ### Constant arithmetic
 
 Operations with constant arguments are evaluated, e.g. `5*2` will be replaced
 with `10`. This is useful especially when a value has been inlined.
+
+### Conditionals evaluation
+
+`if` statements, the `||` and `&&` operators, as well as the `? :` ternary
+operator are also simplified when a condition is statically known. This is
+useful especially after inlining.
+
+Input:
+```glsl
+const int debug = false;
+
+int foo() {
+  int a = 1;
+  if (debug) {
+    a = 2;
+  }
+  // ...
+}
+```
+
+Output:
+```glsl
+int foo() {
+  int a = 1;
+  // ...
+}
+```
+
 
 ### Commutative operators
 
@@ -501,16 +554,64 @@ vec2(1.2);
 vec2(1);
 ```
 
-<!--
-To document:
-- renaming
-- unused local variables
-- function headers
-- function reordering
-- unused functions removal
-- smoothstep trick
-- rewrite numbers / PI detection
--->
+### Function predeclarations
+
+Function predeclarations are removed by the parser. Then Shader Minifier
+reorders the functions in the file, so that functions are declared before being
+called.
+
+**Note**: Function reordering may break if there are `#if` statements at the
+top-level.
+
+### Unused local variables
+
+Local variables that are not referenced are removed.
+
+**Note**: In theory, this can change the behavior of the code, if the
+initialization value calls a function that performs a side-effect.
+
+### Dead code
+
+The code after a `return` is removed.
+
+**Note**: This is not safe when the code relies on `#if` directives (see
+[#169](https://github.com/laurentlb/Shader_Minifier/issues/169)).
+
+### Unused function removal
+
+Functions that are not called are removed. Functions listed with the flag
+`--no-renaming-list` are considered as entry-point and are not removed. By
+default, this is the case for `main` and `mainImage`.
+
+**Note**: Use `--no-remove-unused` to disable this transformation.
+
+### Smoothstep transformation
+
+`smoothstep(a,b,x)` calls can be replaced with
+`smoothstep(0.0,1.0,(x-a)/(b-a))`. When `a` and `b` are constant, the expression
+will be simplified. In some cases, this might make the code more compressible,
+and this technique was [used in
+Elevated](https://www.pouet.net/topic.php?which=6751&page=1#c295695).
+
+However, in many cases this trick doesn't give good results. As a result, this
+is not enabled by default; use `--smoothstep` if you want to try it.
+
+### Renaming
+
+There are two renaming strategies:
+
+- If a single shader is passed on the command line, the renaming will reuse
+  names aggressively. It will try to find the best name, based on the context
+  where the variable is used, in order to make the code more compressible.
+
+- If multiple shaders are minified together, the renaming is consistent across
+  all files. For example, all occurrences of a name (even if it's declared
+  multiple times in different functions or files) will get renamed the same way.
+  So if you have duplicate code in different files, that code will still
+  compress well with this renaming strategy.
+
+Renaming variables and functions in a compression-friendly way is difficult.
+Future versions of Shader Minifier may use different heuristics.
 
 ## Feedback
 
@@ -525,4 +626,5 @@ Contributions are welcome.
 Created by Laurent Le Brun (LLB / Ctrl-Alt-Test) and
 [other contributors](https://github.com/laurentlb/Shader_Minifier/graphs/contributors).
 
-  http://laurent.le-brun.eu -- http://ctrl-alt-test.fr
+  http://laurent.le-brun.eu &mdash; http://ctrl-alt-test.fr
+  

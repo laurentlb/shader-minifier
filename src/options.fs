@@ -70,7 +70,7 @@ type Options() =
     member val aggroInlining = false with get, set
     member val noSequence = false with get, set
     member val noRenaming = false with get, set
-    member val noRenamingList = ["main"] with get, set
+    member val noRenamingList = ["main", "mainImage"] with get, set
     member val noRemoveUnused = false with get, set
     member val filenames = [||]: string[] with get, set
 
