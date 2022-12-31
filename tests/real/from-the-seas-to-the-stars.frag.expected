@@ -170,7 +170,7 @@ bool jellyfish()
 vec3 sphere(vec2 w)
 {
   vec3 p;
-  float phi=w.x*3.1415926535898*2.,u=w.y*2.-1.;
+  float phi=w.x*acos(-1.)*2.,u=w.y*2.-1.;
   p.z=u;
   u=sqrt(1.-u*u);
   p.x=cos(phi)*u;
