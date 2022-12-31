@@ -37,7 +37,7 @@ float noise(vec2 p)
 float valnoise(vec2 p)
 {
   vec2 c=floor(p),f=smoothstep(0.,1,fract(p));
-  return mix(mix(noise(c+vec2(0,0)),noise(c+vec2(1,0)),f.x),mix(noise(c+vec2(0,1)),noise(c+vec2(1,1)),f.x),f.y);
+  return mix(mix(noise(c+vec2(0)),noise(c+vec2(1,0)),f.x),mix(noise(c+vec2(0,1)),noise(c+vec2(1)),f.x),f.y);
 }
 vec4 samp(vec2 p)
 {

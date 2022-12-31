@@ -23,7 +23,7 @@ _leizex_frag:
 	db '{'
 	db   'ivec3 ip=ivec3(floor(x));'
 	db   'vec3 f=fract(x);'
-	db   'vec2 dmin=vec2(1,1);'
+	db   'vec2 dmin=vec2(1);'
 	db   'for(int k=-1;k<=1;k++)'
 	db     'for(int j=-1;j<=1;j++)'
 	db       'for(int i=-1;i<=1;i++)'

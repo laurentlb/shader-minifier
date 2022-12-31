@@ -480,18 +480,25 @@ stored the result of a computation), so be careful with it.
 
 ### Vector constructors
 
-Calls to `vec2`, `vec3`, and `vec4` can be simplified using swizzles.
+- Calls to `vec2`, `vec3`, and `vec4` can be simplified using swizzles.
+- Remove useless constructor, when the argument is already a vec using swizzles.
+- If all arguments are equal (but not function calls), use only one argument.
+- Replace floats with ints, as it is safe inside the vec constructors.
 
 Input:
 ```glsl
 vec4(v1.x, v1.z, v2.r, v2.t);
 vec2(v1.xx);
+vec2(1.2, 1.2);
+vec2(1.);
 ```
 
 Output:
 ```glsl
 vec4(v1.xz,v2.xy);
 v1.xx;
+vec2(1.2);
+vec2(1);
 ```
 
 <!--

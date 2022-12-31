@@ -8,7 +8,7 @@
 
 const char *sult_frag =
  "float v=5.,y=.9,a=0.,f=90.,e=0.;"
- "vec3 r=vec3(1,1,1),c=vec3(0,0,1),t=vec3(0,0,1.5);"
+ "vec3 r=vec3(1),c=vec3(0,0,1),t=vec3(0,0,1.5);"
  "uniform vec2 m;"
  "uniform float l;"
  "vec3 rotatey(vec3 v,float m)"
