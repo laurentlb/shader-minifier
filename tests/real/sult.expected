@@ -1,4 +1,4 @@
-/* File generated with Shader Minifier 1.3
+/* File generated with 
  * http://www.ctrl-alt-test.fr
  */
 #ifndef SULT_EXPECTED_
@@ -24,7 +24,7 @@ const char *sult_frag =
    "if(v<6.)"
      "a=length(m.xyz*vec3(1,1,.1)-vec3(0,-.1,z*.15-.3))-.34;"
    "else"
-     " a=length(m.xy+vec2(0.,.7))-.3+(sin(m.z*17.+z*.6)+sin(m.z*2.)*6.)*.01;"
+     " a=length(m.xy+vec2(0,.7))-.3+(sin(m.z*17.+z*.6)+sin(m.z*2.)*6.)*.01;"
    "m.xy=vec2(atan(m.x,m.y)*1.113,1.6-length(m.xy)-sin(z*2.)*.3);"
    "r=fract(m.xzz+.5).xyz-.5;"
    "r.y=(m.y-.35)*1.3;"

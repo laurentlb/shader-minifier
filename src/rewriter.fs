@@ -185,9 +185,18 @@ let private simplifyVec constr args =
         | Dot (Var v1, field1) :: Dot (Var v2, field2) :: args
             when isFieldSwizzle field1 && isFieldSwizzle field2 && v1.Name = v2.Name ->
                 combineSwizzles (Dot (Var v1, field1 + field2) :: args)
-                
         | e::l -> e :: combineSwizzles l
-    let args = combineSwizzles args
+
+    // vec2(1.0, 2.0)  =>  vec2(1, 2)
+    // According to the spec, this is safe:
+    // "If the basic type (bool, int, float, or double) of a parameter to a constructor does not match the
+    // basic type of the object being constructed, the scalar construction rules (above) are used to convert
+    // the parameters."
+    let useInts = function
+        | Float (f, _) when Decimal.Round(f) = f -> Int (int f, "")
+        | e -> e
+
+    let args = combineSwizzles args |> List.map useInts
     match args with
     | [Dot (_, field) as arg] when field.Length > 1 && isFieldSwizzle field ->
         // vec3(v.xxy)  =>  v.xxy

@@ -56,7 +56,7 @@ void main()
         zoom=ti-6,filmoffset=vec2(cos(ti*2),sin(ti*3))/3;
       if(ti>25&&ti<29)
         zoom=5.5,filmoffset=vec2(cos(ti*2),sin(ti*3))/3;
-      vec3 ro=vec3(-2.5,.5+cos(ti*17)*.1,3.),rd=normalize(vec3(t.xy+filmoffset,zoom));
+      vec3 ro=vec3(-2.5,.5+cos(ti*17)*.1,3),rd=normalize(vec3(t.xy+filmoffset,zoom));
       if(ti==10)
         ro.y+=2;
       vec3 camtarget=vec3(0,1.3,0),w=normalize(camtarget-ro),u=normalize(cross(w,vec3(0,1,0))),v=normalize(cross(w,-u));

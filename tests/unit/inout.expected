@@ -1,4 +1,4 @@
-/* File generated with Shader Minifier 1.3
+/* File generated with 
  * http://www.ctrl-alt-test.fr
  */
 # define VAR_ambientLight "m"
@@ -19,7 +19,7 @@
  "void main()"
  "{"
    "vec3 l=normalize(v),u=normalize(c),f=vec3(.1,.2,.3),x=texture(e,reflect(-l,u)).xyz,p=texture(e,refract(-l,u,1./1.5)).xyz,z=mix(f*p,x,.1);"
-   "o=vec4(z,1.);"
+   "o=vec4(z,1);"
  "}"
  "vec3 r(vec3 d,vec3 l,vec3 s)"
  "{"
@@ -49,7 +49,7 @@
  "void main()"
  "{"
    "vec3 f=i,z=a+mix(f*m,m,.5);"
-   "o=vec4(z,1.);"
+   "o=vec4(z,1);"
  "}"
  "vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)"
  "{"

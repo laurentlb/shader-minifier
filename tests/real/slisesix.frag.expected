@@ -40,10 +40,10 @@ float distToBox(vec3 p,vec3 abc)
 float columna(float x,float y,float z,float mindist,float offx)
 {
   vec3 p=vec3(x,y,z);
-  float di0=distToBox(p,vec3(.14,1.,.14));
+  float di0=distToBox(p,vec3(.14,1,.14));
   if(di0>mindist*mindist)
     return mindist+1.;
-  float y2=y-.4,y3=y-.35,y4=y-1.,di1=distToBox(p,vec3(.1,1.,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y4,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-y2)*.7071,(y2+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(y2+z)*.7071,(z-y2)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071)),di=min(min(min(di1,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8)));
+  float y2=y-.4,y3=y-.35,y4=y-1.,di1=distToBox(p,vec3(.1,1,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y4,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-y2)*.7071,(y2+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(y2+z)*.7071,(z-y2)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071)),di=min(min(min(di1,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8)));
   di=min(di,di9);
   return di;
 }
@@ -76,7 +76,7 @@ float map(vec3 pos,out int sid,out int submat)
   submat=0;
   float dis,mindist;
   dis=pos.y;
-  vec2 axz=vec2(128.)+6.*vec2(pos.x+pos.z,pos.x-pos.z);
+  vec2 axz=vec2(128)+6.*vec2(pos.x+pos.z,pos.x-pos.z);
   ivec2 ixz=ivec2(floor(axz));
   submat=icoolfFunc3d2(ixz.x+53*ixz.y);
   vec2 peldxz=fract(axz);
@@ -126,7 +126,7 @@ void main()
   vec3 rd=normalize(vec3(asp*pixel.x*sc.x-sc.y,pixel.y,sc.x+asp*pixel.x*sc.y)),ro=vec3(.5+1.4*sc.y,.5,1.5-1.4*sc.x);
   float t;
   int matID=666,subMatID;
-  vec3 pos,rgb=vec3(0.);
+  vec3 pos,rgb=vec3(0);
   
 #if 1
 
@@ -195,7 +195,7 @@ void main()
         }
       else
          if(matID==2)
-          rgb=vec3(0.);
+          rgb=vec3(0);
         else
            if(matID==1)
             {
@@ -245,7 +245,7 @@ void main()
       rgb=vec3(spe)+rgb*(ao*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05));
       rgb=rgb*exp2(-.4*t);
     }
-  rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1.,.83)*1.2;
+  rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1,.83)*1.2;
   rgb*=.25+.75*clamp(.6*abs(pixel.x-1.)*abs(pixel.x+1.),0.,1.);
-  gl_FragColor=vec4(rgb,1.);
+  gl_FragColor=vec4(rgb,1);
 }
