@@ -203,9 +203,9 @@ let rec private simplifyExpr (didInline: bool ref) env = function
         | _ -> e
 
     // pi is acos(-1), pi/2 is acos(0)
-    | Float(f, _) when float f = 3.141592653589793 -> FunCall(Var (Ident "acos"), [Float (-1.M, "")])
-    | Float(f, _) when float f = 6.283185307179586 -> FunCall(Op "*", [Float (2.M, ""); FunCall(Var (Ident "acos"), [Float (-1.M, "")])])
-    | Float(f, _) when float f = 1.5707963267948966 -> FunCall(Var (Ident "acos"), [Float (0.M, "")])
+    | Float(f, _) when Decimal.Round(f, 8) = 3.14159265M -> FunCall(Var (Ident "acos"), [Float (-1.M, "")])
+    | Float(f, _) when Decimal.Round(f, 8) = 6.28318531M -> FunCall(Op "*", [Float (2.M, ""); FunCall(Var (Ident "acos"), [Float (-1.M, "")])])
+    | Float(f, _) when Decimal.Round(f, 8) = 1.57079633M -> FunCall(Var (Ident "acos"), [Float (0.M, "")])
 
     | e -> e
 
