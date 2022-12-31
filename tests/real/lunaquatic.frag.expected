@@ -1,237 +1,227 @@
-/* File generated with Shader Minifier 1.3
- * http://www.ctrl-alt-test.fr
- */
-#ifndef LUNAQUATIC_FRAG_EXPECTED_
-# define LUNAQUATIC_FRAG_EXPECTED_
-# define VAR_resolution "z"
-# define VAR_time "m"
+#extension GL_EXT_gpu_shader4:enable
 
-const char *lunaquatic_frag =
- "#extension GL_EXT_gpu_shader4:enable\n"
- "vec4 v;"
- "uniform vec2 z;"
- "uniform float m;"
- "vec4 f;"
- "vec3 y,s,x,i;"
- "float r,w,c,n=1e-4;"
- "float e(float v)"
- "{"
-   "return clamp(v,0.,1.);"
- "}"
- "float e(float v,float x,float z)"
- "{"
-   "return(v-x)/(z-x);"
- "}"
- "vec3 e(vec3 v,float x)"
- "{"
-   "return vec3(cos(x)*v.x-sin(x)*v.z,v.y,sin(x)*v.x+cos(x)*v.z);"
- "}"
- "vec3 t(vec3 v,float x)"
- "{"
-   "return vec3(v.x,v.y*cos(x)-v.z*sin(x),v.y*sin(x)+v.z*cos(x));"
- "}"
- "float t(vec2 v)"
- "{"
-   "int x=int(v.x*40.+v.y*6400.);"
-   "x=x<<13^x;"
-   "return 1.-float(x*(x*x*15731+789221)+1376312589&2147483647)/1073741824.;"
- "}"
- "float p(float z)"
- "{"
-   "return z*.5+.5;"
- "}"
- "float p(float x,float z,float y)"
- "{"
-   "return pow((p(sin(c*2.*(x+z+v.z*y)))+p(sin(c*(z-x-v.z*y)))+p(sin(c*(z+v.z*y)))+p(sin(c*3.*(x-v.z*y))))*.3,2.);"
- "}"
- "float h(vec2 v)"
- "{"
-   "v=mod(v,1e3);"
-   "vec2 z=fract(v);"
-   "v-=z;"
-   "vec2 x=z*z*(3.-2.*z);"
-   "return mix(mix(t(v+vec2(0.)),t(v+vec2(1.,0.)),x.x),mix(t(v+vec2(0.,1.)),t(v+vec2(1.)),x.x),x.y);"
- "}"
- "float d(vec2 z)"
- "{"
-   "float s=v.z-w,y=mix(1.,max(0.,f.w-f.y),1.-(s>0.&&length(z-f.xz)<s?1.:0.))/pow(1./max(0.,1.-length(f.xz-z)*.8),2.);"
-   "z+=length(z-x.xy);"
-   "z*=min(length(z-x.xy)*5.,4.);"
-   "return p(z.x+v.z*.75,z.y*.5,.3)*.006+p(z.x*.1+v.z*.2,z.y*.1,.02)*.125-.15-y*2.;"
- "}"
- "vec3 a(vec3 v)"
- "{"
-   "return normalize(vec3(p(v.x*160.-12.*cos(10.*v.z),v.z*140.,4.),8.,p(v.z*160.-12.*sin(10.*v.x),v.x*140.,4.))*2.-1.);"
- "}"
- "int a(vec3 v,vec3 x,float z,out float y)"
- "{"
-   "float i,f,c=0.;"
-   "for(float m=.1;m<z;m+=c)"
-     "{"
-       "v+=x*c;"
-       "y=d(v.xz);"
-       "if(v.y<=y)"
-         "return y=m-c+c*(i-f)/(v.y-y+i-f),1;"
-       "i=y;"
-       "f=v.y;"
-       "c=.002+m/(40.*clamp(x.y+1.,0.,1.));"
-     "}"
-   "return 0;"
- "}"
- "vec3 l(vec3 v)"
- "{"
-   "return p(h(abs(v.xy*v.z+v.y*2.)))*vec3(.15)+p(h(1.5*abs(v.xy*v.z+v.y+10.)))*vec3(.15)+p(h(2.5*abs(v.xy*v.z+v.y+20.)))*vec3(.15);"
- "}"
- "vec4 a(vec3 z,vec3 x)"
- "{"
-   "vec4 f=vec4(0.);"
-   "vec3 s=vec3(70.,20.,100.);"
-   "float i=dot(x,normalize(s-z))-.95;"
-   "if(i>0.)"
-     "{"
-       "i=length(s-z)-i*800.;"
-       "vec3 w=z+x*i,n=normalize(s-w);"
-       "vec2 m=.5+.5*vec2(atan(n.z,n.x),acos(n.y))/c*vec2(5.,50.);"
-       "f.xyz=max(0.,.2+dot(normalize(w-y),n))*(p(m.x*.5+v.z*.1,m.y*.5,0.)+.5)*.15*vec3(1.,0.,1.);"
-       "f.w=1.;"
-     "}"
-   "else"
-     " i=r*99.;"
-   "vec3 n=vec3(-.96,.96,-.2);"
-   "float m=dot(n,s-z)/dot(n,x);"
-   "if(m>0.&&m<i)"
-     "{"
-       "float w=length(s-z-x*m);"
-       "if(w>52.&&w<80.)"
-         "f.xyz=mix(f.xyz,vec3(.8,.64,.4),m/200.*p(sin((w-50.)/30.*h(vec2(w,3.)))));"
-       "f.w=f.w<1.?3.*length(f):f.w;"
-     "}"
-   "return vec4(max(vec3(0.),f.xyz*.3)*clamp(dot(x,vec3(0.,1.,0.))*8.,0.,1.),f.w);"
- "}"
- "vec3 a(vec3 x,vec3 z,int y)"
- "{"
-   "vec3 i=max(vec3(0.),(max(vec3(0.),pow(dot(s,z),6.))*.7-z.y)*mix(vec3(1.,.5,0.),vec3(1.),min(1.,s.y*1.5))+s.y*3.);"
-   "float f=atan(z.x,z.z),w=acos(z.y/length(z)),m=smoothstep(0.,.5,p(.5*h(300.*vec2(f,w)))+p(.75*h(500.*vec2(f,w)))-1.25)*e(1.-s.y*5.);"
-   "if(y>0)"
-     "{"
-       "vec4 c=a(x,z);"
-       "i+=m*e(1.-c.w)+c.xyz;"
-     "}"
-   "z.xy+=x.xy*n;"
-   "i+=(l(normalize(z+vec3(sin(v.z*.1),0.,cos(v.z*.1))*.1)*3.)+l(normalize(z+vec3(sin(v.z*.1),0.,cos(v.z*.1))*.2)*5.)*.1+l(normalize(z+vec3(sin(v.z*.1),0.,cos(v.z*.1))*.4)*7.)*.1-l(normalize(z+vec3(sin(v.z*.2),0.,0)*.5))*1.5)*e(z.y+.5);"
-   "return i;"
- "}"
- "float o(vec3 x)"
- "{"
-   "float z=v.z>80.&&v.z<112.?1.:0.;"
-   "x=t(e(t(e(x-f.xyz,3.*v.z),3.*v.z),z*sin(3.*v.z+3.*x.y)),z*sin(3.*v.z+3.*x.x));"
-   "x*=4.+10.*max(0.,v.z-w);"
-   "return-.4+x.x*x.x*x.x*x.x*x.x*x.x*x.x*x.x+x.y*x.y*x.y*x.y*x.y*x.y*x.y*x.y+x.z*x.z*x.z*x.z*x.z*x.z*x.z*x.z;"
- "}"
- "float a(vec3 v,vec3 x,float z,float s,float y)"
- "{"
-   "float i,f,m,n=(s-z)/y;"
-   "for(float w=z;w<s;w+=n)"
-     "{"
-       "vec3 c=v+w*x;"
-       "float d=o(c);"
-       "if(d<=0.)"
-         "{"
-           "for(int e=0;e<9;e++)"
-             "{"
-               "m=(i+w)/2.;"
-               "if(o(v+m*x)<0.)"
-                 "w=m;"
-               "else"
-                 " i=m;"
-             "}"
-           "return m;"
-         "}"
-       "i=w;"
-       "f=d;"
-     "}"
-   "return r;"
- "}"
- "void d(vec2 z,vec3 x,inout vec3 y)"
- "{"
-   "float s=length(z-f.xz),n=v.z-w;"
-   "if(n>0.&&s<n)"
-     "{"
-       "float i=n*.9;"
-       "if(s<n-n+i)"
-         "{"
-           "float m=e((s-i)/(n-(n-i)*2.-i));"
-           "y*=1.-m*1.5;"
-           "y+=(1.-m*.8)*pow(p(x.x)+p(x.y),2.*p(h(.4*v.z+z*20.))*p(h(10.+z*5.))+1.)*vec3(1.5,.75,.5);"
-         "}"
-       "if(s>n-(n-i)*2.)"
-         "y+=cos((s-i)/(n-i)*c*.5)*vec3(1.5,.75,.5);"
-     "}"
- "}"
- "vec3 d(vec3 v,vec3 x)"
- "{"
-   "float z=(.1-v.y)/x.y,y=200.;"
-   "vec3 i=a(v,x,1);"
-   "if(x.y<-.01&&a(v+x*z,x,y,y)>0)"
-     "{"
-       "y+=z;"
-       "vec3 f=v+x*y,w=normalize(normalize(vec3(d(f.xz-vec2(n,0.))-d(f.xz+vec2(n,0.)),n*2.,d(f.xz-vec2(0.,n))-d(f.xz+vec2(0.,n))))+(a(f*.2)*1.5+a(f*.1))*max(0.,1.-y/r*7.));"
-       "i=max(0.,dot(w,s)+pow(max(0.,dot(w,normalize(s-x))),2.))*a(f,reflect(x,w),1);"
-       "d(f.xz,w,i);"
-       "i=mix(i,a(v,x,0),e(y/r*1.6+e(dot(normalize(w+x*.2),x))));"
-     "}"
-   "return i;"
- "}"
- "void main()"
- "{"
-   "r=9.;"
-   "w=127.;"
-   "c=3.1416;"
-   "v.xy=-1.+2.*gl_FragCoord.xy/z.xy;"
-   "v.z=m;"
-   "i=normalize(vec3(v.xy-.5,1.));"
-   "f=vec4(10.,p(sin(v.z+4.)),13.,0.);"
-   "x=vec3(0.,.25,0.);"
-   "float l=v.z;"
-   "if(l<16.)"
-     "l=e(l,0.,16.),l=1.-pow(1.-l,2.),y=vec3(-400.,100.-l*450.,1e3),l=(l-1.)*.7,i=t(i,-l);"
-   "else"
-     " if(l<32.)"
-       "l=e(l,16.,32.),l=1.-pow(1.-l,2.),y=vec3(-400.,-350.+l*600.,1e3),x.y-=l*.1;"
-     "else"
-       " if(l<40.)"
-         "y=vec3(-400.,250.,1e3),x.y-=.1;"
-       "else"
-         " if(l<64.)"
-           "{"
-             "int h=int((l-40.)/6.);"
-             "if(h>=3)"
-               "f.w=1.;"
-             "y=vec3(-400.,min(250.,p(t(vec2(h,2)))*400.),1e3);"
-             "x.xz+=vec2(.1,20.)*vec2(t(vec2(h,5.)),t(vec2(h,7.)));"
-             "x=mix(x+vec3(.008)*abs(vec3(t(vec2(h,8.)),0.,t(vec2(h,10.)))),x+vec3(.75)*abs(vec3(t(vec2(h,11.)),0.,t(vec2(h,13.)))),l-40.-float(h));"
-             "x.y=.2;"
-             "i=e(i,t(vec2(h,14.))*c);"
-           "}"
-         "else"
-           "{"
-             "f.w=1.;"
-             "y=vec3(-400.,p(sin(l+10.))*250.,1e3);"
-             "float h=smoothstep(118.,120.,l);"
-             "x.xz=f.xz+mix(vec2(sin(l*.6),cos(l*.6))*mix(sin(l*1.5+10.)+2.,2.,h),vec2(0.,2.+.75*(l-w)),smoothstep(-1.,1.,l-w));"
-             "x.y=mix(p(sin(l*3.)*(1.-h))*.3,0.,smoothstep(-1.,1.,l-w))+.2;"
-             "vec2 G=normalize(f.xz-x.xz);"
-             "i=e(i,atan(G.y,G.x)-c/2.);"
-           "}"
-   "s=normalize(y-x);"
-   "float h=length(x-f.xyz)-1.,G=f.w==1.?a(x,i,h,h+2.,99.):r;"
-   "if(G<r)"
-     "{"
-       "x+=G*i;"
-       "vec3 u=normalize(vec3(o(vec3(x.x-n,x.y,x.z))-o(vec3(x.x+n,x.y,x.z)),o(vec3(x.x,x.y-n,x.z))-o(vec3(x.x,x.y+n,x.z)),o(vec3(x.x,x.y,x.z-n))-o(vec3(x.x,x.y,x.z+n))));"
-       "i=reflect(i,u);"
-     "}"
-   "gl_FragColor=vec4(d(x,i)*e(sin(v.z/150.*c)*10.),1.);"
- "}";
-
-#endif // LUNAQUATIC_FRAG_EXPECTED_
+vec4 Y;
+uniform vec2 resolution;
+uniform float time;
+vec4 artifactPos;
+vec3 lightPos,lightDir,ro,rd;
+float FAR,EXPLOSIONTIME,pi,eps=1e-4;
+float saturate(float x)
+{
+  return clamp(x,0.,1.);
+}
+float ftime(float t,float s,float e)
+{
+  return(t-s)/(e-s);
+}
+vec3 rotateY(vec3 v,float x)
+{
+  return vec3(cos(x)*v.x-sin(x)*v.z,v.y,sin(x)*v.x+cos(x)*v.z);
+}
+vec3 rotateX(vec3 v,float x)
+{
+  return vec3(v.x,v.y*cos(x)-v.z*sin(x),v.y*sin(x)+v.z*cos(x));
+}
+float rnd(vec2 x)
+{
+  int n=int(x.x*40.+x.y*6400.);
+  n=n<<13^n;
+  return 1.-float(n*(n*n*15731+789221)+1376312589&2147483647)/1073741824.;
+}
+float norm(float x)
+{
+  return x*.5+.5;
+}
+float caustic(float u,float v,float t)
+{
+  return pow((norm(sin(pi*2.*(u+v+Y.z*t)))+norm(sin(pi*(v-u-Y.z*t)))+norm(sin(pi*(v+Y.z*t)))+norm(sin(pi*3.*(u-Y.z*t))))*.3,2.);
+}
+float smoothrnd(vec2 x)
+{
+  x=mod(x,1e3);
+  vec2 a=fract(x);
+  x-=a;
+  vec2 u=a*a*(3.-2.*a);
+  return mix(mix(rnd(x+vec2(0.)),rnd(x+vec2(1.,0.)),u.x),mix(rnd(x+vec2(0.,1.)),rnd(x+vec2(1.)),u.x),u.y);
+}
+float height(vec2 x)
+{
+  float maxV=Y.z-EXPLOSIONTIME,l=mix(1.,max(0.,artifactPos.w-artifactPos.y),1.-(maxV>0.&&length(x-artifactPos.xz)<maxV?1.:0.))/pow(1./max(0.,1.-length(artifactPos.xz-x)*.8),2.);
+  x+=length(x-ro.xy);
+  x*=min(length(x-ro.xy)*5.,4.);
+  return caustic(x.x+Y.z*.75,x.y*.5,.3)*.006+caustic(x.x*.1+Y.z*.2,x.y*.1,.02)*.125-.15-l*2.;
+}
+vec3 getWaterNormal(vec3 p)
+{
+  return normalize(vec3(caustic(p.x*160.-12.*cos(10.*p.z),p.z*140.,4.),8.,caustic(p.z*160.-12.*sin(10.*p.x),p.x*140.,4.))*2.-1.);
+}
+int traceTerrain(vec3 ro,vec3 rd,float maxt,out float depth)
+{
+  float lh,ly,delt=0.;
+  for(float t=.1;t<maxt;t+=delt)
+    {
+      ro+=rd*delt;
+      depth=height(ro.xz);
+      if(ro.y<=depth)
+        return depth=t-delt+delt*(lh-ly)/(ro.y-depth+lh-ly),1;
+      lh=depth;
+      ly=ro.y;
+      delt=.002+t/(40.*clamp(rd.y+1.,0.,1.));
+    }
+  return 0;
+}
+vec3 calculateSkySub(vec3 rd)
+{
+  return norm(smoothrnd(abs(rd.xy*rd.z+rd.y*2.)))*vec3(.15)+norm(smoothrnd(1.5*abs(rd.xy*rd.z+rd.y+10.)))*vec3(.15)+norm(smoothrnd(2.5*abs(rd.xy*rd.z+rd.y+20.)))*vec3(.15);
+}
+vec4 calcPlanet(vec3 ro,vec3 rd)
+{
+  vec4 color=vec4(0.);
+  vec3 planetPos=vec3(70.,20.,100.);
+  float dist=dot(rd,normalize(planetPos-ro))-.95;
+  if(dist>0.)
+    {
+      dist=length(planetPos-ro)-dist*800.;
+      vec3 p=ro+rd*dist,n=normalize(planetPos-p);
+      vec2 uv=.5+.5*vec2(atan(n.z,n.x),acos(n.y))/pi*vec2(5.,50.);
+      color.xyz=max(0.,.2+dot(normalize(p-lightPos),n))*(caustic(uv.x*.5+Y.z*.1,uv.y*.5,0.)+.5)*.15*vec3(1.,0.,1.);
+      color.w=1.;
+    }
+  else
+     dist=FAR*99.;
+  vec3 pN=vec3(-.96,.96,-.2);
+  float t=dot(pN,planetPos-ro)/dot(pN,rd);
+  if(t>0.&&t<dist)
+    {
+      float d=length(planetPos-ro-rd*t);
+      if(d>52.&&d<80.)
+        color.xyz=mix(color.xyz,vec3(.8,.64,.4),t/200.*norm(sin((d-50.)/30.*smoothrnd(vec2(d,3.)))));
+      color.w=color.w<1.?3.*length(color):color.w;
+    }
+  return vec4(max(vec3(0.),color.xyz*.3)*clamp(dot(rd,vec3(0.,1.,0.))*8.,0.,1.),color.w);
+}
+vec3 calculateSky(vec3 ro,vec3 rd,int addPlanet)
+{
+  vec3 color=max(vec3(0.),(max(vec3(0.),pow(dot(lightDir,rd),6.))*.7-rd.y)*mix(vec3(1.,.5,0.),vec3(1.),min(1.,lightDir.y*1.5))+lightDir.y*3.);
+  float phi=atan(rd.x,rd.z),theta=acos(rd.y/length(rd)),coeff=smoothstep(0.,.5,norm(.5*smoothrnd(300.*vec2(phi,theta)))+norm(.75*smoothrnd(500.*vec2(phi,theta)))-1.25)*saturate(1.-lightDir.y*5.);
+  if(addPlanet>0)
+    {
+      vec4 p=calcPlanet(ro,rd);
+      color+=coeff*saturate(1.-p.w)+p.xyz;
+    }
+  rd.xy+=ro.xy*eps;
+  color+=(calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0.,cos(Y.z*.1))*.1)*3.)+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0.,cos(Y.z*.1))*.2)*5.)*.1+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0.,cos(Y.z*.1))*.4)*7.)*.1-calculateSkySub(normalize(rd+vec3(sin(Y.z*.2),0.,0)*.5))*1.5)*saturate(rd.y+.5);
+  return color;
+}
+float isoSurface(vec3 p)
+{
+  float b=Y.z>80.&&Y.z<112.?1.:0.;
+  p=rotateX(rotateY(rotateX(rotateY(p-artifactPos.xyz,3.*Y.z),3.*Y.z),b*sin(3.*Y.z+3.*p.y)),b*sin(3.*Y.z+3.*p.x));
+  p*=4.+10.*max(0.,Y.z-EXPLOSIONTIME);
+  return-.4+p.x*p.x*p.x*p.x*p.x*p.x*p.x*p.x+p.y*p.y*p.y*p.y*p.y*p.y*p.y*p.y+p.z*p.z*p.z*p.z*p.z*p.z*p.z*p.z;
+}
+float traceIso(vec3 ro,vec3 rd,float mint,float maxt,float s)
+{
+  float lt,liso,exact,delt=(maxt-mint)/s;
+  for(float t=mint;t<maxt;t+=delt)
+    {
+      vec3 p=ro+t*rd;
+      float iso=isoSurface(p);
+      if(iso<=0.)
+        {
+          for(int i=0;i<9;i++)
+            {
+              exact=(lt+t)/2.;
+              if(isoSurface(ro+exact*rd)<0.)
+                t=exact;
+              else
+                 lt=exact;
+            }
+          return exact;
+        }
+      lt=t;
+      liso=iso;
+    }
+  return FAR;
+}
+void calcBurn(vec2 x,vec3 normal,inout vec3 color)
+{
+  float gd=length(x-artifactPos.xz),maxV=Y.z-EXPLOSIONTIME;
+  if(maxV>0.&&gd<maxV)
+    {
+      float minV=maxV*.9;
+      if(gd<maxV-maxV+minV)
+        {
+          float strength=saturate((gd-minV)/(maxV-(maxV-minV)*2.-minV));
+          color*=1.-strength*1.5;
+          color+=(1.-strength*.8)*pow(norm(normal.x)+norm(normal.y),2.*norm(smoothrnd(.4*Y.z+x*20.))*norm(smoothrnd(10.+x*5.))+1.)*vec3(1.5,.75,.5);
+        }
+      if(gd>maxV-(maxV-minV)*2.)
+        color+=cos((gd-minV)/(maxV-minV)*pi*.5)*vec3(1.5,.75,.5);
+    }
+}
+vec3 calcScene(vec3 ro,vec3 rd)
+{
+  float upperPlane=(.1-ro.y)/rd.y,finalDepth=200.;
+  vec3 color=calculateSky(ro,rd,1);
+  if(rd.y<-.01&&traceTerrain(ro+rd*upperPlane,rd,finalDepth,finalDepth)>0)
+    {
+      finalDepth+=upperPlane;
+      vec3 pos=ro+rd*finalDepth,normal=normalize(normalize(vec3(height(pos.xz-vec2(eps,0.))-height(pos.xz+vec2(eps,0.)),eps*2.,height(pos.xz-vec2(0.,eps))-height(pos.xz+vec2(0.,eps))))+(getWaterNormal(pos*.2)*1.5+getWaterNormal(pos*.1))*max(0.,1.-finalDepth/FAR*7.));
+      color=max(0.,dot(normal,lightDir)+pow(max(0.,dot(normal,normalize(lightDir-rd))),2.))*calculateSky(pos,reflect(rd,normal),1);
+      calcBurn(pos.xz,normal,color);
+      color=mix(color,calculateSky(ro,rd,0),saturate(finalDepth/FAR*1.6+saturate(dot(normalize(normal+rd*.2),rd))));
+    }
+  return color;
+}
+void main()
+{
+  FAR=9.;
+  EXPLOSIONTIME=127.;
+  pi=3.1416;
+  Y.xy=-1.+2.*gl_FragCoord.xy/resolution.xy;
+  Y.z=time;
+  rd=normalize(vec3(Y.xy-.5,1.));
+  artifactPos=vec4(10.,norm(sin(Y.z+4.)),13.,0.);
+  ro=vec3(0.,.25,0.);
+  float t=Y.z;
+  if(t<16.)
+    t=ftime(t,0.,16.),t=1.-pow(1.-t,2.),lightPos=vec3(-400.,100.-t*450.,1e3),t=(t-1.)*.7,rd=rotateX(rd,-t);
+  else
+     if(t<32.)
+      t=ftime(t,16.,32.),t=1.-pow(1.-t,2.),lightPos=vec3(-400.,-350.+t*600.,1e3),ro.y-=t*.1;
+    else
+       if(t<40.)
+        lightPos=vec3(-400.,250.,1e3),ro.y-=.1;
+      else
+         if(t<64.)
+          {
+            int scene=int((t-40.)/6.);
+            if(scene>=3)
+              artifactPos.w=1.;
+            lightPos=vec3(-400.,min(250.,norm(rnd(vec2(scene,2)))*400.),1e3);
+            ro.xz+=vec2(.1,20.)*vec2(rnd(vec2(scene,5.)),rnd(vec2(scene,7.)));
+            ro=mix(ro+vec3(.008)*abs(vec3(rnd(vec2(scene,8.)),0.,rnd(vec2(scene,10.)))),ro+vec3(.75)*abs(vec3(rnd(vec2(scene,11.)),0.,rnd(vec2(scene,13.)))),t-40.-float(scene));
+            ro.y=.2;
+            rd=rotateY(rd,rnd(vec2(scene,14.))*pi);
+          }
+        else
+          {
+            artifactPos.w=1.;
+            lightPos=vec3(-400.,norm(sin(t+10.))*250.,1e3);
+            float i=smoothstep(118.,120.,t);
+            ro.xz=artifactPos.xz+mix(vec2(sin(t*.6),cos(t*.6))*mix(sin(t*1.5+10.)+2.,2.,i),vec2(0.,2.+.75*(t-EXPLOSIONTIME)),smoothstep(-1.,1.,t-EXPLOSIONTIME));
+            ro.y=mix(norm(sin(t*3.)*(1.-i))*.3,0.,smoothstep(-1.,1.,t-EXPLOSIONTIME))+.2;
+            vec2 dir=normalize(artifactPos.xz-ro.xz);
+            rd=rotateY(rd,atan(dir.y,dir.x)-pi/2.);
+          }
+  lightDir=normalize(lightPos-ro);
+  float dist=length(ro-artifactPos.xyz)-1.,isoDistance=artifactPos.w==1.?traceIso(ro,rd,dist,dist+2.,99.):FAR;
+  if(isoDistance<FAR)
+    {
+      ro+=isoDistance*rd;
+      vec3 n=normalize(vec3(isoSurface(vec3(ro.x-eps,ro.yz))-isoSurface(vec3(ro.x+eps,ro.yz)),isoSurface(vec3(ro.x,ro.y-eps,ro.z))-isoSurface(vec3(ro.x,ro.y+eps,ro.z)),isoSurface(vec3(ro.xy,ro.z-eps))-isoSurface(vec3(ro.xy,ro.z+eps))));
+      rd=reflect(rd,n);
+    }
+  gl_FragColor=vec4(calcScene(ro,rd)*saturate(sin(Y.z/150.*pi)*10.),1.);
+}

@@ -18,6 +18,8 @@
 --no-remove-unused --format c-array --no-inlining --no-renaming -o tests/unit/verbatim.frag.expected tests/unit/verbatim.frag
 --no-remove-unused --format indented --no-renaming -o tests/unit/forward_declaration.frag.expected tests/unit/forward_declaration.frag
 --no-remove-unused --format indented --no-renaming -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
+--no-renaming --no-inlining --format indented -o tests/unit/pi.frag.expected tests/unit/pi.frag
+--no-renaming --no-inlining --format indented -o tests/unit/vectors.frag.expected tests/unit/vectors.frag
 
 # Inlining unit tests
 
@@ -45,7 +47,6 @@
 
 --no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
 --hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
--o tests/real/lunaquatic.frag.expected tests/real/lunaquatic.frag
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
@@ -57,10 +58,6 @@
 --no-remove-unused --format indented -o tests/unit/forbidden.expected tests/unit/forbidden.frag
 --format c-variables -o tests/real/heart.frag.expected tests/real/heart.frag
 
-# Optimization tests
-
---no-renaming --no-inlining --format text -o tests/unit/pi.frag.expected tests/unit/pi.frag
-
 # Other - real files, to get a bit more coverage
 --no-renaming --format indented --no-renaming-list mainImage -o tests/real/ed-209.frag.expected tests/real/ed-209.frag
 --no-renaming --format indented -o tests/real/ohanami.frag.expected tests/real/ohanami.frag
@@ -69,3 +66,4 @@
 --no-renaming --format indented -o tests/real/valley_ball.glsl.expected tests/real/valley_ball.glsl
 --no-renaming --format indented -o tests/real/slisesix.frag.expected tests/real/slisesix.frag
 --no-renaming --format indented -o tests/real/from-the-seas-to-the-stars.frag.expected tests/real/from-the-seas-to-the-stars.frag
+--no-renaming --format indented -o tests/real/lunaquatic.frag.expected tests/real/lunaquatic.frag
