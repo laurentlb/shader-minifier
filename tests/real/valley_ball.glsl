@@ -11,8 +11,8 @@ vec4 Y;
 vec2 p;
 
 // Forward declarations
-vec4 traceRay(vec3, vec3, int);
-vec3 shade(vec4, vec3, vec3);
+vec4 traceRay(vec3 a, vec3 b, int c);
+vec3 shade(vec4 a, vec3 b, vec3 c);
 
 
 // All data of our world

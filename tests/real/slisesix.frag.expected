@@ -1,0 +1,251 @@
+#extension GL_EXT_gpu_shader4:enable
+
+uniform vec2 resolution;
+uniform float time;
+uniform sampler2D tex0;
+int icoolfFunc3d2(int n)
+{
+  return n=n<<13^n,n*(n*n*15731+789221)+1376312589&2147483647;
+}
+float coolfFunc3d2(int n)
+{
+  return float(icoolfFunc3d2(n));
+}
+float noise3f(vec3 p)
+{
+  ivec3 ip=ivec3(floor(p));
+  vec3 u=fract(p);
+  u=u*u*(3.-2.*u);
+  int n=ip.x+ip.y*57+ip.z*113;
+  float res=mix(mix(mix(coolfFunc3d2(n+0),coolfFunc3d2(n+1),u.x),mix(coolfFunc3d2(n+57),coolfFunc3d2(n+58),u.x),u.y),mix(mix(coolfFunc3d2(n+113),coolfFunc3d2(n+114),u.x),mix(coolfFunc3d2(n+170),coolfFunc3d2(n+171),u.x),u.y),u.z);
+  return 1.-res*(1./1073741824.);
+}
+float fbm(vec3 p)
+{
+  return.5*noise3f(p)+.25*noise3f(p*2.)+.125*noise3f(p*4.)+.0625*noise3f(p*8.);
+}
+float techo(float x,float y)
+{
+  y=1.-y;
+  if(x<.1||x>.9)
+    return y;
+  x=x-.5;
+  return-(sqrt(x*x+y*y)-.4);
+}
+float distToBox(vec3 p,vec3 abc)
+{
+  vec3 di=max(abs(p)-abc,0.);
+  return dot(di,di);
+}
+float columna(float x,float y,float z,float mindist,float offx)
+{
+  vec3 p=vec3(x,y,z);
+  float di0=distToBox(p,vec3(.14,1.,.14));
+  if(di0>mindist*mindist)
+    return mindist+1.;
+  float y2=y-.4,y3=y-.35,y4=y-1.,di1=distToBox(p,vec3(.1,1.,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y4,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-y2)*.7071,(y2+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(y2+z)*.7071,(z-y2)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071)),di=min(min(min(di1,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8)));
+  di=min(di,di9);
+  return di;
+}
+float bicho(vec3 x,float mindist)
+{
+  x-=vec3(.64,.5,1.5);
+  float r2=dot(x,x),sa=smoothstep(0.,.5,r2),fax=.75+.25*sa;
+  x.x*=fax;
+  x.y*=.8+.2*sa;
+  x.z*=fax;
+  r2=dot(x,x);
+  float r=sqrt(r2),a1=1.-smoothstep(0.,.75,r);
+  a1*=.4;
+  float si1=sin(a1),co1=cos(a1);
+  x.xy=mat2(co1,si1,-si1,co1)*x.xy;
+  float mindist2=1e5,rr=.05+sqrt(dot(x.xz,x.xz)),ca=.46625-6.*rr*exp2(-10.*rr);
+  for(int j=1;j<7;j++)
+    {
+      float an=6.2831/7.*float(j),aa=an+.4*rr*noise3f(vec3(4.*rr,2.5,an))+.29,rc=cos(aa),rs=sin(aa);
+      vec3 q=vec3(x.x*rc-x.z*rs,x.y+ca,x.x*rs+x.z*rc);
+      float dd=dot(q.yz,q.yz);
+      if(q.x>0.&&q.x<1.5&&dd<mindist2)
+        mindist2=dd;
+    }
+  float c=sqrt(mindist2)-.045,a=clamp(r*3.,0.,1.);
+  return c*a+(r-.3)*(1.-a);
+}
+float map(vec3 pos,out int sid,out int submat)
+{
+  submat=0;
+  float dis,mindist;
+  dis=pos.y;
+  vec2 axz=vec2(128.)+6.*vec2(pos.x+pos.z,pos.x-pos.z);
+  ivec2 ixz=ivec2(floor(axz));
+  submat=icoolfFunc3d2(ixz.x+53*ixz.y);
+  vec2 peldxz=fract(axz);
+  float peld=smoothstep(.975,1.,max(peldxz.x,peldxz.y));
+  if((submat>>10&7)>6)
+    peld=1.;
+  dis+=.005*peld;
+  mindist=dis;
+  sid=0;
+  if(peld>1e-7)
+    sid=2;
+  float fx=fract(pos.x+128.),fz=fract(pos.z+128.);
+  if(pos.y>1.)
+    {
+      dis=max(techo(fx,pos.y),techo(fz,pos.y));
+      if(dis<mindist)
+        mindist=dis,sid=5;
+    }
+  fx=fract(pos.x+128.+.5);
+  fz=fract(pos.z+128.+.5);
+  dis=columna(fx-.5,pos.y,fz-.5,mindist,13.1*floor(pos.x)+17.7*floor(pos.z));
+  if(dis<mindist*mindist)
+    mindist=sqrt(dis),sid=1;
+  dis=bicho(pos,mindist);
+  if(dis<mindist)
+    mindist=dis,sid=4;
+  return mindist;
+}
+vec3 calcNormal(vec3 pos)
+{
+  float eps=2e-4;
+  vec3 nor;
+  int kk,kk2;
+  nor.x=map(vec3(pos.x+eps,pos.y,pos.z),kk,kk2)-map(vec3(pos.x-eps,pos.y,pos.z),kk,kk2);
+  nor.y=map(vec3(pos.x,pos.y+eps,pos.z),kk,kk2)-map(vec3(pos.x,pos.y-eps,pos.z),kk,kk2);
+  nor.z=map(vec3(pos.x,pos.y,pos.z+eps),kk,kk2)-map(vec3(pos.x,pos.y,pos.z-eps),kk,kk2);
+  return normalize(nor);
+}
+void main()
+{
+  vec2 pixel=-1.+2.*gl_FragCoord.xy/resolution.xy;
+  float an=time*.15;
+  vec2 sc=vec2(cos(an),sin(an));
+  float r2=pixel.x*pixel.x*.32+pixel.y*pixel.y,tt=(7.-sqrt(37.5-11.5*r2))/(r2+1.);
+  pixel*=tt;
+  float asp=resolution.x/resolution.y;
+  vec3 rd=normalize(vec3(asp*pixel.x*sc.x-sc.y,pixel.y,sc.x+asp*pixel.x*sc.y)),ro=vec3(.5+1.4*sc.y,.5,1.5-1.4*sc.x);
+  float t;
+  int matID=666,subMatID;
+  vec3 pos,rgb=vec3(0.);
+  
+#if 1
+
+  for(t=.5;t<12.;)
+    {
+      pos=ro+t*rd;
+      float h=map(pos,matID,subMatID);
+      if(h<.01)
+        break;
+      t+=h;
+    }
+  
+#else
+
+  t=.5;
+  for(int i=0;i<50;i++)
+    {
+      pos=ro+t*rd;
+      float h=map(pos,matID,sumMatID);
+      if(h<.001)
+        break;
+      t+=h;
+    }
+  
+#endif
+
+  if(matID!=666)
+    {
+      vec3 nor=calcNormal(pos);
+      float kke=1e-4,bumpa=.0075;
+      if(matID!=5)
+        bumpa*=.75;
+      if(matID==4)
+        bumpa*=.5;
+      bumpa/=kke;
+      float kk=fbm(32.*pos);
+      nor.x+=bumpa*(fbm(32.*vec3(pos.x+kke,pos.y,pos.z))-kk);
+      nor.y+=bumpa*(fbm(32.*vec3(pos.x,pos.y+kke,pos.z))-kk);
+      nor.z+=bumpa*(fbm(32.*vec3(pos.x,pos.y,pos.z+kke))-kk);
+      nor=normalize(nor);
+      float spe=0.;
+      vec3 lig=vec3(.5-pos.x,.8-pos.y,1.5-pos.z);
+      float llig=dot(lig,lig),im=inversesqrt(llig);
+      lig=lig*im;
+      float dif=dot(nor,lig);
+      if(matID==4)
+        dif=.5+.5*dif;
+      else
+         dif=.1+.9*dif;
+      dif=clamp(dif,0.,1.);
+      dif*=2.5*exp2(-1.75*llig);
+      float dif2=(nor[0]+nor[1])*.075;
+      if(matID==0)
+        {
+          float xoff=13.1*float(subMatID&255),fb=fbm(16.*vec3(pos.x+xoff,pos.y,pos.z));
+          rgb=vec3(.7)+fb*vec3(.2,.22,.25);
+          float baldscale=float(subMatID>>9&15)/14.;
+          baldscale=.51+.34*baldscale;
+          rgb*=baldscale;
+          float fx=1.;
+          if((subMatID&256)!=0)
+            fx=-1.;
+          float m=sin(64.*pos.z*fx+64.*pos.x+4.*fb);
+          m=smoothstep(.25,.5,m)-smoothstep(.5,.75,m);
+          rgb+=m*vec3(.15);
+        }
+      else
+         if(matID==2)
+          rgb=vec3(0.);
+        else
+           if(matID==1)
+            {
+              float fb=fbm(16.*pos),m=sin(64.*pos.z+64.*pos.x+4.*fb);
+              m=smoothstep(.3,.5,m)-smoothstep(.5,.7,m);
+              rgb=vec3(.59)+fb*vec3(.17,.18,.21)+m*vec3(.15)+vec3(dif2);
+            }
+          else
+             if(matID==4)
+              {
+                float ft=fbm(16.*pos);
+                rgb=vec3(.82,.73,.65)+ft*vec3(.1);
+                float fs=.9+.1*fbm(32.*pos);
+                rgb*=fs;
+                float fre=max(-dot(nor,rd),0.);
+                rgb-=vec3(fre*fre*.45);
+                spe=clamp((nor.y-nor.z)*.707,0.,1.);
+                spe=.2*pow(spe,32.);
+              }
+            else
+              {
+                float fb=fbm(16.*pos);
+                rgb=vec3(.64,.61,.59)+fb*vec3(.21,.19,.19)+dif2;
+              }
+      float ao,totao=0.,sca=10.;
+      for(int aoi=0;aoi<5;aoi++)
+        {
+          float hr=.01+.015*float(aoi*aoi);
+          vec3 aopos=nor*hr+pos;
+          int kk,kk2;
+          float dd=map(aopos,kk,kk2);
+          ao=-(dd-hr);
+          totao+=ao*sca;
+          sca*=.5;
+        }
+      ao=1.-clamp(totao,0.,1.);
+      float so=0.;
+      for(int i=0;i<6;i++)
+        {
+          float h=float(i)/6.;
+          vec3 aopos=lig*(.01+h)+pos;
+          int kk,kk2;
+          float dd=map(aopos,kk,kk2);
+          so+=(1.-h)*dd*2.*(10./6.);
+        }
+      dif*=clamp((so-.4)*1.5,0.,1.);
+      rgb=vec3(spe)+rgb*(ao*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05));
+      rgb=rgb*exp2(-.4*t);
+    }
+  rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1.,.83)*1.2;
+  rgb*=.25+.75*clamp(.6*abs(pixel.x-1.)*abs(pixel.x+1.),0.,1.);
+  gl_FragColor=vec4(rgb,1.);
+}
