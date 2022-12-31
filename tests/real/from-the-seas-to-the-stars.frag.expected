@@ -67,7 +67,7 @@ float koi(vec2 t)
   p.x-=.9;
   op.y-=.05;
   op.y=abs(op.y);
-  d=max(d,op.x-pow(op.y/2,.7)*1-1.1);
+  d=max(d,op.x-pow(op.y/2,.7)-1.1);
   oop.x-=.15;
   d=min(d,max(-oop.y,max(oop.x,oop.x*oop.x*4+oop.y-.7)));
   oop.x+=oop.y*.3+.25;
@@ -184,7 +184,7 @@ float smin(float a,float b,float k)
 }
 void main()
 {
-  time=float(millisecs)/1e3+R()*.015+0;
+  time=float(millisecs)/1e3+R()*.015;
   if(mode==0)
     {
       col=vec3(1.,.25,.1);
@@ -398,7 +398,7 @@ void main()
                     p.z+=cos(p.x);
                     p.y+=(p.x+10)/2-3;
                     if(w.x<.1)
-                      p.y+=(fbm(p.xz*2)-.9)*c*.2,p.x+=(fbm(p.yz*1)-.9)*c;
+                      p.y+=(fbm(p.xz*2)-.9)*c*.2,p.x+=(fbm(p.yz)-.9)*c;
                   }
               }
             else
@@ -427,7 +427,7 @@ void main()
                       p.z+=cos(p.x);
                       p.y+=(p.x+10)/2-3;
                       if(w.x<.1)
-                        p.y+=(fbm(p.xz*2)-.9)*c*.2,p.x+=(fbm(p.yz*1)-.9)*c;
+                        p.y+=(fbm(p.xz*2)-.9)*c*.2,p.x+=(fbm(p.yz)-.9)*c;
                       w.x=R();
                       col+=pow(w.x,32.)*vec3(.2);
                       w.x=R();
@@ -480,7 +480,7 @@ void main()
                     p.x=-p.x-10+t;
                     p.z+=cos(p.x);
                     if(w.x<.1)
-                      p.y+=(fbm(p.xz*2)-.9)*c*.2,p.x+=(fbm(p.yz*1)-.9)*c;
+                      p.y+=(fbm(p.xz*2)-.9)*c*.2,p.x+=(fbm(p.yz)-.9)*c;
                     w.x=R();
                     col+=pow(w.x,32.)*vec3(.2);
                     w.x=R();
@@ -805,10 +805,10 @@ void main()
               w.y=R();
               w.z=R();
               uint colbits=uint(col.z*31+w.x)|uint(col.y*63+w.y)<<5|uint(col.x*31+w.z)<<11,depthbits=uint(clamp(1./(1.+p.z),0,1)*65535.),outbits=depthbits<<16|colbits;
-              imageAtomicMax(d0,ivec2(x+1,y+0),int(coord.x+0&7),outbits);
-              imageAtomicMax(d0,ivec2(x-1,y+0),int(coord.x+2&7),outbits);
-              imageAtomicMax(d0,ivec2(x+0,y-1),int(coord.x+4&7),outbits);
-              imageAtomicMax(d0,ivec2(x+0,y+1),int(coord.x+6&7),outbits);
+              imageAtomicMax(d0,ivec2(x+1,y),int(coord.x&7),outbits);
+              imageAtomicMax(d0,ivec2(x-1,y),int(coord.x+2&7),outbits);
+              imageAtomicMax(d0,ivec2(x,y-1),int(coord.x+4&7),outbits);
+              imageAtomicMax(d0,ivec2(x,y+1),int(coord.x+6&7),outbits);
             }
         }
     }

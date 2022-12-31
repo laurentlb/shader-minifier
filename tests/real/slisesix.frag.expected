@@ -17,7 +17,7 @@ float noise3f(vec3 p)
   vec3 u=fract(p);
   u=u*u*(3.-2.*u);
   int n=ip.x+ip.y*57+ip.z*113;
-  float res=mix(mix(mix(coolfFunc3d2(n+0),coolfFunc3d2(n+1),u.x),mix(coolfFunc3d2(n+57),coolfFunc3d2(n+58),u.x),u.y),mix(mix(coolfFunc3d2(n+113),coolfFunc3d2(n+114),u.x),mix(coolfFunc3d2(n+170),coolfFunc3d2(n+171),u.x),u.y),u.z);
+  float res=mix(mix(mix(coolfFunc3d2(n),coolfFunc3d2(n+1),u.x),mix(coolfFunc3d2(n+57),coolfFunc3d2(n+58),u.x),u.y),mix(mix(coolfFunc3d2(n+113),coolfFunc3d2(n+114),u.x),mix(coolfFunc3d2(n+170),coolfFunc3d2(n+171),u.x),u.y),u.z);
   return 1.-res*(1./1073741824.);
 }
 float fbm(vec3 p)
