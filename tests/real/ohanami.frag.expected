@@ -106,7 +106,7 @@ void main()
             break;
           t+=d;
         }
-      gl_FragColor.xyz*=1*sh*(.2+.8*l)*vec3(1,1,.9)*.7+l2*vec3(.85,.85,1)*.4;
+      gl_FragColor.xyz*=sh*(.2+.8*l)*vec3(1,1,.9)*.7+l2*vec3(.85,.85,1)*.4;
     }
   else
     {

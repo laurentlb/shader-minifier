@@ -316,9 +316,6 @@ int dangling_else(int x)
 Operations with constant arguments are evaluated, e.g. `5*2` will be replaced
 with `10`. This is useful especially when a value has been inlined.
 
-Known bug: `x*0` is always replaced with `0`. This is invalid when x is a vector
-([#147](https://github.com/laurentlb/Shader_Minifier/issues/147)).
-
 ### Commutative operators
 
 If you write `x*(y*z)`, Shader Minifier will not remove the parentheses because

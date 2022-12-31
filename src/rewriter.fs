@@ -89,6 +89,11 @@ let (|True|False|NotABool|) = function
     | Var var when var.Name = "false" -> False
     | _ -> NotABool
 
+let (|Number|_|) = function
+    | Int (i, _) -> Some (decimal i)
+    | Float (f, _) -> Some f
+    | _ -> None
+
 let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
         match env.fns.TryFind v.Name with
@@ -116,35 +121,13 @@ let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Op "-", [x; Int (i, s)]) when i < 0 ->
         FunCall(Op "+", [x; Int (-i, s)]) |> env.fExpr env
 
-    // Swap operands to get rid of parentheses
-    // x*(y*z) -> y*z*x
-    | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])]) ->
-        FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
-    // x+(y+z) -> y+z+x
-    // x+(y-z) -> y-z+a
-    | FunCall(Op "+", [NoParen x; FunCall(Op ("+"|"-") as op, [y; z])]) ->
-        FunCall(Op "+", [FunCall(op, [y; z]); x]) |> env.fExpr env
-    // x-(y+z) -> x-y-z
-    | FunCall(Op "-", [x; FunCall(Op "+", [y; z])]) ->
-        FunCall(Op "-", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
-    // x-(y-z) -> x-y+z
-    | FunCall(Op "-", [x; FunCall(Op "-", [y; z])]) ->
-        FunCall(Op "+", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
-
     // Boolean simplifications (let's ignore the suffix)
-    | FunCall(Op "<",  [Int (i1, _); Int (i2, _)]) -> bool(i1 < i2)
-    | FunCall(Op ">",  [Int (i1, _); Int (i2, _)]) -> bool(i1 > i2)
-    | FunCall(Op "<=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <= i2)
-    | FunCall(Op ">=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <= i2)
-    | FunCall(Op "==", [Int (i1, _); Int (i2, _)]) -> bool(i1 = i2)
-    | FunCall(Op "!=", [Int (i1, _); Int (i2, _)]) -> bool(i1 <> i2)
-
-    | FunCall(Op "<", [Float (i1,_); Float (i2,_)]) -> bool(i1 < i2)
-    | FunCall(Op ">", [Float (i1,_); Float (i2,_)]) -> bool(i1 > i2)
-    | FunCall(Op "<=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
-    | FunCall(Op ">=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <= i2)
-    | FunCall(Op "==", [Float (i1,_); Float (i2,_)]) -> bool(i1 = i2)
-    | FunCall(Op "!=", [Float (i1,_); Float (i2,_)]) -> bool(i1 <> i2)
+    | FunCall(Op "<", [Number n1; Number n2]) -> bool(n1 < n2)
+    | FunCall(Op ">", [Number n1; Number n2]) -> bool(n1 > n2)
+    | FunCall(Op "<=", [Number n1; Number n2]) -> bool(n1 <= n2)
+    | FunCall(Op ">=", [Number n1; Number n2]) -> bool(n1 <= n2)
+    | FunCall(Op "==", [Number n1; Number n2]) -> bool(n1 = n2)
+    | FunCall(Op "!=", [Number n1; Number n2]) -> bool(n1 <> n2)
 
     // Conditionals
     | FunCall(Op "?:", [True; x; _]) -> x
@@ -157,15 +140,15 @@ let rec private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Op "||", [x; False]) -> x
 
     // Stupid simplifications (they can be useful to simplify rewritten code)
-    | FunCall(Op "/", [e; Float (1.M,_)]) -> e
-    | FunCall(Op "*", [e; Float (1.M,_)]) -> e
-    | FunCall(Op "*", [Float (1.M,_); e]) -> e
-    | FunCall(Op "*", [_; Float (0.M,_) as e]) -> e
-    | FunCall(Op "*", [Float (0.M,_) as e; _]) -> e
-    | FunCall(Op "+", [e; Float (0.M,_)]) -> e
-    | FunCall(Op "+", [Float (0.M,_); e]) -> e
-    | FunCall(Op "-", [e; Float (0.M,_)]) -> e
-    | FunCall(Op "-", [Float (0.M,_); e]) -> FunCall(Op "-", [e])
+    | FunCall(Op "/", [e; Number 1M]) -> e
+    | FunCall(Op "*", [e; Number 1M]) -> e
+    | FunCall(Op "*", [Number 1M; e]) -> e
+    // | FunCall(Op "*", [_; Number 0M as zero]) -> zero // unsafe
+    // | FunCall(Op "*", [Number 0M as zero; _]) -> zero // unsafe
+    | FunCall(Op "+", [e; Number 0M]) -> e
+    | FunCall(Op "+", [Number 0M; e]) -> e
+    | FunCall(Op "-", [e; Number 0M]) -> e
+    | FunCall(Op "-", [Number 0M; e]) -> FunCall(Op "-", [e])
 
     // No simplification when numbers have different suffixes
     | FunCall(_, [Int (_, su1); Int (_, su2)]) as e when su1 <> su2 -> e
@@ -186,6 +169,21 @@ let rec private simplifyExpr (didInline: bool ref) env = function
         let div = Float (i1 / i2, su)
         if (Printer.exprToS e).Length <= (Printer.exprToS div).Length then e
         else div
+
+    // Swap operands to get rid of parentheses
+    // x*(y*z) -> y*z*x
+    | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])]) ->
+        FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
+    // x+(y+z) -> y+z+x
+    // x+(y-z) -> y-z+a
+    | FunCall(Op "+", [NoParen x; FunCall(Op ("+"|"-") as op, [y; z])]) ->
+        FunCall(Op "+", [FunCall(op, [y; z]); x]) |> env.fExpr env
+    // x-(y+z) -> x-y-z
+    | FunCall(Op "-", [x; FunCall(Op "+", [y; z])]) ->
+        FunCall(Op "-", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
+    // x-(y-z) -> x-y+z
+    | FunCall(Op "-", [x; FunCall(Op "-", [y; z])]) ->
+        FunCall(Op "+", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
 
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
     | FunCall(Var var, [Float (0.M,_); Float (1.M,_); _]) as e when var.Name = "smoothstep" -> e
