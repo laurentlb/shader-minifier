@@ -60,3 +60,12 @@
 # Optimization tests
 
 --no-renaming --no-inlining --format text -o tests/unit/pi.frag.expected tests/unit/pi.frag
+
+# Other - real files, to get a bit more coverage
+--no-renaming --format indented --no-renaming-list mainImage -o tests/real/ed-209.frag.expected tests/real/ed-209.frag
+--no-renaming --format indented -o tests/real/ohanami.frag.expected tests/real/ohanami.frag
+--no-renaming --format indented -o tests/real/terrarium.frag.expected tests/real/terrarium.frag
+--no-renaming --format indented -o tests/real/monjori.frag.expected tests/real/monjori.frag
+--no-renaming --format indented -o tests/real/valley_ball.glsl.expected tests/real/valley_ball.glsl
+--no-renaming --format indented -o tests/real/slisesix.frag.expected tests/real/slisesix.frag
+--no-renaming --format indented -o tests/real/from-the-seas-to-the-stars.frag.expected tests/real/from-the-seas-to-the-stars.frag
