@@ -187,6 +187,12 @@ shader_minifier.exe --format text --preserve-externals file.glsl -o file_opt.gls
 
 The output may be used as a drop-in replacement for your original shaders.
 
+### Debugging
+
+To better understand what Shader Minifier changed and get a more readable
+output, use the flags `--format indented --no-renaming`. This will add some
+indentation to the output, instead of using overly long lines.
+
 ## Macros
 
 Shader Minifier will preserve the preprocessor directives (the lines starting
@@ -213,7 +219,185 @@ void GSScene( triangleadj GSSceneIn input[6], inout TriangleStream<PSSceneIn> Ou
 }
 ```
 
-## Inlining
+## Overloading
+
+At this time, do not use overloaded functions (two functions with the same name
+but different arguments) in the input. The output probably won't compile.
+
+On the other hand, Shader Minifier will aggressively use function overloading in
+the output. If two functions have a different number of arguments, they may have
+the same name in the output. This reduces the number of identifiers used by the
+shader and make it more compression friendly.
+
+## Shader behaviour
+
+Shader Minifer works by applying to the
+[AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) modifications
+that produce a transformed but semantically equivalent AST. The
+resulting assembly may be different, but the minified shader should
+have the same behaviour as the original one. Or at least that's the
+intent.
+
+However certain rules, especially floating point arithmetic, can be
+tricky. If you observe differences, don't hesitate to
+[report a bug](#Feedback).
+
+## Bugs and limitations
+
+- The parser is not complete. Some constructs are not yet supported.
+- If possible, avoid overloaded functions; some transformations might not handle
+  them properly.
+- Avoid macros that contain references to other variables, or affect how the
+  code should be parsed. You may get a parse error in Shader Minifier, or get an
+  output that won't compile.
+
+Please [give feedback](#Feedback) if these limitations affect you.
+
+## Transformations
+
+### Whitespace and comments removal
+
+All comments are removed. Whitespace is removed whenever possible.
+
+This transformation cannot be disabled, although you may use `--format indented`
+to see an indented output.
+
+### Parentheses simplifications
+
+Parentheses that are not needed are automatically removed. This transformations cannot be disabled; parentheses are not even recorded in the AST, they are computed based on operator precedence rules.
+
+Input:
+```glsl
+int a = (x * x) * (x + 1);
+```
+
+Output:
+```glsl
+int a = x * x * (x + 1);
+```
+
+### Curly braces removal
+
+Curly braces are removed when they are not required. This happens when a block
+contains a single statement:
+
+Input:
+```glsl
+if (cond) {
+  return 2;
+}
+```
+
+Output:
+```glsl
+if (cond) return 2;
+```
+
+**Corner case**: in the example below, the curly braces around the `for` are
+needed because of the dangling else problem. If you remove the `else`, braces
+will disappear.
+
+```glsl
+int dangling_else(int x)
+{
+  if(x<0)
+    {
+      for(;;)
+        if(x>0)
+          return 0;
+    }
+  else
+     return 2;
+}
+```
+
+### Constant arithmetic
+
+Operations with constant arguments are evaluated, e.g. `5*2` will be replaced
+with `10`. This is useful especially when a value has been inlined.
+
+Known bug: `x*0` is always replaced with `0`. This is invalid when x is a vector
+([#147](https://github.com/laurentlb/Shader_Minifier/issues/147)).
+
+### Commutative operators
+
+If you write `x*(y*z)`, Shader Minifier will not remove the parentheses because
+it would change the orders of evaluation (this could be a problem with floating
+point numbers and affect the precision of the result). Instead, it will swap the
+operands and return `y*z*x`.
+
+We apply this technique in a few cases:
+- `x*(y*z)` becomes `y*z*x`
+- `x+(y+z)` becomes `y+z+x`
+- `x+(y-z)` becomes `y-z+x`
+- `x-(y+z)` becomes `x-y-z`
+- `x-(y-z)` becomes `x-y+z`
+
+### Comma operator
+
+When all statements in a block are expression statements (e.g. function calls or
+assignments) or return statements, we use the comma operators to reduce the
+block to one statement. This allows us to remove the curly braces.
+
+Input:
+```glsl
+if (x) {
+  y = 123;
+  x++;
+}
+```
+
+Output:
+```glsl
+if (x) y = 123,x++;
+```
+
+**Note**: This transformation doesn't always decrease the compressed file size.
+Use `--no-sequence` to disable it and see how it performs.
+
+### Definition merging
+
+If multiple values of the same type are defined next to each other, we can merge
+the definitions.
+
+Input:
+```glsl
+float a = 1.;
+float b = 2.;
+```
+
+Output:
+```glsl
+float a = 1., b = 2.;
+```
+
+**Note**: The order of the definitions is preserved. Try to group definitions by
+type before running Shader Minifier.
+
+```glsl
+int x;
+float y;
+int z;    // Not optimized! Move this line above.
+```
+
+### Rename vector fields
+
+To access fields of a vector, it is possible to use `.rgba` fields, or `.xyzw`,
+or `.stpq`. Shader Minifier will rename them so that it's consistent across all
+the shader.
+
+Input:
+```glsl
+return col.r + col.g + col.b;
+```
+
+Outut:
+```glsl
+return col.x + col.y + col.z;
+```
+
+**Note**: Use `--field-names` to select which set of names to use. This can have
+a small effect on the compressed file size.
 
 ### Automatic inlining
 
@@ -235,6 +419,9 @@ also when:
 - and the init value is trivial (doesn't depend on a variable).
 
 This is enabled with `--aggressive-inlining`.
+
+**Note**: Inlining can lead to repetition in the shader code, which may make the
+shader longer, but the output may be more compression-friendly.
 
 ### Explicit inlining
 
@@ -294,39 +481,16 @@ If you want to aggressively reduce the size of your shader, try inlining more
 variables. Inlining can have performance implications though (if the variable
 stored the result of a computation), so be careful with it.
 
-### Compression
-
-Inlining can lead to repetition in the shader code, which may make the shader
-longer (but the output may be more compression-friendly).
-
-## Overloading
-
-At this time, do not use overloaded functions (two functions with the same name
-but different arguments) in the input. The output probably won't compile.
-
-On the other hand, Shader Minifier will aggressively use function overloading in
-the output. If two functions have a different number of arguments, they may have
-the same name in the output. This reduces the number of identifiers used by the
-shader and make it more compression friendly.
-
-## Shader behaviour
-
-Shader Minifer works by applying to the
-[AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) modifications
-that produce a transformed but semantically equivalent AST. The
-resulting assembly may be different, but the minified shader should
-have the same behaviour as the original one. Or at least that's the
-intent.
-
-However certain rules, especially floating point arithmetic, can be
-tricky. If you observe differences, don't hesitate to
-[report a bug](#Feedback).
-
-## Bugs and limitations
-
-- The parser is not complete. Some constructs are not yet supported.
-- Don't use overloaded functions.
-- Avoid macros that contain references to other variables.
+<!--
+To document:
+- renaming
+- unused local variables
+- function headers
+- function reordering
+- unused functions removal
+- smoothstep trick
+- rewrite numbers / PI detection
+-->
 
 ## Feedback
 
@@ -336,7 +500,7 @@ rely on your feedback to prioritize the work.
 
 Contributions are welcome.
 
----------
+---
 
 Created by Laurent Le Brun (LLB / Ctrl-Alt-Test) and
 [other contributors](https://github.com/laurentlb/Shader_Minifier/graphs/contributors).
