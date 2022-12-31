@@ -178,14 +178,22 @@ let private simplifyOperator env = function
 
 // Simplify calls to the vec constructor.
 let private simplifyVec constr args =
+    // Combine swizzles, e.g.
+    //    vec4(v1.x, v1.z, v2.r, v2.t)  =>  vec4(v1.xz, v2.xy)
     let rec combineSwizzles = function
         | [] -> []
-        | Dot (Var v1, fields1) :: Dot (Var v2, fields2) :: args
-            when isFieldSwizzle fields1 && isFieldSwizzle fields2 && v1.Name = v2.Name ->
-                combineSwizzles (Dot (Var v1, fields1 + fields2) :: args)
+        | Dot (Var v1, field1) :: Dot (Var v2, field2) :: args
+            when isFieldSwizzle field1 && isFieldSwizzle field2 && v1.Name = v2.Name ->
+                combineSwizzles (Dot (Var v1, field1 + field2) :: args)
                 
         | e::l -> e :: combineSwizzles l
-    FunCall (Var constr, combineSwizzles args)
+    let args = combineSwizzles args
+    match args with
+    | [Dot (_, field) as arg] when field.Length > 1 && isFieldSwizzle field ->
+        // vec3(v.xxy)  =>  v.xxy
+        // However, vec3(v.x) should be preserved.
+        arg
+    | _ -> FunCall (Var constr, args)
 
 let private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->

@@ -484,12 +484,14 @@ Calls to `vec2`, `vec3`, and `vec4` can be simplified using swizzles.
 
 Input:
 ```glsl
-vec4(v1.x, v1.z, v2.r, v2.t)
+vec4(v1.x, v1.z, v2.r, v2.t);
+vec2(v1.xx);
 ```
 
 Output:
 ```glsl
-vec4(v1.xz,v2.xy)
+vec4(v1.xz,v2.xy);
+v1.xx;
 ```
 
 <!--
