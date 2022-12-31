@@ -1,2 +1,6 @@
 #version 400
-void main(){double pi=acos(-1.),minus_pi=-acos(-1.),tau=2.*acos(-1.),minus_tau=-(2.*acos(-1.)),half_pi=acos(0.),minus_half_pi=-acos(0.),precise_pi=acos(-1.);}
+
+void main()
+{
+  double pi=acos(-1.),minus_pi=-acos(-1.),tau=2.*acos(-1.),minus_tau=-(2.*acos(-1.)),half_pi=acos(0.),minus_half_pi=-acos(0.),precise_pi=acos(-1.);
+}

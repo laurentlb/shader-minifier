@@ -7,19 +7,22 @@ open Options.Globals
 
                                 (* ** Rewrite tricks ** *)
 
+let private isFieldSwizzle s =
+    Seq.forall (fun c -> Seq.contains c "rgba") s ||
+    Seq.forall (fun c -> Seq.contains c "xyzw") s ||
+    Seq.forall (fun c -> Seq.contains c "stpq") s
 
-let renameField field =
+let private renameSwizzle field =
     let transform = function
         | 'r' | 'x' | 's' -> options.canonicalFieldNames.[0]
         | 'g' | 'y' | 't' -> options.canonicalFieldNames.[1]
         | 'b' | 'z' | 'p' -> options.canonicalFieldNames.[2]
         | 'a' | 'w' | 'q' -> options.canonicalFieldNames.[3]
         | c -> failwithf "Internal error: transform('%c')" c
-    if Seq.forall (fun c -> Seq.contains c "rgba") field ||
-        Seq.forall (fun c -> Seq.contains c "xyzw") field ||
-        Seq.forall (fun c -> Seq.contains c "stpq") field
-    then
-        field |> String.map transform
+    field |> String.map transform
+
+let renameField field =
+    if isFieldSwizzle field then renameSwizzle field
     else field
 
 // Remove useless spaces in macros
@@ -172,6 +175,18 @@ let private simplifyOperator env = function
         FunCall(Op "+", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
     | e -> e
 
+
+// Simplify calls to the vec constructor.
+let private simplifyVec constr args =
+    let rec combineSwizzles = function
+        | [] -> []
+        | Dot (Var v1, fields1) :: Dot (Var v2, fields2) :: args
+            when isFieldSwizzle fields1 && isFieldSwizzle fields2 && v1.Name = v2.Name ->
+                combineSwizzles (Dot (Var v1, fields1 + fields2) :: args)
+                
+        | e::l -> e :: combineSwizzles l
+    FunCall (Var constr, combineSwizzles args)
+
 let private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
         match env.fns.TryFind v.Name with
@@ -189,6 +204,8 @@ let private simplifyExpr (didInline: bool ref) env = function
             | _ -> failwithf "Cannot inline %s since it consists of more than a single return" v.Name
 
     | FunCall(Op _, _) as op -> simplifyOperator env op
+    | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
+        simplifyVec constr args
 
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
     | FunCall(Var var, [Float (0.M,_); Float (1.M,_); _]) as e when var.Name = "smoothstep" -> e

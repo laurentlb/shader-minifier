@@ -478,6 +478,20 @@ If you want to aggressively reduce the size of your shader, try inlining more
 variables. Inlining can have performance implications though (if the variable
 stored the result of a computation), so be careful with it.
 
+### Vector constructors
+
+Calls to `vec2`, `vec3`, and `vec4` can be simplified using swizzles.
+
+Input:
+```glsl
+vec4(v1.x, v1.z, v2.r, v2.t)
+```
+
+Output:
+```glsl
+vec4(v1.xz,v2.xy)
+```
+
 <!--
 To document:
 - renaming
