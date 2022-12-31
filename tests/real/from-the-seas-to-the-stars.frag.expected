@@ -818,8 +818,7 @@ void main()
       if(coord.x<1280&&coord.y<720)
         {
           vec4 c=vec4(0);
-          const int sampleCount=8;
-          for(int sampleIndex=0;sampleIndex<sampleCount;++sampleIndex)
+          for(int sampleIndex=0;sampleIndex<8;++sampleIndex)
             {
               uint x=imageLoad(d0,coord,sampleIndex).x,idepth=x>>16,icol=x&65535;
               if(idepth==0)
@@ -840,7 +839,7 @@ void main()
               c.xyz+=clamp(col,0,1);
               c.w+=1.;
             }
-          c/=float(sampleCount);
+          c/=float(8);
           vec3 bg=vec3(.02)*vec3(.7,.9,1)*.6;
           if(time>=200)
             bg*=max(0.,1.-(time-200)/7.);
