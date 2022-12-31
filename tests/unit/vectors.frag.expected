@@ -1,6 +1,6 @@
 float swizzles()
 {
-  vec2 v1=vec2(1,1);
+  vec2 v1=vec2(1);
   vec3 v2=v1.xyx,v3=vec3(v1.x,v2.xx);
   vec4 v4=v1.xxyx,v5=vec4(1,v2.zy,2),v6=vec4(v1.xy,v2.xy);
   return v1.x+v2.x+v3.x+v4.x+v5.x+v6.x;

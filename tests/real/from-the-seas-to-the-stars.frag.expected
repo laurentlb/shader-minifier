@@ -17,7 +17,7 @@ float s(vec2 p)
 float valnoise(vec2 p)
 {
   vec2 c=floor(p),f=smoothstep(0.,1.,fract(p));
-  return mix(mix(s(c+vec2(0,0)),s(c+vec2(1,0)),f.x),mix(s(c+vec2(0,1)),s(c+vec2(1,1)),f.x),f.y);
+  return mix(mix(s(c+vec2(0)),s(c+vec2(1,0)),f.x),mix(s(c+vec2(0,1)),s(c+vec2(1)),f.x),f.y);
 }
 float fbm(vec2 p)
 {
@@ -561,7 +561,7 @@ void main()
                     w.w=R();
                     if(w.w<.5)
                       {
-                        p=(w.xyz*2-1)*vec3(.1,.1,.1);
+                        p=(w.xyz*2-1)*vec3(.1);
                         vec3 op=p;
                         p.y-=.3;
                         p.xz*=mix(.1,.5*p.y*4.-1.,pow(fract(p.y*8.),4));

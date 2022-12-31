@@ -18,7 +18,7 @@ float smoothrnd(vec2 x)
   vec2 a=fract(x);
   x-=a;
   vec2 u=a*a*(3.-2.*a);
-  return mix(mix(rnd(x+vec2(0,0)),rnd(x+vec2(1,0)),u.x),mix(rnd(x+vec2(0,1)),rnd(x+vec2(1,1)),u.x),u.y);
+  return mix(mix(rnd(x+vec2(0)),rnd(x+vec2(1,0)),u.x),mix(rnd(x+vec2(0,1)),rnd(x+vec2(1)),u.x),u.y);
 }
 float norm(float x)
 {
