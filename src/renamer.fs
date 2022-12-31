@@ -41,7 +41,7 @@ module private RenamerImpl =
 
         member this.Rename(id: Ident, newName) =
             let prevName = id.Name
-            let names = this.availableNames |> List.filter ((<>) newName)
+            let names = this.availableNames |> List.except [newName]
             id.Rename(newName)
             {this with varRenames = this.varRenames.Add(prevName, newName); availableNames = names}
 
@@ -173,8 +173,7 @@ module private RenamerImpl =
         // we're looking for a function name, already used before,
         // but not with the same number of arg, and which is not in options.noRenamingList.
         let isFunctionNameAvailableForThisArity (x: KeyValuePair<string, Map<int,string>>) =
-            not (x.Value.ContainsKey nbArgs ||
-                    List.exists ((=) x.Key) options.noRenamingList)
+            not (x.Value.ContainsKey nbArgs || List.contains x.Key options.noRenamingList)
 
         match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisArity with
         | Some res when env.allowOverloading ->
@@ -196,7 +195,7 @@ module private RenamerImpl =
         let isExternal = options.hlsl && f.semantics <> []
         if (isExternal && options.preserveExternals) || options.preserveAllGlobals then
             env
-        elif List.exists ((=) f.fName.Name) options.noRenamingList then
+        elif List.contains f.fName.Name options.noRenamingList then
             env
         else
             match env.varRenames.TryFind(f.fName.Name) with
@@ -269,7 +268,7 @@ module private RenamerImpl =
         mapStmt (mapEnv collect id) block |> ignore
         let set = HashSet(Seq.choose env.varRenames.TryFind d)
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
-        let reusable = reusable |> Seq.filter (fun x -> not (List.exists ((=) x.Value) options.noRenamingList))
+        let reusable = reusable |> Seq.filter (fun x -> not (List.contains x.Value options.noRenamingList))
         let allAvailable = [for i in reusable -> i.Value] @ env.availableNames |> Seq.distinct |> Seq.toList
         env.Update(varRenames, env.funRenames, allAvailable)
 
@@ -373,7 +372,7 @@ module private RenamerImpl =
         // Compute the list of variable names to use
         let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
         let names = computeListOfNames text
-                 |> List.filter (fun x -> not <| List.exists ((=) x) forbiddenNames)
+                 |> List.filter (fun x -> not <| List.contains x forbiddenNames)
 
         let mutable env =
             if Array.length shaders > 1 then
