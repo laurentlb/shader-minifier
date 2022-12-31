@@ -15,9 +15,9 @@ let renameField field =
         | 'b' | 'z' | 'p' -> options.canonicalFieldNames.[2]
         | 'a' | 'w' | 'q' -> options.canonicalFieldNames.[3]
         | c -> failwithf "Internal error: transform('%c')" c
-    if Seq.forall (fun c -> Seq.exists ((=) c) "rgba") field ||
-        Seq.forall (fun c -> Seq.exists ((=) c) "xyzw") field ||
-        Seq.forall (fun c -> Seq.exists ((=) c) "stpq") field
+    if Seq.forall (fun c -> Seq.contains c "rgba") field ||
+        Seq.forall (fun c -> Seq.contains c "xyzw") field ||
+        Seq.forall (fun c -> Seq.contains c "stpq") field
     then
         field |> String.map transform
     else field
@@ -94,21 +94,7 @@ let (|Number|_|) = function
     | Float (f, _) -> Some f
     | _ -> None
 
-let rec private simplifyExpr (didInline: bool ref) env = function
-    | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
-        match env.fns.TryFind v.Name with
-        | None -> e
-        | Some ({args = declArgs}, body) ->
-            match body with
-            | Jump (JumpKeyword.Return, Some bodyExpr)
-            | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
-                didInline.Value <- true
-                inlineFn declArgs passedArgs bodyExpr
-            // Don't yell if we've done some inlining this pass -- maybe it
-            // turned the function into a one-liner, so allow trying again on
-            // the next pass. (If it didn't, we'll yell next pass.)
-            | _ when didInline.Value -> e
-            | _ -> failwithf "Cannot inline %s since it consists of more than a single return" v.Name
+let private simplifyOperator env = function
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
     | FunCall(Op "+", [e]) -> e
@@ -184,6 +170,25 @@ let rec private simplifyExpr (didInline: bool ref) env = function
     // x-(y-z) -> x-y+z
     | FunCall(Op "-", [x; FunCall(Op "-", [y; z])]) ->
         FunCall(Op "+", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
+    | e -> e
+
+let private simplifyExpr (didInline: bool ref) env = function
+    | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
+        match env.fns.TryFind v.Name with
+        | None -> e
+        | Some ({args = declArgs}, body) ->
+            match body with
+            | Jump (JumpKeyword.Return, Some bodyExpr)
+            | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
+                didInline.Value <- true
+                inlineFn declArgs passedArgs bodyExpr
+            // Don't yell if we've done some inlining this pass -- maybe it
+            // turned the function into a one-liner, so allow trying again on
+            // the next pass. (If it didn't, we'll yell next pass.)
+            | _ when didInline.Value -> e
+            | _ -> failwithf "Cannot inline %s since it consists of more than a single return" v.Name
+
+    | FunCall(Op _, _) as op -> simplifyOperator env op
 
     // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
     | FunCall(Var var, [Float (0.M,_); Float (1.M,_); _]) as e when var.Name = "smoothstep" -> e
@@ -328,7 +333,7 @@ let private graphReorder nodes =
 
     let rec loop nodes =
         let nodes = findRemove (fun node -> lastName <- node.name; list <- node.func :: list) nodes
-        let nodes = nodes |> List.map (fun n -> { n with callees = List.filter ((<>) lastName) n.callees })
+        let nodes = nodes |> List.map (fun n -> { n with callees = List.except [lastName] n.callees })
         if nodes <> [] then loop nodes
 
     if nodes <> [] then loop nodes
