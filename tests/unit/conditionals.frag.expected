@@ -38,3 +38,8 @@ bool and3()
 {
   return success();
 }
+int foo()
+{
+  int a=1;
+  return a;
+}

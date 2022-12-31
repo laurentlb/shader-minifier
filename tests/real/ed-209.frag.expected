@@ -126,11 +126,10 @@ MarchData gunPod(vec3 p)
   MarchData r;
   setBodyMaterial(r);
   p.yz+=vec2(.1,.45);
-  const float rr=.35,chamfer=.1;
   vec3 pp=p;
   pp.z=abs(pp.z)-.5;
-  r.d=sdCappedCone(pp,vec3(0),vec3(0,0,-chamfer),rr-chamfer,rr);
-  r.d=min(r.d,sdCappedCylinder(p,rr,.4));
+  r.d=sdCappedCone(pp,vec3(0),vec3(0,0,-.1),.25,.35);
+  r.d=min(r.d,sdCappedCylinder(p,.35,.4));
   pp=vec3(p.x,.28-p.y,p.z);
   r.d=min(r.d,sdTriPrism(pp,vec2(.1,.5)));
   pp=p;

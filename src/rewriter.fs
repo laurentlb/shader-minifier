@@ -342,7 +342,7 @@ let simplify li =
     // but we only need the information for aggroInlining so don't bother if
     // it's off.
     |> Analyzer.markLValues
-    |> if options.aggroInlining then Analyzer.inlineAllConsts else id
+    |> Analyzer.maybeInlineConsts
     |> iterateSimplifyAndInline
     |> List.choose (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some

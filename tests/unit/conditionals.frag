@@ -36,3 +36,13 @@ bool and2() {
 bool and3() {
   return success() && true;
 }
+
+const int debug = false;
+
+int foo() {
+  int a = 1;
+  if (debug) {
+    a = 2;
+  }
+  return a;
+}

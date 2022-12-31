@@ -22,10 +22,9 @@ float inl4()
   const float f=acos(-1.);
   return 2.*f*.75;
 }
-const float foo=123.;
 float inl5()
 {
-  return foo+456.;
+  return 579.;
 }
 const float bar=acos(-1.),baz=2.*bar;
 float inl6()

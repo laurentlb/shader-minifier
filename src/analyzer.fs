@@ -80,13 +80,22 @@ let findInlinable block =
             | (false, _), (false, _) -> ident.ToBeInlined <- true
             | _ -> ()
 
-let inlineAllConsts li =
+let maybeInlineConsts li =
     let mapInnerDecl = function
-        // Unconditional inlining of anything marked "const" -- trust that the
-        // compiler would have yelled if it weren't really really const, so we
-        // can brutishly just inline it.
         | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
-            for (def:DeclElt) in defs do def.name.ToBeInlined <- true
+            for (def:DeclElt) in defs do
+                // AggroInlining: unconditional inlining of anything marked "const".
+                // Note: this is unsafe if the init value depends on something mutable.
+                if options.aggroInlining then
+                    def.name.ToBeInlined <- true
+                // Otherwise, inline only trivial constants.
+                else match def.init with
+                        | Some (Var v) when v.Name = "true" || v.Name = "false" ->
+                            def.name.ToBeInlined <- true
+                        | Some (Int _)
+                        | Some (Float _) ->
+                            def.name.ToBeInlined <- true
+                        | _ -> ()
             d
         | d -> d
     let mapStmt = function
