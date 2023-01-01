@@ -84,7 +84,8 @@ vec3 col=vec3(0),p,of;
 float time,per=0.;
 float R()
 {
-  return rstate=encrypt(rstate),float(rstate.x&1048575)/(1<<20);
+  rstate=encrypt(rstate);
+  return float(rstate.x&1048575)/(1<<20);
 }
 void makeBG(float c)
 {
@@ -407,7 +408,8 @@ void main()
                   float d=koi(op.xy);
                   if(max(d,abs(op.z)-.1*pow(-clamp(d,-1,0),.5))<0.)
                     {
-                      col=mix(vec3(.9),vec3(1,.25,.1),step(.9,fbm(op.xy*8.+5.))),col=mix(col,vec3(.01),step(1.,fbm(op.xy*8.+15.)));
+                      col=mix(vec3(.9),vec3(1,.25,.1),step(.9,fbm(op.xy*8.+5.)));
+                      col=mix(col,vec3(.01),step(1.,fbm(op.xy*8.+15.)));
                       p=op;
                       w.x=R();
                       w.y=R();
@@ -461,7 +463,8 @@ void main()
                 float d=koi(op.xy);
                 if(max(d,abs(op.z)-.1*pow(-clamp(d,-1,0),.5))<0.)
                   {
-                    col=mix(vec3(.9),vec3(1,.25,.1),step(.9,fbm(op.xy*8.+5.))),col=mix(col,vec3(.01),step(1.,fbm(op.xy*8.+15.)));
+                    col=mix(vec3(.9),vec3(1,.25,.1),step(.9,fbm(op.xy*8.+5.)));
+                    col=mix(col,vec3(.01),step(1.,fbm(op.xy*8.+15.)));
                     p=op;
                     w.x=R();
                     w.y=R();
