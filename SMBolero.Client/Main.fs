@@ -25,7 +25,7 @@ type Model =
 let initModel =
     {
         page = Home
-        shaderInput = "int foo() { return 6 * 7; }"
+        shaderInput = "out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(1.,1.,1.,1.);\n}"
         shaderOutput = ""
         flags = "--format text"
         error = None
