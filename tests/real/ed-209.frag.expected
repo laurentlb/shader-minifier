@@ -104,7 +104,7 @@ MarchData headLower(vec3 p)
 {
   vec3 op=p;
   MarchData r=headVisor(p*vec3(.95,-1.4,.95),1.,0.);
-  float roof=max(max(headVisor((p+vec3(0,.01,0))*vec3(.95),1.,0.).d,p.y-.35),p.y*.625-p.z-.66);
+  float roof=max(max(headVisor((p+vec3(0,.01,0))*vec3(.95),1.,0.).d,p.y-.35),p.y*.625-p.z-.66),cheeks;
   r.d=min(r.d,roof);
   p.xy*=rot(.075*(gunsUp-1.)*sign(p.x));
   p.x=abs(p.x)-1.33;
@@ -116,7 +116,7 @@ MarchData headLower(vec3 p)
   p=op;
   p.y=abs(p.y+.16)-.06;
   p.z-=-1.1;
-  float cheeks=max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.));
+  cheeks=max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.));
   cheeks=max(cheeks,p.z+.2);
   r.d=max(r.d,-cheeks);
   setBodyMaterial(r);
@@ -136,7 +136,7 @@ MarchData gunPod(vec3 p)
   pp=p;
   pp.x=abs(p.x);
   pp.xy*=rot(.78525);
-  float bump=sign(sin(pp.z*33.3))*.003,d=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02;
+  float bump=sign(sin(pp.z*33.3))*.003,d=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02,fs;
   pp=p-vec3(0,0,-.6);
   pp.x=abs(pp.x)-.1;
   d=min(d,sdCappedCylinder(pp,.06,.15));
@@ -144,7 +144,7 @@ MarchData gunPod(vec3 p)
   d=min(d,sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
   if(d<r.d)
     d=max(d,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=d,r.mat=vec3(.02);
-  float fs=fireShock();
+  fs=fireShock();
   if(fs>.5)
     {
       d=sdCappedCylinder(pp,.01+pp.z*.05,fract(fs*3322.423)*.5+.9);
@@ -187,12 +187,13 @@ MarchData waist(vec3 p)
   setBodyMaterial(r);
   p.y+=.65;
   p.yz*=rot(-.2);
-  float legAngle=legWalkAngle(1.);
+  float legAngle=legWalkAngle(1.),bump,d,pistons;
   p.xy*=rot(legAngle*.3);
   vec3 pp=p;
   pp.y+=.3;
   r.d=max(sdCappedCylinder(pp.zyx,.5,.5),p.y+.15);
-  float bump=.5-abs(sin(p.y*40.))*.03,d=sdBox(p,vec3(bump,.15,bump));
+  bump=.5-abs(sin(p.y*40.))*.03;
+  d=sdBox(p,vec3(bump,.15,bump));
   bump=.3-abs(sin(p.x*40.))*.03;
   pp.y+=.18;
   d=min(d,sdCappedCylinder(pp.zyx,bump,.75));
@@ -203,7 +204,7 @@ MarchData waist(vec3 p)
   r.d=min(r.d,sdBox(pp,vec3(.24,.2,.14+.2*pp.y)));
   p=pp;
   pp.xz=abs(pp.xz)-vec2(.12,.25);
-  float pistons=min(sdCappedCylinder(pp.xzy,.1,.325),sdCappedCylinder(pp.xzy,.05,.5));
+  pistons=min(sdCappedCylinder(pp.xzy,.1,.325),sdCappedCylinder(pp.xzy,.05,.5));
   r.d=min(r.d,max(pistons,pp.y));
   p.y+=.68;
   r.d=min(r.d,sdBox(p,vec3(sign(abs(p.y)-.04)*.005+.26,.2,.34)));
@@ -215,24 +216,24 @@ MarchData legs(vec3 p)
 {
   MarchData r;
   setBodyMaterial(r);
-  float legAngle=legWalkAngle(1.);
+  float legAngle=legWalkAngle(1.),silver;
   p.z+=.27;
   p.yz*=rot(legAngle*sign(p.x));
   p.z-=.27;
   p.y+=.65;
   p.yz*=rot(-.2);
   p.xy*=rot(legAngle*.3);
-  vec3 pp=p;
+  vec3 pp=p,cp;
   pp.x=abs(pp.x);
   pp.y+=.48;
   pp.yz*=rot(-.58525);
   pp.x-=.98;
-  vec3 cp=pp;
+  cp=pp;
   p=pp;
   pp.xz=abs(pp.xz)-vec2(.12,.25);
   p.y+=.68;
   p.xy=abs(p.xy)-.12;
-  float silver=sdBox(p,vec3(.07,.05,1.2));
+  silver=sdBox(p,vec3(.07,.05,1.2));
   cp-=vec3(0,-.7,0);
   r.d=sdBox(cp-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
   cp.z+=1.;
@@ -266,7 +267,7 @@ MarchData room(vec3 p)
   vec2 xy=p.xy-vec2(0,2);
   p.x=abs(p.x);
   p.yz+=vec2(.5,-3.4);
-  float doorHole=sdBox(p,frameInner+vec3(0,0,1)),backWall=length(p.z-8.);
+  float doorHole=sdBox(p,frameInner+vec3(0,0,1)),backWall=length(p.z-8.),doorFrame,doorWidth,door,d;
   r.d=min(backWall,max(length(p.z),-doorHole+.1));
   if(r.d==backWall)
     {
@@ -277,14 +278,15 @@ MarchData room(vec3 p)
       if(ocp<.3)
         r.mat=vec3(.39,.57,.71);
     }
-  float doorFrame=max(sdBox(p,frameInner+vec3(.4,.4,.1)),-doorHole),doorWidth=frameInner.x*.5;
+  doorFrame=max(sdBox(p,frameInner+vec3(.4,.4,.1)),-doorHole);
+  doorWidth=frameInner.x*.5;
   p.x-=frameInner.x;
   p.xz*=rot(doorOpen*2.1);
   p.x+=doorWidth;
-  float door=sdBox(p,vec3(doorWidth,frameInner.yz));
+  door=sdBox(p,vec3(doorWidth,frameInner.yz));
   p=abs(p)-vec3(doorWidth*.5,1.1,.14);
   door=max(door,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1))));
-  float d=min(doorFrame,door);
+  d=min(doorFrame,door);
   if(d<r.d)
     r.d=d,r.mat=vec3(.02,.02,.024),r.specPower=10.;
   return r;
@@ -330,16 +332,16 @@ vec3 vignette(vec3 col,vec2 fragCoord)
 vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
 {
   const vec3 sunPos=vec3(10,10,-10);
-  vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
+  vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d),lig;
   float primary=max(0.,dot(sunDir,n)),bounce=max(0.,dot(-sunDir,n))*.2,spe=pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.,fre=smoothstep(.7,1.,1.+dot(rd,n)),fog=exp(-length(p)*.05);
   primary*=mix(.2,1.,calcShadow(p,sunPos));
-  vec3 lig=((primary+bounce)*ao(p,n,.33)+spe)*vec3(2,1.6,1.7);
+  lig=((primary+bounce)*ao(p,n,.33)+spe)*vec3(2,1.6,1.7);
   return mix(data.mat*lig,vec3(.01),fre)*fog;
 }
 vec3 getSceneColor(vec3 ro,vec3 rd)
 {
   vec3 p;
-  float d=.01;
+  float d=.01,g;
   MarchData h;
   for(float steps=0.;steps<MAX_STEPS;steps++)
     {
@@ -351,7 +353,7 @@ vec3 getSceneColor(vec3 ro,vec3 rd)
         return vec3(0);
       d+=h.d;
     }
-  float g=glow;
+  g=glow;
   return applyLighting(p,rd,d,h)+fireShock()*.3+g;
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)

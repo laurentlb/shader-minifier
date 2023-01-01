@@ -3,22 +3,26 @@
  */
 #ifndef HEART_FRAG_EXPECTED_
 # define HEART_FRAG_EXPECTED_
-# define VAR_mouse "f"
+# define VAR_mouse "m"
 # define VAR_resolution "y"
 # define VAR_time "v"
 
 const char *heart_frag =
  "uniform float v;"
  "uniform vec2 y;"
- "uniform vec4 f;"
+ "uniform vec4 m;"
  "void main()"
  "{"
-   "vec2 f=(2.*gl_FragCoord.xy-y)/y.y;"
-   "float r=mod(v,2.)/2.,a=pow(r,.2)*.5+.5;"
+   "vec2 m=(2.*gl_FragCoord.xy-y)/y.y;"
+   "float r=mod(v,2.)/2.,a=pow(r,.2)*.5+.5,u,g,e,f,x;"
    "a-=a*.2*sin(r*6.2831*5.)*exp(-r*6.);"
-   "f*=vec2(.5,1.5)+a*vec2(.5,-.5);"
-   "float m=atan(f.x,f.y)/3.141593,x=length(f),e=abs(m),o=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),n=step(x,o)*pow(1.-x/o,.25);"
-   "gl_FragColor=vec4(n,0,0,1);"
+   "m*=vec2(.5,1.5)+a*vec2(.5,-.5);"
+   "u=atan(m.x,m.y)/3.141593;"
+   "g=length(m);"
+   "e=abs(u);"
+   "f=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e);"
+   "x=step(g,f)*pow(1.-g/f,.25);"
+   "gl_FragColor=vec4(x,0,0,1);"
  "}";
 
 #endif // HEART_FRAG_EXPECTED_

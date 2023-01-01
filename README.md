@@ -405,20 +405,21 @@ if (x) y = 123,x++;
 **Note**: This transformation doesn't always decrease the compressed file size.
 Use `--no-sequence` to disable it and see how it performs.
 
-### Definition merging
+### Merge declarations
 
-If multiple values of the same type are defined next to each other, we can merge
+If multiple values of the same type are declared next to each other, we can merge
 the definitions.
 
 Input:
 ```glsl
 float a = 1.;
-float b = 2.;
+float b;
+float c = 2.;
 ```
 
 Output:
 ```glsl
-float a = 1., b = 2.;
+float a = 1., b, c = 2.;
 ```
 
 **Note**: The order of the definitions is preserved. Try to group definitions by
@@ -429,6 +430,33 @@ int x;
 float y;
 int z;    // Not optimized! Move this line above.
 ```
+
+The next transformation will take care of this inside function blocks.
+
+### Group declarations
+
+If multiple variables of the same type are declared within the same block, they will be grouped.
+
+Input:
+```glsl
+int a = 2;
+float b = 3;
+int c = 4;
+```
+
+Input:
+```glsl
+int a = 2,c;
+float b = 3;
+c = 4;
+```
+
+As shown in the example, the variable name will appear twice (`c` above) while
+the type will be written only once (`int` above). In some cases, this might make
+the shader slightly longer. When the variables are renamed, this should rarely
+be an issue.
+
+Disable this transformation with the flag `--no-move-declarations`.
 
 ### Rename vector fields
 
@@ -570,7 +598,7 @@ Local variables that are not referenced are removed.
 **Note**: In theory, this can change the behavior of the code, if the
 initialization value calls a function that performs a side-effect.
 
-### Dead code
+### Dead code removal
 
 The code after a `return` is removed.
 
@@ -584,6 +612,7 @@ Functions that are not called are removed. Functions listed with the flag
 default, this is the case for `main` and `mainImage`.
 
 **Note**: Use `--no-remove-unused` to disable this transformation.
+
 
 ### Smoothstep transformation
 

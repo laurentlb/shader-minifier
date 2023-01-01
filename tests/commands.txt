@@ -45,7 +45,7 @@
 
 # Tests with full renaming
 
---no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
+--no-remove-unused --no-move-declarations --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
 --hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag

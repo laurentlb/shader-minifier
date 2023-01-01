@@ -28,10 +28,12 @@
  "}"
  "vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)"
  "{"
-   "vec3 s=normalize(l+y);"
-   "float b=1.+2048.*(1.-w)*(1.-w);"
-   "vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);"
-   "return mix(Z,Y,X);"
+   "vec3 s=normalize(l+y),b,Z,Y;"
+   "float X=1.+2048.*(1.-w)*(1.-w);"
+   "b=f;"
+   "Z=vec3(pow(clamp(dot(s,u),0.,1.),X)*(X+4.)/8.);"
+   "Y=r(d,l,s);"
+   "return mix(b,Z,Y);"
  "}",
 
 // tests/unit/inout2.frag
@@ -53,8 +55,10 @@
  "}"
  "vec3 r(vec3 l,vec3 y,vec3 u,vec3 f,vec3 d,float w)"
  "{"
-   "vec3 s=normalize(l+y);"
-   "float b=1.+2048.*(1.-w)*(1.-w);"
-   "vec3 Z=f,Y=vec3(pow(clamp(dot(s,u),0.,1.),b)*(b+4.)/8.),X=r(d,l,s);"
-   "return mix(Z,Y,X);"
+   "vec3 s=normalize(l+y),b,Z,Y;"
+   "float X=1.+2048.*(1.-w)*(1.-w);"
+   "b=f;"
+   "Z=vec3(pow(clamp(dot(s,u),0.,1.),X)*(X+4.)/8.);"
+   "Y=r(d,l,s);"
+   "return mix(b,Z,Y);"
  "}",

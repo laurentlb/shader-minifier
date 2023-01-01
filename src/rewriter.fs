@@ -259,6 +259,44 @@ let private simplifyExpr (didInline: bool ref) env = function
 
     | e -> e
 
+// Group declarations within a block. For example, all the float variables will
+// be declared at the same time, the first time a float variable is initialized.
+// Const variables are ignored, because they must be initialized immediately.
+let groupDeclarations stmts =
+    let declarations = new Dictionary<Type, DeclElt list>()
+    let types = new Dictionary<string, Type * DeclElt>()
+    for stmt in stmts do
+        match stmt with
+        | Decl (ty, li) when not (List.contains "const" ty.typeQ) ->
+            for variable in li do
+                types.[variable.name.Name] <- (ty, variable)
+            if not (declarations.ContainsKey ty) then
+                declarations[ty] <- li
+            else
+                // Remove the init of the new items; we'll use an assignment instead.
+                let li = li |> List.map (function decl -> {decl with init = None})
+                declarations.[ty] <- declarations.[ty] @ li
+        | _ -> ()
+
+    let replacements = function
+        | Decl (ty, _) as decl when List.contains "const" ty.typeQ ->
+            [decl]
+        | Decl (ty, _) when declarations.ContainsKey ty ->
+            // Insert all declarations.
+            let decl = declarations[ty]
+            declarations.Remove ty |> ignore<bool>
+            [Decl (ty, decl)]
+        | Decl (_, li) ->
+            // Replace the declarations (they were already inserted) with assignments.
+            li |> List.choose (function
+                | {name = name; init = Some init} ->
+                    Some (Expr (FunCall (Op "=", [Var name; init])))
+                | _ -> None
+            )
+        | e -> [e]
+
+    List.collect replacements stmts
+
 // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
 let rec private squeezeDeclarations = function
     | []-> []
@@ -312,6 +350,7 @@ let private simplifyStmt = function
         // Remove dead code after return/break/...
         let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
         let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
+        let hasMacros = Seq.exists (function Verbatim _ -> true | _ -> false) b
 
         // Inline inner empty blocks without variable
         let b = b |> List.collect (function
@@ -320,7 +359,10 @@ let private simplifyStmt = function
             | Decl (_, []) -> []
             | e -> [e])
 
-        match squeezeDeclarations b with
+        // Reduce the number of declaration statements.
+        let b = squeezeDeclarations b
+        let b = if hasMacros || options.noMoveDeclarations then b else groupDeclarations b
+        match b with
             | [stmt] -> stmt
             | stmts -> Block stmts
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
