@@ -20,6 +20,7 @@
 --no-remove-unused --format indented --no-renaming -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
 --no-renaming --no-inlining --format indented -o tests/unit/pi.frag.expected tests/unit/pi.frag
 --no-renaming --no-inlining --format indented -o tests/unit/vectors.frag.expected tests/unit/vectors.frag
+--no-renaming --format indented -o tests/unit/deadcode.frag.expected tests/unit/deadcode.frag
 
 # Inlining unit tests
 

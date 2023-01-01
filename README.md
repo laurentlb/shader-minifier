@@ -2,17 +2,17 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/chwlpnssgd5kdl4x/branch/master?svg=true)](https://ci.appveyor.com/project/laurentlb/shader-minifier/branch/master)
 
-Shader Minifier is a tool that minifies and obfuscates shader code
-(GLSL and HLSL) without affecting its behaviour. Its original use-case
-is for the [demoscene](https://en.wikipedia.org/wiki/Demoscene), for
-optimizing 4k and 64k intros. It is also suitable for reducing the size
+Shader Minifier is a tool that minifies and obfuscates shader code (GLSL and
+HLSL) without affecting its behaviour. It is also suitable for reducing the size
 of the shaders in other applications (e.g. webgl, games).
 
-In the context of 4kB intros, Shader Minifier help developers maintain and
-iterate on human-readable files, while shipping optimized code. Even when a
+Its original use-case is for the
+[demoscene](https://en.wikipedia.org/wiki/Demoscene), for optimizing 4k and 64k
+intros. In the context of 4kB intros, Shader Minifier help developers maintain
+and iterate on human-readable files, while shipping optimized code. Even when a
 shader is minified by hand by experienced demosceners, Shader Minifier is often
-able to optimize it further. See this
-[2010 report](https://www.ctrl-alt-test.fr/2010/glsl-minifier-smaller-and-smaller/).
+able to optimize it further. See this [2010
+report](https://www.ctrl-alt-test.fr/2010/glsl-minifier-smaller-and-smaller/).
 
 To be notified of new releases, use the watch feature of GitHub.
 
@@ -20,25 +20,34 @@ Try the online version here: https://ctrl-alt-test.fr/minifier/
 
 ## Features
 
-- Parse and print the GLSL or HLSL code.
-- Generate a file (such as a C header) that can be embedded in an application.
+- Parsing and printing of GLSL or HLSL code.
+- Generation of a file (such as a C header) that can be embedded in an application.
+- A command-line interface that can fit in a build.
+- [A web interface](https://ctrl-alt-test.fr/minifier/), for interactive workflows.
+- Ability to minify multiple shaders at once, in a consistent way.
+
+See the list of [transformations](#transformations) below for more information.
+In brief:
+
 - Strip spaces, remove comments, remove useless parens.
-- Simplify constant expressions: `3.14159 * 2.` becomes `6.28318`.
-- Remove curly braces whenever possible: `if(test){v.x=4; return b++;}` is
-replaced with `if(test)return v.x=4,b++;`.
-- Squeeze definitions: `float a=2.;float b;` becomes `float a=2.,b;`.
+- Inline variables and constant values.
+- Simplify constant expressions: `5. * 2.` becomes `10.`.
+- Group declarations: `float a=2.;float b;` becomes `float a=2.,b;`.
+- Apply other tricks to reduce the file size.
+- Simplify calls to vector constructors using vector swizzles.
+- Rename variables, typically to one character.
+- Remove unused local variables, unused functions and other dead code.
+
+Other transformations try to make the code more compression friendly, e.g.
+
 - Consistently rename vector fields (e.g. use `foo.xy` instead of `foo.rg`) to
 help the compression.
-- Rename variables, typically to one character.
 - Reuse the variable names as much as possible: a local variable may have the
 same name as a global variable not used in the function; two functions may have
 the same name using function overloading.
 - Analyze the context and make statistics to compute the variable name that will
 be the most compression-friendly.
-- Inline variables.
-- Remove unused local variables.
 
-See the list of [transformations](#transformations) below for more information.
 
 ## Example output
 
@@ -211,7 +220,7 @@ If you want to temporary turn off the minifier, use the `//[` and `//]` comments
 
 Variables inside the region won't be renamed. Spaces will be stripped.
 
-```c
+```glsl
 //[
 [maxvertexcount(3)]
 //]
@@ -508,11 +517,11 @@ Shader Minifier will always inline variables and functions that start with
 
 For example, this input:
 
-```c
+```glsl
 bool i_debug = false;
 int i_level = 5;
 
-int foo(int x, int y) {
+int foo(int x) {
   if (i_debug) {
     x++;
   }
@@ -524,7 +533,7 @@ int foo(int x, int y) {
 will be simplified into:
 
 ```c
-int foo(int x,int y)
+int foo(int x)
 {
   return 10*x;
 }
@@ -602,8 +611,8 @@ initialization value calls a function that performs a side-effect.
 
 The code after a `return` is removed.
 
-**Note**: This is not safe when the code relies on `#if` directives (see
-[#169](https://github.com/laurentlb/Shader_Minifier/issues/169)).
+**Note**: This is optimization is disabled when there are preprocessor
+directives (e.g. `#if`) in the block.
 
 ### Unused function removal
 
