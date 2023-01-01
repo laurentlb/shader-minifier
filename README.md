@@ -94,13 +94,14 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: shader_minifier [--help] [-o <string>] [-v] [--hlsl]
+USAGE: Shader Minifier [--help] [-o <string>] [-v] [--hlsl]
                        [--format <text|indented|c-variables|c-array|js|nasm>]
                        [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
-                       [--smoothstep] [<filename>...]
+                       [--smoothstep] [--no-remove-unused]
+                       [--no-move-declarations] [<filename>...]
 
 FILENAMES:
 
@@ -133,6 +134,9 @@ OPTIONS:
                           Comma-separated list of functions to preserve
     --no-sequence         Do not use the comma operator trick
     --smoothstep          Use IQ's smoothstep trick
+    --no-remove-unused    Do not remove unused code
+    --no-move-declarations
+                          Do not move declarations to group them
     --help                display this list of options.
 ```
 
@@ -205,7 +209,21 @@ To better understand what Shader Minifier changed and get a more readable
 output, use the flags `--format indented --no-renaming`. This will add some
 indentation to the output, instead of using overly long lines.
 
-## Macros
+## Concepts
+
+### Shader behaviour
+
+Shader Minifer works by applying to the
+[AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) modifications
+that produce a transformed but semantically equivalent AST. The
+resulting assembly may be different, but the minified shader should
+have the same behaviour as the original one. Or at least that's the
+intent.
+
+Some of the transformations are not completely safe and may break in some corner
+cases. If you observe differences, don't hesitate to [report a bug](#Feedback).
+
+### Macros
 
 Shader Minifier will preserve the preprocessor directives (the lines starting
 with `#`), except that it strips the spaces.
@@ -214,24 +232,24 @@ If you define a macro, Shader Minifier will notice the name of the macro and
 won't rename the occurrences of the macro. It also doesn't rename variables used
 inside the macro. Clever macros are discouraged and can break the shader.
 
-## Verbatim
+Avoid macros that contain references to other variables, or affect how the
+code should be parsed. You may get a parse error in Shader Minifier, or get an
+output that won't compile.
 
-If you want to temporary turn off the minifier, use the `//[` and `//]` comments. This can be useful as a workaround if you get a parser error.
+### Verbatim
+
+If you want to temporary turn off the minifier, use the `//[` and `//]`
+comments. This can be useful as a workaround if you get a parser error.
 
 Variables inside the region won't be renamed. Spaces will be stripped.
 
 ```glsl
 //[
-[maxvertexcount(3)]
+layout(local_size_x = 32) in;
 //]
-void GSScene( triangleadj GSSceneIn input[6], inout TriangleStream<PSSceneIn> OutputStream )
-{   
-    PSSceneIn output = (PSSceneIn)0;
-    ...
-}
 ```
 
-## Overloading
+### Overloading
 
 At this time, do not use overloaded functions (two functions with the same name
 but different arguments) in the input. The output probably won't compile.
@@ -241,29 +259,11 @@ the output. If two functions have a different number of arguments, they may have
 the same name in the output. This reduces the number of identifiers used by the
 shader and make it more compression friendly.
 
-## Shader behaviour
+### Shader Minifier performance
 
-Shader Minifer works by applying to the
-[AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) modifications
-that produce a transformed but semantically equivalent AST. The
-resulting assembly may be different, but the minified shader should
-have the same behaviour as the original one. Or at least that's the
-intent.
-
-However certain rules, especially floating point arithmetic, can be
-tricky. If you observe differences, don't hesitate to
-[report a bug](#Feedback).
-
-## Bugs and limitations
-
-- The parser is not complete. Some constructs are not yet supported.
-- If possible, avoid overloaded functions; some transformations might not handle
-  them properly.
-- Avoid macros that contain references to other variables, or affect how the
-  code should be parsed. You may get a parse error in Shader Minifier, or get an
-  output that won't compile.
-
-Please [give feedback](#Feedback) if these limitations affect you.
+On my machine, it takes around 1s to minify a shader. A lot of that time comes
+from the startup time of the binary. If you have many shaders, try to minify
+them all at the same time by listing them all on the command-line.
 
 ## Transformations
 
@@ -657,7 +657,11 @@ Please give feedback in the [bugtracker](https://github.com/laurentlb/Shader_Min
 If something is blocking you, you can file a bug or update an existing bug. We
 rely on your feedback to prioritize the work.
 
-Contributions are welcome.
+Feature requests are encouraged. Add upvotes or comments to existing feature
+requests that are important to you.
+
+Contributions are welcome. Please leave a message before implementing a
+significant change, so that we can agree on the solution.
 
 ---
 
