@@ -286,24 +286,15 @@ let rwFType fct =
     let rwFDecl (ty, elts) = (rwFTypeType ty, elts)
     {fct with args = List.map rwFDecl fct.args}
 
-let private simplifyStmt = function
-    | Block [] as e -> e
-    | Block b ->
-        // Remove dead code after return/break/...
-        let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
-        let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
-
-        // Remove inner empty blocks
-        let b = b |> List.filter (function Block [] | Decl (_, []) -> false | _ -> true)
-        
-        // Try to remove blocks by using the comma operator
-        let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
+let squeezeBlockWithComma = function
+    | Block b as stmt when not options.noSequence ->
         let canOptimize = b |> List.forall (function
             | Expr _ -> true
             | Jump(JumpKeyword.Return, Some _) -> true
             | _ -> false)
-
-        if not options.noSequence && canOptimize then
+        // Try to remove blocks by using the comma operator
+        let returnExp = b |> Seq.tryPick (function Jump(JumpKeyword.Return, e) -> e | _ -> None)
+        if canOptimize then
             let li = List.choose (function Expr e -> Some e | _ -> None) b
             match returnExp with
             | None ->
@@ -312,16 +303,37 @@ let private simplifyStmt = function
             | Some e ->
                let expr = List.reduce (fun acc x -> FunCall(Op ",", [acc;x])) (li@[e])
                Jump(JumpKeyword.Return, Some expr)
-        else
-            match squeezeDeclarations b with
+        else stmt
+    | stmt -> stmt
+
+let private simplifyStmt = function
+    | Block [] as e -> e
+    | Block b ->
+        // Remove dead code after return/break/...
+        let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
+        let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
+
+        // Inline inner empty blocks without variable
+        let b = b |> List.collect (function
+            | Block b when List.forall (function Decl _ -> false | _ -> true) b ->
+                b
+            | Decl (_, []) -> []
+            | e -> [e])
+
+        match squeezeDeclarations b with
             | [stmt] -> stmt
             | stmts -> Block stmts
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
-    | ForD((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, body)
-    | If(True, e1, _) -> e1
-    | If(False, _, Some e2) -> e2
-    | If(False, _, None) -> Block []
-    | If(c, b, Some (Block [])) -> If(c, b, None)
+    | ForD ((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, squeezeBlockWithComma body)
+    | ForE (init, cond, inc, body) -> ForE(init, cond, inc, squeezeBlockWithComma body)
+    | While (cond, body) -> While (cond, squeezeBlockWithComma body)
+    | DoWhile (cond, body) -> DoWhile (cond, squeezeBlockWithComma body)
+    | If (True, e1, _) -> squeezeBlockWithComma e1
+    | If (False, _, Some e2) -> squeezeBlockWithComma e2
+    | If (False, _, None) -> Block []
+    | If (c, b, Some (Block [])) -> If(c, b, None)
+    | If (cond, body1, body2) ->
+        If (cond, squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
 

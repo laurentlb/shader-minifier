@@ -9,7 +9,8 @@ void d()
 }
 void b()
 {
-  c(),d();
+  c();
+  d();
 }
 void a()
 {
@@ -17,5 +18,6 @@ void a()
 }
 void e()
 {
-  a(),c();
+  a();
+  c();
 }

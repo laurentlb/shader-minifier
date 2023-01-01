@@ -71,7 +71,8 @@ MarchData minResult(MarchData a,MarchData b)
 }
 void setBodyMaterial(inout MarchData mat)
 {
-  mat.mat=vec3(.36,.45,.5),mat.specPower=30.;
+  mat.mat=vec3(.36,.45,.5);
+  mat.specPower=30.;
 }
 float legWalkAngle(float f)
 {
@@ -167,7 +168,8 @@ MarchData arms(vec3 p)
 }
 float toe(vec3 p)
 {
-  return p.yz+=vec2(.1,.32),max(sdBox(p,vec3(.3+.2*(p.z-.18)-p.y*.456*.5,.3+.2*cos((p.z-.18)*3.69),.35)),.1-p.y);
+  p.yz+=vec2(.1,.32);
+  return max(sdBox(p,vec3(.3+.2*(p.z-.18)-p.y*.456*.5,.3+.2*cos((p.z-.18)*3.69),.35)),.1-p.y);
 }
 float foot(vec3 p)
 {

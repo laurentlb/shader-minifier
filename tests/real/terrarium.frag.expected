@@ -9,11 +9,21 @@ uniform layout(binding=0) sampler2D lt;
 float time=float(m)/44100.;
 int IH(int a)
 {
-  return a=a^61^a>>16,a=a+(a<<3),a=a^a>>4,a=a*668265261,a=a^a>>15,a;
+  a=a^61^a>>16;
+  a=a+(a<<3);
+  a=a^a>>4;
+  a=a*668265261;
+  a=a^a>>15;
+  return a;
 }
 float H(int a)
 {
-  return a=a^61^a>>16,a=a+(a<<3),a=a^a>>4,a=a*668265261,a=a^a>>15,float(a)/2147483647;
+  a=a^61^a>>16;
+  a=a+(a<<3);
+  a=a^a>>4;
+  a=a*668265261;
+  a=a^a>>15;
+  return float(a)/2147483647;
 }
 vec2 rand2(int a)
 {
