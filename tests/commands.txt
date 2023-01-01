@@ -37,7 +37,7 @@
 --no-remove-unused --no-renaming --format c-variables -o tests/unit/function_comma.expected tests/unit/function_comma.frag
 --preserve-externals --format c-variables -o tests/real/mandelbulb.expected tests/real/mandelbulb.frag
 --preserve-all-globals --format c-variables -o tests/real/to_the_road_of_ribbon.expected tests/real/to_the_road_of_ribbon.frag
---no-renaming-list rotatey --format c-variables -o tests/real/sult.expected tests/real/sult.frag
+--no-renaming-list rotatey,main --format c-variables -o tests/real/sult.expected tests/real/sult.frag
 --no-remove-unused --preserve-externals -o tests/unit/externals.preserved.expected tests/unit/externals.frag
 
 # Multifile tests
