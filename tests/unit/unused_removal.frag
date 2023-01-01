@@ -1,9 +1,11 @@
 float f();
 
+float actually_unreachable() { return 1.5; }
+
 float f(){
   float r = 1.;
 
-  return r;
+  return actually_unreachable();
 }
 
 vec3 g() { return vec3(0.); }

@@ -466,7 +466,7 @@ let private computeAllDependencies code =
     nodes
 
 
-let removeUnused code =
+let rec removeUnused code =
     let nodes = computeAllDependencies code
     let isUnused node =
         let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
@@ -474,9 +474,11 @@ let removeUnused code =
         let isExternal = options.hlsl && node.funcType.semantics <> []
         canBeRenamed && not isCalled && not isExternal
     let unused = set [for node in nodes do if isUnused node then yield node.func]
-    code |> List.filter (function
-        | Function _ as t -> not (unused |> Set.contains t)
+    let mutable edited = false
+    let code = code |> List.filter (function
+        | Function _ as t -> if Set.contains t unused then edited <- true; false else true
         | _ -> true)
+    if edited then removeUnused code else code
 
 // reorder functions if there were forward declarations
 let reorder code =
