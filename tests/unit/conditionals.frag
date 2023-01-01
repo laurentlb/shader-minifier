@@ -24,12 +24,12 @@ bool or3() {
 }
 
 bool and() {
-  int a = -2;
+  const bool a = true;
   return a && success();
 }
 
 bool and2() {
-  int a = 0;
+  const bool a = false;
   return a && fail();
 }
 
@@ -37,7 +37,7 @@ bool and3() {
   return success() && true;
 }
 
-const int debug = false;
+const bool debug = false;
 
 int foo() {
   int a = 1;

@@ -347,10 +347,14 @@ let squeezeBlockWithComma = function
 let private simplifyStmt = function
     | Block [] as e -> e
     | Block b ->
+        // Avoid some optimizations when there are preprocessor directives.
+        let hasPreprocessor = Seq.exists (function Verbatim _ -> true | _ -> false) b
+
         // Remove dead code after return/break/...
         let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
-        let b = match endOfCode with None -> b | Some x -> b |> Seq.truncate (x+1) |> Seq.toList
-        let hasMacros = Seq.exists (function Verbatim _ -> true | _ -> false) b
+        let b = match endOfCode with
+                | Some x when not hasPreprocessor -> List.truncate (x+1) b
+                | _ -> b
 
         // Inline inner empty blocks without variable
         let b = b |> List.collect (function
@@ -361,7 +365,7 @@ let private simplifyStmt = function
 
         // Reduce the number of declaration statements.
         let b = squeezeDeclarations b
-        let b = if hasMacros || options.noMoveDeclarations then b else groupDeclarations b
+        let b = if hasPreprocessor || options.noMoveDeclarations then b else groupDeclarations b
         match b with
             | [stmt] -> stmt
             | stmts -> Block stmts
