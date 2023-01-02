@@ -40,8 +40,9 @@ let log fmt =
     Printf.ksprintf logger fmt
 
 let testFile (file: string) =
-    let args = if file.EndsWith("hlsl") then [|"--hlsl"|] else [||]
-    Options.init(args)
+    let langArg = if file.EndsWith("hlsl") then [|"--hlsl"|] else [||]
+    let extraArgs = [|"--format"; "text"|]
+    Options.init(Array.append langArg extraArgs)
     let minified =
         use out = new StringWriter()
         let shaders, exportedNames = ShaderMinifier.minifyFiles [|"tests/real/" + file|]
