@@ -95,7 +95,7 @@ let private argParser = lazy (
 let private initPrivate argv needFiles =
     let args = argParser.Value.Parse(argv)
 
-    let opt = args.GetResult(NoRenamingList, defaultValue = "main")
+    let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
 

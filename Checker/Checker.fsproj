@@ -44,6 +44,32 @@
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>5</WarningLevel>
+    <DocumentationFile>bin\Debug\Checker.XML</DocumentationFile>
+    <Prefer32Bit>true</Prefer32Bit>
+    <StartWorkingDirectory>../../..</StartWorkingDirectory>
+    <StartArguments>--update-golden</StartArguments>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Release\Checker.XML</DocumentationFile>
+    <Prefer32Bit>true</Prefer32Bit>
+    <StartWorkingDirectory>..\..\..</StartWorkingDirectory>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '11.0'">
       <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
@@ -58,7 +84,11 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
+    <Compile Include="compression_test.fs" />
     <Compile Include="main.fs" />
+    <None Include="../lib/Compressor.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">
@@ -71,8 +101,6 @@
       <HintPath>..\lib\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Shader Minifier Library.fsproj">
       <Name>Shader Minifier Library</Name>
       <Project>{059c6af3-1877-4698-be34-bf7eb55d060a}</Project>
