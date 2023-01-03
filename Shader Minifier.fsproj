@@ -32,7 +32,7 @@
     <Tailcalls>true</Tailcalls>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
+    <WarningLevel>4</WarningLevel>
     <StartArguments>-o "" ../../tests\unit\empty_block.frag --smoothstep</StartArguments>
     <OtherFlags>--standalone</OtherFlags>
   </PropertyGroup>

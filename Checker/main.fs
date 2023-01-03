@@ -117,7 +117,9 @@ let testGolden () =
 
 [<EntryPoint>]
 let main argv =
-    //ignore(runCommand("--no-renaming --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag".Split([|' '|]))); exit 0
+    // Manually run compression tests by enabling this line:
+    // CompressionTests.run ()
+
     initOpenTK()
     let mutable failures = testGolden()
     Options.init([|"--format"; "text"; "fake.frag"|])
