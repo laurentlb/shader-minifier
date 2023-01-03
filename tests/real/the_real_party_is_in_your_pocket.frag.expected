@@ -288,7 +288,7 @@ const char *the_real_party_is_in_your_pocket_frag =
                "break;"
              "k=.02;"
              "if(m()>k)"
-               "l=c-z*2e-4*-sign(v.z),v=v+(vec3(m(),m(),m())-.5)*.1;"
+               "l=c-z*2e-4*-sign(v.z),v+=(vec3(m(),m(),m())-.5)*.1;"
              "else"
                " l=c+z*2e-4,v=reflect(v,z)+(vec3(m(),m(),m())-.5)*.3;"
            "}"

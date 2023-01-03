@@ -467,6 +467,29 @@ be an issue.
 
 Disable this transformation with the flag `--no-move-declarations`.
 
+### Augmented operators
+
+We use the augmented operators (e.g. `+=`) where possible.
+
+Input:
+```glsl
+spe=spe*spe;
+x=x-.5;
+a=a+(a<<3);
+a=a^a>>15;
+```
+
+Output:
+```glsl
+spe*=spe;
+x-=.5;
+a+=a<<3;
+a^=a>>15;
+```
+
+This transformation always reduces the size of the output. However, this seems
+to have negligible impact on the size after compression.
+
 ### Rename vector fields
 
 To access fields of a vector, it is possible to use `.rgba` fields, or `.xyzw`,

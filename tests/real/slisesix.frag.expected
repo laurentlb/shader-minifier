@@ -30,7 +30,7 @@ float techo(float x,float y)
   y=1.-y;
   if(x<.1||x>.9)
     return y;
-  x=x-.5;
+  x-=.5;
   return-(sqrt(x*x+y*y)-.4);
 }
 float distToBox(vec3 p,vec3 abc)
@@ -190,7 +190,7 @@ void main()
       lig=vec3(.5-pos.x,.8-pos.y,1.5-pos.z);
       llig=dot(lig,lig);
       im=inversesqrt(llig);
-      lig=lig*im;
+      lig*=im;
       dif=dot(nor,lig);
       if(matID==4)
         dif=.5+.5*dif;
@@ -264,7 +264,7 @@ void main()
         }
       dif*=clamp((so-.4)*1.5,0.,1.);
       rgb=vec3(spe)+rgb*(ao*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05));
-      rgb=rgb*exp2(-.4*t);
+      rgb*=exp2(-.4*t);
     }
   rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1,.83)*1.2;
   rgb*=.25+.75*clamp(.6*abs(pixel.x-1.)*abs(pixel.x+1.),0.,1.);
