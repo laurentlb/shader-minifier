@@ -28,6 +28,9 @@ let testFiles = [
     "terrarium.frag"
     "leizex.frag"
     "elevated.hlsl"
+    "buoy.frag"
+    "orchard.frag"
+    "robin.frag"
 ]
 
 let writer = new StringWriter()
