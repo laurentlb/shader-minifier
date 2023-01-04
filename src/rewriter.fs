@@ -97,6 +97,9 @@ let (|Number|_|) = function
     | Float (f, _) -> Some f
     | _ -> None
 
+let augmentableOperators = set ["+"; "-"; "*"; "/"; "%"; "<<"; ">>"; "&"; "^"; "|"]
+
+
 let private simplifyOperator env = function
     | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
     | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
@@ -173,6 +176,11 @@ let private simplifyOperator env = function
     // x-(y-z) -> x-y+z
     | FunCall(Op "-", [x; FunCall(Op "-", [y; z])]) ->
         FunCall(Op "+", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
+
+    // Match:  x = x + ...
+    | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
+            when x.Name = y.Name && augmentableOperators.Contains op ->
+        FunCall(Op (op + "="), [Var x; e])
     | e -> e
 
 

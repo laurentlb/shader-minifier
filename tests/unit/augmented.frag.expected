@@ -1,0 +1,14 @@
+int foo(int x,int y)
+{
+  int a=x;
+  a+=x;
+  a*=y;
+  a>>=x;
+  a^=y;
+  a|=y;
+  return a;
+}
+void main()
+{
+  foo(0,0);
+}
