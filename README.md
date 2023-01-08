@@ -414,6 +414,24 @@ if (x) y = 123,x++;
 **Note**: This transformation doesn't always decrease the compressed file size.
 Use `--no-sequence` to disable it and see how it performs.
 
+### Ternary operator
+
+When a if+else statement only assigns to a variable, it is changed into a ternary operator.
+
+Input:
+```glsl
+if (c) {
+  x = f();
+} else {
+  x = 1.0;
+}
+```
+
+Output:
+```glsl
+x = c ? f() : 1.0;
+```
+
 ### Merge declarations
 
 If multiple values of the same type are declared next to each other, we can merge

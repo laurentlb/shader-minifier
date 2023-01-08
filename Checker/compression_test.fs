@@ -60,7 +60,7 @@ let testFile (file: string) =
     minified.Length, float compressedSize
 
 let run () =
-    Crinkler.InitCompressor()
+    Crinkler.InitCompressor() // Platform must be set to x64
 
     writer.GetStringBuilder().Clear() |> ignore<StringBuilder>
     let sizes = List.map testFile testFiles
