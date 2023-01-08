@@ -191,10 +191,7 @@ void main()
     else
        ro=vec3(.1,.004,0)+vec3(.1,.005,20)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro=mix(ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),Y.y-float(scene)),ro.y+=height(ro.xz)+.02,ro+=.02*getTerrainNormal(ro),seed=min(1.,step(-28.,-Y.y)*sin((Y.y-float(scene))*pi)*3.);
   rd=normalize(rd);
-  if(scene>22&&scene<27)
-    spherePos=ro+.1*vec3(mm*vec4(0,0,1,1));
-  else
-     spherePos=ro+.02*vec3(sin(Y.y),0,5.+cos(Y.y));
+  spherePos=scene>22&&scene<27?ro+.1*vec3(mm*vec4(0,0,1,1)):ro+.02*vec3(sin(Y.y),0,5.+cos(Y.y));
   spherePos.y+=.01+height(spherePos.xz);
   sphereRadius=scene<14?0.:bigeps*.5+bigeps*Y.z;
   spherePos+=2.*bigeps*getTerrainNormal(spherePos);

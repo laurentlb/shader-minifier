@@ -43,3 +43,10 @@ int foo()
   int a=1;
   return a;
 }
+float ifStmtToExpr(float f)
+{
+  float r,r2;
+  r=f>0?1.:2.;
+  r2=f>1?1.:2.;
+  return r+r2;
+}

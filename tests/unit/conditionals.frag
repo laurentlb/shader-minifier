@@ -46,3 +46,18 @@ int foo() {
   }
   return a;
 }
+
+float ifStmtToExpr(float f) {
+	float r;
+	if (f > 0)
+		r = 1.0;
+	else
+		r = 2.0;
+	float r2;
+	if (f > 1) {
+		r2 = 1.0;
+    } else {
+		r2 = 2.0;
+	}
+	return r+r2;
+}
