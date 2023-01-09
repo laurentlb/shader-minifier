@@ -4,11 +4,7 @@ float inl1()
 }
 float inl2(float x)
 {
-  if(x>246913578.)
-    return 100.;
-  if(x>123456789.)
-    return 101.;
-  return 102.;
+  return x>246913578.?100.:x>123456789.?101.:102.;
 }
 float inl3()
 {
