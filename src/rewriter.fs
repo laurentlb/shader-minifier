@@ -386,12 +386,28 @@ let private simplifyStmt = function
     | If (False, _, Some e2) -> squeezeBlockWithComma e2
     | If (False, _, None) -> Block []
     | If (c, b, Some (Block [])) -> If(c, b, None)
-    | If (cond, Expr (FunCall (Op "=", [Var name1; initT])),
-          Some (Expr (FunCall (Op "=", [Var name2; initF]))))
-          when name1.Name = name2.Name -> // if(c)x=y;else x=z;  ->  x=c?y:z;
-          Expr (FunCall (Op "=", [Var name1; FunCall(Op "?:", [cond; initT; initF])]))
     | If (cond, body1, body2) ->
-        If (cond, squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2)
+        let (body1, body2) = squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2
+
+        // turn if-else into ternary
+        match (body1, body2) with
+            | (Expr eT, Some (Expr eF)) ->
+                let tryCollapseToAssignment : Expr -> (Ident * Expr) option = function
+                    | FunCall (Op "=", [Var name; init]) -> Some (name, init)
+                    | FunCall (Op ",", list) -> // f(),c=d  ->  c=f(),d
+                        match List.last list with
+                        | FunCall (Op "=", [Var name; init]) ->
+                                let mutableList = new System.Collections.Generic.List<Expr>(list)
+                                mutableList[mutableList.Count - 1] <- init
+                                Some (name, FunCall (Op ",", Seq.toList(mutableList)))
+                        | _ -> None
+                    | _ -> None
+                match (tryCollapseToAssignment eT, tryCollapseToAssignment eF) with
+                    | Some (nameT, initT), Some (nameF, initF) when nameT.Name = nameF.Name ->
+                        // if(c)x=y;else x=z;  ->  x=c?y:z;
+                        Expr (FunCall (Op "=", [Var nameT; FunCall(Op "?:", [cond; initT; initF])]))
+                    | _ -> If (cond, body1, body2)
+            | _ -> If (cond, body1, body2)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
 

@@ -57,6 +57,7 @@ float ifStmtToExpr(float f) {
 	if (f > 1) {
 		r2 = 1.0;
     } else {
+		foo();
 		r2 = 2.0;
 	}
 	return r+r2;
