@@ -416,20 +416,22 @@ Use `--no-sequence` to disable it and see how it performs.
 
 ### Ternary operator
 
-When a if+else statement only assigns to a variable, it is changed into a ternary operator.
+When both branches of a if+else are only expressions and they end with
+an assignment to the same variable, the if is changed into a ternary operator.
 
 Input:
 ```glsl
 if (c) {
   x = f();
 } else {
+  a = g();
   x = 1.0;
 }
 ```
 
 Output:
 ```glsl
-x = c ? f() : 1.0;
+x = c ? f() : a = g(), 1.0;
 ```
 
 ### Merge declarations
