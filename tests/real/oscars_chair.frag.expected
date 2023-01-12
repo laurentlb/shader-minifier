@@ -138,7 +138,7 @@ const char *oscars_chair_frag =
                    "o=reflect(u,f);"
                    "d=m;"
                    "r=2;"
-                   "i=100.;"
+                   "i=1e2;"
                    "u=normalize(g-x);"
                    "h(x+u*.01,u);"
                    "C*=.4+.6*smoothstep(0,n(x)/5,i);"

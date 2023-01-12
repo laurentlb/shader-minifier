@@ -5,10 +5,10 @@ void main()
 {
   vec2 p=-1.+2.*gl_FragCoord.xy/resolution.xy;
   float a=time*40.,d,e,f,g=.025,h,i,r,q;
-  e=400.*(p.x*.5+.5);
-  f=400.*(p.y*.5+.5);
-  i=200.+sin(e*g+a/150.)*20.;
-  d=200.+cos(f*g/2.)*18.+cos(e*g)*7.;
+  e=4e2*(p.x*.5+.5);
+  f=4e2*(p.y*.5+.5);
+  i=2e2+sin(e*g+a/150.)*20.;
+  d=2e2+cos(f*g/2.)*18.+cos(e*g)*7.;
   r=sqrt(pow(i-e,2.)+pow(d-f,2.));
   q=f/r;
   e=r*cos(q)-a/2.;

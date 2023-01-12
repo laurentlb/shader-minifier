@@ -47,19 +47,16 @@ module private PrinterImpl =
         List.map toS li |> String.concat ","
 
     let floatToS f =
-        let si = if f < 0.M then "-" else ""
-        let f = abs (float f)
-
-        let str1 = f.ToString("#.################", System.Globalization.CultureInfo.InvariantCulture)
-        let str2 = f.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
+        let a = abs (float f)
+        let str1 = a.ToString("#.################", System.Globalization.CultureInfo.InvariantCulture)
+        let str1 = if str1 = "" then "0."
+                   elif Regex.Match(str1, "^\\d+$").Success then str1 + "."
+                   else str1
+        let str2 = a.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
         let str = [str1; str2] |> List.minBy(fun x -> x.Length)
-
-        if str = "" then
-            "0."
-        elif Regex.Match(str, "^\\d+$").Success then
-            si + str + "." // display "3." instead of "3"
-        else
-            si + str
+        
+        let sign = if f < 0.M then "-" else ""
+        sign + str
 
     let rec exprToS exp = exprToSLevel 0 exp
 
