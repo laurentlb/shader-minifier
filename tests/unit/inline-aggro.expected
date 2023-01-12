@@ -7,7 +7,7 @@ float inl2(float x)
 {
   float f=123456789.;
   if(x>2.*f)
-    return 100.;
+    return 1e2;
   if(x>f)
     return 101.;
   return 102.;
@@ -83,7 +83,7 @@ float noinl5()
 float noinl6(float x)
 {
   float f=x+1.;
-  x=100.;
+  x=1e2;
   return f+2.;
 }
 float noinl7(const float x)
@@ -98,7 +98,7 @@ float noinl8()
 float noinl9(float x)
 {
   float bar=x+1.;
-  x=100.;
+  x=1e2;
   return bar+2.;
 }
 void evil(inout float x)

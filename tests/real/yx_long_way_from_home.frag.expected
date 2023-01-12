@@ -30,7 +30,7 @@ const char *yx_long_way_from_home_frag =
  "}"
  "float f(vec2 v)"
  "{"
-   "return smoothstep(.5,1.,cos(v.x*10.))*1.5+sin(v.x*100.)*.5+.5;"
+   "return smoothstep(.5,1.,cos(v.x*10.))*1.5+sin(v.x*1e2)*.5+.5;"
  "}"
  "float t(vec3 y)"
  "{"
