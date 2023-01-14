@@ -432,8 +432,7 @@ void main()
                       w.y=R();
                       w.z=R();
                       w.w=R();
-                      if(w.w<.5)
-                        ;
+                      w.w<.5;
                     }
                 }
             p.xyz+=(w.xyz*2-1)*pow(length(p),2)*.001;
@@ -485,8 +484,7 @@ void main()
                     w.y=R();
                     w.z=R();
                     w.w=R();
-                    if(w.w<.5)
-                      ;
+                    w.w<.5;
                   }
               }
               p.xyz+=(w.xyz*2-1)*pow(length(p),2)*.001;

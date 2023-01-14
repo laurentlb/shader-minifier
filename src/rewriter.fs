@@ -352,6 +352,14 @@ let squeezeBlockWithComma = function
         else stmt
     | stmt -> stmt
 
+let hasNoDecl = List.forall (function Decl _ -> false | _ -> true)
+
+let rec hasNoContinue = List.forall (function
+    | Jump ((JumpKeyword.Continue), _) -> false
+    | If (_cond, bodyT, bodyF) -> hasNoContinue [bodyT] && hasNoContinue (Option.toList bodyF)
+    | Switch (_e, cases) -> cases |> List.forall (fun (_label, stmts) -> hasNoContinue stmts)
+    | _ -> true)
+
 let private simplifyBlock stmts = 
     let b = stmts
     // Avoid some optimizations when there are preprocessor directives.
@@ -368,7 +376,22 @@ let private simplifyBlock stmts =
         | Decl (_, []) -> false
         | _ -> true)
 
-    let hasNoDecl = List.forall (function Decl _ -> false | _ -> true)
+    // Merge two consecutive items into one, everywhere possible in a list.
+    let rec squeeze (f : 'a * 'a -> 'a option) = function
+        | h1 :: h2 :: t ->
+            match f (h1, h2) with
+                | Some x -> squeeze f (x :: t)
+                | None -> h1 :: (squeeze f (h2 :: t))
+        | h :: t -> h :: t
+        | [] -> []
+
+    // Merge preceding expression into a for's init.
+    let b = b |> squeeze (function
+        | (Expr e, ForE (None, cond, inc, body)) -> // a=0;for(;i<5;++i);  ->  for(a=0;i<5;++i);
+            Some (ForE (Some e, cond, inc, body))
+        | (Expr e, While (cond, body)) -> // a=0;while(i<5);  ->  for(a=0;i<5;);
+            Some (ForE(Some e, Some cond, None, body))
+        | _ -> None)
 
     // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
     let b = b |> List.collect (function
@@ -414,11 +437,27 @@ let private simplifyStmt = function
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
     | ForD ((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, squeezeBlockWithComma body)
     | ForE (init, cond, inc, body) -> ForE(init, cond, inc, squeezeBlockWithComma body)
-    | While (cond, body) -> While (cond, squeezeBlockWithComma body)
+    | While (cond, body) ->
+        match body with
+        | Expr e -> ForE (None, Some cond, Some e, Block []) // while(c)b();  ->  for(;c;b());
+        | Block stmts ->
+            match List.rev stmts with
+            | Expr last :: revBody when hasNoContinue stmts && hasNoDecl stmts ->
+                // This rewrite is only valid if:
+                // * continue is never used in this loop, and
+                // * the last expression of the body does not use any Decl from the body.
+                let block = match (List.rev revBody) with
+                            | [stmt] -> stmt
+                            | stmts -> Block stmts
+                ForE (None, Some cond, Some last, block) // while(c){a();b();}  ->  for(;c;b())a();
+            | _ -> ForE (None, Some cond, None, squeezeBlockWithComma (Block stmts))
+        | _ -> ForE (None, Some cond, None, squeezeBlockWithComma body)
     | DoWhile (cond, body) -> DoWhile (cond, squeezeBlockWithComma body)
     | If (True, e1, _) -> squeezeBlockWithComma e1
     | If (False, _, Some e2) -> squeezeBlockWithComma e2
     | If (False, _, None) -> Block []
+    | If (cond, Block [], None) -> Expr cond // if(c);  ->  c;
+    | If (cond, Block [], Some (Block [])) -> Expr cond // if(c)else{};  ->  c;
     | If (c, b, Some (Block [])) -> If(c, b, None) // "else{}"  ->  ""
     | If (cond, body1, body2) ->
         let (body1, body2) = squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2

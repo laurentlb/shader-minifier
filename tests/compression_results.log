@@ -1,4 +1,4 @@
-from-the-seas-to-the-stars.frag          14313 => 2358.823
+from-the-seas-to-the-stars.frag          14305 => 2358.450
 the_real_party_is_in_your_pocket.frag    12196 => 1829.311
 ed-209.frag                               7888 => 1361.583
 valley_ball.glsl                          4369 =>  890.945
@@ -14,6 +14,6 @@ elevated.hlsl                             3406 =>  611.302
 buoy.frag                                 4194 =>  622.602
 orchard.frag                              5588 => 1051.886
 robin.frag                                6293 => 1066.421
-sult.frag                                 1342 =>  321.640
-../unit/loop.frag                          311 =>   83.132
-Total: 89316 => 16265.314
+sult.frag                                 1339 =>  321.705
+../unit/loop.frag                          305 =>   73.313
+Total: 89299 => 16255.188
