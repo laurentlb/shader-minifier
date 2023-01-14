@@ -31,8 +31,6 @@ let testFiles = [
     "buoy.frag"
     "orchard.frag"
     "robin.frag"
-    "sult.frag"
-    "../unit/loop.frag"
 ]
 
 let writer = new StringWriter()

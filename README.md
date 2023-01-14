@@ -463,6 +463,26 @@ Output:
 return y ? z : w;
 ```
 
+### Loops
+
+`while` loops are rewritten as `for` loops. This sometimes enable removing semi-colons or braces,
+either by moving the preceding statement into the initialization of the `for`,
+or by moving the last statement of the loop body into the increment part of the `for`.
+
+Input:
+```glsl
+i = 0.;
+while (i < 50) {
+	f(i);
+	i++;
+}
+```
+
+Output:
+```glsl
+for(i=0.;i<50;i++)f(i);
+```
+
 ### Merge declarations
 
 If multiple values of the same type are declared next to each other, we can merge

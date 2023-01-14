@@ -354,8 +354,8 @@ let squeezeBlockWithComma = function
 
 let hasNoDecl = List.forall (function Decl _ -> false | _ -> true)
 
-let rec hasNoContinue = List.forall (function
-    | Jump ((JumpKeyword.Continue), _) -> false
+let rec hasNoContinue stmts = stmts |> List.forall (function
+    | Jump (JumpKeyword.Continue, _) -> false
     | If (_cond, bodyT, bodyF) -> hasNoContinue [bodyT] && hasNoContinue (Option.toList bodyF)
     | Switch (_e, cases) -> cases |> List.forall (fun (_label, stmts) -> hasNoContinue stmts)
     | _ -> true)
