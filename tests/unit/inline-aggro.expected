@@ -120,7 +120,7 @@ int noinl11(ivec3 x)
 int noinl12()
 {
   int i=10;
-  while(--i>0)
+  for(;--i>0;)
     ;
   return 1;
 }

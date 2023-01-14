@@ -33,8 +33,7 @@ const char *blocks_frag =
  "}"
  "int test_block()"
  "{"
-   "if(k==0)"
-     ";"
+   "k==0;"
    "for(int i=0;i<2;i++)"
      "{"
        "if(k==1)"
@@ -72,10 +71,8 @@ const char *blocks_frag =
    "removeUselessElseAfterReturn2(0.);"
    "replaceIfReturnsByReturnTernary1(0.);"
    "gl_FragColor=vec4(.2,a,b,0);"
-   "if(a<b)"
-     ";"
-   "if(a<b)"
-     ";"
+   "a<b;"
+   "a<b;"
  "}";
 
 #endif // BLOCKS_EXPECTED_
