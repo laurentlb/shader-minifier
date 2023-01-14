@@ -108,9 +108,7 @@ float traceAttractor(vec3 ro,vec3 rd)
   if(B>0.)
     return 9.;
   D=B*B-dot(dst,dst)+sphereRadius*sphereRadius;
-  if(D>0.)
-    return-B-sqrt(D);
-  return 9.;
+  return D>0.?-B-sqrt(D):9.;
 }
 float traceWater(vec3 ro,vec3 rd)
 {
@@ -143,9 +141,7 @@ vec3 shade(vec4 hitPoint,vec3 newRo,vec3 rd)
     return mix(shadeTerrain(hitPoint.xyz,rd),myFog,distance);
   if(hitPoint.w==2.)
     return mix(waterColor,myFog,distance);
-  if(hitPoint.w==3.)
-    return mix(shadeAttractor(hitPoint.xyz,rd),myFog,distance);
-  return myFog;
+  return hitPoint.w==3.?mix(shadeAttractor(hitPoint.xyz,rd),myFog,distance):myFog;
 }
 vec3 shadeWaterRefl(vec3 p,vec3 newrd)
 {
@@ -162,9 +158,7 @@ vec3 shadeRefl(vec4 hitPoint,vec3 newRo,vec3 rd)
     return mix(shadeTerrain(hitPoint.xyz,rd),myFog,distance);
   if(hitPoint.w==2.)
     return mix(shadeWaterRefl(hitPoint.xyz,rd),myFog,distance);
-  if(hitPoint.w==3.)
-    return mix(mix(shadeAttractor(hitPoint.xyz,rd),shade(traceRay(hitPoint.xyz,reflect(rd,normalize(hitPoint.xyz-spherePos)),3),hitPoint.xyz,rd),.5),myFog,distance);
-  return shadeSky(newRo,rd);
+  return hitPoint.w==3.?mix(mix(shadeAttractor(hitPoint.xyz,rd),shade(traceRay(hitPoint.xyz,reflect(rd,normalize(hitPoint.xyz-spherePos)),3),hitPoint.xyz,rd),.5),myFog,distance):shadeSky(newRo,rd);
 }
 void main()
 {

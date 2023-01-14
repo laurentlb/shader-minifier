@@ -22,9 +22,7 @@ float f(vec3 p)
   p/=scale;
   for(int i=0;d=min(d,scale*max(p.y-1,max(-p.y,length(p.xz)-.1/(p.y+.7)))/s),p.xz=abs(p.xz),p.y-=1,i<j;p*=mat3(u,normalize(cross(u,w)),w),p*=ss,s*=ss,++i)
     ;
-  if(ti<25)
-    return d;
-  return min(d,col=max(0,length(p)-.25)/s);
+  return ti<25?d:min(d,col=max(0,length(p)-.25)/s);
 }
 float hash(float n)
 {

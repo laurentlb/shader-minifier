@@ -249,7 +249,7 @@ let private simplifyExpr (didInline: bool ref) env = function
         let sub1 = FunCall(Op "-", [x; a])
         let sub2 = FunCall(Op "-", [b; a])
         let div  = FunCall(Op "/", [sub1; sub2]) |> mapExpr env
-        FunCall(Var (Ident "smoothstep"),  [Float (0.M,""); Float (1.M,""); div])
+        FunCall(Var (Ident "smoothstep"), [Float (0.M,""); Float (1.M,""); div])
 
     | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
@@ -306,11 +306,11 @@ let groupDeclarations stmts =
     List.collect replacements stmts
 
 // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
-let rec private squeezeDeclarations = function
+let rec private squeezeConsecutiveDeclarations = function
     | []-> []
     | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
-        squeezeDeclarations (Decl(ty1, li1 @ li2) :: l)
-    | e::l -> e :: squeezeDeclarations l
+        squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
+    | e::l -> e :: squeezeConsecutiveDeclarations l
 
 // Squeeze top-level declarations, e.g. uniforms
 let rec private squeezeTLDeclarations = function
@@ -352,31 +352,65 @@ let squeezeBlockWithComma = function
         else stmt
     | stmt -> stmt
 
+let private simplifyBlock stmts = 
+    let b = stmts
+    // Avoid some optimizations when there are preprocessor directives.
+    let hasPreprocessor = Seq.exists (function Verbatim _ -> true | _ -> false) b
+
+    // Remove dead code after return/break/...
+    let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
+    let b = match endOfCode with
+            | Some x when not hasPreprocessor -> List.truncate (x+1) b
+            | _ -> b
+
+    // Remove "empty" declarations of vars that were inlined. This is mandatory for correctness, not an optional optimization.
+    let b = b |> List.filter (function
+        | Decl (_, []) -> false
+        | _ -> true)
+
+    let hasNoDecl = List.forall (function Decl _ -> false | _ -> true)
+
+    // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
+    let b = b |> List.collect (function
+        | Block b when hasNoDecl b -> b
+        | e -> [e])
+
+    // Remove useless else after a if that returns.
+    // if(c)return a();else b();  ->  if(c)return a();b();
+    let rec endsWithReturn = function
+        | Jump(JumpKeyword.Return, _) -> true
+        | Block stmts when not stmts.IsEmpty -> stmts |> List.last |> endsWithReturn
+        | _ -> false
+    let removeUselessElseAfterReturn = List.collect (function
+        | If (cond, bodyT, Some bodyF) when endsWithReturn bodyT ->
+            let bodyF = match bodyF with
+                        | Block b when hasNoDecl b -> b // inline inner empty blocks without variable
+                        | Decl _ as d -> [Block [d]] // a decl must stay isolated in a block, for the same reason
+                        | s -> [s]
+            If (cond, bodyT, None) :: bodyF
+        | e -> [e])
+    let b = removeUselessElseAfterReturn b
+
+    // if(a)return b;return c;  ->  return a?b:c;
+    let rec replaceIfReturnsByReturnTernary = function
+        | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest ->
+            [Jump(JumpKeyword.Return, Some (FunCall(Op "?:", [cond; retT; retF])))]
+        | stmt :: rest -> stmt :: replaceIfReturnsByReturnTernary rest
+        | stmts -> stmts
+    let b = replaceIfReturnsByReturnTernary b
+
+    // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
+    let b = squeezeConsecutiveDeclarations b
+
+    // Group declarations, optionally (may compress poorly).  float a,f();float b=4.;  ->  float a,b;f();b=4.;
+    let b = if hasPreprocessor || options.noMoveDeclarations then b else groupDeclarations b
+    b
+
 let private simplifyStmt = function
     | Block [] as e -> e
-    | Block b ->
-        // Avoid some optimizations when there are preprocessor directives.
-        let hasPreprocessor = Seq.exists (function Verbatim _ -> true | _ -> false) b
-
-        // Remove dead code after return/break/...
-        let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
-        let b = match endOfCode with
-                | Some x when not hasPreprocessor -> List.truncate (x+1) b
-                | _ -> b
-
-        // Inline inner empty blocks without variable
-        let b = b |> List.collect (function
-            | Block b when List.forall (function Decl _ -> false | _ -> true) b ->
-                b
-            | Decl (_, []) -> []
-            | e -> [e])
-
-        // Reduce the number of declaration statements.
-        let b = squeezeDeclarations b
-        let b = if hasPreprocessor || options.noMoveDeclarations then b else groupDeclarations b
-        match b with
-            | [stmt] -> stmt
-            | stmts -> Block stmts
+    | Block b -> match simplifyBlock b with
+                    | [stmt] -> stmt
+                    | stmts -> Block stmts
     | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
     | ForD ((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, squeezeBlockWithComma body)
     | ForE (init, cond, inc, body) -> ForE(init, cond, inc, squeezeBlockWithComma body)
@@ -385,7 +419,7 @@ let private simplifyStmt = function
     | If (True, e1, _) -> squeezeBlockWithComma e1
     | If (False, _, Some e2) -> squeezeBlockWithComma e2
     | If (False, _, None) -> Block []
-    | If (c, b, Some (Block [])) -> If(c, b, None)
+    | If (c, b, Some (Block [])) -> If(c, b, None) // "else{}"  ->  ""
     | If (cond, body1, body2) ->
         let (body1, body2) = squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2
 

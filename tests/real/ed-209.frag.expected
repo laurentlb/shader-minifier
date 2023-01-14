@@ -65,9 +65,7 @@ vec3 getRayDir(vec3 ro,vec3 lookAt,vec2 uv)
 }
 MarchData minResult(MarchData a,MarchData b)
 {
-  if(a.d<b.d)
-    return a;
-  return b;
+  return a.d<b.d?a:b;
 }
 void setBodyMaterial(inout MarchData mat)
 {

@@ -40,9 +40,38 @@ int test_block()
   }
 }
 
+float removeUselessElseAfterReturn1(float f)
+{
+	if (f < 2.)
+		return 1.;
+	else
+		f = 4.;
+	return 5.;
+}
+float removeUselessElseAfterReturn2(float f)
+{
+	float a = 2.;
+	if (f < a)
+		return 1.;
+	else
+		float a = 4.;
+	return 5.;
+}
+float replaceIfReturnsByReturnTernary1(float f)
+{
+	if (f < 2.)
+		return b;
+	return c;
+}
+
 void main()
 {
   float a = test_if();
   float b = test_for();
+  removeUselessElseAfterReturn1(0.);
+  removeUselessElseAfterReturn2(0.);
+  replaceIfReturnsByReturnTernary1(0.);
   gl_FragColor=vec4(.2,a,b,0.);
+  if (a<b) { }
+  if (a<b) { } else { }
 }
