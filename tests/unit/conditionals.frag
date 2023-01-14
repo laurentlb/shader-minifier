@@ -49,19 +49,19 @@ int foo() {
 
 float ifStmtToExpr(float f) {
 	float r;
-	if (f > 0)
+	if (f > 0.0)
 		r = 1.0;
 	else
 		r = 2.0;
 	float r2;
-	if (f > 1) {
+	if (f > 1.0) {
 		r2 = 1.0;
     } else {
 		foo();
 		r2 = 2.0;
 	}
 	float r3;
-	if (f > 1) {
+	if (f > 1.0) {
 		r3 = 1.0;
     } else {
 		r3 = 2.0;

@@ -1,13 +1,15 @@
 float f(){return 0.;}
+
+float a;
 void main()
 {
 	float c;
-	for (float a=0; a<50.; ++a)
+	for (float d=0.; d<50.; ++d)
 	{
-		c+=cos(a);
+		c+=cos(d);
 	}
 	float b;
-	for (b=0; b<50.; ++b)
+	for (b=0.; b<50.; ++b)
 	{
 		c+=cos(c);
 	}

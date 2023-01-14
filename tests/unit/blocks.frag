@@ -60,8 +60,8 @@ float removeUselessElseAfterReturn2(float f)
 float replaceIfReturnsByReturnTernary1(float f)
 {
 	if (f < 2.)
-		return b;
-	return c;
+		return f;
+	return f + 1.;
 }
 
 void main()
