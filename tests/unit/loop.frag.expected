@@ -1,0 +1,52 @@
+/* File generated with 
+ * http://www.ctrl-alt-test.fr
+ */
+#ifndef LOOP_FRAG_EXPECTED_
+# define LOOP_FRAG_EXPECTED_
+
+const char *loop_frag =
+ "float c()"
+ "{"
+   "return 0.;"
+ "}"
+ "void main()"
+ "{"
+   "float a,f;"
+   "for(float w=0;w<50.;++w)"
+     "a+=cos(w);"
+   "for(f=0;f<50.;++f)"
+     "a+=cos(a);"
+   "f=a;"
+   "while(f<50.)"
+     "a+=cos(a),f++;"
+   "f=a;"
+   "while(f<50.)"
+     "f++;"
+   "f=a;"
+   "while(f<50.)"
+     "{"
+       "a+=cos(a);"
+       "float e=c();"
+       "f+=e;"
+     "}"
+   "f=a;"
+   "while(f<50.)"
+     "{"
+       "if(a<f)"
+         "continue;"
+       "f++;"
+     "}"
+   "f=a;"
+   "while(f<50.)"
+     "{"
+       "if(a<f)"
+         "a=f;"
+       "else"
+         " continue;"
+       "f++;"
+     "}"
+   "for(;f<50.;++f)"
+     "a+=cos(f);"
+ "}";
+
+#endif // LOOP_FRAG_EXPECTED_

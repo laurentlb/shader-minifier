@@ -14,4 +14,6 @@ elevated.hlsl                             3406 =>  611.302
 buoy.frag                                 4194 =>  622.602
 orchard.frag                              5588 => 1051.886
 robin.frag                                6293 => 1066.421
-Total: 87663 => 15860.542
+sult.frag                                 1342 =>  321.640
+../unit/loop.frag                          311 =>   83.132
+Total: 89316 => 16265.314
