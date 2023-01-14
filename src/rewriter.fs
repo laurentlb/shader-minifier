@@ -306,11 +306,11 @@ let groupDeclarations stmts =
     List.collect replacements stmts
 
 // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
-let rec private squeezeDeclarations = function
+let rec private squeezeConsecutiveDeclarations = function
     | []-> []
     | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
-        squeezeDeclarations (Decl(ty1, li1 @ li2) :: l)
-    | e::l -> e :: squeezeDeclarations l
+        squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
+    | e::l -> e :: squeezeConsecutiveDeclarations l
 
 // Squeeze top-level declarations, e.g. uniforms
 let rec private squeezeTLDeclarations = function
@@ -363,38 +363,46 @@ let private simplifyBlock stmts =
             | Some x when not hasPreprocessor -> List.truncate (x+1) b
             | _ -> b
 
-    // Multipurpose pass. Ideally, should be simplified and repeated until no more changes.
+    // Remove "empty" declarations of vars that were inlined. This is mandatory for correctness, not an optional optimization.
+    let b = b |> List.filter (function
+        | Decl (_, []) -> false
+        | _ -> true)
+
     let hasNoDecl = List.forall (function Decl _ -> false | _ -> true)
+
+    // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
+    let b = b |> List.collect (function
+        | Block b when hasNoDecl b -> b
+        | e -> [e])
+
+    // Remove useless else after a if that returns.
+    // if(c)return a();else b();  ->  if(c)return a();b();
     let rec endsWithReturn = function
         | Jump(JumpKeyword.Return, _) -> true
         | Block stmts -> stmts |> List.last |> endsWithReturn
         | _ -> false
-    let b = b |> List.collect (function
-        // Inline inner empty blocks without variable
-        | Block b when hasNoDecl b -> b
-        // if (c) return a(); else b();  ->  if (c) return a(); b();
+    let removeUselessElseAfterReturn = List.collect (function
         | If (cond, bodyT, Some bodyF) when endsWithReturn bodyT ->
             let bodyF = match bodyF with
                         | Block b when hasNoDecl b -> b // inline inner empty blocks without variable
                         | Decl _ as d -> [Block [d]] // a decl must stay isolated in a block, for the same reason
                         | s -> [s]
-            List.Cons (If (cond, bodyT, None), bodyF)
-        // Remove "empty" declarations (of things that were inlined). This is not optional.
-        | Decl (_, []) -> []
+            If (cond, bodyT, None) :: bodyF
         | e -> [e])
+    let b = removeUselessElseAfterReturn b
 
     // if(a)return b;return c;  ->  return a?b:c;
     let rec replaceIfReturnsByReturnTernary = function
-        | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: c ->
+        | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest ->
             [Jump(JumpKeyword.Return, Some (FunCall(Op "?:", [cond; retT; retF])))]
         | stmt :: rest -> stmt :: replaceIfReturnsByReturnTernary rest
         | stmts -> stmts
     let b = replaceIfReturnsByReturnTernary b
 
-    // No need for multiple consecutive declarations of the same type.
-    let b = squeezeDeclarations b
+    // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
+    let b = squeezeConsecutiveDeclarations b
 
-    // Group declarations if we are allowed to
+    // Group declarations, optionally (may compress poorly).  float a,f();float b=4.;  ->  float a,b;f();b=4.;
     let b = if hasPreprocessor || options.noMoveDeclarations then b else groupDeclarations b
     b
 

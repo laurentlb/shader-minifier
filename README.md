@@ -414,6 +414,20 @@ if (x) y = 123,x++;
 **Note**: This transformation doesn't always decrease the compressed file size.
 Use `--no-sequence` to disable it and see how it performs.
 
+### Useless else after return
+
+When a if always ends in a return, the else can be omitted entirely.
+
+Input:
+```
+if(c)return a();else b();
+```
+
+Output:
+```
+if(c)return a();b();
+```
+
 ### Ternary operator
 
 When both branches of a if+else are only expressions and they end with
@@ -432,6 +446,21 @@ if (c) {
 Output:
 ```glsl
 x = c ? f() : a = g(), 1.0;
+```
+
+When both branches of a if return immediately, the if is changed into a return
+that uses a ternary operator.
+
+Input:
+```glsl
+if (y)
+  return z;
+return w;
+```
+
+Output:
+```glsl
+return y ? z : w;
 ```
 
 ### Merge declarations
