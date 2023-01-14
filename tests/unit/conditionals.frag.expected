@@ -45,8 +45,12 @@ int foo()
 }
 float ifStmtToExpr(float f)
 {
-  float r,r2;
+  float r,r2,r3;
   r=f>0?1.:2.;
   r2=f>1?1.:(foo(),2.);
-  return r+r2;
+  if(f>1)
+    r3=1.;
+  else
+     r3=2.,foo();
+  return r+r2+r3;
 }

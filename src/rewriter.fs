@@ -379,7 +379,7 @@ let private simplifyBlock stmts =
     // if(c)return a();else b();  ->  if(c)return a();b();
     let rec endsWithReturn = function
         | Jump(JumpKeyword.Return, _) -> true
-        | Block stmts -> stmts |> List.last |> endsWithReturn
+        | Block stmts when not stmts.IsEmpty -> stmts |> List.last |> endsWithReturn
         | _ -> false
     let removeUselessElseAfterReturn = List.collect (function
         | If (cond, bodyT, Some bodyF) when endsWithReturn bodyT ->

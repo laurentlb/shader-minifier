@@ -72,4 +72,6 @@ void main()
   removeUselessElseAfterReturn2(0.);
   replaceIfReturnsByReturnTernary1(0.);
   gl_FragColor=vec4(.2,a,b,0.);
+  if (a<b) { }
+  if (a<b) { } else { }
 }
