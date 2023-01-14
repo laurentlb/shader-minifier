@@ -147,7 +147,7 @@ MarchData gunPod(vec3 p)
     {
       d=sdCappedCylinder(pp,.01+pp.z*.05,fract(fs*3322.423)*.5+.9);
       if(d<r.d)
-        r.d=d,r.mat=vec3(1),glow+=.1/(.01+d*d*400.);
+        r.d=d,r.mat=vec3(1),glow+=.1/(.01+d*d*4e2);
     }
   return r;
 }

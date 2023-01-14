@@ -115,7 +115,7 @@ const char *the_real_party_is_in_your_pocket_frag =
    "a=-l.z-.09-(1.-x(.9,l.y+.3+.1)-x(.55,-(l.y+.3+.17)))*.17;"
    "z=m(m(c.x-.48,length(c-vec2(0,2.5))-2.5,117.),c.y-.87,80.);"
    "if(l.z>.01)"
-     "i+=mix(.02,pow(max(0.,v(l.xy-vec2(0,.25+pow(abs(l.x),3.)),vec2(.32,.94))-.05)*100.,1.3)/1500.,1.-x(-.001,z));"
+     "i+=mix(.02,pow(max(0.,v(l.xy-vec2(0,.25+pow(abs(l.x),3.)),vec2(.32,.94))-.05)*1e2,1.3)/1500.,1.-x(-.001,z));"
    "if(l.z<0.)"
      "a=v(a,m(l-vec3(0,0,-.1),vec3(.5,.5,.055))-.04,64.);"
    "c.x-=.09;"
@@ -130,7 +130,7 @@ const char *the_real_party_is_in_your_pocket_frag =
    "f=m(m(f,min(l.z,-s+.003),256.),min(l.z,-abs(z)-.001),448.);"
    "f=m(f,min(l.z-.13,-v(l.xy-vec2(0,-.118))),512.);"
    "f=m(f,min(l.z-.13,-abs(length(vec2(max(abs(l.x)-.12,0.),l.y+.117))-.035)+.003),512.);"
-   "f=m(m(f,min(1.,-min(1.,max(m(abs(l.x)-.31,abs(l.y-.49)-.29,500.),abs(l.z-.185)-.1))+.004),576.),-abs(l.z-.01)-1e-4,384.);"
+   "f=m(m(f,min(1.,-min(1.,max(m(abs(l.x)-.31,abs(l.y-.49)-.29,5e2),abs(l.z-.185)-.1))+.004),576.),-abs(l.z-.01)-1e-4,384.);"
    "if(l.y<0.)"
      "{"
        "if(l.y<-.5)"
@@ -413,7 +413,7 @@ const char *the_real_party_is_in_your_pocket_frag =
        "l+=h(vec3(0,0,4.8),vec3((gl_FragCoord.xy-vec2(960,540)+f)/540.,-3.5))/48.;"
      "}"
    "l/=(l+1.)/2.;"
-   "gl_FragColor.xyz=pow(l+.01*vec3(1,1,.5),vec3(1./2.2))+m()/100.;"
+   "gl_FragColor.xyz=pow(l+.01*vec3(1,1,.5),vec3(1./2.2))+m()/1e2;"
  "}";
 
 #endif // THE_REAL_PARTY_IS_IN_YOUR_POCKET_FRAG_EXPECTED_

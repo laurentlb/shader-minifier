@@ -169,7 +169,7 @@ void main()
   p=-1.+2.*gl_FragCoord.xy/resolution.xy;
   float angle=1.570796*Y.y-1.570796,seed;
   mat4 mm=mat4(cos(angle),0.,sin(angle),0.,0.,1.,0.,0.,-sin(angle),0.,cos(angle),0.,0.,0.,0.,1.);
-  gf_DetailLevel=100.;
+  gf_DetailLevel=1e2;
   pi=3.1416;
   interlacing=vec3(1.2,.9,.9);
   eps=1e-4;
