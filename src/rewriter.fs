@@ -117,7 +117,7 @@ let private simplifyOperator env = function
     | FunCall(Op "<", [Number n1; Number n2]) -> bool(n1 < n2)
     | FunCall(Op ">", [Number n1; Number n2]) -> bool(n1 > n2)
     | FunCall(Op "<=", [Number n1; Number n2]) -> bool(n1 <= n2)
-    | FunCall(Op ">=", [Number n1; Number n2]) -> bool(n1 <= n2)
+    | FunCall(Op ">=", [Number n1; Number n2]) -> bool(n1 >= n2)
     | FunCall(Op "==", [Number n1; Number n2]) -> bool(n1 = n2)
     | FunCall(Op "!=", [Number n1; Number n2]) -> bool(n1 <> n2)
 
