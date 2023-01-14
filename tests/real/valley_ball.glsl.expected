@@ -71,7 +71,9 @@ vec3 shadeTerrain(vec3 p,vec3 rd)
 }
 vec3 shadeSky(vec3 ro,vec3 rd)
 {
-  return ro.y<=-eps*eps?waterColor:(1.+Y.z*.3)*mix(vec3(-.5,-.25,0),vec3(2),1.-rd.y*.5-.5);
+  return ro.y<=-eps*eps?
+    waterColor:
+    (1.+Y.z*.3)*mix(vec3(-.5,-.25,0),vec3(2),1.-rd.y*.5-.5);
 }
 vec3 shadeAttractor(vec3 p,vec3 rd)
 {
@@ -108,19 +110,29 @@ float traceAttractor(vec3 ro,vec3 rd)
   if(B>0.)
     return 9.;
   D=B*B-dot(dst,dst)+sphereRadius*sphereRadius;
-  return D>0.?-B-sqrt(D):9.;
+  return D>0.?
+    -B-sqrt(D):
+    9.;
 }
 float traceWater(vec3 ro,vec3 rd)
 {
   float tPlane=-ro.y/rd.y;
-  return tPlane>=eps?tPlane:9.;
+  return tPlane>=eps?
+    tPlane:
+    9.;
 }
 vec4 traceRay(vec3 ro,vec3 rd,int ignore)
 {
   float water,attractor,terrain,minDist;
-  water=ignore!=2?traceWater(ro,rd):9.;
-  attractor=ignore!=3?traceAttractor(ro,rd):9.;
-  terrain=ignore!=1?traceTerrain(ro,rd,min(.5,.002+min(water,attractor))):9.;
+  water=ignore!=2?
+    traceWater(ro,rd):
+    9.;
+  attractor=ignore!=3?
+    traceAttractor(ro,rd):
+    9.;
+  terrain=ignore!=1?
+    traceTerrain(ro,rd,min(.5,.002+min(water,attractor))):
+    9.;
   gf_DetailLevel/=20.;
   minDist=min(terrain,min(water,min(attractor,9.)));
   if(minDist==9.)
@@ -135,30 +147,46 @@ vec4 traceRay(vec3 ro,vec3 rd,int ignore)
 }
 vec3 shade(vec4 hitPoint,vec3 newRo,vec3 rd)
 {
-  vec3 myFog=newRo.y<eps?waterColor:shadeSky(ro,rd);
-  float distance=clamp(length(hitPoint.xyz-newRo)*(ro.y<=0.?4.:2.),0.,1.);
+  vec3 myFog=newRo.y<eps?
+    waterColor:
+    shadeSky(ro,rd);
+  float distance=clamp(length(hitPoint.xyz-newRo)*(ro.y<=0.?
+    4.:
+    2.),0.,1.);
   if(hitPoint.w==1.)
     return mix(shadeTerrain(hitPoint.xyz,rd),myFog,distance);
   if(hitPoint.w==2.)
     return mix(waterColor,myFog,distance);
-  return hitPoint.w==3.?mix(shadeAttractor(hitPoint.xyz,rd),myFog,distance):myFog;
+  return hitPoint.w==3.?
+    mix(shadeAttractor(hitPoint.xyz,rd),myFog,distance):
+    myFog;
 }
 vec3 shadeWaterRefl(vec3 p,vec3 newrd)
 {
   vec3 waterNormal=getWaterNormal(p);
   vec4 refracted=traceRay(p,refract(newrd,waterNormal,.9),2);
   float depth=clamp(pow(1.03*(1.-length(refracted.xyz-p)),16.),0.,1.);
-  return mix(ro.y<0.?shadeSky(p,newrd):waterColor,mix(shade(traceRay(p,reflect(newrd,waterNormal),2),p,newrd),shade(refracted,p,newrd),clamp(-rd.y+depth,0.,1.)),refracted.w==3.?.5:pow(depth,.5));
+  return mix(ro.y<0.?
+    shadeSky(p,newrd):
+    waterColor,mix(shade(traceRay(p,reflect(newrd,waterNormal),2),p,newrd),shade(refracted,p,newrd),clamp(-rd.y+depth,0.,1.)),refracted.w==3.?
+    .5:
+    pow(depth,.5));
 }
 vec3 shadeRefl(vec4 hitPoint,vec3 newRo,vec3 rd)
 {
-  vec3 myFog=newRo.y<eps?waterColor:shadeSky(ro,rd);
-  float distance=clamp(length(hitPoint.xyz-newRo)*(ro.y<=0.?4.:2.),0.,1.);
+  vec3 myFog=newRo.y<eps?
+    waterColor:
+    shadeSky(ro,rd);
+  float distance=clamp(length(hitPoint.xyz-newRo)*(ro.y<=0.?
+    4.:
+    2.),0.,1.);
   if(hitPoint.w==1.)
     return mix(shadeTerrain(hitPoint.xyz,rd),myFog,distance);
   if(hitPoint.w==2.)
     return mix(shadeWaterRefl(hitPoint.xyz,rd),myFog,distance);
-  return hitPoint.w==3.?mix(mix(shadeAttractor(hitPoint.xyz,rd),shade(traceRay(hitPoint.xyz,reflect(rd,normalize(hitPoint.xyz-spherePos)),3),hitPoint.xyz,rd),.5),myFog,distance):shadeSky(newRo,rd);
+  return hitPoint.w==3.?
+    mix(mix(shadeAttractor(hitPoint.xyz,rd),shade(traceRay(hitPoint.xyz,reflect(rd,normalize(hitPoint.xyz-spherePos)),3),hitPoint.xyz,rd),.5),myFog,distance):
+    shadeSky(newRo,rd);
 }
 void main()
 {
@@ -177,17 +205,19 @@ void main()
   seed=10.;
   int scene=int(Y.y);
   rd=vec3(p.xy-.5,1);
-  if(scene>22&&scene<27)
-    seed=min(1.,sin((Y.y-23.)*pi*.25)*12.),ro=vec3(.12,.005,Y.y*.08),rd=vec3(mm*vec4(rd,1)),rd.y+=.1*cos(Y.y*4.);
-  else
-     if(scene>14&&scene<23)
-      seed=min(1.,sin((Y.y-15.)*pi*.125)*24.),rd+=vec3(0,.1*cos(Y.y*4.),0),ro=vec3(.08,.01*sin(Y.y*4.)+.002,Y.y*.11);
-    else
-       ro=vec3(.1,.004,0)+vec3(.1,.005,20)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro=mix(ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),Y.y-float(scene)),ro.y+=height(ro.xz)+.02,ro+=.02*getTerrainNormal(ro),seed=min(1.,step(-28.,-Y.y)*sin((Y.y-float(scene))*pi)*3.);
+  scene>22&&scene<27?
+    (seed=min(1.,sin((Y.y-23.)*pi*.25)*12.),ro=vec3(.12,.005,Y.y*.08),rd=vec3(mm*vec4(rd,1)),rd.y+=.1*cos(Y.y*4.)):
+    scene>14&&scene<23?
+      (seed=min(1.,sin((Y.y-15.)*pi*.125)*24.),rd+=vec3(0,.1*cos(Y.y*4.),0),ro=vec3(.08,.01*sin(Y.y*4.)+.002,Y.y*.11)):
+      (ro=vec3(.1,.004,0)+vec3(.1,.005,20)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro=mix(ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),Y.y-float(scene)),ro.y+=height(ro.xz)+.02,ro+=.02*getTerrainNormal(ro),seed=min(1.,step(-28.,-Y.y)*sin((Y.y-float(scene))*pi)*3.));
   rd=normalize(rd);
-  spherePos=scene>22&&scene<27?ro+.1*vec3(mm*vec4(0,0,1,1)):ro+.02*vec3(sin(Y.y),0,5.+cos(Y.y));
+  spherePos=scene>22&&scene<27?
+    ro+.1*vec3(mm*vec4(0,0,1,1)):
+    ro+.02*vec3(sin(Y.y),0,5.+cos(Y.y));
   spherePos.y+=.01+height(spherePos.xz);
-  sphereRadius=scene<14?0.:bigeps*.5+bigeps*Y.z;
+  sphereRadius=scene<14?
+    0.:
+    bigeps*.5+bigeps*Y.z;
   spherePos+=2.*bigeps*getTerrainNormal(spherePos);
   lightDir=vec3(.58,.58,-.58);
   lightColor=vec3(1.2)+Y.z;

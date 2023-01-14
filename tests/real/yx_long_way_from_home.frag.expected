@@ -66,7 +66,9 @@ const char *yx_long_way_from_home_frag =
      "s.xz=mod(s.xz-.5,1.)-.5;"
    "}"
    "y.y-=.25;"
-   "i=n<x?1:0;"
+   "i=n<x?"
+     "1:"
+     "0;"
    "x=min(x,n);"
    "return x*.9;"
  "}"
@@ -188,7 +190,9 @@ const char *yx_long_way_from_home_frag =
    "o.xz*=n(i);"
    "r+=c;"
    "vec4 m=vec4(h(r,o),1);"
-   "gl_FragColor=!isnan(m.x)&&m.x>=0.?m:vec4(0);"
+   "gl_FragColor=!isnan(m.x)&&m.x>=0.?"
+     "m:"
+     "vec4(0);"
  "}";
 
 #endif // YX_LONG_WAY_FROM_HOME_FRAG_EXPECTED_

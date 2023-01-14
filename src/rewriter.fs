@@ -392,12 +392,12 @@ let private simplifyBlock stmts =
     let b = removeUselessElseAfterReturn b
 
     // if(a)return b;return c;  ->  return a?b:c;
-    let rec replaceIfReturnsByReturnTernary = function
+    let rec replaceIfReturnsWithReturnTernary = function
         | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest ->
             [Jump(JumpKeyword.Return, Some (FunCall(Op "?:", [cond; retT; retF])))]
-        | stmt :: rest -> stmt :: replaceIfReturnsByReturnTernary rest
+        | stmt :: rest -> stmt :: replaceIfReturnsWithReturnTernary rest
         | stmts -> stmts
-    let b = replaceIfReturnsByReturnTernary b
+    let b = replaceIfReturnsWithReturnTernary b
 
     // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
     let b = squeezeConsecutiveDeclarations b
@@ -423,7 +423,6 @@ let private simplifyStmt = function
     | If (cond, body1, body2) ->
         let (body1, body2) = squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2
 
-        // turn if-else into ternary
         match (body1, body2) with
             | (Expr eT, Some (Expr eF)) ->
                 let tryCollapseToAssignment : Expr -> (Ident * Expr) option = function
@@ -437,10 +436,14 @@ let private simplifyStmt = function
                         | _ -> None
                     | _ -> None
                 match (tryCollapseToAssignment eT, tryCollapseToAssignment eF) with
+                    // turn if-else of assignments into assignment of ternary
                     | Some (nameT, initT), Some (nameF, initF) when nameT.Name = nameF.Name ->
                         // if(c)x=y;else x=z;  ->  x=c?y:z;
                         Expr (FunCall (Op "=", [Var nameT; FunCall(Op "?:", [cond; initT; initF])]))
-                    | _ -> If (cond, body1, body2)
+                    // turn if-else of expressions into ternary statement
+                    | _ ->
+                        // if(c)x();else y();  ->  c?x():y();
+                        Expr (FunCall(Op "?:", [cond; eT; eF]))
             | _ -> If (cond, body1, body2)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e

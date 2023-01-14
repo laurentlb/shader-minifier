@@ -6,7 +6,11 @@ float inl1()
 float inl2(float x)
 {
   float f=123456789.;
-  return x>2.*f?1e2:x>f?101.:102.;
+  return x>2.*f?
+    1e2:
+    x>f?
+      101.:
+      102.;
 }
 float inl3()
 {

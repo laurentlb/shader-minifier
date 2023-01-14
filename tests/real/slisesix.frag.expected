@@ -192,7 +192,9 @@ void main()
       im=inversesqrt(llig);
       lig*=im;
       dif=dot(nor,lig);
-      dif=matID==4?.5+.5*dif:.1+.9*dif;
+      dif=matID==4?
+        .5+.5*dif:
+        .1+.9*dif;
       dif=clamp(dif,0.,1.);
       dif*=2.5*exp2(-1.75*llig);
       dif2=(nor[0]+nor[1])*.075;
