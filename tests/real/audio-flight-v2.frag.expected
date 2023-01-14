@@ -1,0 +1,287 @@
+#define R iResolution
+
+#define T iTime
+
+#define M iMouse
+
+#define PI2 6.28318530718
+
+#define PI 3.14159265358
+
+#define MINDIST.0001
+
+#define MAXDIST 125.
+
+#define r2(a)mat2(cos(a),sin(a),-sin(a),cos(a))
+
+float sampleFreq(float freq)
+{
+  return texture(iChannel0,vec2(freq,.1)).x;
+}
+float pMod(inout float p,float size)
+{
+  float c=floor((p+size*.5)/size);
+  p=mod(p+size*.5,size)-size*.5;
+  return c;
+}
+vec2 pMod(inout vec2 p,float size)
+{
+  vec2 c=floor((p+size*.5)/size);
+  p=mod(p+size*.5,size)-size*.5;
+  return c;
+}
+vec3 pMod(inout vec3 p,float size)
+{
+  vec3 c=floor((p+size*.5)/size);
+  p=mod(p+size*.5,size)-size*.5;
+  return c;
+}
+float pModPolar(inout vec2 p,float repetitions)
+{
+  float angle=2.*PI/repetitions,a=atan(p.y,p.x)+angle/2.,r=length(p),c=floor(a/angle);
+  a=mod(a,angle)-angle/2.;
+  p=vec2(cos(a),sin(a))*r;
+  if(abs(c)>=repetitions/2.)
+    c=abs(c);
+  return c;
+}
+float vmax(vec2 v)
+{
+  return max(v.x,v.y);
+}
+float vmax(vec3 v)
+{
+  return max(max(v.x,v.y),v.z);
+}
+float fBox(vec3 p,vec3 b)
+{
+  vec3 d=abs(p)-b;
+  return length(max(d,vec3(0)))+vmax(min(d,vec3(0)));
+}
+float fBox2(vec2 p,vec2 b)
+{
+  vec2 d=abs(p)-b;
+  return length(max(d,vec2(0)))+vmax(min(d,vec2(0)));
+}
+float sdCap(vec3 p,float h,float r)
+{
+  p.y-=clamp(p.y,0.,h);
+  return length(p)-r;
+}
+vec2 path(float z)
+{
+  vec2 p1=vec2(2.35*sin(z*.125)+2.38*cos(z*.25),3.5*cos(z*.0945)),p2=vec2(3.2*sin(z*.19),4.31*sin(z*.125)-2.38*cos(z*.115));
+  return(p1-p2)*.3;
+}
+float time,tm,travelSpeed,glow,iqd,flight,beams,gcolor,objglow,offWobble,boxsize,ga,sa,slp;
+vec3 g_hp,s_hp;
+mat2 r4,r5;
+const vec3 cxz=vec3(3.15,4.75,3);
+vec2 fragtail(vec3 pos)
+{
+  float ss=1.15,r=1e5;
+  for(int i=0;i<2;i++)
+    {
+      pos=abs(pos);
+      if(pos.x-pos.y<0.)
+        pos.yx=pos.xy;
+      if(pos.x-pos.z<0.)
+        pos.zx=pos.xz;
+      if(pos.y-pos.z<0.)
+        pos.zy=pos.yz;
+      pos.x=3.*pos.x-cxz.x*2.;
+      pos.y=3.*pos.y-cxz.y*2.;
+      pos.z=3.*pos.z;
+      if(pos.z>.5*cxz.z*2.)
+        pos.z-=cxz.z*2.;
+      r=fBox2(pos.xy,vec2(5,1.5+.25*sin(pos.x*5.)))-.0015;
+      ss*=1./3.;
+    }
+  return vec2(r*ss,1);
+}
+vec2 edge(vec2 p)
+{
+  vec2 p2=abs(p);
+  return p2.x>p2.y?
+    vec2(p.x<0.?
+      -1.:
+      1.,0):
+    vec2(0,p.y<0.?
+      -1.:
+      1.);
+}
+float ths=13.25;
+vec2 map(vec3 p,float sg)
+{
+  vec2 res=vec2(100,-1),tun,center,neighbour,d1;
+  float msize=7.25,obj,pid,trackmod,deg,chs,bmod,height,ids,lq,zprs,d4a,d4,blt,me,next,dlt;
+  tun=p.xy-path(p.z);
+  vec3 q=vec3(tun,p.z),o=vec3(tun+vec2(0),p.z+travelSpeed+4.25),s=q,r,fs,qid;
+  o.zx*=r5;
+  o.yz*=r4;
+  o=abs(o)-offWobble*.25;
+  obj=fBox(o,vec3(.15*offWobble))-.015;
+  if(obj<res.x)
+    res=vec2(obj,11),g_hp=o;
+  pid=floor((q.z+msize/2.)/msize);
+  trackmod=mod(pid,18.);
+  deg=trackmod<12.?
+    trackmod<6.?
+      4.:
+      6.:
+    10.;
+  pModPolar(q.xy,deg);
+  pModPolar(s.xy,deg*.5);
+  r=s;
+  fs=s-vec3(2.85,0,0);
+  r=vec3(abs(r.x),abs(r.y),r.z);
+  fs.z*=2.;
+  center=floor(fs.xz)+.5;
+  neighbour=center+edge(fs.xz-center);
+  chs=floor(center.y);
+  bmod=mod(chs,16.);
+  height=sampleFreq(bmod*.0465);
+  height=smoothstep(.001,1.,height);
+  ga=height;
+  ids=pMod(s.z,msize);
+  qid=pMod(q,msize);
+  lq=mod(ids,2.);
+  iqd=qid.x;
+  zprs=mod(chs,tm<8.?
+    tm<4.?
+      tm<4.?
+        2.:
+        2.:
+      5.:
+    floor(height*1.45));
+  d4a=length(r.xy-vec2(2.5,1.75))-.1;
+  d4=length(r.xy-vec2(2.5,1.75))-.04+.027+.027*sin(r.z-time*4.5);
+  if(d4<res.x)
+    res=vec2(d4,12),g_hp=p;
+  d1=fragtail(q);
+  d1.x=max(d1.x,-d4a);
+  s.z=abs(s.z);
+  blt=sdCap(s-vec3(2.45,-.58,2.725),1.16,.015);
+  if(lq<2.)
+    d1.x=min(blt,d1.x);
+  if(d1.x<res.x)
+    res=d1.xy,g_hp=p;
+  me=fBox(fs-vec3(0,0,center.y),vec3(.05,.15+height,.25));
+  next=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25));
+  dlt=min(me,next);
+  if(dlt<res.x)
+    res=vec2(dlt,4),g_hp=p;
+  if(sg==1.)
+    beams+=1e-4/(3e-6+d4*d4);
+  if(sg==1.&&lq<1.)
+    flight+=.00025/(1e-7+blt*blt);
+  if(sg==1.&&zprs<.1)
+    glow+=.00015/(2e-6+dlt*dlt);
+  if(sg==1.&&tm<ths)
+    objglow+=5e-4/(5e-4+obj*obj);
+  return res;
+}
+vec2 marcher(vec3 ro,vec3 rd,int maxstep,float sg)
+{
+  float d=0.,m=-1.;
+  for(int i=0;i<maxstep;i++)
+    {
+      vec3 p=ro+rd*d;
+      vec2 t=map(p,sg);
+      if(abs(t.x)<d*MINDIST||d>MAXDIST)
+        break;
+      d+=i<42?
+        t.x*.35:
+        t.x;
+      m=t.y;
+    }
+  return vec2(d,m);
+}
+vec3 normal(vec3 p,float t)
+{
+  float e=MINDIST*t;
+  vec2 h=vec2(1,-1)*.5773;
+  return normalize(h.xyy*map(p+h.xyy*e,0.).x+h.yyx*map(p+h.yyx*e,0.).x+h.yxy*map(p+h.yxy*e,0.).x+h.xxx*map(p+h.xxx*e,0.).x);
+}
+vec3 hsv2rgb(vec3 c)
+{
+  vec3 rgb=clamp(abs(mod(c.x*6.+vec3(0,4,2),6.)-3.)-1.,0.,1.);
+  return c.z*mix(vec3(1),rgb,c.y);
+}
+void mainImage(out vec4 O,vec2 F)
+{
+  time=iTime;
+  tm=mod(time*.3,18.);
+  travelSpeed=time*5.;
+  offWobble=1.5+1.15*sin(tm+time*.1);
+  r4=r2(time);
+  r5=r2(time);
+  vec2 uv=(F.xy-R.xy*.5)/max(R.x,R.y);
+  vec3 C=vec3(0),FC=vec3(.03);
+  float crop=clamp(-.05+T*.05,0.,.18),px,d1;
+  if(uv.y<crop&&uv.y>-crop)
+    {
+      vec3 lp=vec3(0,0,-travelSpeed),ro=vec3(0,0,.15),f,r,u,c,i,rd;
+      float x=M.xy==vec2(0)||M.z<0.?
+        0.:
+        (M.y/R.y-.5)*PI,y=M.xy==vec2(0)||M.z<0.?
+        0.:
+        -(M.x/R.x*2.-1.)*PI,d,m;
+      ro.zy*=r2(x);
+      ro+=lp;
+      lp.xy+=path(lp.z);
+      ro.xy+=path(ro.z);
+      f=normalize(lp-ro);
+      r=normalize(cross(vec3(0,1,0),f));
+      u=normalize(cross(f,r));
+      c=ro+f*.183;
+      i=c+uv.x*r+uv.y*u;
+      rd=i-ro;
+      rd.xy=r2(.2*sin(time*.3)-path(lp.z).x/24.)*rd.xy;
+      rd.xz=r2(y-path(lp.z+1.).y/14.)*rd.xz;
+      vec2 t=marcher(ro,rd,164,1.);
+      d=t.x;
+      m=t.y;
+      s_hp=g_hp;
+      if(d<MAXDIST)
+        {
+          vec3 p=ro+rd*d,n=normal(p,d),lpos=vec3(0,0,.25)-p,l,h;
+          lpos+=lp;
+          lpos.xy+=path(lpos.z);
+          l=normalize(lpos);
+          float diff=clamp(dot(n,l),.01,1.),spec=pow(max(dot(reflect(l,n),rd),.01),24.);
+          h=m==11.?
+            vec3(.005):
+            vec3(1);
+          if(m==3.||m==4.)
+            h=vec3(.012);
+          if(tm>ths)
+            C=h*diff+spec;
+          else
+             if(m==3.||m==4.)
+              C=hsv2rgb(vec3(s_hp.z*.01,.8,.6))*diff;
+        }
+      if(tm>ths)
+        {
+          if(mod(T,.1)<.05)
+            FC=vec3(.8);
+        }
+      else
+         C+=abs(glow*.7)*hsv2rgb(vec3(s_hp.z*.01,.8,.6)),C+=abs(objglow*.65)*vec3(1);
+      C=mix(C,FC,1.-exp(-7.5e-5*t.x*t.x*t.x));
+      C+=abs(beams*.65)*hsv2rgb(vec3(s_hp.z*.025,.8,.6));
+      C+=abs(flight*.75)*vec3(.5,1,.2);
+    }
+  px=1./R.x;
+  d1=fBox2(uv+vec2(-.485,.2675),vec2(.005))-.002;
+  d1=smoothstep(px,-px,d1);
+  C=mix(C,vec3(.212,.671,.576),d1);
+  d1=fBox2(uv+vec2(-.465,.2675),vec2(.005))-.002;
+  d1=smoothstep(px,-px,d1);
+  C=mix(C,vec3(.757,.686,.341),d1);
+  d1=fBox2(uv+vec2(-.445,.2675),vec2(.005))-.002;
+  d1=smoothstep(px,-px,d1);
+  C=mix(C,vec3(.882,.459,.867),d1);
+  C=pow(C,vec3(.4545));
+  O=vec4(C,1);
+}

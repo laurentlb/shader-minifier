@@ -1,0 +1,142 @@
+const float pi=acos(-1.);
+const vec3 c=vec3(1,0,-1);
+float a=1.;
+void rand(vec2 x,out float num)
+{
+  x+=4e2;
+  num=fract(sin(dot(sign(x)*abs(x),vec2(12.9898,78.233)))*43758.5453);
+}
+void lfnoise(vec2 t,out float num)
+{
+  vec2 i=floor(t),v1,v2;
+  t=fract(t);
+  t=smoothstep(c.yy,c.xx,t);
+  rand(i,v1.x);
+  rand(i+c.xy,v1.y);
+  rand(i+c.yx,v2.x);
+  rand(i+c.xx,v2.y);
+  v1=c.zz+2.*mix(v1,v2,t.y);
+  num=mix(v1.x,v1.y,t.x);
+}
+void mfnoise(vec2 x,float fmin,float fmax,float alpha,out float num)
+{
+  num=0.;
+  float a=1.,nf=0.,buf;
+  for(float f=fmin;f<fmax;f*=2.)
+    lfnoise(f*x,buf),num+=a*buf,a*=alpha,nf+=1.;
+  num*=(1.-alpha)/(1.-pow(alpha,nf));
+}
+void stroke(float d0,float s,out float d)
+{
+  d=abs(d0)-s;
+}
+void zextrude(float z,float d2d,float h,out float d)
+{
+  vec2 w=vec2(-d2d,abs(z)-.5*h);
+  d=length(max(w,0.));
+}
+void add(vec2 sda,vec2 sdb,out vec2 dst)
+{
+  dst=mix(sda,sdb,step(sdb.x,sda.x));
+}
+void dhexagonpattern(vec2 p,out float d,out vec2 ind)
+{
+  vec2 q=vec2(p.x*1.2,p.y+p.x*.6),pi=floor(q),pf=fract(q),ma;
+  float v=mod(pi.x+pi.y,3.),ca=step(1.,v),cb=step(2.,v);
+  ma=step(pf.xy,pf.yx);
+  d=dot(ma,1.-pf.yx+ca*(pf.x+pf.y-1.)+cb*(pf.yx-2.*pf.xy));
+  ind=pi+ca-cb*ma;
+  ind=vec2(ind.x/1.2,ind.y);
+  ind=vec2(ind.x,ind.y-ind.x*.6);
+}
+void scene(vec3 x,out vec2 sdf)
+{
+  sdf.y=1.;
+  mfnoise(x.xy,1.,4e2,.45,sdf.x);
+  stroke(sdf.x,.5,sdf.x);
+  sdf.x=x.z+.05*smoothstep(.35,.45,.5+.5*sdf.x)+.1*sdf.x;
+  if(x.z>-.05)
+    {
+      float n2;
+      mfnoise(x.xy,30.,5e2,.47,n2);
+      vec2 sda=vec2(x.z+.05+.01*n2,1);
+      add(sdf,sda,sdf);
+    }
+  float R=.07+.1*sdf.x,dis,da,phi,dr,guard;
+  lfnoise(.5*x.y*c.xx,dis);
+  vec2 sdb,ya=abs(x.xz-.4*dis*c.xy)+.045*c.yx-.065*c.xy,ind;
+  zextrude(x.y,-length(ya)+R,1e4,sdb.x);
+  stroke(sdb.x,.003,da);
+  sdb.y=2.;
+  phi=atan(ya.y,ya.x);
+  dhexagonpattern(vec2(56,12)*vec2(x.y,phi),dis,ind);
+  stroke(dis,.2,dis);
+  stroke(sdb.x,.003*step(dis,0.),sdb.x);
+  sdf.x=max(sdf.x,-da);
+  add(sdf,sdb,sdf);
+  dr=.1;
+  vec3 y=mod(x,dr)-.5*dr;
+  guard=-length(max(abs(y)-vec3(.5*dr*c.xx,.6),0.));
+  guard=abs(guard)+dr*.1;
+  sdf.x=min(sdf.x,guard);
+}
+void normal(vec3 x,out vec3 n)
+{
+  vec2 s,na;
+  scene(x,s);
+  scene(x+5e-4*c.xyy,na);
+  n.x=na.x;
+  scene(x+5e-4*c.yxy,na);
+  n.y=na.x;
+  scene(x+5e-4*c.yyx,na);
+  n.z=na.x;
+  n=normalize(n-s.x);
+}
+void planet_texture(vec2 x,out vec3 col)
+{
+  float d;
+  mfnoise(x,1.,4e2,.65,d);
+  col=mix(vec3(.19,.02,0),vec3(.91,.45,.02),.5+.5*d);
+  stroke(d,.01,d);
+  col=mix(mix(.8*vec3(.99,.49,.02),c.yyy,d*clamp(.2-.5*x.y/12.,0.,1.)),col,smoothstep(-.05,.05,d));
+  col=mix(col,vec3(.15,.05,0),clamp(.2-.5*x.y/12.,0.,1.));
+}
+void mainImage(out vec4 fragColor,vec2 fragCoord)
+{
+  a=iResolution.x/iResolution.y;
+  vec2 uv=fragCoord/iResolution.yy-.5*vec2(a,1),s;
+  vec3 col=c.yyy,o=.5*c.yyx+.3*iTime*c.yxy,t=vec3(uv,0)+.3*iTime*c.yxy+c.yxy,dir=normalize(t-o),x;
+  float d=(.04-o.z)/dir.z;
+  int N=450,i;
+  for(i=0;i<N;++i)
+    {
+      x=o+d*dir;
+      scene(x,s);
+      if(s.x<1e-4)
+        break;
+      d+=s.x;
+    }
+  if(i<N)
+    {
+      vec3 n,l=normalize(x+c.yyx),c1;
+      normal(x,n);
+      c1=vec3(.99,.64,.02);
+      if(s.y==1.)
+        {
+          planet_texture(x.xy,c1);
+          col=.3*c1+.3*c1*abs(dot(l,n))+(1.3*c1+.1*c.xyy)*pow(abs(dot(reflect(-l,n),dir)),3.);
+          if(x.z<0.)
+            {
+              float dis,ya;
+              lfnoise(.5*x.y*c.xx,dis);
+              ya=abs(x.x-.4*dis)-.15;
+              col=mix(col,.3*col,smoothstep(-.01,.01,-ya));
+            }
+        }
+      else
+         if(s.y==2.)
+          planet_texture(x.xy,c1),col=.3*c1+.3*c1*abs(dot(l,n))+(1.3*c1+.1*c.xyy)*pow(abs(dot(reflect(-l,n),dir)),3.),col=mix(col,.4*length(col)*c.xyy,.7);
+    }
+  col=clamp(col,0.,1.);
+  fragColor=vec4(col,1);
+}
