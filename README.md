@@ -430,8 +430,8 @@ if(c)return a();b();
 
 ### Ternary operator
 
-When both branches of a if+else are only expressions and they end with
-an assignment to the same variable, the if is changed into a ternary operator.
+When both branches of a if+else are an expression, the if is changed into a ternary operator.
+Additionally, if they end with an assignment to the same variable, the variable is extracted from the ternary operator.
 
 Input:
 ```glsl

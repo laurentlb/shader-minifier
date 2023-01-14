@@ -22,7 +22,9 @@ float f(vec3 p)
   p/=scale;
   for(int i=0;d=min(d,scale*max(p.y-1,max(-p.y,length(p.xz)-.1/(p.y+.7)))/s),p.xz=abs(p.xz),p.y-=1,i<j;p*=mat3(u,normalize(cross(u,w)),w),p*=ss,s*=ss,++i)
     ;
-  return ti<25?d:min(d,col=max(0,length(p)-.25)/s);
+  return ti<25?
+    d:
+    min(d,col=max(0,length(p)-.25)/s);
 }
 float hash(float n)
 {
@@ -128,7 +130,9 @@ void main()
           for(int i=-1;i<2;++i)
             for(int j0=-1;j0<2;++j0)
               {
-                vec2 u=uo+vec2(i,(uo.x+i&1)==1?-j0:j0);
+                vec2 u=uo+vec2(i,(uo.x+i&1)==1?
+                  -j0:
+                  j0);
                 seed=u.x*881+u.y*927+n*1801;
                 for(int k=0;k<11;++k)
                   {

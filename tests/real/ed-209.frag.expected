@@ -35,8 +35,12 @@ float sdTriPrism(vec3 p,vec2 h)
 }
 float sdCappedCone(vec3 p,vec3 a,vec3 b,float ra,float rb)
 {
-  float rba=rb-ra,baba=dot(b-a,b-a),papa=dot(p-a,p-a),paba=dot(p-a,b-a)/baba,x=sqrt(papa-paba*paba*baba),cax=max(0.,x-(paba<.5?ra:rb)),cay=abs(paba-.5)-.5,f=clamp((rba*(x-ra)+paba*baba)/(rba*rba+baba),0.,1.),cbx=x-ra-f*rba,cby=paba-f;
-  return(cbx<0.&&cay<0.?-1.:1.)*sqrt(min(cax*cax+cay*cay*baba,cbx*cbx+cby*cby*baba));
+  float rba=rb-ra,baba=dot(b-a,b-a),papa=dot(p-a,p-a),paba=dot(p-a,b-a)/baba,x=sqrt(papa-paba*paba*baba),cax=max(0.,x-(paba<.5?
+    ra:
+    rb)),cay=abs(paba-.5)-.5,f=clamp((rba*(x-ra)+paba*baba)/(rba*rba+baba),0.,1.),cbx=x-ra-f*rba,cby=paba-f;
+  return(cbx<0.&&cay<0.?
+    -1.:
+    1.)*sqrt(min(cax*cax+cay*cay*baba,cbx*cbx+cby*cby*baba));
 }
 float sdCappedCylinder(vec3 p,float h,float r)
 {
@@ -65,7 +69,9 @@ vec3 getRayDir(vec3 ro,vec3 lookAt,vec2 uv)
 }
 MarchData minResult(MarchData a,MarchData b)
 {
-  return a.d<b.d?a:b;
+  return a.d<b.d?
+    a:
+    b;
 }
 void setBodyMaterial(inout MarchData mat)
 {
@@ -245,7 +251,9 @@ MarchData ed209(vec3 p)
 {
   p.yz+=vec2(legWalkAngle(2.)*.2+.1,-edZ());
   MarchData r=legs(p);
-  float f=min(stretch*2.,1.),slide=f<.5?smoothstep(0.,.5,f):1.-smoothstep(.5,1.,f)*.2;
+  float f=min(stretch*2.,1.),slide=f<.5?
+    smoothstep(0.,.5,f):
+    1.-smoothstep(.5,1.,f)*.2;
   p.yz-=slide*.5;
   gunsUp=smoothstep(0.,1.,clamp((stretch-.66)*6.,0.,1.));
   gunsForward=smoothstep(0.,1.,clamp((stretch-.83)*6.,0.,1.))+fireShock()*.5;
@@ -406,7 +414,9 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
               lookAt=vec3(0,stretch*.5-.5,edZ());
               edTwist=remap(t,3.,3.2,0.,1.)*stretch;
               edDown=remap(t,3.2,3.4,0.,1.)*stretch;
-              edShoot=t<=9.5?remap(t,4.,9.5,0.,1.):0.;
+              edShoot=t<=9.5?
+                remap(t,4.,9.5,0.,1.):
+                0.;
             }
   float dim=1.-cos(min(1.,2.*min(abs(time-startScene),abs(time-endScene)))*3.141/2.);
   vec3 col=vec3(0);
