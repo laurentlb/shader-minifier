@@ -36,7 +36,8 @@ type CliArguments =
     | [<CustomCommandLine("--no-sequence")>] NoSequence
     | [<CustomCommandLine("--smoothstep")>] Smoothstep
     | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
-    | [<CustomCommandLine("--move-declarations")>] MoveDeclarations | [<MainCommand>] Filenames of filename:string list
+    | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
+    | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
         member s.Usage =
