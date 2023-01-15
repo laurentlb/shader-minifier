@@ -1,3 +1,4 @@
+clod.frag...                              9414 => 1697.174
 audio-flight-v2.frag                      4650 =>  904.201
 buoy.frag                                 4239 =>  629.709
 controllable-machinery.frag               7773 => 1230.829
@@ -19,4 +20,4 @@ terrarium.frag                            3634 =>  749.630
 the_real_party_is_in_your_pocket.frag    12248 => 1815.725
 valley_ball.glsl                          4386 =>  888.815
 yx_long_way_from_home.frag                3030 =>  615.535
-Total: 110343 => 19837.896
+Total: 119757 => 21535.071
