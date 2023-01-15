@@ -5,7 +5,12 @@ float swizzles()
   vec4 v4=v1.xxyx,v5=vec4(1,v2.zy,2),v6=vec4(v1.xy,v2.xy);
   return v1.x+v2.x+v3.x+v4.x+v5.x+v6.x;
 }
+vec4 constructor()
+{
+  return vec4(1,100,2e3,3e4);
+}
 void main()
 {
   swizzles();
+  constructor();
 }
