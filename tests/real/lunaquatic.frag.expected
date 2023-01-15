@@ -136,9 +136,13 @@ float traceIso(vec3 ro,vec3 rd,float mint,float maxt,float s)
       if(iso<=0.)
         {
           for(int i=0;i<9;i++)
-            exact=(lt+t)/2.,isoSurface(ro+exact*rd)<0.?
-              (t=exact):
-              (lt=exact);
+            {
+              exact=(lt+t)/2.;
+              if(isoSurface(ro+exact*rd)<0.)
+                t=exact;
+              else
+                 lt=exact;
+            }
           return exact;
         }
       lt=t;

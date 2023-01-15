@@ -52,8 +52,9 @@ float ifStmtToExpr(float f)
   r2=f>1.?
     1.:
     (foo(),2.);
-  f>1.?
-    (r3=1.):
-    (r3=2.,foo());
+  if(f>1.)
+    r3=1.;
+  else
+     r3=2.,foo();
   return r+r2+r3;
 }
