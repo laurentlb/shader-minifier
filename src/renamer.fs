@@ -157,6 +157,17 @@ module private RenamerImpl =
                 d.[id.OldName] <- newName
                 env.Rename(id, newName)
 
+    // Renaming safe across multiple files (e.g. uniform/in/out variables are
+    // renamed in a consistent way) that tries to optimize based on the context
+    // and variable reuse.
+    let multiFileRenaming contextTable (exportRenames: IDictionary<string, string>) (env: Env) (id: Ident) =
+        match exportRenames.TryGetValue(id.Name) with
+            | true, newName -> env.Rename(id, newName)
+            | false, _ ->
+                let cid = char (1000 + int id.Name)
+                let newName = chooseIdent contextTable cid env.availableNames
+                env.Rename(id, newName)
+
     let dontRename (env: Env) (id: Ident) =
         env.Rename(id, id.Name)
 
@@ -376,7 +387,10 @@ module private RenamerImpl =
 
         let mutable env =
             if Array.length shaders > 1 then
-                Env.Create(names, true, bijectiveRenaming names, shadowVariables)
+                // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
+                let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
+                let contextTable = computeContextTable text
+                Env.Create(names, true, multiFileRenaming contextTable exportsRenames, shadowVariables)
             else
                 let contextTable = computeContextTable text
                 Env.Create(names, true, optimizeContext contextTable, shadowVariables)
