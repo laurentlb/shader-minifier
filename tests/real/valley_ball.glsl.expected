@@ -205,11 +205,13 @@ void main()
   seed=10.;
   int scene=int(Y.y);
   rd=vec3(p.xy-.5,1);
-  scene>22&&scene<27?
-    (seed=min(1.,sin((Y.y-23.)*pi*.25)*12.),ro=vec3(.12,.005,Y.y*.08),rd=vec3(mm*vec4(rd,1)),rd.y+=.1*cos(Y.y*4.)):
-    scene>14&&scene<23?
-      (seed=min(1.,sin((Y.y-15.)*pi*.125)*24.),rd+=vec3(0,.1*cos(Y.y*4.),0),ro=vec3(.08,.01*sin(Y.y*4.)+.002,Y.y*.11)):
-      (ro=vec3(.1,.004,0)+vec3(.1,.005,20)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro=mix(ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),Y.y-float(scene)),ro.y+=height(ro.xz)+.02,ro+=.02*getTerrainNormal(ro),seed=min(1.,step(-28.,-Y.y)*sin((Y.y-float(scene))*pi)*3.));
+  if(scene>22&&scene<27)
+    seed=min(1.,sin((Y.y-23.)*pi*.25)*12.),ro=vec3(.12,.005,Y.y*.08),rd=vec3(mm*vec4(rd,1)),rd.y+=.1*cos(Y.y*4.);
+  else
+     if(scene>14&&scene<23)
+      seed=min(1.,sin((Y.y-15.)*pi*.125)*24.),rd+=vec3(0,.1*cos(Y.y*4.),0),ro=vec3(.08,.01*sin(Y.y*4.)+.002,Y.y*.11);
+    else
+       ro=vec3(.1,.004,0)+vec3(.1,.005,20)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro=mix(ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),ro+vec3(.008)*vec3(rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++)),rnd(vec2(scene,seed++))),Y.y-float(scene)),ro.y+=height(ro.xz)+.02,ro+=.02*getTerrainNormal(ro),seed=min(1.,step(-28.,-Y.y)*sin((Y.y-float(scene))*pi)*3.);
   rd=normalize(rd);
   spherePos=scene>22&&scene<27?
     ro+.1*vec3(mm*vec4(0,0,1,1)):

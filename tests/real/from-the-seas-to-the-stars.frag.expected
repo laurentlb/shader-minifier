@@ -93,11 +93,13 @@ void makeBG(float c)
   w.y=R()*2-1;
   w.z=R()*2-1;
   w.w=R();
-  w.w>c?
-    (w.w=R(),p.x=pow(abs(w.x),1.)*sign(w.x)*8.,p.z=pow(abs(w.y),1.)*sign(w.y)*8.,p.y=.2+fbm(p.xz-time/8.)*.2-pow(w.z*.5+.5,8.)*5.,col=vec3(.3,.5,1)/2,col=mix(col,vec3(1,.25,1),pow(w.w,4.)),col=mix(col,vec3(1),pow(1.-w.z*.5-.5,32.)),col*=1.-pow(w.z*.5+.5,1.),col+=pow(1-abs(fbm(p.xz*3.+time/8.+p.y)*.7-.6),32.)*.4,col/=2,p.x+=cos(p.x*8.)*.01,col*=.2,p.y+=.5):
-    w.w>1e-4?
-      (w.x=R()*2-1,w.y=R()*2-1,w.z=R(),p.xz=w.xy*7,p.y=-1.+fbm(p.zx+19.)*.02*pow(length(p.xz),2.)-pow(w.z,8),p.z+=2.,col=vec3(.1,.06,.05)/1.5*smoothstep(-1.5,-.2,p.y),w.w=R(),col+=vec3(pow(w.w,80))*.1,col*=1.+pow(max(0.,1.-abs(fbm(p.xz*2+time/2)-.8)),16)/2):
-      (p=w.xyz,p.x=fract(p.x+time/4.*.1)*2-1,p*=2.,w.w=R(),col=vec3(w.w)*.3);
+  if(w.w>c)
+    w.w=R(),p.x=pow(abs(w.x),1.)*sign(w.x)*8.,p.z=pow(abs(w.y),1.)*sign(w.y)*8.,p.y=.2+fbm(p.xz-time/8.)*.2-pow(w.z*.5+.5,8.)*5.,col=vec3(.3,.5,1)/2,col=mix(col,vec3(1,.25,1),pow(w.w,4.)),col=mix(col,vec3(1),pow(1.-w.z*.5-.5,32.)),col*=1.-pow(w.z*.5+.5,1.),col+=pow(1-abs(fbm(p.xz*3.+time/8.+p.y)*.7-.6),32.)*.4,col/=2,p.x+=cos(p.x*8.)*.01,col*=.2,p.y+=.5;
+  else
+     if(w.w>1e-4)
+      w.x=R()*2-1,w.y=R()*2-1,w.z=R(),p.xz=w.xy*7,p.y=-1.+fbm(p.zx+19.)*.02*pow(length(p.xz),2.)-pow(w.z,8),p.z+=2.,col=vec3(.1,.06,.05)/1.5*smoothstep(-1.5,-.2,p.y),w.w=R(),col+=vec3(pow(w.w,80))*.1,col*=1.+pow(max(0.,1.-abs(fbm(p.xz*2+time/2)-.8)),16)/2;
+    else
+       p=w.xyz,p.x=fract(p.x+time/4.*.1)*2-1,p*=2.,w.w=R(),col=vec3(w.w)*.3;
 }
 void ammonite()
 {
@@ -525,11 +527,16 @@ void main()
                       {
                         p.z+=sin(p.x);
                         if(!bigkoi)
-                          w.w=R(),w.w<.33?
-                            (col=vec3(1,.25,.1)):
-                            w.w<.66?
-                              (col=vec3(.01),p.xz*=rotmat(1.8846)):
-                              (col=vec3(.5),p.xz*=rotmat(3.7692));
+                          {
+                            w.w=R();
+                            if(w.w<.33)
+                              col=vec3(1,.25,.1);
+                            else
+                               if(w.w<.66)
+                                col=vec3(.01),p.xz*=rotmat(1.8846);
+                              else
+                                 col=vec3(.5),p.xz*=rotmat(3.7692);
+                          }
                         else
                           {
                             p.x*=2.;
@@ -595,11 +602,33 @@ void main()
                     op.x-=mod(op.x,.1)/3.;
                     float d=koi(op.xy);
                     if(max(d,abs(op.z)-.1*pow(-clamp(d,-1,0),.5))<0.)
-                      p=op,w.x=R(),w.y=R(),w.z=R(),w.w=R(),w.w=R(),w.x=R(),w.y=R(),p.z+=.2,p+=fp,p.z+=sin(p.x*3.)*.1,w.w=R(),w.w<.33?
-                        (col=vec3(1,.25,.1)):
-                        w.w<.66?
-                          (col=vec3(.01),p.xz*=rotmat(3.141),p.z+=3.):
-                          (col=vec3(.5),p.xz*=rotmat(3.141),p.x+=2.,p.z+=6.),w.x=R(),col+=pow(w.x,32.)*vec3(.2),w.x=R(),w.y=R(),w.z=R(),w.w=R();
+                      {
+                        p=op;
+                        w.x=R();
+                        w.y=R();
+                        w.z=R();
+                        w.w=R();
+                        w.w=R();
+                        w.x=R();
+                        w.y=R();
+                        p.z+=.2;
+                        p+=fp;
+                        p.z+=sin(p.x*3.)*.1;
+                        w.w=R();
+                        if(w.w<.33)
+                          col=vec3(1,.25,.1);
+                        else
+                           if(w.w<.66)
+                            col=vec3(.01),p.xz*=rotmat(3.141),p.z+=3.;
+                          else
+                             col=vec3(.5),p.xz*=rotmat(3.141),p.x+=2.,p.z+=6.;
+                        w.x=R();
+                        col+=pow(w.x,32.)*vec3(.2);
+                        w.x=R();
+                        w.y=R();
+                        w.z=R();
+                        w.w=R();
+                      }
                     else
                       {
                         w.w=R();

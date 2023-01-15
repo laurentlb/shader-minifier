@@ -482,7 +482,9 @@ let private simplifyStmt = function
                     // turn if-else of expressions into ternary statement
                     | _ ->
                         // if(c)x();else y();  ->  c?x():y();
-                        Expr (FunCall(Op "?:", [cond; eT; eF]))
+                        // This transformation is not legal when x() and y() have different types.
+                        // Expr (FunCall(Op "?:", [cond; eT; eF]))
+                        If (cond, body1, body2)
             | _ -> If (cond, body1, body2)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
