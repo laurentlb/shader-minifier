@@ -10,14 +10,14 @@
 
 --no-remove-unused --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
 --no-remove-unused --hlsl --no-inlining --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
---no-remove-unused --no-renaming --no-inlining --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
+--no-remove-unused --no-renaming --no-inlining --move-declarations --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
 --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
 --no-remove-unused --no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
 --no-remove-unused --no-renaming --format indented --no-inlining -o tests/unit/nested_if.frag.expected tests/unit/nested_if.frag
 --format indented -o tests/unit/precision.frag.expected tests/unit/precision.frag
 --no-remove-unused --format c-array --no-inlining --no-renaming -o tests/unit/verbatim.frag.expected tests/unit/verbatim.frag
 --no-remove-unused --format indented --no-renaming -o tests/unit/forward_declaration.frag.expected tests/unit/forward_declaration.frag
---no-remove-unused --format indented --no-renaming -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
+--no-remove-unused --format indented --no-renaming --move-declarations -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
 --no-renaming --no-inlining --format indented -o tests/unit/pi.frag.expected tests/unit/pi.frag
 --no-renaming --no-inlining --format indented -o tests/unit/vectors.frag.expected tests/unit/vectors.frag
 --no-renaming --format indented -o tests/unit/deadcode.frag.expected tests/unit/deadcode.frag
@@ -44,11 +44,11 @@
 
 # Multifile tests
 
---no-remove-unused --format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
+--no-remove-unused --move-declarations --format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
 
 # Tests with full renaming
 
---no-remove-unused --no-move-declarations --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
+--no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
 --hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
 -o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag

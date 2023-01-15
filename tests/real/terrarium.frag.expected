@@ -79,7 +79,7 @@ void main()
   for(int i=0;i<256;++i)
     {
       int seed=coord.x+coord.y*720+m*10000+i*100000000;
-      float r=H(seed=IH(seed))*1.08,phi,u;
+      float r=H(seed=IH(seed))*1.08;
       if(H(seed=IH(seed))<.02+smoothstep(0.,25.,abs(time-90.)))
         {
           if(r<.15)
@@ -126,8 +126,7 @@ void main()
       p*=1.+max(0.,time-130)/6.;
       vec3 q=p.zxy,x,w=vec3(H(seed=IH(seed)),H(seed=IH(seed)),H(seed=IH(seed)));
       q.z-=.7;
-      phi=w.x*3.141592*2;
-      u=w.y*2-1;
+      float phi=w.x*3.141592*2,u=w.y*2-1;
       u=sqrt(1-u*u);
       x=vec3(cos(phi)*u,sin(phi)*u,w.y*2-1)*pow(w.z,1./3)*3;
       q=mix(q,q+x*.5,.1*pow(H(seed),16.));
