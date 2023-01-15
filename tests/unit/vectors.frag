@@ -8,4 +8,8 @@ float swizzles() {
   return v1.x + v2.x + v3.x + v4.x + v5.x + v6.x;
 }
 
-void main() { swizzles(); }
+vec4 constructor() {
+	return vec4(1., 1e2, 2e3, 3e4);
+}
+
+void main() { swizzles(); constructor(); }

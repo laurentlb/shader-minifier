@@ -201,7 +201,12 @@ let private simplifyVec constr args =
     // basic type of the object being constructed, the scalar construction rules (above) are used to convert
     // the parameters."
     let useInts = function
-        | Float (f, _) when Decimal.Round(f) = f -> Int (int f, "")
+        | Float (f, _) as e when Decimal.Round(f) = f ->
+            let candidate = Int (int f, "")
+            if (Printer.exprToS candidate).Length <= (Printer.exprToS e).Length then
+                candidate
+            else
+                e
         | e -> e
 
     // vec3(1,1,1)  =>  vec3(1)
