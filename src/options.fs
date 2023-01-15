@@ -36,8 +36,7 @@ type CliArguments =
     | [<CustomCommandLine("--no-sequence")>] NoSequence
     | [<CustomCommandLine("--smoothstep")>] Smoothstep
     | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
-    | [<CustomCommandLine("--no-move-declarations")>] NoMoveDeclarations
-    | [<MainCommand>] Filenames of filename:string list
+    | [<CustomCommandLine("--move-declarations")>] MoveDeclarations | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
         member s.Usage =
@@ -56,7 +55,7 @@ type CliArguments =
             | NoSequence -> "Do not use the comma operator trick"
             | Smoothstep -> "Use IQ's smoothstep trick"
             | NoRemoveUnused -> "Do not remove unused code"
-            | NoMoveDeclarations -> "Do not move declarations to group them"
+            | MoveDeclarations -> "Move declarations to group them"
             | Filenames _ -> "List of files to minify" 
 
 type Options() =
@@ -74,7 +73,7 @@ type Options() =
     member val noRenaming = false with get, set
     member val noRenamingList = ["main"; "mainImage"] with get, set
     member val noRemoveUnused = false with get, set
-    member val noMoveDeclarations = false with get, set
+    member val moveDeclarations = false with get, set
     member val filenames = [||]: string[] with get, set
 
 module Globals =
@@ -116,7 +115,7 @@ let private initPrivate argv needFiles =
         options.noSequence <- args.Contains(NoSequence)
         options.noRenaming <- args.Contains(NoRenaming)
         options.noRemoveUnused <- args.Contains(NoRemoveUnused)
-        options.noMoveDeclarations <- args.Contains(NoMoveDeclarations)
+        options.moveDeclarations <- args.Contains(MoveDeclarations)
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
         true

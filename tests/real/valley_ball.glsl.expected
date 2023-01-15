@@ -15,9 +15,9 @@ float rnd(vec2 x)
 float smoothrnd(vec2 x)
 {
   x=mod(x,1e3);
-  vec2 a=fract(x),u;
+  vec2 a=fract(x);
   x-=a;
-  u=a*a*(3.-2.*a);
+  vec2 u=a*a*(3.-2.*a);
   return mix(mix(rnd(x+vec2(0)),rnd(x+vec2(1,0)),u.x),mix(rnd(x+vec2(0,1)),rnd(x+vec2(1)),u.x),u.y);
 }
 float norm(float x)
@@ -195,14 +195,14 @@ void main()
   Y.z=1.;
   Y.w=1.333;
   p=-1.+2.*gl_FragCoord.xy/resolution.xy;
-  float angle=1.570796*Y.y-1.570796,seed;
+  float angle=1.570796*Y.y-1.570796;
   mat4 mm=mat4(cos(angle),0.,sin(angle),0.,0.,1.,0.,0.,-sin(angle),0.,cos(angle),0.,0.,0.,0.,1.);
   gf_DetailLevel=1e2;
   pi=3.1416;
   interlacing=vec3(1.2,.9,.9);
   eps=1e-4;
   bigeps=.01;
-  seed=10.;
+  float seed=10.;
   int scene=int(Y.y);
   rd=vec3(p.xy-.5,1);
   if(scene>22&&scene<27)

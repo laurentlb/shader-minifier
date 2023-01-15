@@ -101,7 +101,7 @@ USAGE: Shader Minifier [--help] [-o <string>] [-v] [--hlsl]
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
                        [--smoothstep] [--no-remove-unused]
-                       [--no-move-declarations] [<filename>...]
+                       [--move-declarations] [<filename>...]
 
 FILENAMES:
 
@@ -135,8 +135,8 @@ OPTIONS:
     --no-sequence         Do not use the comma operator trick
     --smoothstep          Use IQ's smoothstep trick
     --no-remove-unused    Do not remove unused code
-    --no-move-declarations
-                          Do not move declarations to group them
+    --move-declarations
+                          Move declarations to group them
     --help                display this list of options.
 ```
 
@@ -531,10 +531,9 @@ c = 4;
 
 As shown in the example, the variable name will appear twice (`c` above) while
 the type will be written only once (`int` above). In some cases, this might make
-the shader slightly longer. When the variables are renamed, this should rarely
-be an issue.
+the shader slightly longer.
 
-Disable this transformation with the flag `--no-move-declarations`.
+Enable this transformation with the flag `--move-declarations`.
 
 ### Augmented operators
 

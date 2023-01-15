@@ -431,7 +431,7 @@ let private simplifyBlock stmts =
     let b = squeezeConsecutiveDeclarations b
 
     // Group declarations, optionally (may compress poorly).  float a,f();float b=4.;  ->  float a,b;f();b=4.;
-    let b = if hasPreprocessor || options.noMoveDeclarations then b else groupDeclarations b
+    let b = if hasPreprocessor || not options.moveDeclarations then b else groupDeclarations b
     b
 
 let private simplifyStmt = function

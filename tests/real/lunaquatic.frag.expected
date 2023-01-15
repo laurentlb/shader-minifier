@@ -39,9 +39,9 @@ float caustic(float u,float v,float t)
 float smoothrnd(vec2 x)
 {
   x=mod(x,1e3);
-  vec2 a=fract(x),u;
+  vec2 a=fract(x);
   x-=a;
-  u=a*a*(3.-2.*a);
+  vec2 u=a*a*(3.-2.*a);
   return mix(mix(rnd(x+vec2(0)),rnd(x+vec2(1,0)),u.x),mix(rnd(x+vec2(0,1)),rnd(x+vec2(1)),u.x),u.y);
 }
 float height(vec2 x)
@@ -79,8 +79,8 @@ vec3 calculateSkySub(vec3 rd)
 vec4 calcPlanet(vec3 ro,vec3 rd)
 {
   vec4 color=vec4(0);
-  vec3 planetPos=vec3(70,20,100),pN;
-  float dist=dot(rd,normalize(planetPos-ro))-.95,t;
+  vec3 planetPos=vec3(70,20,100);
+  float dist=dot(rd,normalize(planetPos-ro))-.95;
   if(dist>0.)
     {
       dist=length(planetPos-ro)-dist*8e2;
@@ -91,8 +91,8 @@ vec4 calcPlanet(vec3 ro,vec3 rd)
     }
   else
      dist=FAR*99.;
-  pN=vec3(-.96,.96,-.2);
-  t=dot(pN,planetPos-ro)/dot(pN,rd);
+  vec3 pN=vec3(-.96,.96,-.2);
+  float t=dot(pN,planetPos-ro)/dot(pN,rd);
   if(t>0.&&t<dist)
     {
       float d=length(planetPos-ro-rd*t);
@@ -190,7 +190,7 @@ void main()
   rd=normalize(vec3(Y.xy-.5,1));
   artifactPos=vec4(10,norm(sin(Y.z+4.)),13,0);
   ro=vec3(0,.25,0);
-  float t=Y.z,dist,isoDistance;
+  float t=Y.z;
   if(t<16.)
     t=ftime(t,0.,16.),t=1.-pow(1.-t,2.),lightPos=vec3(-400,1e2-t*450.,1e3),t=(t-1.)*.7,rd=rotateX(rd,-t);
   else
@@ -222,8 +222,7 @@ void main()
             rd=rotateY(rd,atan(dir.y,dir.x)-pi/2.);
           }
   lightDir=normalize(lightPos-ro);
-  dist=length(ro-artifactPos.xyz)-1.;
-  isoDistance=artifactPos.w==1.?
+  float dist=length(ro-artifactPos.xyz)-1.,isoDistance=artifactPos.w==1.?
     traceIso(ro,rd,dist,dist+2.,99.):
     FAR;
   if(isoDistance<FAR)
