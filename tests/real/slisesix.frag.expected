@@ -195,7 +195,7 @@ void main()
         }
       else
          if(matID==2)
-          rgb=vec3(0);
+          rgb-=rgb;
         else
            if(matID==1)
             {
