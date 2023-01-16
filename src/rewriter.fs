@@ -181,6 +181,9 @@ let private simplifyOperator env = function
     | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
             when x.Name = y.Name && augmentableOperators.Contains op ->
         FunCall(Op (op + "="), [Var x; e])
+    | FunCall(Op "=", [Var x; FunCall(Var fctName, [Int (0, _)])])
+        when List.contains fctName.Name ["vec2"; "vec3"; "vec4"; "ivec2"; "ivec3"; "ivec4"] ->
+        FunCall(Op "-=", [Var x; Var x]) // x=vec3(0);  ->  x-=x;
     | e -> e
 
 

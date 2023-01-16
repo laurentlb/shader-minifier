@@ -20,5 +20,5 @@
  "void main()"
  "{"
    "float f1=1.5,f2=3e-7,f3=.42,f6=-.002,f7=2e-9,f8=2e6,f9=2e10;"
-   "gl_FragColor=vec4(0);"
+   "gl_FragColor-=gl_FragColor;"
  "}",
