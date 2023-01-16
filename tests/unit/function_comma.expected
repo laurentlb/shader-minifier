@@ -1,6 +1,4 @@
-/* File generated with 
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 #ifndef FUNCTION_COMMA_EXPECTED_
 # define FUNCTION_COMMA_EXPECTED_
 

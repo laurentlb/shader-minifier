@@ -1,6 +1,4 @@
-/* File generated with 
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 
 // tests/unit/operators.frag
 "#version 330\n"

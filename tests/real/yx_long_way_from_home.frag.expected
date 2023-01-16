@@ -1,6 +1,4 @@
-/* File generated with 
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 #ifndef YX_LONG_WAY_FROM_HOME_FRAG_EXPECTED_
 # define YX_LONG_WAY_FROM_HOME_FRAG_EXPECTED_
 # define VAR_iChannel1 "v"

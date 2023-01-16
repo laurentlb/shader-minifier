@@ -10,9 +10,7 @@ let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
         else Path.GetFileName options.outputName
     let macroName = fileName.Replace(".", "_").ToUpper() + "_"
 
-    fprintfn out "/* File generated with Shader Minifier %s" Options.version
-    fprintfn out " * http://www.ctrl-alt-test.fr"
-    fprintfn out " */"
+    fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     if not asAList then
         fprintfn out "#ifndef %s" macroName

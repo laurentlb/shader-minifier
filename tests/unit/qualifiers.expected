@@ -1,6 +1,4 @@
-/* File generated with Shader Minifier 1.3
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 #ifndef QUALIFIERS_EXPECTED_
 # define QUALIFIERS_EXPECTED_
 # define VAR_foo "f"
