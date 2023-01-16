@@ -467,6 +467,11 @@ let private simplifyStmt = function
     | If (cond, body1, body2) ->
         let (body1, body2) = squeezeBlockWithComma body1, Option.map squeezeBlockWithComma body2
 
+        let (cond, body1, body2) = // if(!c)a();else b();  ->  if(c)b();else a();
+            match (cond, body1, body2) with
+            | FunCall (Op "!", [e]), bodyT, Some bodyF -> e, bodyF, Some bodyT
+            | _ -> cond, body1, body2
+
         match (body1, body2) with
             | (Expr eT, Some (Expr eF)) ->
                 let tryCollapseToAssignment : Expr -> (Ident * Expr) option = function
