@@ -1,6 +1,4 @@
-/* File generated with Shader Minifier 1.3
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 #ifndef EXTERNALS_EXPECTED_
 # define EXTERNALS_EXPECTED_
 # define VAR_e "t"

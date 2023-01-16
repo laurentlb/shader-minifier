@@ -1,6 +1,4 @@
-/* File generated with 
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 
 // tests/unit/verbatim.frag
 "//Test case for https://github.com/laurentlb/Shader_Minifier/issues/168\n"

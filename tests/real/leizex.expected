@@ -1,5 +1,4 @@
-; File generated with 
-; http://www.ctrl-alt-test.fr
+; Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 
 _leizex_frag:
 	db '#extension GL_EXT_gpu_shader4:enable', 10, ''

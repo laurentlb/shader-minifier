@@ -1,6 +1,4 @@
-/* File generated with 
- * http://www.ctrl-alt-test.fr
- */
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 
 // tests/unit/many_variables.frag
 "int t(float t,float o,float l,float f,float a,float n,float i,float r,float u,float e,float Z,float Y)"
