@@ -529,7 +529,15 @@ void main()
                     else
                       {
                         p.z+=sin(p.x);
-                        if(!bigkoi)
+                        if(bigkoi)
+                          {
+                            p.x*=2.;
+                            p.x*=.5;
+                            if(p.x<0.)
+                              return;
+                            p.xz*=rotmat(.78525);
+                          }
+                        else
                           {
                             w.w=R();
                             if(w.w<.33)
@@ -539,14 +547,6 @@ void main()
                                 col=vec3(.01),p.xz*=rotmat(1.8846);
                               else
                                  col=vec3(.5),p.xz*=rotmat(3.7692);
-                          }
-                        else
-                          {
-                            p.x*=2.;
-                            p.x*=.5;
-                            if(p.x<0.)
-                              return;
-                            p.xz*=rotmat(.78525);
                           }
                       }
                     w.x=R();
