@@ -48,9 +48,7 @@ let private printIndented out (shaders: Ast.Shader[]) =
     |> fprintf out "%s"
 
 let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
-    fprintfn out "/* File generated with Shader Minifier %s" Options.version
-    fprintfn out " * http://www.ctrl-alt-test.fr"
-    fprintfn out " */"
+    fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     for value: Ast.ExportedName in List.sort exportedNames do
         if value.ty = "" then
@@ -65,8 +63,7 @@ let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out ""
 
 let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
-    fprintfn out "; File generated with Shader Minifier %s" Options.version
-    fprintfn out "; http://www.ctrl-alt-test.fr"
+    fprintfn out "; Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     for value: Ast.ExportedName in List.sort exportedNames do
         if value.ty = "" then
