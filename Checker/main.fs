@@ -117,8 +117,8 @@ let testGolden () =
 
 [<EntryPoint>]
 let main argv =
-    // Manually run compression tests by enabling this line:
-    // CompressionTests.run ()
+    // Manually skip compression tests by disabling this line:
+    CompressionTests.run ()
 
     initOpenTK()
     let mutable failures = testGolden()
