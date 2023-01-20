@@ -4,19 +4,19 @@
 
 const char *externals_frag =
  "uniform int i,n,e;"
- "int t()"
+ "int H()"
  "{"
-   "int n,e,t,r,u;"
+   "int n,e,F,G,H;"
    "return i;"
  "}"
- "int r()"
+ "int G()"
  "{"
-   "int i,e,t,r,u;"
+   "int i,e,F,G,H;"
    "return n;"
  "}"
- "int u()"
+ "int F()"
  "{"
-   "int i,t,r,n,u;"
+   "int i,F,G,n,H;"
    "return e;"
  "}";
 

@@ -29,7 +29,7 @@ void h(int G)
       break;
   }
 }
-float e()
+float D()
 {
   switch(42){
     case 42:
@@ -37,8 +37,8 @@ float e()
       float k=2.4;
       return G+k;
     case 43:
-      float h=4.3;
-      return h+3.4;
+      float D=4.3;
+      return D+3.4;
     default:
       return 0.;
   }

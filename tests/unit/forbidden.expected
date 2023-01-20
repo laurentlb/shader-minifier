@@ -1,4 +1,4 @@
-struct f{float f;};float t()
+struct f{float f;};float L()
 {
   return 42.;
 }
