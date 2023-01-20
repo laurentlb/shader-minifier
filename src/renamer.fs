@@ -97,13 +97,18 @@ module private RenamerImpl =
                 | true, occ -> score <- score + occ
 
             if score > fst best then best <- score, word
+            // If the score is equal, consistently pick the same string, to get a more deterministic behavior.
+            elif score = fst best && word < snd best then best <- score, word
 
         let best = snd best
         assert (best.Length > 0)
         let firstLetter = best.[0]
         let lastLetter = best.[best.Length - 1]
 
-        // update table
+        // Update the context table. Due to this side-effect, variables in two identical functions
+        // may get different names. Compression tests using Crinkler show that (on average) it's
+        // still worth updating the tables. Results might differ with kkrunchy, more testing
+        // will be useful.
         for c in allChars do
             match contextTable.TryGetValue((c, ident)), contextTable.TryGetValue((c, firstLetter)) with
             | (false, _), _ -> ()
