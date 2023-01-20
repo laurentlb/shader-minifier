@@ -360,13 +360,12 @@ module private RenamerImpl =
 
     let renameAsts shaders env =
         let mutable env = env
-        // First, rename top-level values.
         for shader in shaders do
+            // Rename top-level and body at the same time (because the body
+            // needs the environment matching the top-level).
             env <- renList env renTopLevelName shader.code
-
-        // Rename local variables.
-        for shader in shaders do
             List.iter (renTopLevelBody env) shader.code
+
         env.exportedNames.Value
 
     let assignUniqueIds shaders =
