@@ -5,6 +5,7 @@
 --no-renaming --format c-array -o tests/real/kinder_painter.expected tests/real/kinder_painter.frag
 --no-renaming --format js -o tests/real/disco.expected tests/real/disco.frag
 --no-renaming --format nasm -o tests/real/leizex.expected tests/real/leizex.frag
+--format rust -o tests/real/heart.expected tests/real/heart.frag
 
 # Unit tests
 
