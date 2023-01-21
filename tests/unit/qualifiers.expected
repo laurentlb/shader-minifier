@@ -9,11 +9,11 @@ const char *qualifiers_frag =
  "{"
    "return f;"
  "}"
- "float t(const float f)"
+ "float M(const float f)"
  "{"
    "return f;"
  "}"
- "float o(inout float f)"
+ "float L(inout float f)"
  "{"
    "return f;"
  "}";

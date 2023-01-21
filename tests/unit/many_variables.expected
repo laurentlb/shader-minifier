@@ -1,15 +1,15 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 
 // tests/unit/many_variables.frag
-"int t(float t,float o,float l,float f,float a,float n,float i,float r,float u,float e,float Z,float Y)"
+"int L(float L,float K,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
  "{"
-   "float X=t,W=o,V=l,U=f,T=a,S=n;"
-   "int R=1,Q=2,P=3,O=4,N=5,M=6,L=7,K=8;"
-   "float J=i,I=r,H=u,G=e,F=Z,E=Y;"
-   "int D=1,C=2,B=3,A=4,z=5,y=6,x=7,w=8;"
-   "float v=0.;"
-   "int s=1,q=2,p=3,m=4,k=5,j=6,h=7,g=8;"
-   "float d=0.;"
-   "int c=1,b=2,at=3,ab=4,ac=5,ad=6,ag=7,ah=8;"
-   "return K+w+g+ah;"
+   "float M=L,f=K,N=J,O=I,P=H,Q=G;"
+   "int R=1,S=2,T=3,U=4,V=5,W=6,X=7,Y=8;"
+   "float Z=F,a=E,b=D,c=C,d=B,e=A;"
+   "int g=1,h=2,i=3,j=4,k=5,l=6,m=7,n=8;"
+   "float o=0.;"
+   "int p=1,q=2,r=3,s=4,t=5,u=6,v=7,w=8;"
+   "float x=0.;"
+   "int y=1,z=2,at=3,aa=4,ab=5,ac=6,ad=7,aA=8;"
+   "return Y+n+w+aA;"
  "}",

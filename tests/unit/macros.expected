@@ -19,10 +19,10 @@ const char *macros_frag =
  "#define n$\n"
  "#define o$\n"
  "#define p$\n"
- "int t()"
+ "int E()"
  "{"
-   "int t=1,r=2,u=3,Z=4,Y=5,X=6,W=7,V=8,U=9,T=10,S=11,R=12;"
-   "return t+Y+R;"
+   "int E=1,D=2,C=3,B=4,A=5,F=6,G=7,H=8,I=9,J=10,K=11,L=12;"
+   "return E+A+L;"
  "}";
 
 #endif // MACROS_EXPECTED_
