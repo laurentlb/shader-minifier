@@ -70,6 +70,7 @@ module private PrinterImpl =
             | Options.Text | Options.JS -> ""
             | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
             | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
+            | Options.Rust -> out "\\%s%s" Environment.NewLine spaces
 
     let rec exprToS indent exp = exprToSLevel indent 0 exp
 
@@ -135,7 +136,7 @@ module private PrinterImpl =
         match outputFormat with
         | Options.Text | Options.JS | Options.IndentedText -> "\n"
         | Options.Nasm -> "', 10, '"
-        | Options.CHeader | Options.CList ->  "\\n"
+        | Options.CHeader | Options.CList | Options.Rust ->  "\\n"
 
     // Print HLSL semantics
     let semToS sem =
@@ -180,7 +181,7 @@ module private PrinterImpl =
         | Options.IndentedText -> s
         | Options.Text -> s
         | Options.JS -> s
-        | Options.CHeader | Options.CList | Options.JS -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
+        | Options.CHeader | Options.CList | Options.JS | Options.Rust -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
         | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
 
     /// Detect if the current statement might accept a dangling else.

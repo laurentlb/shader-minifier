@@ -13,6 +13,7 @@ type OutputFormat =
     | [<CustomCommandLine("c-array")>] CList
     | [<CustomCommandLine("js")>] JS
     | [<CustomCommandLine("nasm")>] Nasm
+    | [<CustomCommandLine("rust")>] Rust
 
 let text() = Text
 

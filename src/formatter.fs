@@ -77,6 +77,20 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (Printer.print shader.code)
         fprintfn out ""
 
+let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
+    fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
+
+    for value: Ast.ExportedName in List.sort exportedNames do
+        if value.ty = "" then
+            fprintfn out "pub const VAR_%s: &'static [u8] = b\"%s\\0\";" (value.name.ToUpper()) value.newName
+        else
+            fprintfn out "pub const %s_%s: &'static [u8] = b\"%s\\0\":" value.ty (value.name.ToUpper()) value.newName
+
+    for shader in shaders do
+        fprintfn out ""
+        let name = (Path.GetFileName shader.filename).Replace(".", "_")    
+        fprintfn out "pub const %s: &'static [u8] = b\"\\%s %s\\0\";" (name.ToUpper()) Environment.NewLine (Printer.print shader.code)
+
 let print out shaders exportedNames = function
     | Options.IndentedText -> printIndented out shaders
     | Options.Text -> printNoHeader out shaders
@@ -84,3 +98,4 @@ let print out shaders exportedNames = function
     | Options.CList -> printHeader out shaders true exportedNames
     | Options.JS -> printJSHeader out shaders exportedNames
     | Options.Nasm -> printNasmHeader out shaders exportedNames
+    | Options.Rust -> printRustHeader out shaders exportedNames
