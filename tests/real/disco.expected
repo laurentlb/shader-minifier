@@ -1,3 +1,9 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+var var_RESOLUTION = "s"
+var var_TEX0 = "f"
+var var_TEX1 = "C"
+var var_TEX2 = "D"
+var var_TEX3 = "y"
+var var_TIME = "v"
 
-var disco_frag = `uniform vec2 resolution;uniform float time;uniform sampler2D tex0,tex1,tex2,tex3;vec4 s(vec2 px,float z){float l=3.1415,k=time*sign(z),x=px.x*320.*.0065*z,y=px.y*240.*.006*z,c=sqrt(x*x+y*y);if(c>1.)return vec4(0);{float u=-.4*sign(z)+sin(k*.05),v=sqrt(1.-x*x-y*y),q=y*sin(u)-v*cos(u);y=y*cos(u)+v*sin(u);v=acos(y);u=acos(x/sin(v))/(2.*l)*120.*sign(q)-k;v=v*60./l;q=cos(floor(v/l));c=pow(abs(cos(u)*sin(v)),.2)*.1/(q+sin(float(int((u+l/2.)/l))+k*.6+cos(q*25.)))*pow(1.-c,.9);vec4 res;res=c<0.?vec4(-c/2.*abs(cos(k*.1)),0,-c*2.*abs(sin(k*.04)),1):vec4(c,c*2.,c*2.,1);return res;}}void main(){vec2 p=-1.+2.*gl_FragCoord.xy/resolution.xy;vec4 c=vec4(0);for(int i=80;i>0;i--)c+=s(p,1.-float(i)/80.)*(.008-float(i)*5e-5);vec4 d=s(p,1.);gl_FragColor=(d.w==0.?s(p,-.2)*.02:d)+sqrt(c);}`
+var disco_frag = `uniform vec2 s;uniform float v;uniform sampler2D f,C,D,y;vec4 n(vec2 s,float f){float c=3.1415,y=v*sign(f),a=s.x*320.*.0065*f,i=s.y*240.*.006*f,C=sqrt(a*a+i*i);if(C>1.)return vec4(0);{float r=-.4*sign(f)+sin(y*.05),n=sqrt(1.-a*a-i*i),u=i*sin(r)-n*cos(r);i=i*cos(r)+n*sin(r);n=acos(i);r=acos(a/sin(n))/(2.*c)*120.*sign(u)-y;n=n*60./c;u=cos(floor(n/c));C=pow(abs(cos(r)*sin(n)),.2)*.1/(u+sin(float(int((r+c/2.)/c))+y*.6+cos(u*25.)))*pow(1.-C,.9);vec4 g;g=C<0.?vec4(-C/2.*abs(cos(y*.1)),0,-C*2.*abs(sin(y*.04)),1):vec4(C,C*2.,C*2.,1);return g;}}void main(){vec2 f=-1.+2.*gl_FragCoord.xy/s.xy;vec4 r=vec4(0);for(int i=80;i>0;i--)r+=n(f,1.-float(i)/80.)*(.008-float(i)*5e-5);vec4 i=n(f,1.);gl_FragColor=(i.w==0.?n(f,-.2)*.02:i)+sqrt(r);}`
