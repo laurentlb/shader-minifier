@@ -181,9 +181,9 @@ module private RenamerImpl =
         for name in names do env <- dontRename env (Ident name)
         env
 
-    let export env ty (id: Ident) =
+    let export env prefix (id: Ident) =
         if not id.IsUniqueId then
-            env.exportedNames.Value <- {ty = ty; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
+            env.exportedNames.Value <- {prefix = prefix; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
 
     let renFunction env nbArgs (id: Ident) =
         // we're looking for a function name, already used before,
@@ -220,7 +220,7 @@ module private RenamerImpl =
                 env
             | None ->
                 let newEnv = renFunction env (List.length f.args) f.fName
-                if isExternal then export env "F" f.fName
+                if isExternal then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
     let renList env fct li =
@@ -261,7 +261,7 @@ module private RenamerImpl =
                     env
                 | None ->
                     let env = env.newName env decl.name
-                    export env "" decl.name
+                    export env ExportPrefix.Variable decl.name
                     env
 
         renList env aux vars

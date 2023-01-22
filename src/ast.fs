@@ -110,12 +110,15 @@ let makeFunctionType ty name args sem =
 
 // An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
 // values). We need to provide accessors for the developer (e.g. create macros for C/C++).
+type ExportPrefix =
+    | Variable
+    | HlslFunction
 type ExportedName = {
-    ty: string  // "F" for hlsl functions, empty for vars
+    prefix: ExportPrefix
     name: string
     newName: string
 }
-       
+
 type Shader = {
     filename: string
     mutable code: TopLevel list
