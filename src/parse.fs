@@ -2,22 +2,21 @@
 
 open Options.Globals
 
-module private ParseImpl =
+open FParsec.Primitives
+open FParsec.CharParsers
+open FParsec
 
-    open FParsec.Primitives
-    open FParsec.CharParsers
-    open FParsec
+type ParseImpl() =
 
-    // TODO: Get rid of this global state. Not threadsafe.
-    let mutable private forbiddenNames = []
+    let mutable forbiddenNames = []
     let mutable reorderFunctions = false
 
-    let private commentLine = parse {
+    let commentLine = parse {
         do! skipString "//" // .>> noneOf "[")) // (pchar '[')) // <?> "comment, not verbatim code"
         do! notFollowedBy (anyOf "[]") <?> "not a verbatim code"
         do! skipManyTill anyChar (followedBy newline) } |> attempt
 
-    let private commentBlock = parse {
+    let commentBlock = parse {
         do! skipString "/*"
         do! skipManyTill anyChar (skipString "*/") }
 
@@ -105,7 +104,7 @@ module private ParseImpl =
 
     let simpleExpr = pipe2 prim (many post)
                       (fun prim posts -> List.fold (fun acc elt -> elt acc) prim posts)
-    opp.TermParser <- simpleExpr
+    do opp.TermParser <- simpleExpr
 
     // Operators
 
@@ -235,7 +234,7 @@ module private ParseImpl =
         many (ch ':' >>. simpleExpr)
 
     // eg. "int foo[] = exp, bar = 3"
-    declRef.Value <- (
+    do declRef.Value <- (
         let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
         let init = ch '=' >>. exprNoComma
         let var = pipe4 ident (opt bracket) semantics (opt init) Ast.makeDecl
@@ -323,7 +322,7 @@ module private ParseImpl =
         (key <|> ret) .>> ch ';'
 
     // A statement
-    stmtRef.Value <- choice [
+    do stmtRef.Value <- choice [
         block
         jump
         forLoop
@@ -367,7 +366,7 @@ module private ParseImpl =
 
     let parse = ws >>. toplevel .>> eof
 
-    let runParser streamName content : Ast.Shader =
+    member _.runParser streamName content : Ast.Shader =
         forbiddenNames <- [ "if"; "in"; "do" ]
         reorderFunctions <- false
         let res = runParserOnString parse () streamName content
@@ -380,5 +379,4 @@ module private ParseImpl =
           }
         | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
-
-let runParser = ParseImpl.runParser
+let runParser = (new ParseImpl()).runParser

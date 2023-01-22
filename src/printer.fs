@@ -5,9 +5,9 @@ open Ast
 open Options.Globals
 open System.Text.RegularExpressions
 
-module private PrinterImpl =
+type PrinterImpl(outputFormat0) =
 
-    let mutable outputFormat = Options.Text
+    let mutable outputFormat = outputFormat0
 
     let out a = sprintf a
 
@@ -266,7 +266,7 @@ module private PrinterImpl =
         | TLDecl decl -> out "%s%s;" (nl 0) (declToS 0 decl)
         | TypeDecl t -> out "%s;" (typeSpecToS t)
 
-    let print tl =
+    member _.Print tl =
         let mutable wasMacro = true
         // handle the required \n before a macro
         ignoreFirstNewLine <- true
@@ -278,19 +278,10 @@ module private PrinterImpl =
             else topLevelToS x
 
         tl |> List.map f |> String.concat ""
+    member _.ExprToS = exprToS
+    member _.TypeToS = typeToS
 
-let print tl = 
-    PrinterImpl.outputFormat <- options.outputFormat
-    PrinterImpl.print tl
-
-let printText tl =
-    PrinterImpl.outputFormat <- Options.Text
-    PrinterImpl.print tl
-   
-let exprToS x =
-    PrinterImpl.outputFormat <- Options.Text
-    PrinterImpl.exprToS 0 x
-
-let typeToS ty =
-    PrinterImpl.outputFormat <- Options.Text
-    PrinterImpl.typeToS ty
+let print tl = (new PrinterImpl(options.outputFormat)).Print(tl)
+let printText tl = (new PrinterImpl(Options.Text)).Print(tl)
+let exprToS x = (new PrinterImpl(Options.Text)).ExprToS 0 x
+let typeToS ty = (new PrinterImpl(Options.Text)).TypeToS ty
