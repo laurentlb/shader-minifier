@@ -1,0 +1,18 @@
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+pub const VAR_MOUSE: &'static [u8] = b"f\0";
+pub const VAR_RESOLUTION: &'static [u8] = b"y\0";
+pub const VAR_TIME: &'static [u8] = b"v\0";
+
+pub const HEART_FRAG: &'static [u8] = b"\
+ uniform float v;\
+ uniform vec2 y;\
+ uniform vec4 f;\
+ void main()\
+ {\
+   vec2 f=(2.*gl_FragCoord.xy-y)/y.y;\
+   float m=mod(v,2.)/2.,a=pow(m,.2)*.5+.5;\
+   a-=a*.2*sin(m*6.2831*5.)*exp(-m*6.);\
+   f*=vec2(.5,1.5)+a*vec2(.5,-.5);\
+   float r=atan(f.x,f.y)/3.141593,x=length(f),e=abs(r),C=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e),F=step(x,C)*pow(1.-x/C,.25);\
+   gl_FragColor=vec4(F,0,0,1);\
+ }\0";
