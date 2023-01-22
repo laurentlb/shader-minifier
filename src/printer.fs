@@ -5,9 +5,7 @@ open Ast
 open Options.Globals
 open System.Text.RegularExpressions
 
-type PrinterImpl(outputFormat0) =
-
-    let mutable outputFormat = outputFormat0
+type PrinterImpl(outputFormat) =
 
     let out a = sprintf a
 
