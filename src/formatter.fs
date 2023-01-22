@@ -4,8 +4,8 @@ open System
 open System.IO
 open Options.Globals
 
-let private formatPrefix forceUppercase = function
-    | Ast.ExportPrefix.Variable -> if forceUppercase then "VAR" else "var"
+let private formatPrefix = function
+    | Ast.ExportPrefix.Variable -> "var"
     | Ast.ExportPrefix.HlslFunction -> "F"
 
 let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
@@ -22,7 +22,7 @@ let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
 
     for value: Ast.ExportedName in List.sort exportedNames do
         // let newName = Printer.identTable.[int newName]
-        fprintfn out "# define %s_%s \"%s\"" (formatPrefix true value.prefix) value.name value.newName
+        fprintfn out "# define %s_%s \"%s\"" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
 
     fprintfn out ""
     for shader in shaders do
@@ -52,7 +52,7 @@ let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     for value: Ast.ExportedName in List.sort exportedNames do
-        fprintfn out "var %s_%s = \"%s\"" (formatPrefix false value.prefix) (value.name.ToUpper()) value.newName
+        fprintfn out "var %s_%s = \"%s\"" (formatPrefix value.prefix) (value.name.ToUpper()) value.newName
 
     fprintfn out ""
     for shader in shaders do
@@ -64,7 +64,7 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out "; Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     for value: Ast.ExportedName in List.sort exportedNames do
-        fprintfn out "_%s_%s: db '%s', 0" (formatPrefix false value.prefix) (value.name.ToUpper()) value.newName
+        fprintfn out "_%s_%s: db '%s', 0" (formatPrefix value.prefix) (value.name.ToUpper()) value.newName
 
     fprintfn out ""
     for shader in shaders do
@@ -76,7 +76,7 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     for value: Ast.ExportedName in List.sort exportedNames do
-        fprintfn out "pub const %s_%s: &'static [u8] = b\"%s\\0\";" (formatPrefix true value.prefix) (value.name.ToUpper()) value.newName
+        fprintfn out "pub const %s_%s: &'static [u8] = b\"%s\\0\";" ((formatPrefix value.prefix).ToUpper()) (value.name.ToUpper()) value.newName
 
     for shader in shaders do
         fprintfn out ""
