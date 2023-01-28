@@ -107,7 +107,7 @@ void ammonite()
     {
       float t=pow(w.z,.3)*2.,c=.5+.5*cos(t*300);
       col=mix(vec3(1,.5,.4),vec3(.3),c)/8.;
-      p-=p;
+      p=vec3(0);
       p.xy=(disc(w.xy)*mix(.8,1.,c)+vec2(0,1+t))*t*.05;
       p.yz*=rotmat(t*10.+2);
       w.w=R();
@@ -214,7 +214,7 @@ void main()
           w.w=R();
           if(w.w<.25)
             {
-              of-=of;
+              of=vec3(0);
               w.x=R();
               w.y=R();
               w.z=R();
@@ -312,14 +312,14 @@ void main()
                           if(ww<.3)
                             {
                               if(R()<.1)
-                                w.x=R(),w.y=R(),w.z=R(),w.w=R(),of-=of,jellyfish(),p.yz*=rotmat(.5),p*=.6,p.y+=.11,col=vec3(1);
+                                w.x=R(),w.y=R(),w.z=R(),w.w=R(),of=vec3(0),jellyfish(),p.yz*=rotmat(.5),p*=.6,p.y+=.11,col=vec3(1);
                               p+=vec3(-.8,.3,0);
                             }
                           else
                              if(ww<.6)
                               {
                                 if(R()<.2)
-                                  w.x=R(),w.y=R(),w.z=R(),w.w=R(),of-=of,ammonite(),p.yz*=rotmat(-.5),p*=.6,p=p.zyx,col=vec3(1);
+                                  w.x=R(),w.y=R(),w.z=R(),w.w=R(),of=vec3(0),ammonite(),p.yz*=rotmat(-.5),p*=.6,p=p.zyx,col=vec3(1);
                                 p+=vec3(.6,-.6,0);
                               }
                             else
@@ -379,7 +379,7 @@ void main()
                 w.w=R();
                 if(w.w<.25)
                   {
-                    of-=of;
+                    of=vec3(0);
                     w.x=R();
                     w.y=R();
                     w.z=R();
