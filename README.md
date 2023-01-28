@@ -95,7 +95,7 @@ $ mono shader_minifier.exe  # Linux, Mac...
 
 ```
 USAGE: Shader Minifier [--help] [-o <string>] [-v] [--hlsl]
-                       [--format <text|indented|c-variables|c-array|js|nasm>]
+                       [--format <text|indented|c-variables|c-array|js|nasm|rust>]
                        [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
@@ -112,7 +112,7 @@ OPTIONS:
     -o <string>           Set the output filename (default is shader_code.h)
     -v                    Verbose, display additional information
     --hlsl                Use HLSL (default is GLSL)
-    --format <text|indented|c-variables|c-array|js|nasm>
+    --format <text|indented|c-variables|c-array|js|nasm|rust>
                           Choose to format the output (use 'text' if you want
                           just the shader)
     --field-names <rgba|xyzw|stpq>
@@ -135,8 +135,7 @@ OPTIONS:
     --no-sequence         Do not use the comma operator trick
     --smoothstep          Use IQ's smoothstep trick
     --no-remove-unused    Do not remove unused code
-    --move-declarations
-                          Move declarations to group them
+    --move-declarations   Move declarations to group them
     --help                display this list of options.
 ```
 
@@ -148,8 +147,8 @@ In short:
   If you pass `-` for the output, it will be printed on stdout.
 
 * Use `--format` to control the output format. By default, it will create a C
-  header. There are other options to get only the shader, or have it in a .js or
-  nasm file.
+  header. There are other options to get only the shader, or have it in a
+  Javascript, Rust, or nasm file.
 
 ## Tips
 
