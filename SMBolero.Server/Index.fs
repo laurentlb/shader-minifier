@@ -12,7 +12,7 @@ let page = doctypeHtml {
         link { attr.rel "stylesheet"; attr.href "css/index.css" }
     }
     body {
-        div { attr.id "main"; rootComp<Client.Main.MyApp> }
+        div { attr.id "main"; comp<Client.Main.MyApp> }
         boleroScript
     }
 }
