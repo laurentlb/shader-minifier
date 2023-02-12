@@ -225,12 +225,7 @@ let private simplifyVec constr args =
 
     let args = combineSwizzles args |> List.map useInts
     let args = mergeAllEquals args args
-    match args with
-    | [Dot (_, field) as arg] when field.Length > 1 && isFieldSwizzle field ->
-        // vec3(v.xxy)  =>  v.xxy
-        // However, vec3(v.x) should be preserved.
-        arg
-    | _ -> FunCall (Var constr, args)
+    FunCall (Var constr, args)
 
 let private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
