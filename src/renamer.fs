@@ -248,7 +248,8 @@ module private RenamerImpl =
                 List.exists (fun s -> Set.contains s tyQSet) extQ
             let isExternal = isTopLevel && (ext || options.hlsl)
 
-            if isTopLevel && options.preserveAllGlobals then
+            if (isTopLevel && options.preserveAllGlobals) ||
+                    List.contains decl.name.Name options.noRenamingList then
                 dontRename env decl.name
             elif not isExternal then
                 env.newName env decl.name
