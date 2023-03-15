@@ -1,0 +1,33 @@
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef ARRAY_FRAG_EXPECTED_
+# define ARRAY_FRAG_EXPECTED_
+
+const char *array_frag =
+ "#version 120\n"
+ "float a[5]=float[5](3.4,4.2,5.,5.2,1.1);"
+ "float b[5]=float[5](3.4,4.2,5.,5.2,1.1),c[]=float[](3.4,4.2,5.,5.2,1.1),d[5]=float[](3.4,4.2,5.,5.2,1.1),e[]=float[5](3.4,4.2,5.,5.2,1.1);"
+ "void arrayTypes()"
+ "{"
+   "vec4 a[3];"
+   "vec4[2] b[3];"
+   "vec4[3] c;"
+ "}"
+ "float[2] func_bank(float[2] res)"
+ "{"
+   "float a=res[0],b=res[1];"
+   "res[0]=a<b?"
+     "a:"
+     "b;"
+   "res[1]=a>b?"
+     "a:"
+     "b;"
+   "return res;"
+ "}"
+ "void main()"
+ "{"
+   "float[2] test=float[](5.,7.);"
+   "func_bank(test)[0];"
+   "func_bank(test)[1];"
+ "}";
+
+#endif // ARRAY_FRAG_EXPECTED_

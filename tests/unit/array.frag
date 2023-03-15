@@ -16,3 +16,19 @@ void arrayTypes() {
 
 	int code[] = int[1](123);
 }
+
+float[2]func_bank(in float[2]res)
+{
+    float a = res[0], b = res[1];
+    res[0] = a < b ? a : b; // min
+    res[1] = a > b ? a : b; // max
+    return res;
+}
+
+void main()
+{
+    float[2] test = float[](5., 7.);
+
+    func_bank(test)[0]; // 5
+    func_bank(test)[1]; // 7
+}

@@ -155,7 +155,8 @@ type PrinterImpl(outputFormat) =
             | [] -> ""
             | li -> (String.concat " " li) + " "
         let typeSpec = typeSpecToS ty.name
-        out "%s%s" (get ty.typeQ) typeSpec
+        let sizes = String.Join("", [for e in ty.arraySizes -> "[" + exprToS 0 e + "]"])
+        out "%s%s%s" (get ty.typeQ) typeSpec sizes
 
     and declToS indent (ty, vars) =
         let out1 decl =
