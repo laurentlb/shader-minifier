@@ -231,6 +231,7 @@ let private simplifyVec (constr: Ident) args =
         | [e] -> [e]
         | _ -> allArgs
 
+    // vec3(a.x, b.xy) => vec3(a.x, b)
     let rec dropLastSwizzle = function
         | [Dot (expr, field) as last] ->
             match [for c in field -> swizzleIndex c] with
