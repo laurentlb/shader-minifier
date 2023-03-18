@@ -12,14 +12,15 @@ let private isFieldSwizzle s =
     Seq.forall (fun c -> Seq.contains c "xyzw") s ||
     Seq.forall (fun c -> Seq.contains c "stpq") s
 
+let private swizzleIndex = function
+    | 'r' | 'x' | 's' -> 0
+    | 'g' | 'y' | 't' -> 1
+    | 'b' | 'z' | 'p' -> 2
+    | 'a' | 'w' | 'q' -> 3
+    | c -> failwithf "not a swizzle (%c) " c
+
 let private renameSwizzle field =
-    let transform = function
-        | 'r' | 'x' | 's' -> options.canonicalFieldNames.[0]
-        | 'g' | 'y' | 't' -> options.canonicalFieldNames.[1]
-        | 'b' | 'z' | 'p' -> options.canonicalFieldNames.[2]
-        | 'a' | 'w' | 'q' -> options.canonicalFieldNames.[3]
-        | c -> failwithf "Internal error: transform('%c')" c
-    field |> String.map transform
+    field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
 
 let renameField field =
     if isFieldSwizzle field then renameSwizzle field
@@ -230,8 +231,18 @@ let private simplifyVec (constr: Ident) args =
         | [e] -> [e]
         | _ -> allArgs
 
+    // vec3(a.x, b.xy) => vec3(a.x, b)
+    let rec dropLastSwizzle = function
+        | [Dot (expr, field) as last] ->
+            match [for c in field -> swizzleIndex c] with
+            | [0] | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
+            | _ -> [last]
+        | e1 :: rest -> e1 :: dropLastSwizzle rest
+        | x -> x
+
     let args = combineSwizzles args |> List.map useInts
     let args = if args.Length = vecSize then mergeAllEquals args args else args
+    let args = dropLastSwizzle args
     FunCall (Var constr, args)
 
 let private simplifyExpr (didInline: bool ref) env = function
