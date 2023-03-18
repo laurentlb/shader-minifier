@@ -12,4 +12,8 @@ vec4 constructor() {
 	return vec4(1., 1e2, 2e3, 3e4);
 }
 
-void main() { swizzles(); constructor(); }
+vec2 constructor2() {
+	return vec2(1e10, 1e10);
+}
+
+void main() { swizzles(); constructor(); constructor2(); }

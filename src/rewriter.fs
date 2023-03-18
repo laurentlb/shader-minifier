@@ -206,11 +206,16 @@ let private simplifyVec constr args =
     // the parameters."
     let useInts = function
         | Float (f, _) as e when Decimal.Round(f) = f ->
-            let candidate = Int (int f, "")
-            if (Printer.exprToS candidate).Length <= (Printer.exprToS e).Length then
-                candidate
-            else
-                e
+            try
+                let candidate = Int (int f, "")
+                if (Printer.exprToS candidate).Length <= (Printer.exprToS e).Length then
+                    candidate
+                else
+                    e
+            with
+                // the conversion to int might fail (especially on 32-bit)
+                | :? System.OverflowException -> e
+
         | e -> e
 
     // vec3(1,1,1)  =>  vec3(1)

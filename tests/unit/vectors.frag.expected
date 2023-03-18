@@ -9,8 +9,13 @@ vec4 constructor()
 {
   return vec4(1,100,2e3,3e4);
 }
+vec2 constructor2()
+{
+  return vec2(1e10);
+}
 void main()
 {
   swizzles();
   constructor();
+  constructor2();
 }
