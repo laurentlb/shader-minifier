@@ -189,7 +189,9 @@ let private simplifyOperator env = function
 
 
 // Simplify calls to the vec constructor.
-let private simplifyVec constr args =
+let private simplifyVec (constr: Ident) args =
+    let vecSize = try int(constr.Name.[constr.Name.Length - 1]) - int '0' with _ -> 0
+
     // Combine swizzles, e.g.
     //    vec4(v1.x, v1.z, v2.r, v2.t)  =>  vec4(v1.xz, v2.xy)
     let rec combineSwizzles = function
@@ -229,7 +231,7 @@ let private simplifyVec constr args =
         | _ -> allArgs
 
     let args = combineSwizzles args |> List.map useInts
-    let args = mergeAllEquals args args
+    let args = if args.Length = vecSize then mergeAllEquals args args else args
     FunCall (Var constr, args)
 
 let private simplifyExpr (didInline: bool ref) env = function

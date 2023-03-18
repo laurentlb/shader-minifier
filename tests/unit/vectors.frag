@@ -12,8 +12,11 @@ vec4 constructor() {
 	return vec4(1., 1e2, 2e3, 3e4);
 }
 
-vec2 constructor2() {
-	return vec2(1e10, 1e10);
+float constructors() {
+    vec2 v2 = vec2(1e10, 1e10);
+    vec3 v3 = vec3(v2, v2);
+    vec4 v4 = vec4(v3, v2);
+    return v2.x + v3.x + v4.x;
 }
 
-void main() { swizzles(); constructor(); constructor2(); }
+void main() { swizzles(); constructor(); constructors(); }
