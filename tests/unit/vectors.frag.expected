@@ -2,7 +2,7 @@ float swizzles()
 {
   vec2 v1=vec2(1);
   vec3 v2=vec3(v1.xyx),v3=vec3(v1.x,v2.xx);
-  vec4 v4=vec4(v1.xxyx),v5=vec4(1,v2.zy,2),v6=vec4(v1.xy,v2.xy);
+  vec4 v4=vec4(v1.xxyx),v5=vec4(1,v2.zy,2),v6=vec4(v1.xy,v2);
   return v1.x+v2.x+v3.x+v4.x+v5.x+v6.x;
 }
 vec4 constructor()
@@ -16,9 +16,17 @@ float constructors()
   vec4 v4=vec4(v3,v2);
   return v2.x+v3.x+v4.x;
 }
+float withExtraComponents()
+{
+  vec2 v2=vec2(1);
+  vec3 v3=vec3(1,2,v2);
+  vec4 v4=vec4(v2,v3);
+  return v2.x+v3.x+v4.x;
+}
 void main()
 {
   swizzles();
   constructor();
   constructors();
+  withExtraComponents();
 }

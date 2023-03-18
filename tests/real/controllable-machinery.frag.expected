@@ -431,7 +431,7 @@ vec3 ShowScene(vec3 ro,vec3 rd)
                               col4=vec4(.9,.9,.9,.2),isMet=true;
                             else
                                col4=vec4(.3,.5,.4,0);
-                            col4*=(.5+.5*step(0.,Maxv2(abs(vec2(q.x,q.z+1.3))-vec2(.4,.02))))*(.7+.3*step(0.,abs(PrCaps2Df(vec2(q.z+1.3,q.x),.08,.5))-.01));
+                            col4*=(.5+.5*step(0.,Maxv2(abs(vec2(q.x,q.z+1.3))-vec2(.4,.02))))*(.7+.3*step(0.,abs(PrCaps2Df(vec2(q.z+1.3,q),.08,.5))-.01));
                           }
                         else
                            if(idObj==9)
