@@ -42,7 +42,7 @@ let stringToJumpKeyword = function
     | s -> failwith ("not a keyword: " + s)
 
 type Expr =
-    | Int of int * string
+    | Int of int64 * string
     | Float of decimal * string
     | Var of Ident
     | Op of string

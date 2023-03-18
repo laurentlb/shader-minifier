@@ -49,21 +49,21 @@ type ParseImpl() =
     // Primitives
     let octal =
         let r = @"0[0-7]+"
-        let conv s = System.Convert.ToInt32(s, 8) |> (fun x -> Ast.Int(x, ""))
+        let conv s = System.Convert.ToInt64(s, 8) |> (fun x -> Ast.Int(x, ""))
         let body = regex r |>> conv
         body .>> ws
 
     let hexa =
         let prefix = pstring "0x" <|> pstring "0X"
         let r = @"([0-9a-fA-F])+"
-        let conv s = System.Convert.ToInt32(s, 16) |> (fun x -> Ast.Int(x, ""))
+        let conv s = System.Convert.ToInt64(s, 16) |> (fun x -> Ast.Int(x, ""))
         let body = regex r |>> conv
         prefix >>. body .>> ws
 
     let number =
         let r = @"(\d+\.?\d*|\.\d+)([eE][-+]?[0-9]+)?"
         let conv s =
-            let ok, res = System.Int32.TryParse(s : string)
+            let ok, res = System.Int64.TryParse(s : string)
             if ok then Ast.Int (res, "")
             else Ast.Float (try decimal s, "" with _ -> failwith ("invalid number: " + s))
         regex r .>> ws |>> conv

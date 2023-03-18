@@ -25,6 +25,7 @@
 --no-renaming --no-inlining --format indented -o tests/unit/augmented.frag.expected tests/unit/augmented.frag
 --no-remove-unused --no-renaming -o tests/unit/loop.frag.expected tests/unit/loop.frag
 --no-remove-unused --no-renaming -o tests/unit/array.frag.expected tests/unit/array.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/numbers.frag.expected tests/unit/numbers.frag
 
 # Inlining unit tests
 
