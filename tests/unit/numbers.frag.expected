@@ -1,0 +1,11 @@
+#version 130
+
+uint large()
+{
+  return 3812015801U;
+}
+vec4 f()
+{
+  float oct=float(34)/1e3,oct2=float(-57)/1e3,n=oct-oct2+float(0)+float(-1)/20.;
+  return vec4(n,n,n,0);
+}

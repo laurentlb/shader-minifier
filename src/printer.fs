@@ -163,7 +163,7 @@ type PrinterImpl(outputFormat) =
             let size =
                 match decl.size with
                 | None -> ""
-                | Some (Int (0, _)) -> "[]"
+                | Some (Int (0L, _)) -> "[]"
                 | Some n -> out "[%s]" (exprToS indent n)
 
             let init =

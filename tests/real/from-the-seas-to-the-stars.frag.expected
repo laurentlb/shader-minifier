@@ -34,10 +34,10 @@ vec2 disc(vec2 uv)
 float zoom=.4,cameraroll=1.,cameraroll2=0;
 uvec2 encrypt(uvec2 v)
 {
-  uint k[4],sum=0,delta=-1640531527;
-  k[0]=-1556008596;
-  k[1]=-939442524;
-  k[2]=-1383041155;
+  uint k[4],sum=0,delta=2654435769;
+  k[0]=2738958700;
+  k[1]=3355524772;
+  k[2]=2911926141;
   k[3]=2123724318;
   for(uint i=0;i<4;++i)
     sum+=delta,v.x+=(v.y<<4)+k[0]^v.y+sum^(v.y>>5)+k[1],v.y+=(v.x<<4)+k[2]^v.x+sum^(v.x>>5)+k[3];
