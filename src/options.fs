@@ -38,6 +38,7 @@ type CliArguments =
     | [<CustomCommandLine("--smoothstep")>] Smoothstep
     | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
+    | [<CustomCommandLine("--preprocess")>] Preprocess
     | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
@@ -58,7 +59,8 @@ type CliArguments =
             | Smoothstep -> "Use IQ's smoothstep trick"
             | NoRemoveUnused -> "Do not remove unused code"
             | MoveDeclarations -> "Move declarations to group them"
-            | Filenames _ -> "List of files to minify" 
+            | Preprocess -> "Preprocess the file"
+            | Filenames _ -> "List of files to minify"
 
 type Options() =
     member val outputName = "shader_code.h" with get, set
@@ -76,6 +78,7 @@ type Options() =
     member val noRenamingList = ["main"; "mainImage"] with get, set
     member val noRemoveUnused = false with get, set
     member val moveDeclarations = false with get, set
+    member val preprocess = false with get, set
     member val filenames = [||]: string[] with get, set
 
 module Globals =
@@ -118,6 +121,7 @@ let private initPrivate argv needFiles =
         options.noRenaming <- args.Contains(NoRenaming)
         options.noRemoveUnused <- args.Contains(NoRemoveUnused)
         options.moveDeclarations <- args.Contains(MoveDeclarations)
+        options.preprocess <- args.Contains(Preprocess)
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
         true
