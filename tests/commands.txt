@@ -78,3 +78,5 @@
 --no-renaming --format indented -o tests/real/controllable-machinery.frag.expected tests/real/controllable-machinery.frag
 --no-renaming --format indented -o tests/real/endeavour.frag.expected tests/real/endeavour.frag
 --no-renaming --format indented -o tests/real/audio-flight-v2.frag.expected tests/real/audio-flight-v2.frag
+--no-renaming --format indented -o tests/real/raymarching-universe.glsl.expected tests/real/raymarching-universe.glsl
+--no-renaming --format indented --no-remove-unused -o tests/real/hg_sdf.glsl.expected tests/real/hg_sdf.glsl

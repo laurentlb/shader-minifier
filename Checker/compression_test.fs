@@ -36,6 +36,8 @@ let testFiles = [
     "the_real_party_is_in_your_pocket.frag"
     "valley_ball.glsl"
     "yx_long_way_from_home.frag"
+    "raymarching-universe.glsl"
+    "hg_sdf.glsl"
 ]
 
 let writer = new StringWriter()
@@ -71,6 +73,7 @@ let run () =
     Crinkler.InitCompressor() // Platform must be set to x64
 
     writer.GetStringBuilder().Clear() |> ignore<StringBuilder>
+    log "shader name                           minified => minified+crinkler\n"
 
     // Tests for minifying multiple files together.
     // We don't have good examples of files that fit together, but these files use the same uniforms (e.g. time, tex0).
