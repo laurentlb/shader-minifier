@@ -58,6 +58,7 @@
     <Compile Include="src\renamer.fs" />
     <Compile Include="src\analyzer.fs" />
     <Compile Include="src\rewriter.fs" />
+    <Compile Include="src\preprocessor.fs" />
     <Compile Include="src\parse.fs" />
     <Compile Include="src\api.fs" />
   </ItemGroup>

@@ -23,7 +23,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>5</WarningLevel>
-    <StartArguments>-o "" ../../tests\unit\commas.frag --smoothstep</StartArguments>
+    <StartArguments>--preprocess --no-remove-unused -o "" ../../tests\unit\preprocess.frag</StartArguments>
     <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

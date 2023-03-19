@@ -369,6 +369,8 @@ type ParseImpl() =
     member _.runParser streamName content : Ast.Shader =
         forbiddenNames <- [ "if"; "in"; "do" ]
         reorderFunctions <- false
+        let content =
+            if options.preprocess then Preprocessor.preprocess streamName content else content
         let res = runParserOnString parse () streamName content
         match res with
         | Success(r,_,_) -> {
