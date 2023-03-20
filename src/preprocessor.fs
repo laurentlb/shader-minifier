@@ -60,6 +60,14 @@ type Impl() =
         return ""
     }
 
+    let parseElse = parse {
+        let! _ = keyword "else"
+        return match stack.Pop() with
+            | Some true -> stack.Push(Some false); ""
+            | Some false -> stack.Push(Some true); ""
+            | None -> stack.Push(None); "#else"
+    }
+
     let parseEndif = parse {
         let! _ = keyword "endif"
         let state = stack.Pop()
@@ -68,6 +76,9 @@ type Impl() =
             else
                 ""
     }
+
+    // It is valid to have '#' alone on a line. This is a no op.
+    let parseNope = spaces >>. newline |>> (fun _ -> "\n")
 
     let parseText = parse {
         let! line = parseEndLine
@@ -78,7 +89,7 @@ type Impl() =
 
     let parseOther = parseEndLine |>> (fun s -> "#" + s)
 
-    let directive = pchar '#' >>. spaces >>. choice [parseDefine; parseIfdef; parseEndif; parseOther]
+    let directive = pchar '#' >>. spaces >>. choice [parseDefine; parseIfdef; parseElse; parseEndif; parseNope; parseOther]
 
     member _.Parse = many (directive <|> parseText)
 

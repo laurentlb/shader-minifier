@@ -24,4 +24,10 @@ void keep_nested() {}
 void keep_outernest() {}
 #endif
 
+#ifdef UNKNOWN
+int this_is_removed;
+#else
+void keep_else() {}
+#endif
+
 void end() {}
