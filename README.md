@@ -136,6 +136,7 @@ OPTIONS:
     --smoothstep          Use IQ's smoothstep trick
     --no-remove-unused    Do not remove unused code
     --move-declarations   Move declarations to group them
+    --preprocess          Evaluate some of the file preprocessor directives
     --help                display this list of options.
 ```
 
@@ -234,6 +235,22 @@ inside the macro. Clever macros are discouraged and can break the shader.
 Avoid macros that contain references to other variables, or affect how the
 code should be parsed. You may get a parse error in Shader Minifier, or get an
 output that won't compile.
+
+### Evaluation of preprocessor directives
+
+With the flag `--preprocess`, Shader Minifier will try to evaluate some
+preprocessing directives:
+
+* `#ifdef` is evaluated based on macros defined in the file.
+* `#else` is supported.
+* Nested `#ifdef` are supported.
+* Unknown directives will be preserved.
+
+This is still experimental and there are some limitations:
+
+* `#if` is not supported yet.
+* Macros declared with `#define` will be kept in the file, even if they are no
+    longer needed.
 
 ### Verbatim
 
