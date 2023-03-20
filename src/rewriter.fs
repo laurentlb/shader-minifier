@@ -413,6 +413,27 @@ let private simplifyBlock stmts =
             Some (ForE (Some e, cond, inc, body))
         | (Expr e, While (cond, body)) -> // a=0;while(i<5);  ->  for(a=0;i<5;);
             Some (ForE(Some e, Some cond, None, body))
+        | (Expr (FunCall(Op "=", [Var d1; e1])),
+           Expr (FunCall(Op "=", [Var d2; FunCall(Var func, [Var d3; e2])])))
+           when d1 = d2 && d1 = d3 -> // d=e1;d=f(d,e2);  ->  d=f(e1,e2);
+            // Particularly useful for:  d=min(d,f1());d=min(d,f2());  ->  d=min(min(d,f1()),f2());
+            // conditions to perform the replacement:
+            // [A] d is a local. if it's not, a function call in e2 (or even f) could modify it
+            // [B] d3 must be the only use of d in the FunCall to f
+            // [C] f doesn't take d3 as "out" or "inout".
+            if not (List.contains func.Name ["min"; "max"]) then // takes care of [C]
+                None
+            else
+                let e2UsesD = false//failwith "TODO: visiter e2 savoir s'il utilise d" // [B]
+                if e2UsesD then
+                    None
+                else
+                    let dIsALocal = true//failwith "TODO: savoir si d est une locale, mais pour ça il faut avoir accumulé la liste des decls locales de la fonction en cours" // [A]
+                    if not dIsALocal then
+                        None
+                    else
+                        failwith "les gains sont pas fous en compressé, en fait..."
+                        Some (Expr (FunCall(Op "=", [Var d1; FunCall(Var func, [e1; e2])])))
         | _ -> None)
 
     // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
