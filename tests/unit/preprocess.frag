@@ -2,6 +2,7 @@
 
 #define DEF bar
 #define foo() bar
+#
 
 #ifdef DEF
 void keep_ifdef() {}

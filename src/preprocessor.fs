@@ -6,90 +6,95 @@ open FParsec
 
 open System.Collections.Generic
 
-type Impl() =
+// The stack contains information for each nested #if/#ifdef block
+//   Active: condition was true, lines are printed (e.g. #if 1)
+//   Inactive: condition was false, delete the text (e.g. #if 0)
+//   Unknown: condition could not be evaluated, keep both the directive and the text
+type private Status = Active | Inactive | Unknown
+
+type private Impl() =
+
     // Dict of macro name to value
     let defines = new Dictionary<string, string>()
 
-    // The stack contains information for each nested #if/#ifdef block
-    //   Some true: the condition was true, keep the text
-    //   Some false: the condition was false, delete the text
-    //   None: the condition was not evaluated, keep the text and the #end
-    let stack = new Stack<bool option>()
+    let stack = new Stack<Status>()
 
-    let currentScope () =
-        if stack.Count = 0 then None
+    let currentStatus () =
+        if stack.Count = 0 then Active
         else stack.Peek()
 
     let enterScope evaluated =
-        let current = currentScope ()
-        if current = Some false then
-            stack.Push current
+        let current = currentStatus ()
+        if current = Inactive then
+            stack.Push Inactive
         else
             stack.Push evaluated
+
+    let spaces = skipManySatisfy (function ' ' | '\t' -> true | _ -> false)
 
     let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit .>> notFollowedBy (pchar '_')) .>> spaces
 
     let parseIdent =
         manyChars (choice [letter; digit])
 
-    let parseArgs = parse {
-        let! _ = pchar '('
-        let! _ = pchar ')'
-        return "(args)"
-    }
-
     let parseEndLine = manyCharsTill anyChar (followedBy newline) .>> newline
 
     let parseDefine = parse {
         let! _ = keyword "define"
         let! name = parseIdent
-        let! args = opt parseArgs // TODO
-        do! spaces
         let! line = parseEndLine
         defines.Add(name, line)
-        return sprintf "#define %s %s" name line
+        return sprintf "#define %s%s" name line
     }
 
     let parseIfdef = parse {
         let! word = keyword "ifdef" <|> keyword "ifndef"
         let! ident = parseIdent
         do if defines.ContainsKey ident = (word = "ifdef") then
-             enterScope (Some true)
+             enterScope Active
            else
-             enterScope (Some false)
+             enterScope Inactive
         return ""
     }
 
     let parseElse = parse {
         let! _ = keyword "else"
         return match stack.Pop() with
-            | Some true -> stack.Push(Some false); ""
-            | Some false -> stack.Push(Some true); ""
-            | None -> stack.Push(None); "#else"
+            | Active -> stack.Push(Inactive); ""
+            | Inactive -> stack.Push(Active); ""
+            | Unknown -> stack.Push(Unknown); "#else"
     }
 
     let parseEndif = parse {
         let! _ = keyword "endif"
         let state = stack.Pop()
-        return if state = None then
+        return if state = Unknown then
                 "#endif"
             else
                 ""
     }
 
     // It is valid to have '#' alone on a line. This is a no op.
-    let parseNope = spaces >>. newline |>> (fun _ -> "\n")
+    let parseNope = newline |>> (fun _ -> "\n")
 
     let parseText = parse {
         let! line = parseEndLine
         return
-            if currentScope() = Some false then ""
+            if currentStatus() = Inactive then ""
             else line
     }
 
-    let parseOther = parseEndLine |>> (fun s -> "#" + s)
+    // Unknown directive, keep it.
+    let parseOther = parseEndLine |>> (fun s -> if currentStatus() = Inactive then "" else "#" + s)
 
-    let directive = pchar '#' >>. spaces >>. choice [parseDefine; parseIfdef; parseElse; parseEndif; parseNope; parseOther]
+    let directive = pchar '#' >>. spaces >>. choice [
+        parseDefine
+        parseElse
+        parseEndif
+        parseIfdef
+        parseNope
+        parseOther
+    ]
 
     member _.Parse = many (directive <|> parseText)
 

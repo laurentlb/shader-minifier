@@ -59,7 +59,7 @@ type CliArguments =
             | Smoothstep -> "Use IQ's smoothstep trick"
             | NoRemoveUnused -> "Do not remove unused code"
             | MoveDeclarations -> "Move declarations to group them"
-            | Preprocess -> "Preprocess the file"
+            | Preprocess -> "Evaluate some of the file preprocessor directives"
             | Filenames _ -> "List of files to minify"
 
 type Options() =

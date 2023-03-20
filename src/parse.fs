@@ -6,7 +6,7 @@ open FParsec.Primitives
 open FParsec.CharParsers
 open FParsec
 
-type ParseImpl() =
+type private ParseImpl() =
 
     let mutable forbiddenNames = []
     let mutable reorderFunctions = false
