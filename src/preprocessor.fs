@@ -57,9 +57,24 @@ type private Impl() =
         return ""
     }
 
+    let evalCond (str: string) =
+        match str.Trim() with
+        | "0" -> Inactive
+        | "1" -> Active
+        | _ -> Unknown
+
+    let parseIf = parse {
+        let! _ = keyword "if"
+        let! arg = parseEndLine
+        let status = evalCond arg
+        do enterScope status
+        return if status = Unknown then "#if " + arg else ""
+    }
+
     let parseElse = parse {
         let! _ = keyword "else"
-        return match stack.Pop() with
+        return
+            match stack.Pop() with
             | Active -> stack.Push(Inactive); ""
             | Inactive -> stack.Push(Active); ""
             | Unknown -> stack.Push(Unknown); "#else"
@@ -72,6 +87,21 @@ type private Impl() =
                 "#endif"
             else
                 ""
+    }
+
+    let parseElif = parse {
+        let! _ = keyword "elif"
+        let! arg = parseEndLine
+        let oldStatus = stack.Pop()
+        let cond = evalCond arg
+        let newStatus =
+            match oldStatus, cond with
+            | Unknown, _ | _, Unknown -> Unknown
+            | _, Inactive -> Inactive
+            | Active, _ -> Inactive
+            | Inactive, Active -> Active
+        do stack.Push newStatus
+        return if newStatus = Unknown then "#elif " + arg else ""
     }
 
     // It is valid to have '#' alone on a line. This is a no op.
@@ -89,8 +119,10 @@ type private Impl() =
 
     let directive = pchar '#' >>. spaces >>. choice [
         parseDefine
+        parseElif
         parseElse
         parseEndif
+        parseIf
         parseIfdef
         parseNope
         parseOther
