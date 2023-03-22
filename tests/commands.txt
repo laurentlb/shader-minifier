@@ -27,6 +27,7 @@
 --no-remove-unused --no-renaming -o tests/unit/array.frag.expected tests/unit/array.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/numbers.frag.expected tests/unit/numbers.frag
 --preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess.frag.expected tests/unit/preprocess.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess_if.frag.expected tests/unit/preprocess_if.frag
 
 # Inlining unit tests
 
