@@ -358,7 +358,7 @@ void main()
           camtarget=vec3(-2,.5+time2/14.,0);
           p.xyz+=(w.xyz*2-1)*pow(length(p-campos),2)*.001;
           cameraroll=1.-smoothstep(0.,30.,time);
-          cameraroll2=-smin(0,-(time-40),10.)*.01;
+          cameraroll2=-smin(0,-time+40,10.)*.01;
         }
       else
          if(time>=165)
