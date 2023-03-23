@@ -74,8 +74,8 @@ module private RenamerImpl =
         )
 
         let mutable best = -10000, ""
-        // For performance, consider at most 25 candidates.
-        for word: string in candidates |> Seq.take 25 do
+        // For performance, consider at most 26 candidates.
+        for word: string in candidates |> Seq.take 26 do
             let firstLetter = word.[0]
             let lastLetter = word.[word.Length - 1]
             let mutable score = 0
@@ -353,7 +353,7 @@ module private RenamerImpl =
     let computeListOfNames text =
         let charCounts = Seq.countBy id text |> dict
         let count c = match charCounts.TryGetValue(c) with true, res -> res | _ -> 0
-        let letters = ['a'..'z'] @ ['A'..'Z']
+        let letters = ['a'..'z'] @ ['A'..'Z'] @ ['_']
         [
             // First, use most frequent letters
             yield! letters |> List.sortBy count |> List.rev |> List.map string
