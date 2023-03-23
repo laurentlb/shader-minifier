@@ -216,7 +216,7 @@ void mainImage(out vec4 O,vec2 F)
         0.:
         (M.y/R.y-.5)*PI,y=M.xy==vec2(0)||M.z<0.?
         0.:
-        -(M.x/R.x*2.-1.)*PI;
+        (-M.x/R.x*2.+1.)*PI;
       ro.zy*=r2(x);
       ro+=lp;
       lp.xy+=path(lp.z);

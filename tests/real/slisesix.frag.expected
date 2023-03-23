@@ -31,7 +31,7 @@ float techo(float x,float y)
   if(x<.1||x>.9)
     return y;
   x-=.5;
-  return-(sqrt(x*x+y*y)-.4);
+  return-sqrt(x*x+y*y)+.4;
 }
 float distToBox(vec3 p,vec3 abc)
 {
@@ -227,7 +227,7 @@ void main()
           vec3 aopos=nor*hr+pos;
           int kk,kk2;
           float dd=map(aopos,kk,kk2);
-          ao=-(dd-hr);
+          ao=-dd+hr;
           totao+=ao*sca;
           sca*=.5;
         }
