@@ -186,6 +186,14 @@ let private simplifyOperator env = function
     | FunCall(Op "-", [FunCall(Op "+", [x; y])]) ->
         let minusX = FunCall(Op "-", [x]) |> env.fExpr env
         FunCall(Op "-", [minusX; y]) |> env.fExpr env
+    // -(x*y) -> -x*y
+    | FunCall(Op "-", [FunCall(Op "*", [x; y])]) ->
+        let minusX = FunCall(Op "-", [x]) |> env.fExpr env
+        FunCall(Op "*", [minusX; y]) |> env.fExpr env
+    // -(x/y) -> -x/y
+    | FunCall(Op "-", [FunCall(Op "/", [x; y])]) ->
+        let minusX = FunCall(Op "-", [x]) |> env.fExpr env
+        FunCall(Op "/", [minusX; y]) |> env.fExpr env
 
     // Match:  x = x + ...
     | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
