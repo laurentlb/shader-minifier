@@ -294,7 +294,7 @@ let private simplifyExpr (didInline: bool ref) env = function
 
     | Var s as e ->
         match env.vars.TryFind s.Name with
-        | Some (_, {name = id; init = Some init}) when id.ToBeInlined ->
+        | Some (_, {name = id; init = Some init}, _) when id.ToBeInlined ->
             didInline.Value <- true
             init |> mapExpr env
         | _ -> e
@@ -593,25 +593,25 @@ let private graphReorder nodes =
     list |> List.rev
 
 
-// get the list of external values the block depends on
-let private computeDependencies block =
+// get the list of external values the function depends on
+let private computeDependencies f =
     let d = HashSet()
     let collect mEnv = function
         | Var id as e ->
             if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore
             e
         | e -> e
-    mapStmt (mapEnv collect id) block |> ignore
+    mapTopLevel (mapEnv collect id) [f] |> ignore
     d |> Seq.toList
 
 // This function assumes that functions are NOT overloaded
 let private computeAllDependencies code =
     let functions = code |> List.choose (function
-        | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
+        | Function(funcType, _) as f -> Some (funcType, funcType.fName.Name, f)
         | _ -> None)
-    let nodes = functions |> List.map (fun (funcType, name, block, f) ->
-        let callees = computeDependencies block
-                      |> List.filter (fun name2 -> functions |> List.exists (fun (_,n,_,_) -> name2 = n))
+    let nodes = functions |> List.map (fun (funcType, name, f) ->
+        let callees = computeDependencies f
+                      |> List.filter (fun name2 -> functions |> List.exists (fun (_,n,_) -> name2 = n))
         { CallGraphNode.func = f; funcType = funcType; name = name; callees = callees })
     nodes
 

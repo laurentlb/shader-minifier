@@ -29,6 +29,10 @@
 --preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess.frag.expected tests/unit/preprocess.frag
 --preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess_if.frag.expected tests/unit/preprocess_if.frag
 
+# Unused removal tests
+
+--no-renaming --format indented -o tests/unit/unused_removal.frag.expected tests/unit/unused_removal.frag
+
 # Inlining unit tests
 
 --no-remove-unused --no-renaming --format indented -o tests/unit/inline.expected tests/unit/inline.frag
