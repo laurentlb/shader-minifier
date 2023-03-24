@@ -50,8 +50,7 @@ float sdCappedCylinder(vec3 p,float h,float r)
 float sdCapsule(vec3 p,vec3 a,vec3 b,float r)
 {
   vec3 pa=p-a,ba=b-a;
-  float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
-  return length(pa-ba*h)-r;
+  return length(pa-ba*clamp(dot(pa,ba)/dot(ba,ba),0.,1.))-r;
 }
 float sdOctogon(vec2 p,float r)
 {
@@ -64,8 +63,8 @@ float sdOctogon(vec2 p,float r)
 }
 vec3 getRayDir(vec3 ro,vec3 lookAt,vec2 uv)
 {
-  vec3 forward=normalize(lookAt-ro),right=normalize(cross(vec3(0,1,0),forward)),up=cross(forward,right);
-  return normalize(forward+right*uv.x+up*uv.y);
+  vec3 forward=normalize(lookAt-ro),right=normalize(cross(vec3(0,1,0),forward));
+  return normalize(forward+right*uv.x+cross(forward,right)*uv.y);
 }
 MarchData minResult(MarchData a,MarchData b)
 {
@@ -250,10 +249,10 @@ MarchData ed209(vec3 p)
 {
   p.yz+=vec2(legWalkAngle(2.)*.2+.1,-edZ());
   MarchData r=legs(p);
-  float f=min(stretch*2.,1.),slide=f<.5?
+  float f=min(stretch*2.,1.);
+  p.yz-=(f<.5?
     smoothstep(0.,.5,f):
-    1.-smoothstep(.5,1.,f)*.2;
-  p.yz-=slide*.5;
+    1.-smoothstep(.5,1.,f)*.2)*.5;
   gunsUp=smoothstep(0.,1.,clamp((stretch-.66)*6.,0.,1.));
   gunsForward=smoothstep(0.,1.,clamp((stretch-.83)*6.,0.,1.))+fireShock()*.5;
   r=minResult(r,waist(p));
@@ -337,9 +336,9 @@ vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
 {
   const vec3 sunPos=vec3(10,10,-10);
   vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
-  float primary=max(0.,dot(sunDir,n)),bounce=max(0.,dot(-sunDir,n))*.2,spe=pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.,fre=smoothstep(.7,1.,1.+dot(rd,n)),fog=exp(-length(p)*.05);
+  float primary=max(0.,dot(sunDir,n)),spe=pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.,fre=smoothstep(.7,1.,1.+dot(rd,n)),fog=exp(-length(p)*.05);
   primary*=mix(.2,1.,calcShadow(p,sunPos));
-  vec3 lig=((primary+bounce)*ao(p,n,.33)+spe)*vec3(2,1.6,1.7);
+  vec3 lig=((primary+max(0.,dot(-sunDir,n))*.2)*ao(p,n,.33)+spe)*vec3(2,1.6,1.7);
   return mix(data.mat*lig,vec3(.01),fre)*fog;
 }
 vec3 getSceneColor(vec3 ro,vec3 rd)

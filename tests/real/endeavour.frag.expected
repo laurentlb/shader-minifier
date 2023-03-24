@@ -71,8 +71,7 @@ void scene(vec3 x,out vec2 sdf)
   stroke(sdb.x,.003,da);
   sdb.y=2.;
   vec2 ind;
-  float phi=atan(ya.y,ya.x);
-  dhexagonpattern(vec2(56,12)*vec2(x.y,phi),dis,ind);
+  dhexagonpattern(vec2(56,12)*vec2(x.y,atan(ya.y,ya.x)),dis,ind);
   stroke(dis,.2,dis);
   stroke(sdb.x,.003*step(dis,0.),sdb.x);
   sdf.x=max(sdf.x,-da);

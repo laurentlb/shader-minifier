@@ -14,13 +14,11 @@ float inl2(float x)
 }
 float inl3()
 {
-  const float f=acos(-1.);
-  return 2.*f*.75;
+  return 2.*acos(-1.)*.75;
 }
 float inl4()
 {
-  const float f=acos(-1.);
-  return 2.*f*.75;
+  return 2.*acos(-1.)*.75;
 }
 float inl5()
 {

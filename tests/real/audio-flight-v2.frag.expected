@@ -134,7 +134,7 @@ vec2 map(vec3 p,float sg)
   r=vec3(abs(r.x),abs(r.y),r.z);
   fs.z*=2.;
   vec2 center=floor(fs.xz)+.5,neighbour=center+edge(fs.xz-center);
-  float chs=floor(center.y),bmod=mod(chs,16.),height=sampleFreq(bmod*.0465);
+  float chs=floor(center.y),height=sampleFreq(mod(chs,16.)*.0465);
   height=smoothstep(.001,1.,height);
   ga=height;
   float ids=pMod(s.z,msize);
@@ -221,7 +221,7 @@ void mainImage(out vec4 O,vec2 F)
       ro+=lp;
       lp.xy+=path(lp.z);
       ro.xy+=path(ro.z);
-      vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),u=normalize(cross(f,r)),c=ro+f*.183,i=c+uv.x*r+uv.y*u,rd=i-ro;
+      vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),c=ro+f*.183,i=c+uv.x*r+uv.y*normalize(cross(f,r)),rd=i-ro;
       rd.xy=r2(.2*sin(time*.3)-path(lp.z).x/24.)*rd.xy;
       rd.xz=r2(y-path(lp.z+1.).y/14.)*rd.xz;
       vec2 t=marcher(ro,rd,164,1.);
