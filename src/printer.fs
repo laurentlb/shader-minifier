@@ -211,7 +211,10 @@ type PrinterImpl(outputFormat) =
             let th = if el <> None && hasDanglingElseProblem th then Block [th] else th
             let el = match el with
                      | None -> ""
-                     | Some el -> out "%selse%s%s" (nl indent) (nl (indent+1)) (stmtToS' (indent+1) el |> sp)
+                     | Some (If _ as el) -> 
+                        out "%selse%s" (nl indent) (stmtToS' indent el |> sp)
+                     | Some el ->
+                        out "%selse%s%s" (nl indent) (nl (indent+1)) (stmtToS' (indent+1) el |> sp)
             out "if(%s)%s%s" (exprToS indent cond) (stmtToSInd indent th) el
         | ForD(init, cond, inc, body) ->
             let cond = exprToSOpt indent "" cond

@@ -241,9 +241,8 @@ void mainImage(out vec4 O,vec2 F)
             h=vec3(.012);
           if(tm>ths)
             C=h*diff+spec;
-          else
-             if(m==3.||m==4.)
-              C=hsv2rgb(vec3(s_hp.z*.01,.8,.6))*diff;
+          else if(m==3.||m==4.)
+            C=hsv2rgb(vec3(s_hp.z*.01,.8,.6))*diff;
         }
       if(tm>ths)
         {

@@ -193,33 +193,30 @@ void main()
           m=smoothstep(.25,.5,m)-smoothstep(.5,.75,m);
           rgb+=m*vec3(.15);
         }
+      else if(matID==2)
+        rgb=vec3(0);
+      else if(matID==1)
+        {
+          float fb=fbm(16.*pos),m=sin(64.*pos.z+64.*pos.x+4.*fb);
+          m=smoothstep(.3,.5,m)-smoothstep(.5,.7,m);
+          rgb=vec3(.59)+fb*vec3(.17,.18,.21)+m*vec3(.15)+vec3(dif2);
+        }
+      else if(matID==4)
+        {
+          float ft=fbm(16.*pos);
+          rgb=vec3(.82,.73,.65)+ft*vec3(.1);
+          float fs=.9+.1*fbm(32.*pos);
+          rgb*=fs;
+          float fre=max(-dot(nor,rd),0.);
+          rgb-=vec3(fre*fre*.45);
+          spe=clamp((nor.y-nor.z)*.707,0.,1.);
+          spe=.2*pow(spe,32.);
+        }
       else
-         if(matID==2)
-          rgb=vec3(0);
-        else
-           if(matID==1)
-            {
-              float fb=fbm(16.*pos),m=sin(64.*pos.z+64.*pos.x+4.*fb);
-              m=smoothstep(.3,.5,m)-smoothstep(.5,.7,m);
-              rgb=vec3(.59)+fb*vec3(.17,.18,.21)+m*vec3(.15)+vec3(dif2);
-            }
-          else
-             if(matID==4)
-              {
-                float ft=fbm(16.*pos);
-                rgb=vec3(.82,.73,.65)+ft*vec3(.1);
-                float fs=.9+.1*fbm(32.*pos);
-                rgb*=fs;
-                float fre=max(-dot(nor,rd),0.);
-                rgb-=vec3(fre*fre*.45);
-                spe=clamp((nor.y-nor.z)*.707,0.,1.);
-                spe=.2*pow(spe,32.);
-              }
-            else
-              {
-                float fb=fbm(16.*pos);
-                rgb=vec3(.64,.61,.59)+fb*vec3(.21,.19,.19)+dif2;
-              }
+        {
+          float fb=fbm(16.*pos);
+          rgb=vec3(.64,.61,.59)+fb*vec3(.21,.19,.19)+dif2;
+        }
       float ao,totao=0.,sca=10.;
       for(int aoi=0;aoi<5;aoi++)
         {

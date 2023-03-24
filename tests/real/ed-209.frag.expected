@@ -372,50 +372,46 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   float startScene,endScene,time=mod(iTime,55.);
   if(time<12.)
     startScene=0.,endScene=12.,edWalk=0.,ro=vec3(0,-1.5,-.625),lookAt=vec3(0,-1,edZ()),doorOpen=smoothstep(0.,1.,time/5.),stretch=remap(time,7.,10.,0.,1.);
-  else
-     if(time<25.)
-      {
-        startScene=12.;
-        endScene=25.;
-        float t=time-startScene;
-        edWalk=smoothstep(0.,1.,remap(t,3.,8.,0.,1.));
-        ro=vec3(-.5*cos(t*.7),.5-t*.1,edZ()-3.);
-        lookAt=vec3(0,0,edZ());
-      }
-    else
-       if(time<29.)
-        {
-          startScene=25.;
-          endScene=29.;
-          float t=time-startScene;
-          ro=vec3(-2,.5+t*.1,edZ()-3.);
-          lookAt=vec3(0,0,edZ());
-        }
-      else
-         if(time<37.)
-          {
-            startScene=29.;
-            endScene=37.;
-            float t=time-startScene;
-            ro=vec3(1.5,-1.-t*.05,edZ()-5.);
-            lookAt=vec3(0,-1,edZ());
-            stretch=remap(t,2.,5.,1.,0.);
-          }
-        else
-           if(time<55.)
-            {
-              startScene=37.;
-              endScene=55.;
-              float t=time-startScene;
-              ro=vec3(-1.8,-.5,edZ()-2.5);
-              stretch=remap(t,2.,3.,0.,1.)-remap(t,11.5,14.5,0.,1.);
-              lookAt=vec3(0,stretch*.5-.5,edZ());
-              edTwist=remap(t,3.,3.2,0.,1.)*stretch;
-              edDown=remap(t,3.2,3.4,0.,1.)*stretch;
-              edShoot=t<=9.5?
-                remap(t,4.,9.5,0.,1.):
-                0.;
-            }
+  else if(time<25.)
+    {
+      startScene=12.;
+      endScene=25.;
+      float t=time-startScene;
+      edWalk=smoothstep(0.,1.,remap(t,3.,8.,0.,1.));
+      ro=vec3(-.5*cos(t*.7),.5-t*.1,edZ()-3.);
+      lookAt=vec3(0,0,edZ());
+    }
+  else if(time<29.)
+    {
+      startScene=25.;
+      endScene=29.;
+      float t=time-startScene;
+      ro=vec3(-2,.5+t*.1,edZ()-3.);
+      lookAt=vec3(0,0,edZ());
+    }
+  else if(time<37.)
+    {
+      startScene=29.;
+      endScene=37.;
+      float t=time-startScene;
+      ro=vec3(1.5,-1.-t*.05,edZ()-5.);
+      lookAt=vec3(0,-1,edZ());
+      stretch=remap(t,2.,5.,1.,0.);
+    }
+  else if(time<55.)
+    {
+      startScene=37.;
+      endScene=55.;
+      float t=time-startScene;
+      ro=vec3(-1.8,-.5,edZ()-2.5);
+      stretch=remap(t,2.,3.,0.,1.)-remap(t,11.5,14.5,0.,1.);
+      lookAt=vec3(0,stretch*.5-.5,edZ());
+      edTwist=remap(t,3.,3.2,0.,1.)*stretch;
+      edDown=remap(t,3.2,3.4,0.,1.)*stretch;
+      edShoot=t<=9.5?
+        remap(t,4.,9.5,0.,1.):
+        0.;
+    }
   float dim=1.-cos(min(1.,2.*min(abs(time-startScene),abs(time-endScene)))*3.141/2.);
   vec3 col=vec3(0);
   
