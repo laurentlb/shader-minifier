@@ -128,7 +128,7 @@ let markLValues li =
     let findWrites (env: MapEnv) = function
         | Var v as e when env.isLValue ->
             match env.vars.TryFind v.Name with
-            | Some (_, {name = vv}) -> vv.IsLValue <- true; e
+            | Some (_, {name = vv}, _) -> vv.IsLValue <- true; e
             | _ -> e
         | FunCall(Var v, args) as e ->
             match env.fns.TryFind v.Name with

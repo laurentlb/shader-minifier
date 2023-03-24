@@ -129,11 +129,13 @@ type Shader = {
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting variable declarations along the way.
 
+type VarScope = Global | Local | Parameter
+
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<string, Type * DeclElt>
+    vars: Map<string, Type * DeclElt * VarScope>
     fns: Map<string, FunctionType * Stmt>
     isLValue: bool
 }
@@ -171,9 +173,9 @@ let rec mapExpr env = function
         env.fExpr env (VectorExp(List.map (mapExpr env) li))
     | e -> env.fExpr env e
 
-and mapDecl env (ty, vars) =
+and mapDecl varScope env (ty, vars) =
     let aux env (decl: DeclElt) =
-        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
+        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl, varScope))}
         env, {decl with
                 size=Option.map (mapExpr env) decl.size
                 init=Option.map (mapExpr env) decl.init}
@@ -187,7 +189,7 @@ let rec mapStmt env i =
             env, Block b
         | Expr e -> env, Expr (mapExpr env e)
         | Decl d ->
-            let env, res = mapDecl env d
+            let env, res = mapDecl VarScope.Local env d
             env, Decl res
         | If(cond, th, el) ->
             env, If (mapExpr env cond, snd (mapStmt env th), Option.map (mapStmt env >> snd) el)
@@ -196,7 +198,7 @@ let rec mapStmt env i =
         | DoWhile(cond, body) ->
             env, DoWhile (mapExpr env cond, snd (mapStmt env body))
         | ForD(init, cond, inc, body) ->
-            let env', decl = mapDecl env init
+            let env', decl = mapDecl VarScope.Local env init
             let res = ForD (decl, Option.map (mapExpr env') cond,
                             Option.map (mapExpr env') inc, snd (mapStmt env' body))
             if options.hlsl then env', res
@@ -223,10 +225,11 @@ let mapTopLevel env li =
     let _, res = li |> foldList env (fun env tl ->
         match tl with
         | TLDecl t ->
-            let env, res = mapDecl env t
+            let env, res = mapDecl VarScope.Global env t
             env, TLDecl res
         | Function(fct, body) ->
+            let env, args = foldList env (mapDecl VarScope.Parameter) fct.args
             let env = {env with fns = env.fns.Add(fct.fName.Name, (fct, body))}
-            env, Function(fct, snd (mapStmt env body))
+            env, Function({ fct with args = args }, snd (mapStmt env body))
         | e -> env, e)
     res

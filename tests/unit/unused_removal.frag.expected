@@ -3,10 +3,6 @@ vec3 g()
 {
   return vec3(0);
 }
-int hidden()
-{
-  return 0;
-}
 float foo(float hidden)
 {
   return hidden;
