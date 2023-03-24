@@ -251,7 +251,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   vec3 ro=vec3(smoothstep(0.,1.,tri(time*1.5)*.3)*1.5,smoothstep(0.,1.,tri(time*3.)*3.)*.08,-time*3.5-130.);
   ro.y-=camHeight(ro.zx)-.4;
   mo.x+=smoothstep(.7,1.,sin(time*.35))*.5-1.5-smoothstep(-.7,-1.,sin(time*.35))*.5;
-  vec3 eyedir=normalize(vec3(cos(mo.x),mo.y*2.-.05+sin(time*.5)*.1,sin(mo.x))),rightdir=normalize(vec3(cos(mo.x+1.5708),0,sin(mo.x+1.5708))),updir=normalize(cross(rightdir,eyedir)),rd=normalize(p.x*rightdir+p.y*updir+eyedir),ligt=normalize(vec3(1.5,.9,-.5));
+  vec3 eyedir=normalize(vec3(cos(mo.x),mo.y*2.-.05+sin(time*.5)*.1,sin(mo.x))),rightdir=normalize(vec3(cos(mo.x+1.5708),0,sin(mo.x+1.5708))),rd=normalize(p.x*rightdir+p.y*normalize(cross(rightdir,eyedir))+eyedir),ligt=normalize(vec3(1.5,.9,-.5));
   float fg,rz=march(ro,rd,fg,fragCoord);
   vec3 sky=Sky(rd,ligt),col=sky;
   if(rz<FAR)

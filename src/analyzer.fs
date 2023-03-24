@@ -23,6 +23,20 @@ let collectReferences stmtList =
         mapStmt (mapEnv collectLocalUses id) expr |> ignore
     count
 
+let trigonometryFunctions = set([
+    "acos"; "acosh"; "asin"; "asinh"; "atan"; "atanh"; "cos"; "cosh"; "degrees";
+    "radians"; "sin"; "sinh"; "tan"; "tanh"])
+let mathsFunctions = set([
+    "abs"; "ceil"; "clamp"; "dFdx"; "dFdy"; "exp"; "exp2"; "floor"; "floor"; "fma";
+    "fract"; "fwidth"; "inversesqrt"; "isinf"; "isnan"; "log"; "log2"; "max"; "min";
+    "mix"; "mod"; "modf"; "noise"; "pow"; "round"; "roundEven"; "sign"; "smoothstep";
+    "sqrt"; "step"; "trunc"])
+let vectorFunctions = set([
+    "cross"; "distance"; "dot"; "equal"; "faceforward"; "length"; "normalize";
+    "notEqual"; "reflect"; "refract"])
+
+let pureBuiltinFunctions = trigonometryFunctions + mathsFunctions + vectorFunctions
+
 // Mark variables as inlinable when possible.
 // Variables are always safe to inline when all of:
 //  - the variable is used only once in the current block
@@ -57,7 +71,7 @@ let findInlinable block =
                             let ident, _, _ = localDefs.[kv.Key]
                             ident.IsLValue
                         else
-                            true
+                            not (pureBuiltinFunctions.Contains kv.Key)
                     )
                     localDefs.[def.name.Name] <- (def.name, deps.Count > 0, hasUnsafeDep)
         | Expr e
