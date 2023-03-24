@@ -47,4 +47,11 @@ void main()
 	{
 		c+=cos(b);
 	}
+	do
+		b++;
+	while (b<100.);
+	do {
+		if (x>10.)b++;
+		b+=x;
+	} while (b<100.);
 }
