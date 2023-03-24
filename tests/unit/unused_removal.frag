@@ -12,10 +12,17 @@ vec3 g() { return vec3(0.); }
 
 vec2 pos = vec2(0.5);
 
-int hidden() { return 0; }
+// hidden() is unused and should be removed even if a parameter named 'hidden' is used in another function.
+int hidden() {
+	int noinline = 0;
+	noinline++;
+	return noinline;
+}
 
 float foo(float hidden) {
-	return hidden;
+	int noinline = 0;
+	noinline++;
+	return hidden+noinline;
 }
 
 void main(){

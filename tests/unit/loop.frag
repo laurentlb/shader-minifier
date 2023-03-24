@@ -1,4 +1,4 @@
-float f(){return 0.;}
+float f(inout float noinline){return 0.;}
 
 float a;
 void main()
@@ -28,7 +28,7 @@ void main()
 	while (b<50.)
 	{
 		c+=cos(c);
-		float d=f(); // d prevents moving b+=d to a for
+		float d=f(1.0); // d prevents moving b+=d to a for
 		b+=d;
 	}
 	b = a;

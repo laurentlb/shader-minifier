@@ -3,7 +3,7 @@
 # define LOOP_FRAG_EXPECTED_
 
 const char *loop_frag =
- "float f()"
+ "float f(inout float noinline)"
  "{"
    "return 0.;"
  "}"
@@ -23,7 +23,7 @@ const char *loop_frag =
    "for(b=a;b<50.;)"
      "{"
        "c+=cos(c);"
-       "float d=f();"
+       "float d=f(1.);"
        "b+=d;"
      "}"
    "for(b=a;b<50.;)"

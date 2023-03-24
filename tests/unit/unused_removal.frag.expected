@@ -1,13 +1,11 @@
 vec2 pos=vec2(.5);
-vec3 g()
-{
-  return vec3(0);
-}
 float foo(float hidden)
 {
-  return hidden;
+  int noinline=0;
+  noinline++;
+  return hidden+noinline;
 }
 void main()
 {
-  gl_FragColor=vec4(foo(3),g());
+  gl_FragColor=vec4(foo(3),vec3(0));
 }

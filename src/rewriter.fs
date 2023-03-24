@@ -267,6 +267,8 @@ let private simplifyExpr (didInline: bool ref) env = function
         match env.fns.TryFind v.Name with
         | None -> e
         | Some ({args = declArgs}, body) ->
+            if List.length declArgs <> List.length passedArgs then
+                failwithf "Cannot inline %s since it doesn't have the right number of arguments" v.Name
             match body with
             | Jump (JumpKeyword.Return, Some bodyExpr)
             | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
@@ -535,13 +537,20 @@ let private simplifyStmt = function
 
 let rec iterateSimplifyAndInline li =
     if not options.noInlining then
+        Analyzer.markInlinableFunctions li
         let mapExpr _ e = e
         let mapStmt = function
-            | Block b as e -> Analyzer.findInlinable b; e
+            | Block b as e -> Analyzer.markInlinableVariables b; e
             | e -> e
         mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
     let didInline = ref false
     let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
+
+    // now that the functions were inlined, we can remove them
+    let simplified = simplified |> List.filter (function
+        | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
+        | _ -> true)
+
     if didInline.Value then iterateSimplifyAndInline simplified else simplified
 
 let simplify li =
@@ -564,7 +573,7 @@ let simplify li =
           (* Reorder functions because of forward declarations *)
 
 
-type CallGraphNode = {
+type private CallGraphNode = {
     func: TopLevel
     funcType: FunctionType
     name: string

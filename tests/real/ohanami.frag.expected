@@ -26,13 +26,9 @@ float f(vec3 p)
     d:
     min(d,col=max(0,length(p)-.25)/s);
 }
-float hash(float n)
-{
-  return fract(sin(n)*43758.5453);
-}
 float noise(vec2 p)
 {
-  return hash(p.x+p.y*57.);
+  return fract(sin(p.x+p.y*57.)*43758.5453);
 }
 float valnoise(vec2 p)
 {

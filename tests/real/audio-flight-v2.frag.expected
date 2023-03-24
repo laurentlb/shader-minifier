@@ -14,10 +14,6 @@
 
 #define r2(a)mat2(cos(a),sin(a),-sin(a),cos(a))
 
-float sampleFreq(float freq)
-{
-  return texture(iChannel0,vec2(freq,.1)).x;
-}
 float pMod(inout float p,float size)
 {
   float c=floor((p+size*.5)/size);
@@ -134,7 +130,7 @@ vec2 map(vec3 p,float sg)
   r=vec3(abs(r.x),abs(r.y),r.z);
   fs.z*=2.;
   vec2 center=floor(fs.xz)+.5,neighbour=center+edge(fs.xz-center);
-  float chs=floor(center.y),height=sampleFreq(mod(chs,16.)*.0465);
+  float chs=floor(center.y),height=texture(iChannel0,vec2(mod(chs,16.)*.0465,.1)).x;
   height=smoothstep(.001,1.,height);
   ga=height;
   float ids=pMod(s.z,msize);

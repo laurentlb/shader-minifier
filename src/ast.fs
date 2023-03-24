@@ -9,8 +9,7 @@ type Ident(name: string) =
     member this.OldName = name
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
-    member val IsLValue = false with get, set
-    member val IsConst = false with get, set
+    member val IsLValue = false with get, set // set on lvalue variables, and on function names that have out/inout parameters
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -25,6 +24,7 @@ type Ident(name: string) =
         | :? Ident as o -> this.Name = o.Name  
         | _ -> false
     override this.GetHashCode() = name.GetHashCode()
+    override this.ToString() = "ident: " + name
 
 
 [<RequireQualifiedAccess>]
@@ -59,7 +59,7 @@ and TypeSpec =
 
 and Type = {
     name: TypeSpec // e.g. int
-    typeQ: string list // e.g. const, uniform
+    typeQ: string list // type qualifiers, e.g. const, uniform, out, inout...
     arraySizes: Expr list // e.g. [3][5]
 }
 
