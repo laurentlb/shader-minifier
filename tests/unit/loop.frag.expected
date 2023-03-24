@@ -42,6 +42,16 @@ const char *loop_frag =
      "}"
    "for(;b<50.;++b)"
      "c+=cos(b);"
+   "do"
+     " b++;"
+   "while(b<1e2);"
+   "do"
+     "{"
+       "if(a>10.)"
+         "b++;"
+       "b+=a;"
+     "}"
+   "while(b<1e2);"
  "}";
 
 #endif // LOOP_FRAG_EXPECTED_

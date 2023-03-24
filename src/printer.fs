@@ -219,16 +219,16 @@ type PrinterImpl(outputFormat) =
         | ForD(init, cond, inc, body) ->
             let cond = exprToSOpt indent "" cond
             let inc = exprToSOpt indent "" inc
-            out "%s(%s;%s;%s)%s" "for" (declToS indent init) cond inc (stmtToSInd indent body)
+            out "for(%s;%s;%s)%s" (declToS indent init) cond inc (stmtToSInd indent body)
         | ForE(init, cond, inc, body) ->
             let cond = exprToSOpt indent "" cond
             let inc = exprToSOpt indent "" inc
             let init = exprToSOpt indent "" init
-            out "%s(%s;%s;%s)%s" "for" init cond inc (stmtToSInd indent body)
+            out "for(%s;%s;%s)%s" init cond inc (stmtToSInd indent body)
         | While(cond, body) ->
-            out "%s(%s)%s" "while" (exprToS indent cond) (stmtToSInd indent body)
+            out "while(%s)%s" (exprToS indent cond) (stmtToSInd indent body)
         | DoWhile(cond, body) ->
-            out "%s%s%s(%s)" "do" "while" (exprToS indent cond |> sp) (stmtToS indent body)
+            out "do%s%s%swhile(%s);" (nl (indent+1)) (stmtToS' (indent + 1) body |> sp) (nl indent) (exprToS indent cond)
         | Jump(k, None) -> out "%s;" (jumpKeywordToString k)
         | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS indent exp |> sp)
         | Verbatim s ->
