@@ -51,7 +51,7 @@ void main()
 		b++;
 	while (b<100.);
 	do {
-		if (x>10.)b++;
-		b+=x;
+		if (a>10.)b++;
+		b+=a;
 	} while (b<100.);
 }

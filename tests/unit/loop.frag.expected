@@ -47,9 +47,9 @@ const char *loop_frag =
    "while(b<1e2);"
    "do"
      "{"
-       "if(x>10.)"
+       "if(a>10.)"
          "b++;"
-       "b+=x;"
+       "b+=a;"
      "}"
    "while(b<1e2);"
  "}";
