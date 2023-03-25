@@ -6,13 +6,9 @@ layout (local_size_x=8,local_size_y=8)in;
 
 uniform layout(binding=0,r32ui) uimage2DMS d0;
 uniform layout(binding=6,rgba8) image2D outtex;
-float hash(float n)
-{
-  return fract(sin(n)*43758.5453);
-}
 float s(vec2 p)
 {
-  return hash(p.x+p.y*57.);
+  return fract(sin(p.x+p.y*57.)*43758.5453);
 }
 float valnoise(vec2 p)
 {

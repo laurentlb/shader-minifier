@@ -49,7 +49,7 @@ let pureBuiltinFunctions = trigonometryFunctions + mathsFunctions + vectorFuncti
 // The init is considered trivial when:
 //  - it doesn't depend on a variable
 //  - it depends only on variables proven constants
-let findInlinable block =
+let markInlinableVariables block =
     // Variables that are defined in this scope.
     // The booleans indicate if the variable initialization has dependencies / unsafe dependencies.
     let localDefs = Dictionary<string, (Ident * bool * bool)>()
@@ -158,3 +158,129 @@ let markLValues li =
     // might write via "out" parameters.
 
     mapTopLevel (mapEnv findWrites id) li
+
+
+
+module private FindInlinableFunctions =
+
+    type CallSite = {
+        ident: Ident
+        varsInScope: string list
+        argCount: int
+    }
+    type FuncInfo = {
+        func: TopLevel
+        funcType: FunctionType
+        body: Stmt
+        name: string
+        callSites: CallSite list
+    }
+
+    // get the list of external values the block depends on
+    let computeDependencies block =
+        let d = List()
+        let collect (mEnv : MapEnv) = function
+            | FunCall (Var id, argExprs) as e ->
+                if not (mEnv.vars.ContainsKey(id.Name)) then // mEnv.fns is empty because we're only visiting this function.
+                    d.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; argCount = argExprs.Length }
+                e
+            | e -> e
+        mapStmt (mapEnv collect id) block |> ignore
+        d |> Seq.toList
+
+    // This function assumes that functions are NOT overloaded
+    let computeAllDependencies code =
+        let functions = code |> List.choose (function
+            | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
+            | _ -> None)
+        let nodes = functions |> List.map (fun (funcType, name, block, f) ->
+            let callSites = computeDependencies block
+                            |> List.filter (fun callSite -> functions |> List.exists (fun (_,n,_,_) -> callSite.ident.Name = n))
+            { FuncInfo.func = f; funcType = funcType; name = name; callSites = callSites; body = block })
+        nodes
+
+    // To ensure correctness, we verify if it's safe to inline.
+    //
+    // [A] Only inline a function if it never refers to a global by a name function or variable that is shadowed by a local variable in scope at the call site.
+    // [B] Only inline a function if it has only one call site.
+    //     No attempt is made to detect if the function is "short enough" that it could
+    //     benefit from inlining at multiple call sites (particularly probable with compression).
+    // [C] Only inline a function if it is a single expression return.
+    //     This also ensures the function does not declare any locals.
+    // [D] Only inline a function if it uses its 'in' parameters at most once.
+    //     It would be correct to inline when an 'in' parameter that is used more than once
+    //     is passed as an lvalue that doesn't evaluate any expression with a side-effect (e.g. a[b++]).
+    //     If the lvalue is long enough (e.g. `a[b].c.zyx`), its inlined repetition could also increase the shader size.
+    // [E] Only inline a function if its 'in' parameters are never written to (through assignOps or calling an out or inout function or operator).
+    //     No attempt is made to find if the passed argument is an lvalue that's never used after calling the function to inline.
+    //     No attempt is made to copy the argument into a newly declared local variable at the call site to get correct writing semantics.
+    // [F] Only inline a function if it has no 'out' or 'inout' parameters.
+    //     'out' or 'inout' parameters must be lvalues, which simplifies things. But there are problems to watch out for.
+    //     Evaluating them could have side effects (e.g. a[b++]), which is a problem if they are used more than once.
+    //     If the 'out' parameters are read from, inlining can change the behavior.
+    //     It's fine if 'out' parameters are written in more than one place.
+    let verifyArgsUses func callSite code =
+        let argUsageCounts = Dictionary<string, int>()
+        let mutable shadowedGlobal = false
+        let mutable argIsWritten = false
+
+        let visitArgUses mEnv = function
+            | Var id as e ->
+                match mEnv.vars.TryFind(id.Name) with
+                | Some (_, _, VarScope.Local) ->
+                    failwith "There shouldn't be any locals in a function with a single return statement."
+                | Some (_, _, VarScope.Parameter) ->
+                    argIsWritten <- argIsWritten || mEnv.isLValue
+                    argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
+                | Some (_, _, VarScope.Global) ->
+                    // Here we're only visiting one function, so mEnv.vars contains no globals, and mEnv.fns is empty.
+                    failwith "There shouldn't be any globals when visiting a single function."
+                | None -> // function name, or global variable name.
+                    let isGlobalVarOrFunc = code |> List.exists (function
+                        | TLDecl(_, declElts) -> declElts |> List.exists (fun declElt -> declElt.name.Name = id.Name)
+                        | Function(fct, _) -> fct.fName.Name = id.Name
+                        | _ -> false // built-in function
+                        )
+                    if isGlobalVarOrFunc then
+                        shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
+                    ()
+                e
+            | e -> e
+        mapTopLevel (mapEnv visitArgUses id) [func] |> ignore
+
+        let argsAreUsedAtMostOnce = not (argUsageCounts.Values |> Seq.exists (fun n -> n > 1))
+        let ok =
+            argsAreUsedAtMostOnce && // [D]
+            not argIsWritten && // [E]
+            not shadowedGlobal // [A]
+        ok
+
+    let tryMarkFunctionToInline node callSite code =
+        // We also need to check that inlining won't fail (inlining can fail because it can be forced by "i_").
+        if node.funcType.args.Length = callSite.argCount then
+            if verifyArgsUses node.func callSite code then
+                // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
+                // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
+                callSite.ident.ToBeInlined <- true
+                node.funcType.fName.ToBeInlined <- true
+
+    let markInlinableFunctions code =
+        let nodes = computeAllDependencies code
+        for node in nodes do
+            let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
+            let isExternal = options.hlsl && node.funcType.semantics <> []
+            if canBeRenamed && not isExternal then
+                let hasOnlyInParameters =
+                    let typeQualifiers = set (List.concat [for (ty, _) in node.funcType.args do yield ty.typeQ])
+                    (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
+                if hasOnlyInParameters then // [F]
+                    let callSites = nodes |> List.map (fun n -> n.callSites) |> List.concat |> List.filter (fun n -> n.ident.Name = node.name)
+                    let isCalledExactlyOnce = callSites.Length = 1
+                    if isCalledExactlyOnce then // [B]
+                        match node.body with
+                        | Jump (JumpKeyword.Return, Some _)
+                        | Block [Jump (JumpKeyword.Return, Some _)] -> // [C]
+                            tryMarkFunctionToInline node callSites.Head code
+                        | _ -> ()
+
+let markInlinableFunctions = FindInlinableFunctions.markInlinableFunctions

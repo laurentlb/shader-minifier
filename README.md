@@ -30,7 +30,7 @@ See the list of [transformations](#transformations) below for more information.
 In brief:
 
 - Strip spaces, remove comments, remove useless parens.
-- Inline variables and constant values.
+- Inline functions, variables and constant values.
 - Simplify constant expressions: `5. * 2.` becomes `10.`.
 - Group declarations: `float a=2.;float b;` becomes `float a=2.,b;`.
 - Apply other tricks to reduce the file size.
@@ -121,12 +121,12 @@ OPTIONS:
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
-    --no-inlining         Do not automatically inline variables
+    --no-inlining         Do not automatically inline variables and functions
     --aggressive-inlining Aggressively inline constants. This can reduce output
                           size due to better constant folding. It can also
                           increase output size due to repeated inlined
                           constants, but this increased redundancy can be
-                          beneficial to gzip leading to a smaller final
+                          beneficial to compression, leading to a smaller final
                           compressed size anyway. Does nothing if inlining is
                           disabled.
     --no-renaming         Do not rename anything
@@ -600,6 +600,16 @@ This happens when:
 - the variable is used only once in the current block,
 - and the variable is not used in a sub-block (e.g. inside a loop),
 - and the init value is trivial (doesn't depend on a variable).
+
+Shader Minifier will try to automatically inline some functions.
+This happens when:
+- the function is a single return statement,
+- the function is called in only one place,
+- the function uses its arguments at most once,
+- the function does not modify its arguments,
+- the function has no out/inout arguments,
+- the function does not use a global that would be shadowed by a local
+  that is in scope at the call site.
 
 If inlining causes a bug in your code, you can disable it with `--no-inlining`
 and please report a bug.

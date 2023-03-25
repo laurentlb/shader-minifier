@@ -89,16 +89,12 @@ float fireShock()
 {
   return abs(sin(edShoot*3.1415*25.));
 }
-float headSphere(vec3 p)
-{
-  return(length(p/vec3(1,.8,1))-1.)*.8;
-}
 MarchData headVisor(vec3 p,float h,float bump)
 {
   bump*=sin(p.x*150.)*sin(p.y*150.)*.002;
   MarchData result;
   result.d=sdBox(p,vec3(1,h,2));
-  result.d=max(mix(result.d,headSphere(p),.57),-p.y)-bump;
+  result.d=max(mix(result.d,(length(p/vec3(1,.8,1))-1.)*.8,.57),-p.y)-bump;
   result.mat=vec3(.05);
   result.specPower=30.;
   return result;
