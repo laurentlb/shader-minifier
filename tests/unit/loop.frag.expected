@@ -23,7 +23,7 @@ const char *loop_frag =
    "for(b=a;b<50.;)"
      "{"
        "c+=cos(c);"
-       "float d=f(1.);"
+       "float arg,d=f(arg);"
        "b+=d;"
      "}"
    "for(b=a;b<50.;)"

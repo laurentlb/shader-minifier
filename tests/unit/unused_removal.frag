@@ -20,11 +20,11 @@ int hidden() {
 }
 
 float foo(float hidden) {
-	int noinline = 0;
+	float noinline = 0.;
 	noinline++;
 	return hidden+noinline;
 }
 
 void main(){
-  gl_FragColor = vec4(foo(3), g());
+  gl_FragColor = vec4(foo(3.), g());
 }
