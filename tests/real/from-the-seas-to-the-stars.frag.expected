@@ -761,9 +761,8 @@ void main()
         }
       p.y+=.5;
       vec3 r=normalize(camtarget-campos),s=normalize(cross(vec3(0,1,0),r)),t=cross(s,r);
-      mat3 cammat=mat3(s,-t,r);
       p-=campos;
-      p=transpose(cammat)*p;
+      p=transpose(mat3(s,-t,r))*p;
       p.xy*=rotmat(sin(time/2)*.05*cameraroll+cameraroll2);
       p.y+=(fbm(vec2(time/16))-.5)*.1*cameraroll;
       p.x+=(fbm(vec2(time/14+10))-.5)*.1*cameraroll;
@@ -805,7 +804,7 @@ void main()
               uint x=imageLoad(d0,coord,sampleIndex).x,idepth=x>>16,icol=x&65535;
               if(idepth==0)
                 continue;
-              float depth=65535./float(idepth)-1.,a=0.,wsum=0.;
+              float a=0.,wsum=0.;
               for(int i=0;i<4;++i)
                 {
                   vec4 w;
@@ -817,7 +816,7 @@ void main()
                   wsum+=1;
                 }
               vec3 col=vec3(float(icol>>11)/31.,float(icol>>5&63)/63.,float(icol&31)/31.)*mix(vec3(.5,.5,1)*.01*0,vec3(1),a/wsum);
-              col=mix(vec3(.25,.5,1)*mix(.6,1.,a/wsum),col,exp2(-depth/200));
+              col=mix(vec3(.25,.5,1)*mix(.6,1.,a/wsum),col,exp2((-65535./float(idepth)+1.)/200));
               c.xyz+=clamp(col,0,1);
               c.w+=1.;
             }

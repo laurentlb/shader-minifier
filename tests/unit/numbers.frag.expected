@@ -6,6 +6,6 @@ uint large()
 }
 vec4 f()
 {
-  float oct=float(34)/1e3,oct2=float(-57)/1e3,n=oct-oct2+float(0)+float(-1)/20.;
+  float n=float(34)/1e3-float(-57)/1e3+float(0)+float(-1)/20.;
   return vec4(n,n,n,0);
 }
