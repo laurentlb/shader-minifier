@@ -28,7 +28,7 @@ void main()
 	while (b<50.)
 	{
 		c+=cos(c);
-		float d=f(1.0); // d prevents moving b+=d to a for
+		float arg; float d=f(arg); // d prevents moving b+=d to a for
 		b+=d;
 	}
 	b = a;

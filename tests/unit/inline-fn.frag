@@ -38,17 +38,18 @@ float e() {
   return i_multipass(1.0);
 }
 
+float globalFloat = 6.;
 
 // automatic inlining
 
-float shadowedFunc(inout float notinlinable) { return -1.0; }
-float notShadowedFunc(inout float notinlinable) { return -2.0; }
+float shadowedFunc(inout float notinlinable) { notinlinable = 1.; return -1.0; }
+float notShadowedFunc(inout float notinlinable) { notinlinable = 2.; return -2.0; }
 float shadowedVar = 0.0;
 float notShadowedVar = 1.0;
 float A1() { return shadowedVar; }
 float A2_INLINED() { return notShadowedVar; }
-float A3() { return shadowedFunc(1.0); }
-float A4_INLINED() { return notShadowedFunc(1.0); }
+float A3() { float a = 10.; return shadowedFunc(a); }
+float A4_INLINED() { return notShadowedFunc(globalFloat); }
 
 float B1() { return 2.0; }
 float B2_INLINED() { return 2.0; }
@@ -109,12 +110,10 @@ float f() {
 	sep++;
     // [F] Only inline a function if it has no 'out' or 'inout' parameters.
 	float _F1 = F1_INLINED(7.0); // inlined
-	float _F2 = F2(7.0); // not inlined
-	float _F3 = F3(7.0); // not inlined
+	float o; float _F2 = F2(o); // not inlined
+	float _F3 = F3(o); // not inlined
 
 	sep++;
-	// Called with incorrect number of arguments
-	float _G1 = G1(8.0); // not inlined (bad arg count), but shouldn't throw
 
 	shadowedVar++;
 	shadowedFunc++;
@@ -125,12 +124,12 @@ float f() {
 		_C1+_C2+
 		_D1+_D2+
 		_E1+_E2+_E3+_E4+_E5+
-		_F1+_F2+_F3+
-		_G1;
+		_F1+_F2+_F3;
 }
 
 
 float Z() { return 0.0; }	
 float g() {
 	float Z=Z(); // should be inlined but there's a bug, using "not in env.vars" won't see the fn?
+	return 1.;
 }
