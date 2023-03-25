@@ -34,21 +34,21 @@ let mathsFunctions = set([
 let vectorFunctions = set([
     "cross"; "distance"; "dot"; "equal"; "faceforward"; "length"; "normalize";
     "notEqual"; "reflect"; "refract"])
-let builtinTypes = set(
-    [ "void"; "bool"; "int"; "uint"; "float"; "double" ]
-    @ [for p in ["d"; "b"; "i"; "u"] do
-       for n in ["2"; "3"; "4"] do
-       yield p+"vec"+n]
-    @ [for p in [""; "d"] do
-       for n in ["2"; "3"; "4"] do
-       yield p+"mat"+n]
-    @ [for p in [""; "d"] do
-       for c in ["2"; "3"; "4"] do
-       for r in ["2"; "3"; "4"] do
-       yield p+"mat"+c+"x"+r]
-    )
+let builtinTypes =
+    set [ "void"; "bool"; "int"; "uint"; "float"; "double" ]
+    + set [for p in ["d"; "b"; "i"; "u"] do
+           for n in ["2"; "3"; "4"] do
+           yield p+"vec"+n]
+    + set [for p in [""; "d"] do
+           for n in ["2"; "3"; "4"] do
+           yield p+"mat"+n]
+    + set [for p in [""; "d"] do
+           for c in ["2"; "3"; "4"] do
+           for r in ["2"; "3"; "4"] do
+           yield p+"mat"+c+"x"+r]
+let castFunctions = builtinTypes - set ["void"]
 
-let pureBuiltinFunctions = trigonometryFunctions + mathsFunctions + vectorFunctions + builtinTypes
+let pureBuiltinFunctions = trigonometryFunctions + mathsFunctions + vectorFunctions + castFunctions
 
 // Mark variables as inlinable when possible.
 // Variables are always safe to inline when all of:
