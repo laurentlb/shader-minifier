@@ -140,12 +140,11 @@ let markLValues li =
 
     let findWrites (env: MapEnv) = function
         | Var v as e when env.isLValue ->
-            match env.vars.TryFind v.Name with
-            | Some (_, {name = vv}, _) -> vv.IsLValue <- true; e
-            | _ -> e
+            v.IsLValue <- true
+            e
         | FunCall(Var v, args) as e ->
             match env.fns.TryFind v.Name with
-            | Some (fct, _) when fct.fName.IsLValue ->
+            | Some (fct, _) when fct.fName.HasOutParam ->
                 let newEnv = {env with isLValue = true}
                 for arg in args do
                     (mapExpr newEnv arg: Expr) |> ignore
@@ -164,7 +163,7 @@ let markLValues li =
         | Function({fName = id; args = args}, _) ->
             let argAssigns (ty, _) =
                 List.exists (fun tyQ -> Set.contains tyQ assignQuals) ty.typeQ
-            if List.exists argAssigns args then id.IsLValue <- true
+            if List.exists argAssigns args then id.HasOutParam <- true
         | _ -> ()
 
     // Mark bodies; when scanning bodies, we need to look up which functions
@@ -172,6 +171,35 @@ let markLValues li =
 
     mapTopLevel (mapEnv findWrites id) li
 
+// Create ResolvedIdent for each declaration in the file.
+// Give each Ident a reference to that ResolvedIdent.
+let resolve topLevel =
+    let resolveExpr (env: MapEnv) = function
+        | Var v as e ->
+            match env.vars.TryGetValue v.Name with
+            | true, (_, decl) -> v.Resolved <- decl.name.Resolved
+            | false, _ -> ()
+            e
+        | e -> e
+
+    let resolveDecl scope (ty, li) =
+        for elt in li do
+            let resolved = new ResolvedIdent(ty, elt, scope)
+            elt.name.Resolved <- Some resolved
+
+    let resolveStmt = function
+        | Decl d as stmt -> resolveDecl VarScope.Local d; stmt
+        | x -> x
+
+    let resolveTopLevel = function
+        | TLDecl decl -> resolveDecl VarScope.Global decl
+        | Function (ty, _) ->
+            for decl in ty.args do resolveDecl VarScope.Parameter decl
+        | _ -> ()
+
+    for tl in topLevel do
+        resolveTopLevel tl
+    mapTopLevel (mapEnv resolveExpr resolveStmt) topLevel
 
 
 module private FindInlinableFunctions =
@@ -232,31 +260,22 @@ module private FindInlinableFunctions =
     //     Evaluating them could have side effects (e.g. a[b++]), which is a problem if they are used more than once.
     //     If the 'out' parameters are read from, inlining can change the behavior.
     //     It's fine if 'out' parameters are written in more than one place.
-    let verifyArgsUses func callSite code =
+    let verifyArgsUses func callSite =
         let argUsageCounts = Dictionary<string, int>()
         let mutable shadowedGlobal = false
         let mutable argIsWritten = false
 
         let visitArgUses mEnv = function
             | Var id as e ->
-                match mEnv.vars.TryFind(id.Name) with
-                | Some (_, _, VarScope.Local) ->
+                match id.Resolved |> Option.map (fun r -> r.scope) with
+                | Some VarScope.Local ->
                     failwith "There shouldn't be any locals in a function with a single return statement."
-                | Some (_, _, VarScope.Parameter) ->
+                | Some VarScope.Parameter ->
                     argIsWritten <- argIsWritten || mEnv.isLValue
                     argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
-                | Some (_, _, VarScope.Global) ->
-                    // Here we're only visiting one function, so mEnv.vars contains no globals, and mEnv.fns is empty.
-                    failwith "There shouldn't be any globals when visiting a single function."
-                | None -> // function name, or global variable name.
-                    let isGlobalVarOrFunc = code |> List.exists (function
-                        | TLDecl(_, declElts) -> declElts |> List.exists (fun declElt -> declElt.name.Name = id.Name)
-                        | Function(fct, _) -> fct.fName.Name = id.Name
-                        | _ -> false // built-in function
-                        )
-                    if isGlobalVarOrFunc then
-                        shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
-                    ()
+                | Some VarScope.Global ->
+                    shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
+                | None -> () // built-in function
                 e
             | e -> e
         mapTopLevel (mapEnv visitArgUses id) [func] |> ignore
@@ -268,10 +287,10 @@ module private FindInlinableFunctions =
             not shadowedGlobal // [A]
         ok
 
-    let tryMarkFunctionToInline node callSite code =
+    let tryMarkFunctionToInline node callSite =
         // We also need to check that inlining won't fail (inlining can fail because it can be forced by "i_").
         if node.funcType.args.Length = callSite.argCount then
-            if verifyArgsUses node.func callSite code then
+            if verifyArgsUses node.func callSite then
                 // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
                 // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
                 callSite.ident.ToBeInlined <- true
@@ -293,7 +312,7 @@ module private FindInlinableFunctions =
                         match node.body with
                         | Jump (JumpKeyword.Return, Some _)
                         | Block [Jump (JumpKeyword.Return, Some _)] -> // [C]
-                            tryMarkFunctionToInline node callSites.Head code
+                            tryMarkFunctionToInline node callSites.Head
                         | _ -> ()
 
 let markInlinableFunctions = FindInlinableFunctions.markInlinableFunctions
