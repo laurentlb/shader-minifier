@@ -45,8 +45,7 @@ void main()
   if(gl_TexCoord[0].w>.5)
     {
       ti=max(0,time)/3.;
-      ti=floor(ti)+clamp(fract(ti)*2,0,1)+noise(floor(gl_FragCoord.xy));
-      ti=floor(ti);
+      ti=floor(floor(ti)+clamp(fract(ti)*2,0,1)+noise(floor(gl_FragCoord.xy)));
       float zoom=1.5;
       vec2 filmoffset=vec2(0);
       if(ti>8&&ti<12)
@@ -126,7 +125,7 @@ void main()
                     p2*=mat2(cos(ang),sin(ang),-sin(ang),cos(ang));
                     cc=mix(cc,vec3(a)*1.5,pow(rand(),16));
                     if(rand()>-floor(time*2)/2/10)
-                      c=mix(c,cc,mix(.1,.4,rand())*3*pow(a,.8)*mix(.8,1,cos(p2.x*1200)*.5+.5)*clamp((r-d)/mix(.001,.004,rand()),0,1)),c=mix(c,cc/2.,mix(.14,.3,pow(rand(),16))/4*clamp(1-abs(r-d)/.002,0,1));
+                      c=mix(mix(c,cc,mix(.1,.4,rand())*3*pow(a,.8)*mix(.8,1,cos(p2.x*1200)*.5+.5)*clamp((r-d)/mix(.001,.004,rand()),0,1)),cc/2.,mix(.14,.3,pow(rand(),16))/4*clamp(1-abs(r-d)/.002,0,1));
                   }
               }
         }

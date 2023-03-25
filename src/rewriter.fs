@@ -434,6 +434,20 @@ let private simplifyBlock stmts =
             Some (ForE(Some e, Some cond, None, body))
         | _ -> None)
 
+    let b = b |> squeeze (function
+        | Expr (FunCall(Op "=", [Var d1; e1])),
+           (Expr (FunCall(Op "=", [Var d2; e2])) as stmt2) when d1.Name = d2.Name ->
+            let refs = Analyzer.collectReferences [Expr e2]
+            match refs.TryGetValue d1.Name with
+            | false, _ -> Some stmt2
+            | true, 1 ->
+                let inliner _ = function
+                    Var v when v.Name = d1.Name -> e1 | e -> e
+                let e2 = mapExpr (mapEnv inliner id) e2
+                Some (Expr (FunCall(Op "=", [Var d2; e2])))
+            | _ -> None
+        | _ -> None)
+
     // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
     let b = b |> List.collect (function
         | Block b when hasNoDecl b -> b

@@ -254,12 +254,9 @@ void mainImage(out vec4 O,vec2 F)
   float px=1./R.x,d1=fBox2(uv+vec2(-.485,.2675),vec2(.005))-.002;
   d1=smoothstep(px,-px,d1);
   C=mix(C,vec3(.212,.671,.576),d1);
-  d1=fBox2(uv+vec2(-.465,.2675),vec2(.005))-.002;
-  d1=smoothstep(px,-px,d1);
+  d1=smoothstep(px,-px,fBox2(uv+vec2(-.465,.2675),vec2(.005))-.002);
   C=mix(C,vec3(.757,.686,.341),d1);
-  d1=fBox2(uv+vec2(-.445,.2675),vec2(.005))-.002;
-  d1=smoothstep(px,-px,d1);
-  C=mix(C,vec3(.882,.459,.867),d1);
-  C=pow(C,vec3(.4545));
+  d1=smoothstep(px,-px,fBox2(uv+vec2(-.445,.2675),vec2(.005))-.002);
+  C=pow(mix(C,vec3(.882,.459,.867),d1),vec3(.4545));
   O=vec4(C,1);
 }

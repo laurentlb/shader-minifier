@@ -66,9 +66,7 @@ void main()
           p=pow(p,vec3(1.3,1.1,1).zyx)*(1-(pow(q.x,4)+pow(q.y,4))*4);
           p=sqrt(p/(p+1));
           float a=smoothstep(125.,130.,-time)-smoothstep(136.,145.,-time);
-          p=mix(p,vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*2.9,-.01,.99),1.).x);
-          p=mix(p,vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*5.,-.01,.99),2.).y);
-          p=mix(p,vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*9.,-.01,.99),3.).z);
+          p=mix(mix(mix(p,vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*2.9,-.01,.99),1.).x),vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*5.,-.01,.99),2.).y),vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*9.,-.01,.99),3.).z);
           imageStore(outtex,coord,vec4(p,1));
           imageStore(d0,coord,uvec4(0));
         }
@@ -97,7 +95,7 @@ void main()
           else if(r<1.07)
             col=mix(col,0.,.2),p.xy=p.xy+vec2(-.5,-.866025),p=S(p);
           else
-             col=mix(col,0.,.2),col=1.,p.xy=p.xy+vec2(-.5,.866025),p=S(p),p.z+=.1;
+             col=1.,p.xy=p.xy+vec2(-.5,.866025),p=S(p),p.z+=.1;
           if(time>48.)
             p.z=mix(p.z,mod(p.z+time/2.+2,4.)-2,smoothstep(48.,49.,time));
         }

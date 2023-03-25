@@ -132,24 +132,19 @@ float GearDf(vec3 p)
   tWid=rad/10.;
   nt=20.;
   q=p-vec3(-1.05,-.21,1.3);
-  dMin=GearWlDf(-q,rad,wlThk,tWid,nt,angRot*gRat,true,dMin);
-  dMin=GearWlDf((q-vec3(.85*rad,0,.85*rad)).yzx,rad,wlThk,tWid,nt,angRot*gRat+3.1415927/nt,true,dMin);
+  dMin=GearWlDf((q-vec3(.85*rad,0,.85*rad)).yzx,rad,wlThk,tWid,nt,angRot*gRat+3.1415927/nt,true,GearWlDf(-q,rad,wlThk,tWid,nt,angRot*gRat,true,dMin));
   rad=.43;
   wlThk=rad/15.;
   tWid=rad/16.;
   nt=32.;
   q=p-vec3(.1,0,1);
-  dMin=GearWlDf((q-vec3(0,bEdge,0)).yzx,rad,wlThk,tWid,nt,-angRot-.94247781/nt,false,dMin);
-  dMin=GearWlDf(-(q-vec3(0,-.21,.555)).zyx,rad/gRat,wlThk,tWid,nt/gRat,-angRot*gRat,false,dMin);
+  dMin=GearWlDf(-(q-vec3(0,-.21,.555)).zyx,rad/gRat,wlThk,tWid,nt/gRat,-angRot*gRat,false,GearWlDf((q-vec3(0,bEdge,0)).yzx,rad,wlThk,tWid,nt,-angRot-.94247781/nt,false,dMin));
   rad=.32;
   wlThk=rad/15.;
   tWid=rad/12.;
   nt=24.;
   q=p-vec3(-1.05,-.21,.6);
-  dMin=GearWlDf(q-vec3(0,0,.1),rad,wlThk,tWid,nt,angRot*gRat+3.1415927/nt,false,dMin);
-  dMin=GearWlDf(q-vec3(0,-.47,.1),rad/gRat,wlThk,tWid,nt/gRat,-angRot*gRat*gRat,false,dMin);
-  dMin=GearWlDf(q-vec3(0,-.47,-.1),rad,wlThk,tWid,nt,-angRot*gRat*gRat-3.1415927/nt,false,dMin);
-  dMin=GearWlDf(q-vec3(0,0,-.1),rad/gRat,wlThk,tWid,nt/gRat,angRot*gRat*gRat*gRat,false,dMin);
+  dMin=GearWlDf(q-vec3(0,0,-.1),rad/gRat,wlThk,tWid,nt/gRat,angRot*gRat*gRat*gRat,false,GearWlDf(q-vec3(0,-.47,-.1),rad,wlThk,tWid,nt,-angRot*gRat*gRat-3.1415927/nt,false,GearWlDf(q-vec3(0,-.47,.1),rad/gRat,wlThk,tWid,nt/gRat,-angRot*gRat*gRat,false,GearWlDf(q-vec3(0,0,.1),rad,wlThk,tWid,nt,angRot*gRat+3.1415927/nt,false,dMin))));
   return dMin*.3;
 }
 float ObjDf(vec3 p)
@@ -433,8 +428,7 @@ vec3 ShowScene(vec3 ro,vec3 rd)
                 col4=mix(.8*col4,vec4(1,0,1,.2),step(0.,sin(6.2831854*tCur)));
             }
         }
-      sh=min(ObjSShadow(ro,ltDir),GearSShadow(ro,ltDir));
-      sh=.6+.4*min(sh,BlkHitSh(ro+.01*ltDir,ltDir,6.));
+      sh=.6+.4*min(min(ObjSShadow(ro,ltDir),GearSShadow(ro,ltDir)),BlkHitSh(ro+.01*ltDir,ltDir,6.));
       nDotL=max(dot(vn,ltDir),0.);
       if(isMet)
         nDotL*=nDotL;

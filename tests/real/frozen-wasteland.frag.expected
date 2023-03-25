@@ -152,8 +152,7 @@ float map(vec3 p)
 {
   p.y+=height(p.zx);
   float d=p.y+.5;
-  d=smin(d,vine(p+vec3(.8,0,0),30.,3.3));
-  d=smin(d,vine(p.zyx+vec3(0,0,17),33.,1.4));
+  d=smin(smin(d,vine(p+vec3(.8,0,0),30.,3.3)),vine(p.zyx+vec3(0,0,17),33.,1.4));
   d+=p.y*1.2*Noise3d(p*.05);
   p.xz*=.3;
   d+=Noise3d(p*.3);
@@ -223,8 +222,7 @@ vec3 Clouds(vec3 sky,vec3 rd)
   rd.xz=rd.xz*v-time*8.;
   rd.xz*=4e-4;
   float f=Noise3d(rd.xzz*3.)*Noise3d(rd.zxx*1.3)*2.5;
-  f=f*pow(ele,.5)*2.;
-  f=clamp(f-.15,.01,1.);
+  f=clamp(f*pow(ele,.5)*2.-.15,.01,1.);
   return mix(sky,vec3(1),f);
 }
 vec3 Sky(vec3 rd,vec3 ligt)
@@ -262,17 +260,14 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
       float shd=shadow(pos,ligt,.04),dif=clamp(dot(nor,ligt),0.,1.);
       vec3 ref=reflect(rd,nor);
       float spe=pow(clamp(dot(ref,ligt),0.,1.),5.)*2.,fre=pow(clamp(1.+dot(rd,nor),0.,1.),3.);
-      col=vec3(.75);
-      col=col*dif*shd+fre*spe*shd*SUN_COLOUR+abs(nor.y)*vec3(.12,.13,.13);
+      col=vec3(.75)*dif*shd+fre*spe*shd*SUN_COLOUR+abs(nor.y)*vec3(.12,.13,.13);
       d=Occ(pos+nor*3.);
       col*=vec3(d,d,min(d*1.2,1.));
       col=mix(col,sky,smoothstep(FAR-25.,FAR,rz));
     }
   else
      col=Clouds(col,rd);
-  col=mix(col,vec3(.6,.65,.7),fg);
-  col=mix(col,vec3(.5),-.3);
-  col=sqrt(col);
+  col=sqrt(mix(mix(col,vec3(.6,.65,.7),fg),vec3(.5),-.3));
   float f=smoothstep(0.,3.,iTime)*.5;
   col*=f+f*pow(70.*q.x*q.y*(1.-q.x)*(1.-q.y),.2);
   fragColor=vec4(col,1);

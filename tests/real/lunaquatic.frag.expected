@@ -192,9 +192,9 @@ void main()
   ro=vec3(0,.25,0);
   float t=Y.z;
   if(t<16.)
-    t=ftime(t,0.,16.),t=1.-pow(1.-t,2.),lightPos=vec3(-400,1e2-t*450.,1e3),t=(t-1.)*.7,rd=rotateX(rd,-t);
+    t=1.-pow(1.-ftime(t,0.,16.),2.),lightPos=vec3(-400,1e2-t*450.,1e3),t=(t-1.)*.7,rd=rotateX(rd,-t);
   else if(t<32.)
-    t=ftime(t,16.,32.),t=1.-pow(1.-t,2.),lightPos=vec3(-400,-350.+t*6e2,1e3),ro.y-=t*.1;
+    t=1.-pow(1.-ftime(t,16.,32.),2.),lightPos=vec3(-400,-350.+t*6e2,1e3),ro.y-=t*.1;
   else if(t<40.)
     lightPos=vec3(-400,250,1e3),ro.y-=.1;
   else if(t<64.)

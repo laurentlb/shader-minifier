@@ -102,10 +102,8 @@ _leizex_frag:
 	db     '}'
 	db   'i=x(s);'
 	db   'vec3 t=vec3(1.+.5*c(96.*s)),d=c(i,1.,.25*s),z=vec3(.8,.5,-.1),g=vec3(.5,.55,.6)+vec3(.6,.5,.3)*clamp(dot(d,z),0.,1.)*3.;'
-	db   't=t*g*o;'
-	db   't=t/(1.+r)+vec3(1.06,1.14,1)*(1.-exp2(-.25*r));'
-	db   't=(t*t+t)*.5;'
-	db   't=clamp(t*vec3(1,1.2,1),0.,1.);'
+	db   't=t*g*o/(1.+r)+vec3(1.06,1.14,1)*(1.-exp2(-.25*r));'
+	db   't=clamp((t*t+t)*.5*vec3(1,1.2,1),0.,1.);'
 	db   't*=.5+.5*(1.-v.x)*(1.+v.x);'
 	db   'gl_FragColor=vec4(t,1);'
 	db '}', 0

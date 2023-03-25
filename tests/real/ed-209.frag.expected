@@ -138,9 +138,7 @@ MarchData gunPod(vec3 p)
   float bump=sign(sin(pp.z*33.3))*.003,d=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02;
   pp=p-vec3(0,0,-.6);
   pp.x=abs(pp.x)-.1;
-  d=min(d,sdCappedCylinder(pp,.06,.15));
-  d=min(d,sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05));
-  d=min(d,sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
+  d=min(min(min(d,sdCappedCylinder(pp,.06,.15)),sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05)),sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
   if(d<r.d)
     d=max(d,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=d,r.mat=vec3(.02);
   float fs=fireShock();
@@ -254,8 +252,7 @@ MarchData ed209(vec3 p)
   r=minResult(r,waist(p));
   p.yz*=rot(.1*(-edDown+legWalkAngle(2.)+smoothstep(0.,1.,clamp((stretch-.5)*6.,0.,1.))-1.));
   p.xz*=rot(edTwist*.2);
-  r=minResult(r,headLower(p));
-  r=minResult(r,headVisor(p,.8,1.));
+  r=minResult(minResult(r,headLower(p)),headVisor(p,.8,1.));
   return minResult(r,arms(p));
 }
 MarchData room(vec3 p)
@@ -272,9 +269,7 @@ MarchData room(vec3 p)
   if(r.d==backWall)
     {
       float ocp;
-      ocp=min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9)));
-      ocp=max(ocp,min(.7-abs(xy.x+1.2),-xy.y));
-      ocp=min(ocp,max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))));
+      ocp=min(max(min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9))),min(.7-abs(xy.x+1.2),-xy.y)),max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))));
       if(ocp<.3)
         r.mat=vec3(.39,.57,.71);
     }
