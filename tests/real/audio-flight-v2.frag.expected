@@ -66,8 +66,7 @@ float sdCap(vec3 p,float h,float r)
 }
 vec2 path(float z)
 {
-  vec2 p1=vec2(2.35*sin(z*.125)+2.38*cos(z*.25),3.5*cos(z*.0945)),p2=vec2(3.2*sin(z*.19),4.31*sin(z*.125)-2.38*cos(z*.115));
-  return(p1-p2)*.3;
+  return(vec2(2.35*sin(z*.125)+2.38*cos(z*.25),3.5*cos(z*.0945))-vec2(3.2*sin(z*.19),4.31*sin(z*.125)-2.38*cos(z*.115)))*.3;
 }
 float time,tm,travelSpeed,glow,iqd,flight,beams,gcolor,objglow,offWobble,boxsize,ga,sa,slp;
 vec3 g_hp,s_hp;
@@ -191,8 +190,7 @@ vec3 normal(vec3 p,float t)
 }
 vec3 hsv2rgb(vec3 c)
 {
-  vec3 rgb=clamp(abs(mod(c.x*6.+vec3(0,4,2),6.)-3.)-1.,0.,1.);
-  return c.z*mix(vec3(1),rgb,c.y);
+  return c.z*mix(vec3(1),clamp(abs(mod(c.x*6.+vec3(0,4,2),6.)-3.)-1.,0.,1.),c.y);
 }
 void mainImage(out vec4 O,vec2 F)
 {

@@ -4,7 +4,7 @@ module Builtin
 
 let builtinTypes = set([
     yield! [ "void"; "bool"; "int"; "uint"; "float"; "double" ]
-    for p in ["d"; "b"; "i"; "u"] do
+    for p in [""; "d"; "b"; "i"; "u"] do
         for n in ["2"; "3"; "4"] do
             yield p+"vec"+n
     for p in [""; "d"] do
