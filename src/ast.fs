@@ -13,19 +13,10 @@ type Ident(name: string) =
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
 
-    member val HasOutParam = false with get, set // set on function names that have out/inout parameters
-
-    member val Resolved: ResolvedIdent option = None with get, set
-
-    member this.IsLValue
-        with set(x) =
-            match this.Resolved with
-            | None -> ()
-            | Some resolved -> resolved.isLValue <- x
-        and get() =
-            match this.Resolved with
-            | None -> true
-            | Some resolved -> resolved.isLValue
+    member val Resolved: ResolvedIdent = ResolvedIdent.Unresolved with get, set
+    member this.AsResolvedVar = match this.Resolved with
+                                | ResolvedIdent.Variable rv -> Some rv
+                                | _ -> None
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -42,12 +33,17 @@ type Ident(name: string) =
     override this.GetHashCode() = name.GetHashCode()
     override this.ToString() = "ident: " + name
 
-and ResolvedIdent(ty, decl, scope) =
+and [<NoComparison>] [<RequireQualifiedAccess>] ResolvedIdent =
+    | Unresolved
+    | Variable of ResolvedVar
+    | Func of ResolvedFunc
+and ResolvedVar(ty, decl, scope) =
     member val ty = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
     member val isLValue = false with get, set
-
+and ResolvedFunc(funcType) =
+    member val funcType = funcType with get, set
     
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
@@ -117,6 +113,10 @@ let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}
 let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=init}
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
+
+let hasOutOrInoutParams funcType =
+    let typeQualifiers = set [for (ty, _) in funcType.args do yield! ty.typeQ]
+    not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
 
 // An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
 // values). We need to provide accessors for the developer (e.g. create macros for C/C++).

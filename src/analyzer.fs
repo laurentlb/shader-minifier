@@ -61,9 +61,9 @@ module private VariableInlining =
                         localExpr <- init :: localExpr
                         let deps = collectReferencesSet init
                         let hasUnsafeDep = deps |> Seq.exists (fun ident ->
-                            if ident.Resolved <> None then
+                            if ident.AsResolvedVar <> None then
                                 // A variable not reassigned is effectively constant.
-                                ident.IsLValue
+                                ident.AsResolvedVar.Value.isLValue
                             elif Builtin.pureBuiltinFunctions.Contains ident.Name then
                                 false
                             else
@@ -79,7 +79,7 @@ module private VariableInlining =
 
         for def in localDefs do
             let ident, hasInitDeps, hasUnsafeDeps = def.Value
-            if not ident.ToBeInlined && not ident.IsLValue then
+            if not ident.ToBeInlined && not ident.AsResolvedVar.Value.isLValue then
                 // AggroInlining could in theory do inlining when hasUnsafeDeps=false.
                 // However, it seems to increase the compressed size, and might affect performance.
                 if options.aggroInlining && not hasInitDeps then
@@ -120,38 +120,23 @@ module private VariableInlining =
         |> List.map mapTLDecl
 
     let markLValues li =
-
         let findWrites (env: MapEnv) = function
-            | Var v as e when env.isLValue ->
-                v.IsLValue <- true
+            | Var v as e when env.isLValue && v.AsResolvedVar <> None ->
+                v.AsResolvedVar.Value.isLValue <- true
                 e
             | FunCall(Var v, args) as e ->
                 match env.fns.TryFind v.Name with
-                | Some (fct, _) when fct.fName.HasOutParam ->
+                | Some (fct, _) when hasOutOrInoutParams fct ->
+                    // We need to look up which functions might write via "out" parameters.
+                    // If any parameter to the function could be written to (e.g., "out"), mark all
+                    // variables in the parameters. We don't attempt to match up param-for-param but
+                    // just mark everything if anything could write, for simplicity.
                     let newEnv = {env with isLValue = true}
                     for arg in args do
                         (mapExpr newEnv arg: Expr) |> ignore
                     e
                 | _ -> e
             | e -> e
-
-        // Mark functions.
-
-        // If any parameter to the function could be written to (e.g., "out"), mark
-        // the entire function. We don't attempt to match up param-for-param but
-        // just mark everything if anything could write, for simplicity.
-        let assignQuals = Set.ofList ["out"; "inout"]
-        for tl in li do
-            match tl with
-            | Function({fName = id; args = args}, _) ->
-                let argAssigns (ty, _) =
-                    List.exists (fun tyQ -> Set.contains tyQ assignQuals) ty.typeQ
-                if List.exists argAssigns args then id.HasOutParam <- true
-            | _ -> ()
-
-        // Mark bodies; when scanning bodies, we need to look up which functions
-        // might write via "out" parameters.
-
         mapTopLevel (mapEnv findWrites id) li
         
 let markInlinableVariables = VariableInlining.markInlinableVariables
@@ -164,19 +149,21 @@ let maybeInlineConsts = VariableInlining.maybeInlineConsts
 let resolve topLevel =
     let resolveExpr (env: MapEnv) = function
         | Var v as e ->
-            match env.vars.TryGetValue v.Name with
-            | true, (_, decl) -> v.Resolved <- decl.name.Resolved
-            | false, _ -> ()
+            match (env.vars.TryFind v.Name, env.fns.TryFind v.Name) with
+            | Some (_, decl), _ -> v.Resolved <- decl.name.Resolved
+            | _, Some (ft, _) -> v.Resolved <- ResolvedIdent.Func(ResolvedFunc ft)
+            | _ -> () // TODO: resolve builtin functions
             e
         | e -> e
 
     let resolveDecl scope (ty, li) =
         for elt in li do
-            let resolved = new ResolvedIdent(ty, elt, scope)
-            elt.name.Resolved <- Some resolved
+            let resolved = new ResolvedVar(ty, elt, scope)
+            elt.name.Resolved <- ResolvedIdent.Variable resolved
 
     let resolveStmt = function
         | Decl d as stmt -> resolveDecl VarScope.Local d; stmt
+        | ForD(d, _, _, _) as stmt -> resolveDecl VarScope.Local d; stmt
         | x -> x
 
     let resolveTopLevel = function
@@ -257,16 +244,15 @@ module private FunctionInlining =
         let mutable argIsWritten = false
 
         let visitArgUses mEnv = function
-            | Var id as e ->
-                match id.Resolved |> Option.map (fun r -> r.scope) with
-                | Some VarScope.Local ->
+            | Var id as e when id.AsResolvedVar <> None ->
+                match id.AsResolvedVar.Value.scope with
+                | VarScope.Local ->
                     failwith "There shouldn't be any locals in a function with a single return statement."
-                | Some VarScope.Parameter ->
+                | VarScope.Parameter ->
                     argIsWritten <- argIsWritten || mEnv.isLValue
                     argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
-                | Some VarScope.Global ->
+                | VarScope.Global ->
                     shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
-                | None -> () // built-in function
                 e
             | e -> e
         mapTopLevel (mapEnv visitArgUses id) [func] |> ignore
@@ -293,9 +279,7 @@ module private FunctionInlining =
             let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
             let isExternal = options.hlsl && node.funcType.semantics <> []
             if canBeRenamed && not isExternal then
-                let hasOnlyInParameters =
-                    let typeQualifiers = set (List.concat [for (ty, _) in node.funcType.args do yield ty.typeQ])
-                    (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
+                let hasOnlyInParameters = not (hasOutOrInoutParams node.funcType)
                 if hasOnlyInParameters then // [F]
                     let callSites = nodes |> List.map (fun n -> n.callSites) |> List.concat |> List.filter (fun n -> n.ident.Name = node.name)
                     let isCalledExactlyOnce = callSites.Length = 1
