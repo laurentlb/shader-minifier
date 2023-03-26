@@ -115,7 +115,7 @@ let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
 let hasOutOrInoutParams funcType =
-    let typeQualifiers = set (List.concat [for (ty, _) in funcType.args do yield ty.typeQ])
+    let typeQualifiers = set [for (ty, _) in funcType.args do yield! ty.typeQ]
     not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
 
 // An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
