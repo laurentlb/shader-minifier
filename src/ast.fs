@@ -2,6 +2,7 @@
 
 open Options.Globals
 
+[<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
 
 type Ident(name: string) =
@@ -149,12 +150,6 @@ type MapEnv = {
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isLValue = false}
 
-let assignOps = Set.ofList [
-    "="; "+="; "-="; "*="; "/="; "%="
-    "<<="; ">>="; "&="; "^="; "|="
-    "++"; "--"; "$++"; "$--"
-]
-
 let foldList env fct li =
     let mutable env = env
     let res = li |> List.map (fun i ->
@@ -165,7 +160,7 @@ let foldList env fct li =
 
 // Applies env.fExpr recursively on all nodes of an expression.
 let rec mapExpr env = function
-    | FunCall(Op o as fct, first::args) when assignOps.Contains o ->
+    | FunCall(Op o as fct, first::args) when Builtin.assignOps.Contains o ->
         let first = mapExpr {env with isLValue = true} first
         env.fExpr env (FunCall(mapExpr env fct, first :: List.map (mapExpr env) args))
     | FunCall(fct, args) ->

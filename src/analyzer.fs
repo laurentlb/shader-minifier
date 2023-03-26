@@ -8,177 +8,156 @@ open Options.Globals
 // information in the AST nodes, e.g. find which variables are modified,
 // which declarations can be inlined.
 
+module private VariableInlining =
 
-// Return the list of variables used in the statements, with the number of references.
-let collectReferences stmtList =
-    let count = Dictionary<string, int>()
-    let collectLocalUses _ = function
-        | Var v as e ->
-            match count.TryGetValue(v.Name) with
-            | true, n -> count.[v.Name] <- n + 1
-            | false, _ -> count.[v.Name] <- 1
-            e
-        | e -> e
-    for expr in stmtList do
-        mapStmt (mapEnv collectLocalUses id) expr |> ignore
-    count
+    // Return the list of variables used in the statements, with the number of references.
+    let collectReferences stmtList =
+        let count = Dictionary<string, int>()
+        let collectLocalUses _ = function
+            | Var v as e ->
+                match count.TryGetValue(v.Name) with
+                | true, n -> count.[v.Name] <- n + 1
+                | false, _ -> count.[v.Name] <- 1
+                e
+            | e -> e
+        for expr in stmtList do
+            mapStmt (mapEnv collectLocalUses id) expr |> ignore
+        count
 
-let collectReferencesSet expr  =
-    let result = HashSet<Ident>()
-    let collectLocalUses _ = function
-        | Var v as e -> result.Add(v) |> ignore<bool>; e
-        | e -> e
-    mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
-    result
+    let collectReferencesSet expr  =
+        let result = HashSet<Ident>()
+        let collectLocalUses _ = function
+            | Var v as e -> result.Add(v) |> ignore<bool>; e
+            | e -> e
+        mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
+        result
 
-let trigonometryFunctions = set([
-    "acos"; "acosh"; "asin"; "asinh"; "atan"; "atanh"; "cos"; "cosh"; "degrees";
-    "radians"; "sin"; "sinh"; "tan"; "tanh"])
-let mathsFunctions = set([
-    "abs"; "ceil"; "clamp"; "dFdx"; "dFdy"; "exp"; "exp2"; "floor"; "floor"; "fma";
-    "fract"; "fwidth"; "inversesqrt"; "isinf"; "isnan"; "log"; "log2"; "max"; "min";
-    "mix"; "mod"; "modf"; "noise"; "pow"; "round"; "roundEven"; "sign"; "smoothstep";
-    "sqrt"; "step"; "trunc"])
-let vectorFunctions = set([
-    "cross"; "distance"; "dot"; "equal"; "faceforward"; "length"; "normalize";
-    "notEqual"; "reflect"; "refract"])
-let builtinTypes = set([
-    yield! [ "void"; "bool"; "int"; "uint"; "float"; "double" ]
-    for p in ["d"; "b"; "i"; "u"] do
-        for n in ["2"; "3"; "4"] do
-            yield p+"vec"+n
-    for p in [""; "d"] do
-        for n in ["2"; "3"; "4"] do
-            yield p+"mat"+n
-        for c in ["2"; "3"; "4"] do
-            for r in ["2"; "3"; "4"] do
-                yield p+"mat"+c+"x"+r
-    ])
-let castFunctions = builtinTypes - set ["void"]
+    // Mark variables as inlinable when possible.
+    // Variables are always safe to inline when all of:
+    //  - the variable is used only once in the current block
+    //  - the variable is not used in a sub-block (e.g. inside a loop)
+    //  - the init value refers only to constants
+    // When aggressive inlining is enabled, additionally inline when all of:
+    //  - the variable never appears in an lvalue position (is never written to
+    //    after initalization)
+    //  - the init value is has no dependency
+    // The init is considered trivial when:
+    //  - it doesn't depend on a variable
+    //  - it depends only on variables proven constants
+    let markInlinableVariables block =
+        // Variables that are defined in this scope.
+        // The booleans indicate if the variable initialization has dependencies / unsafe dependencies.
+        let localDefs = Dictionary<string, (Ident * bool * bool)>()
+        // List of expressions in the current block. Do not look in sub-blocks.
+        let mutable localExpr = []
+        for stmt: Stmt in block do
+            match stmt with
+            | Decl (_, li) ->
+                for def in li do
+                    // can only inline if it has a value
+                    match def.init with
+                    | None -> ()
+                    | Some init ->
+                        localExpr <- init :: localExpr
+                        let deps = collectReferencesSet init
+                        let hasUnsafeDep = deps |> Seq.exists (fun ident ->
+                            if ident.Resolved <> None then
+                                // A variable not reassigned is effectively constant.
+                                ident.IsLValue
+                            elif Builtin.pureBuiltinFunctions.Contains ident.Name then
+                                false
+                            else
+                                true
+                        )
+                        localDefs.[def.name.Name] <- (def.name, deps.Count > 0, hasUnsafeDep)
+            | Expr e
+            | Jump (_, Some e) -> localExpr <- e :: localExpr
+            | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
 
-let pureBuiltinFunctions = trigonometryFunctions + mathsFunctions + vectorFunctions + castFunctions
+        let localReferences = collectReferences [for e in localExpr -> Expr e]
+        let allReferences = collectReferences block
 
-// Mark variables as inlinable when possible.
-// Variables are always safe to inline when all of:
-//  - the variable is used only once in the current block
-//  - the variable is not used in a sub-block (e.g. inside a loop)
-//  - the init value refers only to constants
-// When aggressive inlining is enabled, additionally inline when all of:
-//  - the variable never appears in an lvalue position (is never written to
-//    after initalization)
-//  - the init value is has no dependency
-// The init is considered trivial when:
-//  - it doesn't depend on a variable
-//  - it depends only on variables proven constants
-let markInlinableVariables block =
-    // Variables that are defined in this scope.
-    // The booleans indicate if the variable initialization has dependencies / unsafe dependencies.
-    let localDefs = Dictionary<string, (Ident * bool * bool)>()
-    // List of expressions in the current block. Do not look in sub-blocks.
-    let mutable localExpr = []
-    for stmt: Stmt in block do
-        match stmt with
-        | Decl (_, li) ->
-            for def in li do
-                // can only inline if it has a value
-                match def.init with
-                | None -> ()
-                | Some init ->
-                    localExpr <- init :: localExpr
-                    let deps = collectReferencesSet init
-                    let hasUnsafeDep = deps |> Seq.exists (fun ident ->
-                        if ident.Resolved <> None then
-                            // A variable not reassigned is effectively constant.
-                            ident.IsLValue
-                        elif pureBuiltinFunctions.Contains ident.Name then
-                            false
-                        else
-                            true
-                    )
-                    localDefs.[def.name.Name] <- (def.name, deps.Count > 0, hasUnsafeDep)
-        | Expr e
-        | Jump (_, Some e) -> localExpr <- e :: localExpr
-        | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
+        for def in localDefs do
+            let ident, hasInitDeps, hasUnsafeDeps = def.Value
+            if not ident.ToBeInlined && not ident.IsLValue then
+                // AggroInlining could in theory do inlining when hasUnsafeDeps=false.
+                // However, it seems to increase the compressed size, and might affect performance.
+                if options.aggroInlining && not hasInitDeps then
+                    ident.ToBeInlined <- true
 
-    let localReferences = collectReferences [for e in localExpr -> Expr e]
-    let allReferences = collectReferences block
+                match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
+                | (true, 1), (true, 1) when not hasUnsafeDeps -> ident.ToBeInlined <- true
+                | (false, _), (false, _) -> ident.ToBeInlined <- true
+                | _ -> ()
 
-    for def in localDefs do
-        let ident, hasInitDeps, hasUnsafeDeps = def.Value
-        if not ident.ToBeInlined && not ident.IsLValue then
-            // AggroInlining could in theory do inlining when hasUnsafeDeps=false.
-            // However, it seems to increase the compressed size, and might affect performance.
-            if options.aggroInlining && not hasInitDeps then
-                ident.ToBeInlined <- true
+    let maybeInlineConsts li =
+        let mapInnerDecl = function
+            | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
+                for (def:DeclElt) in defs do
+                    // AggroInlining: unconditional inlining of anything marked "const".
+                    // Note: this is unsafe if the init value depends on something mutable.
+                    if options.aggroInlining then
+                        def.name.ToBeInlined <- true
+                    // Otherwise, inline only trivial constants.
+                    else match def.init with
+                            | Some (Var v) when v.Name = "true" || v.Name = "false" ->
+                                def.name.ToBeInlined <- true
+                            | Some (Int _)
+                            | Some (Float _) ->
+                                def.name.ToBeInlined <- true
+                            | _ -> ()
+                d
+            | d -> d
+        let mapStmt = function
+            | Decl d -> Decl (mapInnerDecl d)
+            | s -> s
+        let mapExpr _ e = e
+        let mapTLDecl = function
+            | TLDecl d -> TLDecl (mapInnerDecl d)
+            | d -> d
+        li
+        |> mapTopLevel (mapEnv mapExpr mapStmt)
+        |> List.map mapTLDecl
 
-            match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-            | (true, 1), (true, 1) when not hasUnsafeDeps -> ident.ToBeInlined <- true
-            | (false, _), (false, _) -> ident.ToBeInlined <- true
+    let markLValues li =
+
+        let findWrites (env: MapEnv) = function
+            | Var v as e when env.isLValue ->
+                v.IsLValue <- true
+                e
+            | FunCall(Var v, args) as e ->
+                match env.fns.TryFind v.Name with
+                | Some (fct, _) when fct.fName.HasOutParam ->
+                    let newEnv = {env with isLValue = true}
+                    for arg in args do
+                        (mapExpr newEnv arg: Expr) |> ignore
+                    e
+                | _ -> e
+            | e -> e
+
+        // Mark functions.
+
+        // If any parameter to the function could be written to (e.g., "out"), mark
+        // the entire function. We don't attempt to match up param-for-param but
+        // just mark everything if anything could write, for simplicity.
+        let assignQuals = Set.ofList ["out"; "inout"]
+        for tl in li do
+            match tl with
+            | Function({fName = id; args = args}, _) ->
+                let argAssigns (ty, _) =
+                    List.exists (fun tyQ -> Set.contains tyQ assignQuals) ty.typeQ
+                if List.exists argAssigns args then id.HasOutParam <- true
             | _ -> ()
 
-let maybeInlineConsts li =
-    let mapInnerDecl = function
-        | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
-            for (def:DeclElt) in defs do
-                // AggroInlining: unconditional inlining of anything marked "const".
-                // Note: this is unsafe if the init value depends on something mutable.
-                if options.aggroInlining then
-                    def.name.ToBeInlined <- true
-                // Otherwise, inline only trivial constants.
-                else match def.init with
-                        | Some (Var v) when v.Name = "true" || v.Name = "false" ->
-                            def.name.ToBeInlined <- true
-                        | Some (Int _)
-                        | Some (Float _) ->
-                            def.name.ToBeInlined <- true
-                        | _ -> ()
-            d
-        | d -> d
-    let mapStmt = function
-        | Decl d -> Decl (mapInnerDecl d)
-        | s -> s
-    let mapExpr _ e = e
-    let mapTLDecl = function
-        | TLDecl d -> TLDecl (mapInnerDecl d)
-        | d -> d
-    li
-    |> mapTopLevel (mapEnv mapExpr mapStmt)
-    |> List.map mapTLDecl
+        // Mark bodies; when scanning bodies, we need to look up which functions
+        // might write via "out" parameters.
 
-let markLValues li =
+        mapTopLevel (mapEnv findWrites id) li
+        
+let markInlinableVariables = VariableInlining.markInlinableVariables
+let markLValues = VariableInlining.markLValues
+let maybeInlineConsts = VariableInlining.maybeInlineConsts
 
-    let findWrites (env: MapEnv) = function
-        | Var v as e when env.isLValue ->
-            v.IsLValue <- true
-            e
-        | FunCall(Var v, args) as e ->
-            match env.fns.TryFind v.Name with
-            | Some (fct, _) when fct.fName.HasOutParam ->
-                let newEnv = {env with isLValue = true}
-                for arg in args do
-                    (mapExpr newEnv arg: Expr) |> ignore
-                e
-            | _ -> e
-        | e -> e
-
-    // Mark functions.
-
-    // If any parameter to the function could be written to (e.g., "out"), mark
-    // the entire function. We don't attempt to match up param-for-param but
-    // just mark everything if anything could write, for simplicity.
-    let assignQuals = Set.ofList ["out"; "inout"]
-    for tl in li do
-        match tl with
-        | Function({fName = id; args = args}, _) ->
-            let argAssigns (ty, _) =
-                List.exists (fun tyQ -> Set.contains tyQ assignQuals) ty.typeQ
-            if List.exists argAssigns args then id.HasOutParam <- true
-        | _ -> ()
-
-    // Mark bodies; when scanning bodies, we need to look up which functions
-    // might write via "out" parameters.
-
-    mapTopLevel (mapEnv findWrites id) li
 
 // Create ResolvedIdent for each declaration in the file.
 // Give each Ident a reference to that ResolvedIdent.
@@ -214,7 +193,7 @@ let resolve topLevel =
     mapTopLevel (mapEnv resolveExpr id) topLevel
 
 
-module private FindInlinableFunctions =
+module private FunctionInlining =
 
     type CallSite = {
         ident: Ident
@@ -327,4 +306,4 @@ module private FindInlinableFunctions =
                             tryMarkFunctionToInline node callSites.Head
                         | _ -> ()
 
-let markInlinableFunctions = FindInlinableFunctions.markInlinableFunctions
+let markInlinableFunctions = FunctionInlining.markInlinableFunctions

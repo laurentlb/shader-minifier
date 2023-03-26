@@ -51,6 +51,7 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
   <ItemGroup>
+    <Compile Include="src\builtin.fs" />
     <Compile Include="src\options.fs" />
     <Compile Include="src\ast.fs" />
     <Compile Include="src\printer.fs" />
