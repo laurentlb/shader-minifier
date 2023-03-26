@@ -24,8 +24,8 @@ float fbm(vec2 p)
 }
 vec2 disc(vec2 uv)
 {
-  float a=uv.x*acos(-1)*2,r=sqrt(uv.y);
-  return vec2(cos(a),sin(a))*r;
+  float a=uv.x*acos(-1)*2;
+  return vec2(cos(a),sin(a))*sqrt(uv.y);
 }
 float zoom=.4,cameraroll=1.,cameraroll2=0;
 uvec2 encrypt(uvec2 v)

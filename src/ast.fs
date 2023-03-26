@@ -182,10 +182,14 @@ let rec mapExpr env = function
 
 and mapDecl env (ty, vars) =
     let aux env (decl: DeclElt) =
-        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
-        env, {decl with
+        // First visit the initialization value, then add the decl to the env
+        // e.g. in `float x = x + 1`, the two `x` are not the same!
+        let ret = {
+            decl with
                 size=Option.map (mapExpr env) decl.size
                 init=Option.map (mapExpr env) decl.init}
+        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
+        env, ret
     let env, vars = foldList env aux vars
     env, (ty, vars)
 

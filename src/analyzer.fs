@@ -23,6 +23,14 @@ let collectReferences stmtList =
         mapStmt (mapEnv collectLocalUses id) expr |> ignore
     count
 
+let collectReferencesSet expr  =
+    let result = HashSet<Ident>()
+    let collectLocalUses _ = function
+        | Var v as e -> result.Add(v) |> ignore<bool>; e
+        | e -> e
+    mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
+    result
+
 let trigonometryFunctions = set([
     "acos"; "acosh"; "asin"; "asinh"; "atan"; "atanh"; "cos"; "cosh"; "degrees";
     "radians"; "sin"; "sinh"; "tan"; "tanh"])
@@ -77,14 +85,15 @@ let markInlinableVariables block =
                 | None -> ()
                 | Some init ->
                     localExpr <- init :: localExpr
-                    let deps = collectReferences [Expr init]
-                    let hasUnsafeDep = deps |> Seq.exists (fun kv ->
-                        if localDefs.ContainsKey kv.Key then
-                            // A local variable not reassigned is effectively constant.
-                            let ident, _, _ = localDefs.[kv.Key]
+                    let deps = collectReferencesSet init
+                    let hasUnsafeDep = deps |> Seq.exists (fun ident ->
+                        if ident.Resolved <> None then
+                            // A variable not reassigned is effectively constant.
                             ident.IsLValue
+                        elif pureBuiltinFunctions.Contains ident.Name then
+                            false
                         else
-                            not (pureBuiltinFunctions.Contains kv.Key)
+                            true
                     )
                     localDefs.[def.name.Name] <- (def.name, deps.Count > 0, hasUnsafeDep)
         | Expr e
@@ -197,9 +206,12 @@ let resolve topLevel =
             for decl in ty.args do resolveDecl VarScope.Parameter decl
         | _ -> ()
 
+    // First, visit declarations.
     for tl in topLevel do
         resolveTopLevel tl
-    mapTopLevel (mapEnv resolveExpr resolveStmt) topLevel
+    mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
+    // Then, associate the references.
+    mapTopLevel (mapEnv resolveExpr id) topLevel
 
 
 module private FindInlinableFunctions =

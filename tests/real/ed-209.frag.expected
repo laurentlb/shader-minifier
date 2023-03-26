@@ -35,7 +35,7 @@ float sdTriPrism(vec3 p,vec2 h)
 }
 float sdCappedCone(vec3 p,vec3 a,vec3 b,float ra,float rb)
 {
-  float rba=rb-ra,baba=dot(b-a,b-a),papa=dot(p-a,p-a),paba=dot(p-a,b-a)/baba,x=sqrt(papa-paba*paba*baba),cax=max(0.,x-(paba<.5?
+  float rba=rb-ra,baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
     ra:
     rb)),cay=abs(paba-.5)-.5,f=clamp((rba*(x-ra)+paba*baba)/(rba*rba+baba),0.,1.),cbx=x-ra-f*rba,cby=paba-f;
   return(cbx<0.&&cay<0.?
@@ -314,8 +314,7 @@ float calcShadow(vec3 p,vec3 lightPos)
 }
 vec3 calcNormal(vec3 p,float t)
 {
-  float d=.01*t*.33;
-  vec2 e=vec2(1,-1)*.5773*d;
+  vec2 e=vec2(1,-1)*.5773*(.01*t*.33);
   return normalize(e.xyy*map(p+e.xyy).d+e.yyx*map(p+e.yyx).d+e.yxy*map(p+e.yxy).d+e.xxx*map(p+e.xxx).d);
 }
 float ao(vec3 p,vec3 n,float h)
@@ -332,10 +331,10 @@ vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
 {
   const vec3 sunPos=vec3(10,10,-10);
   vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
-  float primary=max(0.,dot(sunDir,n)),spe=pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.,fre=smoothstep(.7,1.,1.+dot(rd,n)),fog=exp(-length(p)*.05);
+  float primary=max(0.,dot(sunDir,n));
   primary*=mix(.2,1.,calcShadow(p,sunPos));
-  vec3 lig=((primary+max(0.,dot(-sunDir,n))*.2)*ao(p,n,.33)+spe)*vec3(2,1.6,1.7);
-  return mix(data.mat*lig,vec3(.01),fre)*fog;
+  vec3 lig=((primary+max(0.,dot(-sunDir,n))*.2)*ao(p,n,.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
+  return mix(data.mat*lig,vec3(.01),smoothstep(.7,1.,1.+dot(rd,n)))*exp(-length(p)*.05);
 }
 vec3 getSceneColor(vec3 ro,vec3 rd)
 {

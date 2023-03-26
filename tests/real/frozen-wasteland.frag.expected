@@ -261,9 +261,9 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
       nor=bump(pos,nor,d);
       float shd=shadow(pos,ligt,.04),dif=clamp(dot(nor,ligt),0.,1.);
       vec3 ref=reflect(rd,nor);
-      float spe=pow(clamp(dot(ref,ligt),0.,1.),5.)*2.,fre=pow(clamp(1.+dot(rd,nor),0.,1.),3.);
+      float fre=pow(clamp(1.+dot(rd,nor),0.,1.),3.);
       col=vec3(.75);
-      col=col*dif*shd+fre*spe*shd*SUN_COLOUR+abs(nor.y)*vec3(.12,.13,.13);
+      col=col*dif*shd+pow(clamp(dot(ref,ligt),0.,1.),5.)*2.*fre*shd*SUN_COLOUR+abs(nor.y)*vec3(.12,.13,.13);
       d=Occ(pos+nor*3.);
       col*=vec3(d,d,min(d*1.2,1.));
       col=mix(col,sky,smoothstep(FAR-25.,FAR,rz));
