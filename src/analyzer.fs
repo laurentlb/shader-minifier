@@ -177,6 +177,7 @@ let resolve topLevel =
 
     let resolveStmt = function
         | Decl d as stmt -> resolveDecl VarScope.Local d; stmt
+        | ForD(d, _, _, _) as stmt -> resolveDecl VarScope.Local d; stmt
         | x -> x
 
     let resolveTopLevel = function
