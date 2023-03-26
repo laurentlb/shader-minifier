@@ -33,8 +33,7 @@ void stroke(float d0,float s,out float d)
 }
 void zextrude(float z,float d2d,float h,out float d)
 {
-  vec2 w=vec2(-d2d,abs(z)-.5*h);
-  d=length(max(w,0.));
+  d=length(max(vec2(-d2d,abs(z)-.5*h),0.));
 }
 void add(vec2 sda,vec2 sdb,out vec2 dst)
 {
