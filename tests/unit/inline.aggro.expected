@@ -48,6 +48,5 @@ uniform int time;
 in int sync;
 int dependOnConst()
 {
-  int x=time+sync;
-  return x*2*3;
+  return(time+sync)*2*3;
 }

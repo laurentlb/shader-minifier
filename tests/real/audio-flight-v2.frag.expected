@@ -217,7 +217,7 @@ void mainImage(out vec4 O,vec2 F)
       ro+=lp;
       lp.xy+=path(lp.z);
       ro.xy+=path(ro.z);
-      vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),c=ro+f*.183,i=c+uv.x*r+uv.y*normalize(cross(f,r)),rd=i-ro;
+      vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),c=ro+f*.183,rd=c+uv.x*r+uv.y*normalize(cross(f,r))-ro;
       rd.xy=r2(.2*sin(time*.3)-path(lp.z).x/24.)*rd.xy;
       rd.xz=r2(y-path(lp.z+1.).y/14.)*rd.xz;
       vec2 t=marcher(ro,rd,164,1.);
