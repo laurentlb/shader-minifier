@@ -296,7 +296,7 @@ let private simplifyExpr (didInline: bool ref) env = function
 
     | Var s as e ->
         match env.vars.TryFind s.Name with
-        | Some (_, {name = id; init = Some init}, _) when id.ToBeInlined ->
+        | Some (_, {name = id; init = Some init}) when id.ToBeInlined ->
             didInline.Value <- true
             init |> mapExpr env
         | _ -> e
@@ -555,9 +555,7 @@ let rec iterateSimplifyAndInline li =
 
 let simplify li =
     li
-    // markLValues doesn't change the AST so we could do it unconditionally,
-    // but we only need the information for aggroInlining so don't bother if
-    // it's off.
+    |> Analyzer.resolve
     |> Analyzer.markLValues
     |> Analyzer.maybeInlineConsts
     |> iterateSimplifyAndInline

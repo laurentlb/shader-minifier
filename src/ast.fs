@@ -2,6 +2,8 @@
 
 open Options.Globals
 
+type VarScope = Global | Local | Parameter
+
 type Ident(name: string) =
     let mutable newName = name
 
@@ -9,7 +11,20 @@ type Ident(name: string) =
     member this.OldName = name
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
-    member val IsLValue = false with get, set // set on lvalue variables, and on function names that have out/inout parameters
+
+    member val HasOutParam = false with get, set // set on function names that have out/inout parameters
+
+    member val Resolved: ResolvedIdent option = None with get, set
+
+    member this.IsLValue
+        with set(x) =
+            match this.Resolved with
+            | None -> ()
+            | Some resolved -> resolved.isLValue <- x
+        and get() =
+            match this.Resolved with
+            | None -> true
+            | Some resolved -> resolved.isLValue
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -26,22 +41,16 @@ type Ident(name: string) =
     override this.GetHashCode() = name.GetHashCode()
     override this.ToString() = "ident: " + name
 
+and ResolvedIdent(ty, decl, scope) =
+    member val ty = ty with get, set
+    member val decl = decl: DeclElt with get, set
+    member val scope = scope: VarScope with get, set
+    member val isLValue = false with get, set
 
-[<RequireQualifiedAccess>]
-type JumpKeyword = Break | Continue | Discard | Return
-let jumpKeywordToString = function
-    | JumpKeyword.Break -> "break"
-    | JumpKeyword.Continue -> "continue"
-    | JumpKeyword.Discard -> "discard"
-    | JumpKeyword.Return -> "return"
-let stringToJumpKeyword = function
-    | "break" -> JumpKeyword.Break
-    | "continue" -> JumpKeyword.Continue
-    | "discard" -> JumpKeyword.Discard
-    | "return" -> JumpKeyword.Return
-    | s -> failwith ("not a keyword: " + s)
+    
+and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
-type Expr =
+and Expr =
     | Int of int64 * string
     | Float of decimal * string
     | Var of Ident
@@ -129,13 +138,11 @@ type Shader = {
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting variable declarations along the way.
 
-type VarScope = Global | Local | Parameter
-
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<string, Type * DeclElt * VarScope>
+    vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt>
     isLValue: bool
 }
@@ -173,9 +180,9 @@ let rec mapExpr env = function
         env.fExpr env (VectorExp(List.map (mapExpr env) li))
     | e -> env.fExpr env e
 
-and mapDecl varScope env (ty, vars) =
+and mapDecl env (ty, vars) =
     let aux env (decl: DeclElt) =
-        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl, varScope))}
+        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
         env, {decl with
                 size=Option.map (mapExpr env) decl.size
                 init=Option.map (mapExpr env) decl.init}
@@ -189,7 +196,7 @@ let rec mapStmt env i =
             env, Block b
         | Expr e -> env, Expr (mapExpr env e)
         | Decl d ->
-            let env, res = mapDecl VarScope.Local env d
+            let env, res = mapDecl env d
             env, Decl res
         | If(cond, th, el) ->
             env, If (mapExpr env cond, snd (mapStmt env th), Option.map (mapStmt env >> snd) el)
@@ -198,7 +205,7 @@ let rec mapStmt env i =
         | DoWhile(cond, body) ->
             env, DoWhile (mapExpr env cond, snd (mapStmt env body))
         | ForD(init, cond, inc, body) ->
-            let env', decl = mapDecl VarScope.Local env init
+            let env', decl = mapDecl env init
             let res = ForD (decl, Option.map (mapExpr env') cond,
                             Option.map (mapExpr env') inc, snd (mapStmt env' body))
             if options.hlsl then env', res
@@ -225,11 +232,23 @@ let mapTopLevel env li =
     let _, res = li |> foldList env (fun env tl ->
         match tl with
         | TLDecl t ->
-            let env, res = mapDecl VarScope.Global env t
+            let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let env, args = foldList env (mapDecl VarScope.Parameter) fct.args
+            let env, args = foldList env mapDecl fct.args
             let env = {env with fns = env.fns.Add(fct.fName.Name, (fct, body))}
             env, Function({ fct with args = args }, snd (mapStmt env body))
         | e -> env, e)
     res
+
+let jumpKeywordToString = function
+    | JumpKeyword.Break -> "break"
+    | JumpKeyword.Continue -> "continue"
+    | JumpKeyword.Discard -> "discard"
+    | JumpKeyword.Return -> "return"
+let stringToJumpKeyword = function
+    | "break" -> JumpKeyword.Break
+    | "continue" -> JumpKeyword.Continue
+    | "discard" -> JumpKeyword.Discard
+    | "return" -> JumpKeyword.Return
+    | s -> failwith ("not a keyword: " + s)
