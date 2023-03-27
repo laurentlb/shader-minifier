@@ -248,9 +248,10 @@ preprocessing directives:
 
 This is still experimental and there are some limitations:
 
-* `#if` is not supported yet.
 * Macros declared with `#define` will be kept in the file, even if they are no
     longer needed.
+* `#define` and `#undefine` that appear inside a `#if` region are not well
+    handled.
 
 ### Verbatim
 
@@ -617,10 +618,8 @@ and please report a bug.
 ### Aggressive inlining
 
 Shader Minifier can optionally/experimentally inline even more aggressively.
-Along with the above cases, it will inline *any* variable marked `const`, and
-also when:
-- the variable is never written to after initalization
-- and the init value is trivial (doesn't depend on a variable).
+Along with the above cases, it will inline more variables, including the
+variables used many times in the code.
 
 This is enabled with `--aggressive-inlining`.
 
