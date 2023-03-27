@@ -12,8 +12,7 @@ float c()
 }
 float d()
 {
-  float f=7.;
-  return f*f+1.+4.;
+  return 54.;
 }
 float e()
 {
@@ -29,11 +28,6 @@ float notShadowedFunc(inout float notinlinable)
 {
   notinlinable=2.;
   return-2.;
-}
-float shadowedVar=0.,notShadowedVar=1.;
-float A1()
-{
-  return shadowedVar;
 }
 float A3()
 {
@@ -85,7 +79,7 @@ float G1(float g1,float g2)
 }
 float f()
 {
-  float shadowedVar=-1.,shadowedFunc=-2.,_A1=A1(),_A3=A3(),_A4=notShadowedFunc(globalFloat);
+  float shadowedVar=-1.,shadowedFunc=-2.,_A3=A3(),_A4=notShadowedFunc(globalFloat);
   int sep;
   float _B1=B1()+B1();
   sep++;
@@ -99,7 +93,7 @@ float f()
   sep++;
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+_A1+notShadowedVar+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+_D1+9.+_E1+_E2+_E3+_E4+_E5+7.+_F2+_F3;
+  return shadowedVar+shadowedFunc+1.+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+_D1+9.+_E1+_E2+_E3+_E4+_E5+7.+_F2+_F3;
 }
 float g()
 {

@@ -75,10 +75,9 @@ void scene(vec3 x,out vec2 sdf)
   stroke(sdb.x,.003*step(dis,0.),sdb.x);
   sdf.x=max(sdf.x,-da);
   add(sdf,sdb,sdf);
-  float dr=.1;
-  vec3 y=mod(x,dr)-.5*dr;
-  float guard=-length(max(abs(y)-vec3(.5*dr*c.xx,.6),0.));
-  guard=abs(guard)+dr*.1;
+  vec3 y=mod(x,.1)-.05;
+  float guard=-length(max(abs(y)-vec3(.05*c.xx,.6),0.));
+  guard=abs(guard)+.01;
   sdf.x=min(sdf.x,guard);
 }
 void normal(vec3 x,out vec3 n)
@@ -108,8 +107,8 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   vec2 uv=fragCoord/iResolution.yy-.5*vec2(a,1),s;
   vec3 col=c.yyy,o=.5*c.yyx+.3*iTime*c.yxy,t=vec3(uv,0)+.3*iTime*c.yxy+c.yxy,dir=normalize(t-o),x;
   float d=(.04-o.z)/dir.z;
-  int N=450,i;
-  for(i=0;i<N;++i)
+  int i;
+  for(i=0;i<450;++i)
     {
       x=o+d*dir;
       scene(x,s);
@@ -117,7 +116,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
         break;
       d+=s.x;
     }
-  if(i<N)
+  if(i<450)
     {
       vec3 n,l=normalize(x+c.yyx);
       normal(x,n);

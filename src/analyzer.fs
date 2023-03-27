@@ -32,6 +32,15 @@ module private VariableInlining =
         mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
         result
 
+    let isEffectivelyConst (ident: Ident) =
+        if ident.AsResolvedVar.IsSome then
+            // A variable not reassigned is effectively constant.
+            not ident.AsResolvedVar.Value.isLValue
+        elif Builtin.pureBuiltinFunctions.Contains ident.Name then
+            true
+        else
+            false
+
     // Mark variables as inlinable when possible.
     // Variables are always safe to inline when all of:
     //  - the variable is used only once in the current block
@@ -46,8 +55,8 @@ module private VariableInlining =
     //  - it depends only on variables proven constants
     let markInlinableVariables block =
         // Variables that are defined in this scope.
-        // The booleans indicate if the variable initialization has dependencies / unsafe dependencies.
-        let localDefs = Dictionary<string, (Ident * bool * bool)>()
+        // The boolean indicate if the variable initialization is const.
+        let localDefs = Dictionary<string, (Ident * bool)>()
         // List of expressions in the current block. Do not look in sub-blocks.
         let mutable localExpr = []
         for stmt: Stmt in block do
@@ -60,16 +69,8 @@ module private VariableInlining =
                     | Some init ->
                         localExpr <- init :: localExpr
                         let deps = collectReferencesSet init
-                        let hasUnsafeDep = deps |> Seq.exists (fun ident ->
-                            if ident.AsResolvedVar <> None then
-                                // A variable not reassigned is effectively constant.
-                                ident.AsResolvedVar.Value.isLValue
-                            elif Builtin.pureBuiltinFunctions.Contains ident.Name then
-                                false
-                            else
-                                true
-                        )
-                        localDefs.[def.name.Name] <- (def.name, deps.Count > 0, hasUnsafeDep)
+                        let isConst = deps |> Seq.forall isEffectivelyConst
+                        localDefs.[def.name.Name] <- (def.name, isConst)
             | Expr e
             | Jump (_, Some e) -> localExpr <- e :: localExpr
             | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
@@ -78,48 +79,63 @@ module private VariableInlining =
         let allReferences = collectReferences block
 
         for def in localDefs do
-            let ident, hasInitDeps, hasUnsafeDeps = def.Value
+            let ident, isConst = def.Value
             if not ident.ToBeInlined && not ident.AsResolvedVar.Value.isLValue then
-                // AggroInlining could in theory do inlining when hasUnsafeDeps=false.
-                // However, it seems to increase the compressed size, and might affect performance.
-                if options.aggroInlining && not hasInitDeps then
-                    ident.ToBeInlined <- true
 
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                | (true, 1), (true, 1) when not hasUnsafeDeps -> ident.ToBeInlined <- true
+                | (true, 1), (true, 1) when isConst-> ident.ToBeInlined <- true
                 | (false, _), (false, _) -> ident.ToBeInlined <- true
                 | _ -> ()
 
-    let maybeInlineVariables li =
-        let mapInnerDecl = function
-            | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
+    // Inline some variables, regardless of where they are used or how often they are used.
+    let maybeInlineVariables topLevel =
+        let isTrivialExpr = function
+            | Var v when v.Name = "true" || v.Name = "false" -> true
+            | Int _
+            | Float _ -> true
+            | _ -> false
+
+        // Detect if a variable can be inlined, based on its value.
+        let canBeInlined (init: Expr) =
+            match init with
+            | e when isTrivialExpr e -> true
+            | _ when not options.aggroInlining -> false
+            // Allow a few things to be inlined with aggroInlining
+            | Var v
+            | Dot (Var v, _) -> isEffectivelyConst v
+            | FunCall(Op op, args) ->
+                not (Builtin.assignOps.Contains op) &&
+                    args |> List.forall isTrivialExpr
+            | FunCall(Var fct, args) ->
+                Builtin.pureBuiltinFunctions.Contains fct.Name &&
+                    args |> List.forall isTrivialExpr
+            | _  -> false
+
+        let mapInnerDecl isTopLevel = function
+            | (ty: Type, defs) as d when not ty.IsExternal ->
                 for (def:DeclElt) in defs do
-                    // AggroInlining: unconditional inlining of anything marked "const".
-                    // Note: this is unsafe if the init value depends on something mutable.
-                    if options.aggroInlining then
-                        def.name.ToBeInlined <- true
-                    // Otherwise, inline only trivial constants.
-                    else match def.init with
-                            | Some (Var v) when v.Name = "true" || v.Name = "false" ->
+                    if not def.name.AsResolvedVar.Value.isLValue then
+                        if def.init.IsNone then
+                            // Top-level values are special, in particular in HLSL. Keep them for now.
+                            if not isTopLevel then
                                 def.name.ToBeInlined <- true
-                            | Some (Int _)
-                            | Some (Float _) ->
-                                def.name.ToBeInlined <- true
-                            | _ -> ()
+                        elif canBeInlined def.init.Value then
+                            def.name.ToBeInlined <- true
                 d
             | d -> d
         let mapStmt = function
-            | Decl d -> Decl (mapInnerDecl d)
+            | Decl d -> Decl (mapInnerDecl false d)
             | s -> s
         let mapExpr _ e = e
         let mapTLDecl = function
-            | TLDecl d -> TLDecl (mapInnerDecl d)
+            | TLDecl d -> TLDecl (mapInnerDecl true d)
             | d -> d
-        li
+        topLevel
         |> mapTopLevel (mapEnv mapExpr mapStmt)
         |> List.map mapTLDecl
 
-    let markLValues li =
+    let markLValues topLevel =
+
         let findWrites (env: MapEnv) = function
             | Var v as e when env.isLValue && v.AsResolvedVar <> None ->
                 v.AsResolvedVar.Value.isLValue <- true
@@ -137,11 +153,13 @@ module private VariableInlining =
                     e
                 | _ -> e
             | e -> e
-        mapTopLevel (mapEnv findWrites id) li
+        mapTopLevel (mapEnv findWrites id) topLevel
         
 let markInlinableVariables = VariableInlining.markInlinableVariables
 let markLValues = VariableInlining.markLValues
-let maybeInlineVariables = VariableInlining.maybeInlineVariables
+let maybeInlineVariables topLevel =
+    if options.noInlining then topLevel
+    else VariableInlining.maybeInlineVariables topLevel
 
 
 // Create ResolvedIdent for each declaration in the file.

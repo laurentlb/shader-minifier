@@ -9,17 +9,14 @@ const char *externals_frag =
  "uniform int i,J,I;"
  "int H()"
  "{"
-   "int J,I,F,G,H;"
    "return i;"
  "}"
  "int G()"
  "{"
-   "int i,I,F,G,H;"
    "return J;"
  "}"
  "int F()"
  "{"
-   "int i,F,G,J,H;"
    "return I;"
  "}";
 

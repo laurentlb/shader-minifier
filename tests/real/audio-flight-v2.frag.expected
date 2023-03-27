@@ -105,7 +105,6 @@ vec2 edge(vec2 p)
       -1.:
       1.);
 }
-float ths=13.25;
 vec2 map(vec3 p,float sg)
 {
   vec2 res=vec2(100,-1);
@@ -162,7 +161,7 @@ vec2 map(vec3 p,float sg)
     flight+=.00025/(1e-7+blt*blt);
   if(sg==1.&&zprs<.1)
     glow+=.00015/(2e-6+dlt*dlt);
-  if(sg==1.&&tm<ths)
+  if(sg==1.&&tm<13.25)
     objglow+=5e-4/(5e-4+obj*obj);
   return res;
 }
@@ -233,12 +232,12 @@ void mainImage(out vec4 O,vec2 F)
             vec3(1);
           if(m==3.||m==4.)
             h=vec3(.012);
-          if(tm>ths)
+          if(tm>13.25)
             C=h*diff+spec;
           else if(m==3.||m==4.)
             C=hsv2rgb(vec3(s_hp.z*.01,.8,.6))*diff;
         }
-      if(tm>ths)
+      if(tm>13.25)
         {
           if(mod(T,.1)<.05)
             FC=vec3(.8);

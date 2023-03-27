@@ -108,12 +108,11 @@ float map(vec3 pos,out int sid,out int submat)
 }
 vec3 calcNormal(vec3 pos)
 {
-  float eps=2e-4;
   vec3 nor;
   int kk,kk2;
-  nor.x=map(vec3(pos.x+eps,pos.yz),kk,kk2)-map(vec3(pos.x-eps,pos.yz),kk,kk2);
-  nor.y=map(vec3(pos.x,pos.y+eps,pos.z),kk,kk2)-map(vec3(pos.x,pos.y-eps,pos.z),kk,kk2);
-  nor.z=map(vec3(pos.xy,pos.z+eps),kk,kk2)-map(vec3(pos.xy,pos.z-eps),kk,kk2);
+  nor.x=map(vec3(pos.x+2e-4,pos.yz),kk,kk2)-map(vec3(pos.x-2e-4,pos.yz),kk,kk2);
+  nor.y=map(vec3(pos.x,pos.y+2e-4,pos.z),kk,kk2)-map(vec3(pos.x,pos.y-2e-4,pos.z),kk,kk2);
+  nor.z=map(vec3(pos.xy,pos.z+2e-4),kk,kk2)-map(vec3(pos.xy,pos.z-2e-4),kk,kk2);
   return normalize(nor);
 }
 void main()
@@ -157,16 +156,16 @@ void main()
   if(matID!=666)
     {
       vec3 nor=calcNormal(pos);
-      float kke=1e-4,bumpa=.0075;
+      float bumpa=.0075;
       if(matID!=5)
         bumpa*=.75;
       if(matID==4)
         bumpa*=.5;
-      bumpa/=kke;
+      bumpa/=1e-4;
       float kk=fbm(32.*pos);
-      nor.x+=bumpa*(fbm(32.*vec3(pos.x+kke,pos.yz))-kk);
-      nor.y+=bumpa*(fbm(32.*vec3(pos.x,pos.y+kke,pos.z))-kk);
-      nor.z+=bumpa*(fbm(32.*vec3(pos.xy,pos.z+kke))-kk);
+      nor.x+=bumpa*(fbm(32.*vec3(pos.x+1e-4,pos.yz))-kk);
+      nor.y+=bumpa*(fbm(32.*vec3(pos.x,pos.y+1e-4,pos.z))-kk);
+      nor.z+=bumpa*(fbm(32.*vec3(pos.xy,pos.z+1e-4))-kk);
       nor=normalize(nor);
       float spe=0.;
       vec3 lig=vec3(.5-pos.x,.8-pos.y,1.5-pos.z);

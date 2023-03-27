@@ -66,3 +66,7 @@ let pureBuiltinFunctions =
     vectorFunctions +
     castFunctions +
     textureFunctions
+
+// Type qualifiers telling that a global variables is an 'external' name
+// (it may be referenced from other files).
+let externalQualifier = set ["in"; "out"; "attribute"; "varying"; "uniform"]

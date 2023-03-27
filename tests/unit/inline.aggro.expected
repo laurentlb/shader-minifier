@@ -60,3 +60,9 @@ int dependOnConst()
 {
   return(time+sync)*2*3;
 }
+float noinl179(float x)
+{
+  float old=x;
+  x=1e2;
+  return old+x;
+}

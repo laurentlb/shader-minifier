@@ -154,8 +154,7 @@ float GearDf(vec3 p)
 }
 float ObjDf(vec3 p)
 {
-  vec4 a4;
-  vec3 q,bPos;
+  vec3 q;
   float dMin,d,r,a;
   dMin=dstFar;
   q=p-vec3(1.13+bEdge,bEdge,1);
@@ -355,7 +354,7 @@ vec3 ShowScene(vec3 ro,vec3 rd)
 {
   vec4 col4;
   vec3 vn,col,q;
-  float dstObj,dstGear,dstBlk,sh,s,r,a,nDotL;
+  float dstObj,dstGear,dstBlk,sh,r,a,nDotL;
   int idObjT;
   bool isMet;
   tCyc=18.5;
