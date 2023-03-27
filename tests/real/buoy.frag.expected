@@ -1,0 +1,218 @@
+#define GAMMA (2.2)
+
+vec3 localRay;
+void CamPolar(out vec3 pos,out vec3 ray,vec3 origin,vec2 rotation,float distance,float zoom,vec2 fragCoord)
+{
+  vec2 c=vec2(cos(rotation.x),cos(rotation.y));
+  vec4 s;
+  s.xy=vec2(sin(rotation.x),sin(rotation.y));
+  s.zw=-s.xy;
+  ray.xy=fragCoord.xy-iResolution.xy*.5;
+  ray.z=iResolution.y*zoom;
+  ray=normalize(ray);
+  localRay=ray;
+  ray.yz=ray.yz*c.xx+ray.zy*s.zx;
+  ray.xz=ray.xz*c.yy+ray.zx*s.yw;
+  pos=origin-distance*vec3(c.x*s.y,s.z,c.x*c.y);
+}
+vec2 Noise(vec3 x)
+{
+  vec3 p=floor(x),f=fract(x);
+  f=f*f*(3.-2.*f);
+  vec4 rg=textureLod(iChannel0,(p.xy+vec2(37,17)*p.z+f.xy+.5)/256.,0.);
+  return mix(rg.yw,rg.xz,f.z);
+}
+vec2 NoisePrecise(vec3 x)
+{
+  vec3 p=floor(x),f=fract(x);
+  f=f*f*(3.-2.*f);
+  vec2 uv=p.xy+vec2(37,17)*p.z;
+  vec4 rg=mix(mix(textureLod(iChannel0,(uv+.5)/256.,0.),textureLod(iChannel0,(uv+vec2(1,0)+.5)/256.,0.),f.x),mix(textureLod(iChannel0,(uv+vec2(0,1)+.5)/256.,0.),textureLod(iChannel0,(uv+1.5)/256.,0.),f.x),f.y);
+  return mix(rg.yw,rg.xz,f.z);
+}
+vec4 Noise(vec2 x)
+{
+  vec2 f=fract(x.xy);
+  f=f*f*(3.-2.*f);
+  vec2 uv=floor(x.xy).xy+f.xy;
+  return textureLod(iChannel0,(uv+.5)/256.,0.);
+}
+vec4 Noise(ivec2 x)
+{
+  return textureLod(iChannel0,(vec2(x)+.5)/256.,0.);
+}
+vec2 Noise(ivec3 x)
+{
+  return textureLod(iChannel0,(vec2(x)+vec2(37,17)*float(x.z)+.5)/256.,0.).xz;
+}
+float Waves(vec3 pos)
+{
+  pos*=.2*vec3(1);
+  float f=0.;
+  pos+=iTime*vec3(0,.1,.1);
+  for(int i=0;i<5;i++)
+    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*2.+abs(Noise(pos).x-.5)*2.,pos*=2.;
+  f/=exp2(float(5));
+  return.5-f;
+}
+float WavesDetail(vec3 pos)
+{
+  pos*=.2*vec3(1);
+  float f=0.;
+  pos+=iTime*vec3(0,.1,.1);
+  for(int i=0;i<8;i++)
+    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*2.+abs(NoisePrecise(pos).x-.5)*2.,pos*=2.;
+  f/=exp2(float(8));
+  return.5-f;
+}
+float WavesSmooth(vec3 pos)
+{
+  pos*=.2*vec3(1);
+  float f=0.;
+  pos+=iTime*vec3(0,.1,.1);
+  for(int i=0;i<2;i++)
+    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*2.+sqrt(pow(NoisePrecise(pos).x-.5,2.)+.01)*2.,pos*=2.;
+  f/=exp2(float(2));
+  return.5-f;
+}
+float WaveCrests(vec3 ipos,vec2 fragCoord)
+{
+  vec3 pos=ipos;
+  pos*=.2*vec3(1);
+  float f=0.;
+  pos+=iTime*vec3(0,.1,.1);
+  vec3 pos2=pos;
+  for(int i=0;i<6;i++)
+    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+abs(Noise(pos).x-.5)*2.,pos*=2.;
+  pos=pos2*exp2(float(6));
+  pos.y=-.05*iTime;
+  for(int i=6;i<16;i++)
+    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+pow(abs(Noise(pos).x-.5)*2.,1.),pos*=2.;
+  f/=1500.;
+  f-=Noise(ivec2(fragCoord.xy)).x*.01;
+  return pow(smoothstep(.4,-.1,f),6.);
+}
+vec3 Sky(vec3 ray)
+{
+  return vec3(.4,.45,.5);
+}
+vec3 boatRight,boatUp,boatForward,boatPosition;
+void ComputeBoatTransform()
+{
+  vec3 samples[5];
+  samples[0]=vec3(0);
+  samples[1]=vec3(0,0,.5);
+  samples[2]=vec3(0,0,-.5);
+  samples[3]=vec3(.5,0,0);
+  samples[4]=vec3(-.5,0,0);
+  samples[0].y=WavesSmooth(samples[0]);
+  samples[1].y=WavesSmooth(samples[1]);
+  samples[2].y=WavesSmooth(samples[2]);
+  samples[3].y=WavesSmooth(samples[3]);
+  samples[4].y=WavesSmooth(samples[4]);
+  boatPosition=(samples[0]+samples[1]+samples[2]+samples[3]+samples[4])/5.;
+  boatRight=samples[3]-samples[4];
+  boatForward=samples[1]-samples[2];
+  boatUp=normalize(cross(boatForward,boatRight));
+  boatRight=normalize(cross(boatUp,boatForward));
+  boatForward=normalize(boatForward);
+  boatPosition+=0.*boatUp;
+}
+vec3 WorldToBoat(vec3 dir)
+{
+  return vec3(dot(dir,boatRight),dot(dir,boatUp),dot(dir,boatForward));
+}
+float TraceBoat(vec3 pos,vec3 ray)
+{
+  vec3 c=boatPosition;
+  float r=1.;
+  c-=pos;
+  float t=dot(c,ray),p=length(c-t*ray);
+  return p>r?
+    0.:
+    t-sqrt(r*r-p*p);
+}
+vec3 ShadeBoat(vec3 pos,vec3 ray)
+{
+  pos-=boatPosition;
+  vec3 norm=normalize(pos);
+  pos=WorldToBoat(pos);
+  vec3 lightDir=normalize(vec3(-2,3,1));
+  float aa=4./iResolution.x;
+  vec3 albedo=vec3(1,.01,0);
+  albedo=mix(vec3(.04),albedo,smoothstep(.25-aa,.25,abs(pos.y)));
+  albedo=mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),albedo,smoothstep(.2-aa*1.5,.2,abs(pos.y)));
+  albedo=mix(vec3(.04),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.6)));
+  albedo=mix(vec3(1,.8,.08),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
+  vec3 col=albedo*(smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1)),specular=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1),rr=reflect(ray,norm);
+  specular+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
+  float fresnel=pow(1.-abs(dot(norm,ray)),5.);
+  fresnel=mix(.001,1.,fresnel);
+  col=mix(col,specular,fresnel);
+  return col;
+}
+float OceanDistanceField(vec3 pos)
+{
+  return pos.y-Waves(pos);
+}
+float OceanDistanceFieldDetail(vec3 pos)
+{
+  return pos.y-WavesDetail(pos);
+}
+vec3 OceanNormal(vec3 pos)
+{
+  vec3 norm;
+  vec2 d=vec2(.01*length(pos),0);
+  norm.x=OceanDistanceFieldDetail(pos+d.xyy)-OceanDistanceFieldDetail(pos-d.xyy);
+  norm.y=OceanDistanceFieldDetail(pos+d.yxy)-OceanDistanceFieldDetail(pos-d.yxy);
+  norm.z=OceanDistanceFieldDetail(pos+d.yyx)-OceanDistanceFieldDetail(pos-d.yyx);
+  return normalize(norm);
+}
+float TraceOcean(vec3 pos,vec3 ray)
+{
+  float h=1.,t=0.;
+  for(int i=0;i<100;i++)
+    {
+      if(h<.01||t>1e2)
+        break;
+      h=OceanDistanceField(pos+t*ray);
+      t+=h;
+    }
+  return h>.1?
+    0.:
+    t;
+}
+vec3 ShadeOcean(vec3 pos,vec3 ray,vec2 fragCoord)
+{
+  vec3 norm=OceanNormal(pos);
+  float ndotr=dot(ray,norm);
+  vec3 reflectedRay=ray-2.*norm*ndotr,refractedRay=ray+(-cos(1.33*acos(-ndotr))-ndotr)*norm;
+  refractedRay=normalize(refractedRay);
+  vec3 reflection=Sky(reflectedRay);
+  float t=TraceBoat(pos-0.*reflectedRay,reflectedRay);
+  if(t>0.)
+    reflection=ShadeBoat(pos+t*reflectedRay,reflectedRay);
+  t=TraceBoat(pos-0.*refractedRay,refractedRay);
+  vec3 col=vec3(0,.04,.04);
+  if(t>0.)
+    col=mix(col,ShadeBoat(pos+t*refractedRay,refractedRay),exp(-t));
+  col=mix(col,reflection,pow(1.-abs(ndotr),5.));
+  col=mix(col,vec3(1),WaveCrests(pos,fragCoord));
+  return col;
+}
+void mainImage(out vec4 fragColor,vec2 fragCoord)
+{
+  ComputeBoatTransform();
+  vec2 camRot=vec2(.5)+vec2(-.35,4.5)*(iMouse.yx/iResolution.yx);
+  vec3 pos,ray;
+  CamPolar(pos,ray,vec3(0),camRot,3.,1.,fragCoord);
+  float to=TraceOcean(pos,ray),tb=TraceBoat(pos,ray);
+  vec3 result;
+  result=to>0.&&(to<tb||tb==0.)?
+    ShadeOcean(pos+ray*to,ray,fragCoord):
+    tb>0.?
+      ShadeBoat(pos+ray*tb,ray):
+      Sky(ray);
+  result*=1.1*smoothstep(.35,1.,localRay.z);
+  fragColor=vec4(pow(result,vec3(1./GAMMA)),1);
+}

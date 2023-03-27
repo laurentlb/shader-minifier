@@ -83,3 +83,7 @@
 --no-renaming --format indented -o tests/real/controllable-machinery.frag.expected tests/real/controllable-machinery.frag
 --no-renaming --format indented -o tests/real/endeavour.frag.expected tests/real/endeavour.frag
 --no-renaming --format indented -o tests/real/audio-flight-v2.frag.expected tests/real/audio-flight-v2.frag
+
+--no-renaming --format indented -o tests/real/buoy.frag.expected tests/real/buoy.frag
+--no-renaming --format indented -o tests/real/orchard.frag.expected tests/real/orchard.frag
+--no-renaming --format indented -o tests/real/robin.frag.expected tests/real/robin.frag
