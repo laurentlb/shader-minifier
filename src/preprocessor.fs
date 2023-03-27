@@ -54,7 +54,7 @@ type private Impl() =
         let! _ = keyword "undef"
         let! name = parseIdent
         defines.Remove(name) |> ignore<bool>
-        return if currentStatus() = Unknown then "#undef" else ""
+        return sprintf "#undef %s" name
     }
 
     let parseIfdef = parse {
@@ -135,8 +135,9 @@ type private Impl() =
         parseIf
         parseIfdef
         parseNope
-        parseOther
         parseUndef
+
+        parseOther
     ]
 
     member _.Parse = many (directive <|> parseText)
