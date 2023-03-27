@@ -16,8 +16,8 @@ const char *function_comma_frag =
  "}"
  "float bar()"
  "{"
-   "float a=1.2,b=2.3;"
-   "return min(b+=a,(a,b));"
+   "float b=2.3;"
+   "return min(b+=1.2,(1.2,b));"
  "}";
 
 #endif // FUNCTION_COMMA_EXPECTED_

@@ -67,7 +67,9 @@ and Type = {
     name: TypeSpec // e.g. int
     typeQ: string list // type qualifiers, e.g. const, uniform, out, inout...
     arraySizes: Expr list // e.g. [3][5]
-}
+} with
+    member this.IsExternal =
+        List.exists (fun s -> Set.contains s Builtin.externalQualifier) this.typeQ
 
 and DeclElt = {
     name: Ident // e.g. foo

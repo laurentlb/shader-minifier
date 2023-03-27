@@ -167,13 +167,13 @@ float fogmap(vec3 p,float d)
 }
 float march(vec3 ro,vec3 rd,out float drift,vec2 scUV)
 {
-  float precis=.1,mul=.34,h,d=hash12(scUV)*1.5;
+  float mul=.34,h,d=hash12(scUV)*1.5;
   drift=0.;
   for(int i=0;i<ITR;i++)
     {
       vec3 p=ro+rd*d;
       h=map(p);
-      if(h<precis*(1.+d*.05)||d>FAR)
+      if(h<.1*(1.+d*.05)||d>FAR)
         break;
       drift+=fogmap(p,d);
       d+=h*mul;

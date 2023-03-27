@@ -14,7 +14,6 @@ int f(int x)
 }
 void main()
 {
-  int a=2;
-  f(a);
+  f(2);
   return;
 }

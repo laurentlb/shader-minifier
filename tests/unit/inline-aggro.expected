@@ -1,14 +1,12 @@
 float inl1()
 {
-  float f=42.;
-  return f+2.*f;
+  return 126.;
 }
 float inl2(float x)
 {
-  float f=123456789.;
-  return x>2.*f?
+  return x>246913578.?
     1e2:
-    x>f?
+    x>123456789.?
       101.:
       102.;
 }
@@ -35,15 +33,13 @@ void notevil(float x)
 }
 float inl7()
 {
-  float f=101.;
-  notevil(f);
-  return f;
+  notevil(101.);
+  return 101.;
 }
 int inl8(ivec3 x)
 {
-  int i=1;
-  x[i]+=1;
-  return x[i]+i;
+  x[1]+=1;
+  return x[1]+1;
 }
 float noinl1()
 {
@@ -88,10 +84,9 @@ float noinl7(const float x)
 {
   return x+1.2;
 }
-float quux=1.;
 float noinl8()
 {
-  return quux+2.;
+  return 3.;
 }
 float noinl9(float x)
 {

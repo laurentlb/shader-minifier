@@ -97,3 +97,10 @@ int dependOnConst() {
   int y = x * 2;
   return y*3;
 }
+
+// repro for #179
+float noinl179(float x) {
+	float old = x;
+	x = 100.0;
+	return old + x;
+}

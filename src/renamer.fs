@@ -242,11 +242,7 @@ module private RenamerImpl =
         let aux (env: Env) (decl: Ast.DeclElt) =
             Option.iter (renExpr env) decl.init
             Option.iter (renExpr env) decl.size
-            let ext =
-                let tyQSet = Set.ofList ty.typeQ
-                let extQ = ["in"; "out"; "attribute"; "varying"; "uniform"]
-                List.exists (fun s -> Set.contains s tyQSet) extQ
-            let isExternal = isTopLevel && (ext || options.hlsl)
+            let isExternal = isTopLevel && (ty.IsExternal || options.hlsl)
 
             if (isTopLevel && options.preserveAllGlobals) ||
                     List.contains decl.name.Name options.noRenamingList then

@@ -22,9 +22,10 @@ float inl5()
 {
   return 579.;
 }
+const float baz=2.*acos(-1.);
 float inl6()
 {
-  return 2.*acos(-1.)*2.;
+  return 2.*baz;
 }
 void notevil(float x)
 {
@@ -83,10 +84,9 @@ float noinl7(const float x)
 {
   return x+1.2;
 }
-float quux=1.;
 float noinl8()
 {
-  return quux+2.;
+  return 3.;
 }
 float noinl9(float x)
 {

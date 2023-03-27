@@ -3,8 +3,7 @@
 float result;
 void main()
 {
-  float x=.5;
-  result=.6*x*x;
+  result=.15;
 }
 int arithmetic()
 {
@@ -16,8 +15,7 @@ int vars(int arg,int arg2)
 }
 int arithmetic2()
 {
-  int a=2;
-  return 4*a*(a+3);
+  return 40;
 }
 int unusedVars()
 {
@@ -61,4 +59,10 @@ in int sync;
 int dependOnConst()
 {
   return(time+sync)*2*3;
+}
+float noinl179(float x)
+{
+  float old=x;
+  x=1e2;
+  return old+x;
 }

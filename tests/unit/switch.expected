@@ -33,12 +33,12 @@ float D()
 {
   switch(42){
     case 42:
-      float G=4.2;
-      float k=2.4;
-      return G+k;
+      
+      
+      return 6.6;
     case 43:
-      float D=4.3;
-      return D+3.4;
+      
+      return 7.7;
     default:
       return 0.;
   }

@@ -30,13 +30,13 @@ vec2 disc(vec2 uv)
 float zoom=.4,cameraroll=1.,cameraroll2=0;
 uvec2 encrypt(uvec2 v)
 {
-  uint k[4],sum=0,delta=2654435769;
+  uint k[4],sum=0;
   k[0]=2738958700;
   k[1]=3355524772;
   k[2]=2911926141;
   k[3]=2123724318;
   for(uint i=0;i<4;++i)
-    sum+=delta,v.x+=(v.y<<4)+k[0]^v.y+sum^(v.y>>5)+k[1],v.y+=(v.x<<4)+k[2]^v.x+sum^(v.x>>5)+k[3];
+    sum+=2654435769,v.x+=(v.y<<4)+k[0]^v.y+sum^(v.y>>5)+k[1],v.y+=(v.x<<4)+k[2]^v.x+sum^(v.x>>5)+k[3];
   return v;
 }
 mat2 rotmat(float a)
@@ -336,7 +336,6 @@ void main()
                 }
               p.x-=2;
               p.y+=time2/14.;
-              float c;
             }
           else if(w.w<.26)
             w.x=R(),w.y=R(),w.z=R(),w.w=R(),p=(w.xyz*2-1)*3,p.x-=2,col=vec3(w.w)/2,w.w=R(),col+=vec3(1,1,.5)*pow(.5+.5*cos(w.w*6+time*3),32.)*.1;
