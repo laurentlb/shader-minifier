@@ -536,6 +536,11 @@ let private simplifyStmt = function
     | e -> e
 
 let rec iterateSimplifyAndInline li =
+    let li =
+        li
+        |> Analyzer.resolve
+        |> Analyzer.markLValues
+        |> Analyzer.maybeInlineVariables
     if not options.noInlining then
         Analyzer.markInlinableFunctions li
         let mapExpr _ e = e
@@ -555,9 +560,6 @@ let rec iterateSimplifyAndInline li =
 
 let simplify li =
     li
-    |> Analyzer.resolve
-    |> Analyzer.markLValues
-    |> Analyzer.maybeInlineConsts
     |> iterateSimplifyAndInline
     |> List.choose (function
         | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some

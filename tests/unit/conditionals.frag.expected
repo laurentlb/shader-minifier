@@ -40,8 +40,7 @@ bool and3()
 }
 int foo()
 {
-  int a=1;
-  return a;
+  return 1;
 }
 float ifStmtToExpr(float f)
 {

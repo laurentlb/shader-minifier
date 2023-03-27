@@ -69,6 +69,20 @@ int dont_inline_lvalue() {
   return 3;
 }
 
+// repro for #247
+out vec4 fragColor247;
+const float t247 = 1.5+(1.+.5);
+void main247() {
+  fragColor247 = vec4(t247);
+}
+
+// repro for #248
+out vec4 fragColor248;
+void main248() {
+  float t = 1.5+(1.+.5);
+  fragColor248 = vec4(t);
+}
+
 float arr[] = float[](3.4, 4.2);
 void lvalues() {
   int a = 1;
