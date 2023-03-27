@@ -125,12 +125,11 @@ vec3 WorldToBoat(vec3 dir)
 float TraceBoat(vec3 pos,vec3 ray)
 {
   vec3 c=boatPosition;
-  float r=1.;
   c-=pos;
   float t=dot(c,ray),p=length(c-t*ray);
-  return p>r?
+  return p>1.?
     0.:
-    t-sqrt(r*r-p*p);
+    t-sqrt(1.-p*p);
 }
 vec3 ShadeBoat(vec3 pos,vec3 ray)
 {

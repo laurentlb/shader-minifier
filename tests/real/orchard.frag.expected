@@ -140,10 +140,9 @@ vec2 map(vec3 p,float t)
   p.xz=mod(p.xz,5.)-2.5;
   float d=p.y;
   matID=0.;
-  float s=1.,ss=1.6;
+  float s=1.;
   vec3 w=normalize(vec3(-1.5+abs(hash11(num*4.)*.8),1,-1)),u=normalize(cross(w,vec3(0,1,0)));
-  float scale=3.5;
-  p/=scale;
+  p/=3.5;
   vec3 q=p;
   int it=10-int(min(t*.03,9.));
   float h=hash11(num*7.)*.3+.3;
@@ -152,15 +151,15 @@ vec2 map(vec3 p,float t)
   float thick=.2/(h-.24);
   for(int i=0;i<it;i++)
     {
-      f=scale*max(p.y-h,max(-p.y,length(p.xz)-.06/(p.y+thick)))/s;
+      f=3.5*max(p.y-h,max(-p.y,length(p.xz)-.06/(p.y+thick)))/s;
       if(f<=d)
         d=f,matID=1.;
       if(i!=dontFold)
         p.xz=abs(p.xz);
       p.y-=h;
       p*=mat3(u,uwc,w);
-      p*=ss;
-      s*=ss;
+      p*=1.6;
+      s*=1.6;
     }
   f=(length(p)-.2)/s;
   if(f<=d)
