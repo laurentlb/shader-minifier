@@ -90,7 +90,7 @@ module private VariableInlining =
                 | (false, _), (false, _) -> ident.ToBeInlined <- true
                 | _ -> ()
 
-    let maybeInlineConsts li =
+    let maybeInlineVariables li =
         let mapInnerDecl = function
             | ({typeQ = tyQ}, defs) as d when List.contains "const" tyQ ->
                 for (def:DeclElt) in defs do
@@ -141,7 +141,7 @@ module private VariableInlining =
         
 let markInlinableVariables = VariableInlining.markInlinableVariables
 let markLValues = VariableInlining.markLValues
-let maybeInlineConsts = VariableInlining.maybeInlineConsts
+let maybeInlineVariables = VariableInlining.maybeInlineVariables
 
 
 // Create ResolvedIdent for each declaration in the file.

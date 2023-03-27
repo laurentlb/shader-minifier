@@ -42,10 +42,9 @@ int dont_inline_lvalue()
   return 3;
 }
 out vec4 fragColor247;
-const float t247=3.;
 void main247()
 {
-  fragColor247=vec4(t247);
+  fragColor247=vec4(3);
 }
 out vec4 fragColor248;
 void main248()
