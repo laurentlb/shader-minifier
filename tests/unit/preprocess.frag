@@ -31,4 +31,9 @@ int this_is_removed;
 void keep_else() {}
 #endif
 
+#undef DEF
+#ifdef DEF
+int removed_undefd() {}
+#endif
+
 void end() {}

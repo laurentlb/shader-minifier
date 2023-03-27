@@ -12,5 +12,8 @@ void keep_outernest()
 {}
 void keep_else()
 {}
+
+#undef DEF
+
 void end()
 {}

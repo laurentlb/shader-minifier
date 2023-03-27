@@ -39,12 +39,22 @@ type private Impl() =
 
     let parseEndLine = manyCharsTill anyChar (followedBy newline) .>> newline
 
+    // TODO: ignore the defines when status is Inactive
+    // TODO: mark defines as unknown when status is Unknown
+
     let parseDefine = parse {
         let! _ = keyword "define"
         let! name = parseIdent
         let! line = parseEndLine
         defines.Add(name, line)
         return sprintf "#define %s%s" name line
+    }
+
+    let parseUndef = parse {
+        let! _ = keyword "undef"
+        let! name = parseIdent
+        defines.Remove(name) |> ignore<bool>
+        return sprintf "#undef %s" name
     }
 
     let parseIfdef = parse {
@@ -125,6 +135,8 @@ type private Impl() =
         parseIf
         parseIfdef
         parseNope
+        parseUndef
+
         parseOther
     ]
 
