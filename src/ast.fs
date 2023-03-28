@@ -38,7 +38,7 @@ and [<NoComparison>] [<RequireQualifiedAccess>] ResolvedIdent =
     | Variable of ResolvedVar
     | Func of ResolvedFunc
 and ResolvedVar(ty, decl, scope) =
-    member val ty = ty with get, set
+    member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
     member val isLValue = false with get, set
@@ -52,12 +52,17 @@ and Expr =
     | Float of decimal * string
     | Var of Ident
     | Op of string
-    | FunCall of Expr * Expr list
+    | FunCall of Expr * Expr list // The first Expr of a FunCall can be: Op, Var, Subscript, or Dot.
     | Subscript of Expr * Expr option
     | Dot of Expr * string
     | Cast of Ident * Expr  // hlsl
     | VectorExp of Expr list // hlsl
     | VerbatimExp of string
+    // Examples:
+    // * "i++" = FunCall (Op "$++", [Var ident: i])
+    // * "sin(1.0)" = FunCall (Var ident: sin, [Float (1.0M, "")])
+    // * "float[2](8.,9.)" = FunCall (Subscript (Var ident: float, Some (Int (2L, ""))), [Float (8.0M, ""); Float (9.0M, "")])
+    // * "array.length()" = FunCall (Dot (Var ident: array, "length"), [])
 
 and TypeSpec =
     | TypeName of string
@@ -69,7 +74,7 @@ and Type = {
     arraySizes: Expr list // e.g. [3][5]
 } with
     member this.IsExternal =
-        List.exists (fun s -> Set.contains s Builtin.externalQualifier) this.typeQ
+        List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
 
 and DeclElt = {
     name: Ident // e.g. foo
