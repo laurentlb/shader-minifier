@@ -14,9 +14,9 @@ type Ident(name: string) =
     member val ToBeInlined = newName.StartsWith("i_") with get, set
 
     member val Resolved: ResolvedIdent = ResolvedIdent.Unresolved with get, set
-    member this.AsResolvedVar = match this.Resolved with
-                                | ResolvedIdent.Variable rv -> Some rv
-                                | _ -> None
+    member this.AsVarUse = match this.Resolved with
+                           | ResolvedIdent.Variable rv -> Some rv
+                           | _ -> None
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -35,14 +35,14 @@ type Ident(name: string) =
 
 and [<NoComparison>] [<RequireQualifiedAccess>] ResolvedIdent =
     | Unresolved
-    | Variable of ResolvedVar
-    | Func of ResolvedFunc
-and ResolvedVar(ty, decl, scope) =
-    member val ty = ty with get, set
+    | Variable of VarUse
+    | Func of CallSite
+and VarUse(ty, decl, scope) =
+    member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
-    member val isLValue = false with get, set
-and ResolvedFunc(funcType) =
+    member val isWrite = false with get, set
+and CallSite(funcType) =
     member val funcType = funcType with get, set
     
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
@@ -52,12 +52,17 @@ and Expr =
     | Float of decimal * string
     | Var of Ident
     | Op of string
-    | FunCall of Expr * Expr list
+    | FunCall of Expr * Expr list // The first Expr of a FunCall can be: Op, Var, Subscript, or Dot.
     | Subscript of Expr * Expr option
     | Dot of Expr * string
     | Cast of Ident * Expr  // hlsl
     | VectorExp of Expr list // hlsl
     | VerbatimExp of string
+    // Examples:
+    // * "i++" = FunCall (Op "$++", [Var ident: i])
+    // * "sin(1.0)" = FunCall (Var ident: sin, [Float (1.0M, "")])
+    // * "float[2](8.,9.)" = FunCall (Subscript (Var ident: float, Some (Int (2L, ""))), [Float (8.0M, ""); Float (9.0M, "")])
+    // * "array.length()" = FunCall (Dot (Var ident: array, "length"), [])
 
 and TypeSpec =
     | TypeName of string
@@ -69,7 +74,7 @@ and Type = {
     arraySizes: Expr list // e.g. [3][5]
 } with
     member this.IsExternal =
-        List.exists (fun s -> Set.contains s Builtin.externalQualifier) this.typeQ
+        List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
 
 and DeclElt = {
     name: Ident // e.g. foo
@@ -147,10 +152,10 @@ type MapEnv = {
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt>
-    isLValue: bool
+    isInWritePosition: bool
 }
 
-let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isLValue = false}
+let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isInWritePosition = false}
 
 let foldList env fct li =
     let mutable env = env
@@ -163,13 +168,13 @@ let foldList env fct li =
 // Applies env.fExpr recursively on all nodes of an expression.
 let rec mapExpr env = function
     | FunCall(Op o as fct, first::args) when Builtin.assignOps.Contains o ->
-        let first = mapExpr {env with isLValue = true} first
+        let first = mapExpr {env with isInWritePosition = true} first
         env.fExpr env (FunCall(mapExpr env fct, first :: List.map (mapExpr env) args))
     | FunCall(fct, args) ->
-        let env = {env with isLValue = false}
+        let env = {env with isInWritePosition = false}
         env.fExpr env (FunCall(mapExpr env fct, List.map (mapExpr env) args))
     | Subscript(arr, ind) ->
-        let indexEnv = {env with isLValue = false}
+        let indexEnv = {env with isInWritePosition = false}
         env.fExpr env (Subscript(mapExpr env arr, Option.map (mapExpr indexEnv) ind))
     | Dot(e,  field) -> env.fExpr env (Dot(mapExpr env e, field))
     | Cast(id, e) -> env.fExpr env (Cast(id, mapExpr env e))
