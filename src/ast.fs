@@ -14,9 +14,9 @@ type Ident(name: string) =
     member val ToBeInlined = newName.StartsWith("i_") with get, set
 
     member val Resolved: ResolvedIdent = ResolvedIdent.Unresolved with get, set
-    member this.AsResolvedVar = match this.Resolved with
-                                | ResolvedIdent.Variable rv -> Some rv
-                                | _ -> None
+    member this.AsVarUse = match this.Resolved with
+                           | ResolvedIdent.Variable rv -> Some rv
+                           | _ -> None
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -35,14 +35,14 @@ type Ident(name: string) =
 
 and [<NoComparison>] [<RequireQualifiedAccess>] ResolvedIdent =
     | Unresolved
-    | Variable of ResolvedVar
-    | Func of ResolvedFunc
-and ResolvedVar(ty, decl, scope) =
+    | Variable of VarUse
+    | Func of CallSite
+and VarUse(ty, decl, scope) =
     member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
     member val isWrite = false with get, set
-and ResolvedFunc(funcType) =
+and CallSite(funcType) =
     member val funcType = funcType with get, set
     
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return

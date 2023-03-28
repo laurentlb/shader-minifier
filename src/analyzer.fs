@@ -33,9 +33,9 @@ module private VariableInlining =
         result
 
     let isEffectivelyConst (ident: Ident) =
-        if ident.AsResolvedVar.IsSome then
+        if ident.AsVarUse.IsSome then
             // A variable not reassigned is effectively constant.
-            not ident.AsResolvedVar.Value.isWrite
+            not ident.AsVarUse.Value.isWrite
         elif Builtin.pureBuiltinFunctions.Contains ident.Name then
             true
         else
@@ -80,7 +80,7 @@ module private VariableInlining =
 
         for def in localDefs do
             let ident, isConst = def.Value
-            if not ident.ToBeInlined && not ident.AsResolvedVar.Value.isWrite then
+            if not ident.ToBeInlined && not ident.AsVarUse.Value.isWrite then
 
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
                 | (true, 1), (true, 1) when isConst-> ident.ToBeInlined <- true
@@ -114,7 +114,7 @@ module private VariableInlining =
         let mapInnerDecl isTopLevel = function
             | (ty: Type, defs) as d when not ty.IsExternal ->
                 for (def:DeclElt) in defs do
-                    if not def.name.AsResolvedVar.Value.isWrite then
+                    if not def.name.AsVarUse.Value.isWrite then
                         if def.init.IsNone then
                             // Top-level values are special, in particular in HLSL. Keep them for now.
                             if not isTopLevel then
@@ -137,8 +137,8 @@ module private VariableInlining =
     let markLValues topLevel =
 
         let findWrites (env: MapEnv) = function
-            | Var v as e when env.isInWritePosition && v.AsResolvedVar <> None ->
-                v.AsResolvedVar.Value.isWrite <- true
+            | Var v as e when env.isInWritePosition && v.AsVarUse <> None ->
+                v.AsVarUse.Value.isWrite <- true
                 e
             | FunCall(Var v, args) as e ->
                 match env.fns.TryFind v.Name with
@@ -169,14 +169,14 @@ let resolve topLevel =
         | Var v as e ->
             match (env.vars.TryFind v.Name, env.fns.TryFind v.Name) with
             | Some (_, decl), _ -> v.Resolved <- decl.name.Resolved
-            | _, Some (ft, _) -> v.Resolved <- ResolvedIdent.Func(ResolvedFunc ft)
+            | _, Some (ft, _) -> v.Resolved <- ResolvedIdent.Func(CallSite ft)
             | _ -> () // TODO: resolve builtin functions
             e
         | e -> e
 
     let resolveDecl scope (ty, li) =
         for elt in li do
-            let resolved = new ResolvedVar(ty, elt, scope)
+            let resolved = new VarUse(ty, elt, scope)
             elt.name.Resolved <- ResolvedIdent.Variable resolved
 
     let resolveStmt = function
@@ -262,8 +262,8 @@ module private FunctionInlining =
         let mutable argIsWritten = false
 
         let visitArgUses mEnv = function
-            | Var id as e when id.AsResolvedVar <> None ->
-                match id.AsResolvedVar.Value.scope with
+            | Var id as e when id.AsVarUse <> None ->
+                match id.AsVarUse.Value.scope with
                 | VarScope.Local ->
                     failwith "There shouldn't be any locals in a function with a single return statement."
                 | VarScope.Parameter ->
