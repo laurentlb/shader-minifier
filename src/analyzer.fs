@@ -35,7 +35,7 @@ module private VariableInlining =
     let isEffectivelyConst (ident: Ident) =
         if ident.AsResolvedVar.IsSome then
             // A variable not reassigned is effectively constant.
-            not ident.AsResolvedVar.Value.isLValue
+            not ident.AsResolvedVar.Value.isWrite
         elif Builtin.pureBuiltinFunctions.Contains ident.Name then
             true
         else
@@ -80,7 +80,7 @@ module private VariableInlining =
 
         for def in localDefs do
             let ident, isConst = def.Value
-            if not ident.ToBeInlined && not ident.AsResolvedVar.Value.isLValue then
+            if not ident.ToBeInlined && not ident.AsResolvedVar.Value.isWrite then
 
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
                 | (true, 1), (true, 1) when isConst-> ident.ToBeInlined <- true
@@ -114,7 +114,7 @@ module private VariableInlining =
         let mapInnerDecl isTopLevel = function
             | (ty: Type, defs) as d when not ty.IsExternal ->
                 for (def:DeclElt) in defs do
-                    if not def.name.AsResolvedVar.Value.isLValue then
+                    if not def.name.AsResolvedVar.Value.isWrite then
                         if def.init.IsNone then
                             // Top-level values are special, in particular in HLSL. Keep them for now.
                             if not isTopLevel then
@@ -137,8 +137,8 @@ module private VariableInlining =
     let markLValues topLevel =
 
         let findWrites (env: MapEnv) = function
-            | Var v as e when env.isLValue && v.AsResolvedVar <> None ->
-                v.AsResolvedVar.Value.isLValue <- true
+            | Var v as e when env.isInWritePosition && v.AsResolvedVar <> None ->
+                v.AsResolvedVar.Value.isWrite <- true
                 e
             | FunCall(Var v, args) as e ->
                 match env.fns.TryFind v.Name with
@@ -147,7 +147,7 @@ module private VariableInlining =
                     // If any parameter to the function could be written to (e.g., "out"), mark all
                     // variables in the parameters. We don't attempt to match up param-for-param but
                     // just mark everything if anything could write, for simplicity.
-                    let newEnv = {env with isLValue = true}
+                    let newEnv = {env with isInWritePosition = true}
                     for arg in args do
                         (mapExpr newEnv arg: Expr) |> ignore
                     e
@@ -267,7 +267,7 @@ module private FunctionInlining =
                 | VarScope.Local ->
                     failwith "There shouldn't be any locals in a function with a single return statement."
                 | VarScope.Parameter ->
-                    argIsWritten <- argIsWritten || mEnv.isLValue
+                    argIsWritten <- argIsWritten || mEnv.isInWritePosition
                     argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
                 | VarScope.Global ->
                     shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)

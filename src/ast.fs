@@ -41,7 +41,7 @@ and ResolvedVar(ty, decl, scope) =
     member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
-    member val isLValue = false with get, set
+    member val isWrite = false with get, set
 and ResolvedFunc(funcType) =
     member val funcType = funcType with get, set
     
@@ -152,10 +152,10 @@ type MapEnv = {
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt>
-    isLValue: bool
+    isInWritePosition: bool
 }
 
-let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isLValue = false}
+let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isInWritePosition = false}
 
 let foldList env fct li =
     let mutable env = env
@@ -168,13 +168,13 @@ let foldList env fct li =
 // Applies env.fExpr recursively on all nodes of an expression.
 let rec mapExpr env = function
     | FunCall(Op o as fct, first::args) when Builtin.assignOps.Contains o ->
-        let first = mapExpr {env with isLValue = true} first
+        let first = mapExpr {env with isInWritePosition = true} first
         env.fExpr env (FunCall(mapExpr env fct, first :: List.map (mapExpr env) args))
     | FunCall(fct, args) ->
-        let env = {env with isLValue = false}
+        let env = {env with isInWritePosition = false}
         env.fExpr env (FunCall(mapExpr env fct, List.map (mapExpr env) args))
     | Subscript(arr, ind) ->
-        let indexEnv = {env with isLValue = false}
+        let indexEnv = {env with isInWritePosition = false}
         env.fExpr env (Subscript(mapExpr env arr, Option.map (mapExpr indexEnv) ind))
     | Dot(e,  field) -> env.fExpr env (Dot(mapExpr env e, field))
     | Cast(id, e) -> env.fExpr env (Cast(id, mapExpr env e))
