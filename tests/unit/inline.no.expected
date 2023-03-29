@@ -21,8 +21,8 @@ int arithmetic2()
 }
 int unusedVars()
 {
-  int a=arithmetic(),b=13,c=10,d=c*3;
-  return d;
+  int a=arithmetic(),b=13,c=10;
+  return c*3;
 }
 int unusedVars2()
 {
@@ -31,13 +31,12 @@ int unusedVars2()
 }
 int multiPass()
 {
-  int one=1,two=one*2,three=two+1;
-  return three;
+  int one=1,two=one*2;
+  return two+1;
 }
 float multiPass2()
 {
-  float b=9.;
-  return b;
+  return 9.;
 }
 int dont_inline_lvalue()
 {

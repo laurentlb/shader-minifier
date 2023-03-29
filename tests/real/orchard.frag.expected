@@ -252,11 +252,6 @@ vec3 getNormal(vec3 pos,float ds)
   vec2 eps_zero=vec2(ds,0);
   return normalize(vec3(map(pos+eps_zero.xyy,0.).x,map(pos+eps_zero.yxy,0.).x,map(pos+eps_zero.yyx,0.))-c);
 }
-vec3 getSky(vec3 dir)
-{
-  vec3 col=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs(dir.y));
-  return col;
-}
 mat3 viewMat(float ay,float az)
 {
   vec2 o,ca,sa;
@@ -284,7 +279,7 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
 
   vec3 seedDir=normalize(vec3(0,0,1));
   seedDir=viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*seedDir;
-  vec3 rd=seedDir,col=vec3(0),sky=getSky(rd);
+  vec3 rd=seedDir,col=vec3(0),sky=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs(rd.y));
   float alpha=marchScene(camera,rd,fragCoord);
   vec4 mat;
   if(alpha>0.)
