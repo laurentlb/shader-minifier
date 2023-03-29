@@ -237,8 +237,7 @@ vec3 PostEffects(vec3 rgb,vec2 xy)
 vec3 CameraPath(float t)
 {
   t+=5.;
-  vec3 p=vec3(1.4+sin(t)*3.5,-.2,5.-sin(t)*2.5);
-  return p;
+  return vec3(1.4+sin(t)*3.5,-.2,5.-sin(t)*2.5);
 }
 float TweetVolume(float t)
 {
