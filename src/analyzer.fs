@@ -47,7 +47,7 @@ module private VariableInlining =
     //  - the variable is not used in a sub-block (e.g. inside a loop)
     //  - the init value refers only to constants
     // When aggressive inlining is enabled, additionally inline when all of:
-    //  - the variable never appears in an lvalue position (is never written to
+    //  - the variable never appears in a writable position (is never written to
     //    after initalization)
     //  - the init value is has no dependency
     // The init is considered trivial when:
@@ -134,33 +134,30 @@ module private VariableInlining =
         |> mapTopLevel (mapEnv mapExpr mapStmt)
         |> List.map mapTLDecl
 
-    let markLValues topLevel =
-
-        let findWrites (env: MapEnv) = function
-            | Var v as e when env.isInWritePosition && v.AsVarUse <> None ->
-                v.AsVarUse.Value.isWrite <- true
-                e
-            | FunCall(Var v, args) as e ->
-                match env.fns.TryFind v.Name with
-                | Some (fct, _) when hasOutOrInoutParams fct ->
-                    // We need to look up which functions might write via "out" parameters.
-                    // If any parameter to the function could be written to (e.g., "out"), mark all
-                    // variables in the parameters. We don't attempt to match up param-for-param but
-                    // just mark everything if anything could write, for simplicity.
-                    let newEnv = {env with isInWritePosition = true}
-                    for arg in args do
-                        (mapExpr newEnv arg: Expr) |> ignore
-                    e
-                | _ -> e
-            | e -> e
-        mapTopLevel (mapEnv findWrites id) topLevel
-        
 let markInlinableVariables = VariableInlining.markInlinableVariables
-let markLValues = VariableInlining.markLValues
 let maybeInlineVariables topLevel =
     if options.noInlining then topLevel
     else VariableInlining.maybeInlineVariables topLevel
 
+let markWrites topLevel =
+    let findWrites (env: MapEnv) = function
+        | Var v as e when env.isInWritePosition && v.AsVarUse <> None ->
+            v.AsVarUse.Value.isWrite <- true
+            e
+        | FunCall(Var v, args) as e ->
+            match env.fns.TryFind v.Name with
+            | Some (fct, _) when fct.hasOutOrInoutParams ->
+                // We need to look up which functions might write via "out" parameters.
+                // If any parameter to the function could be written to (e.g., "out"), mark all
+                // variables in the parameters. We don't attempt to match up param-for-param but
+                // just mark everything if anything could write, for simplicity.
+                let newEnv = {env with isInWritePosition = true}
+                for arg in args do
+                    (mapExpr newEnv arg: Expr) |> ignore
+                e
+            | _ -> e
+        | e -> e
+    mapTopLevel (mapEnv findWrites id) topLevel
 
 // Create ResolvedIdent for each declaration in the file.
 // Give each Ident a reference to that ResolvedIdent.
@@ -245,9 +242,10 @@ module private FunctionInlining =
     // [C] Only inline a function if it is a single expression return.
     //     This also ensures the function does not declare any locals.
     // [D] Only inline a function if it uses its 'in' parameters at most once.
-    //     It would be correct to inline when an 'in' parameter that is used more than once
-    //     is passed as an lvalue that doesn't evaluate any expression with a side-effect (e.g. a[b++]).
-    //     If the lvalue is long enough (e.g. `a[b].c.zyx`), its inlined repetition could also increase the shader size.
+    //     No attempt is made to inline in other cases. For example, it would be correct to inline
+    //     when an 'in' parameter is read more than once but is an expression without side-effects,
+    //     or when the parameter is written but the argument is a lvalue that doesn't make any side effect and is not used after the call site.
+    //     Repeating the expression could increase the shader size or decrease run time performance.
     // [E] Only inline a function if its 'in' parameters are never written to (through assignOps or calling an out or inout function or operator).
     //     No attempt is made to find if the passed argument is an lvalue that's never used after calling the function to inline.
     //     No attempt is made to copy the argument into a newly declared local variable at the call site to get correct writing semantics.
@@ -297,7 +295,7 @@ module private FunctionInlining =
             let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
             let isExternal = options.hlsl && node.funcType.semantics <> []
             if canBeRenamed && not isExternal then
-                let hasOnlyInParameters = not (hasOutOrInoutParams node.funcType)
+                let hasOnlyInParameters = not node.funcType.hasOutOrInoutParams
                 if hasOnlyInParameters then // [F]
                     let callSites = nodes |> List.map (fun n -> n.callSites) |> List.concat |> List.filter (fun n -> n.ident.Name = node.name)
                     let isCalledExactlyOnce = callSites.Length = 1

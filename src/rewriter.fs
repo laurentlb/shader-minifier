@@ -539,7 +539,7 @@ let rec iterateSimplifyAndInline li =
     let li =
         li
         |> Analyzer.resolve
-        |> Analyzer.markLValues
+        |> Analyzer.markWrites
         |> Analyzer.maybeInlineVariables
     if not options.noInlining then
         Analyzer.markInlinableFunctions li
@@ -625,7 +625,7 @@ let private computeAllDependencies code =
     nodes
 
 
-let rec removeUnused code =
+let rec removeUnusedFunctions code =
     let nodes = computeAllDependencies code
     let isUnused node =
         let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
@@ -637,10 +637,10 @@ let rec removeUnused code =
     let code = code |> List.filter (function
         | Function _ as t -> if Set.contains t unused then edited <- true; false else true
         | _ -> true)
-    if edited then removeUnused code else code
+    if edited then removeUnusedFunctions code else code
 
 // reorder functions if there were forward declarations
-let reorder code =
+let reorderFunctions code =
     if options.verbose then
         printfn "Reordering functions because of forward declarations."
     let order = code |> computeAllDependencies |> graphReorder
