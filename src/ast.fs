@@ -107,7 +107,10 @@ and FunctionType = {
     fName: Ident (*name*)
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
-}
+} with
+    member this.hasOutOrInoutParams =
+        let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
+        not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
 
 and TopLevel =
     | TLVerbatim of string
@@ -120,10 +123,6 @@ let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}
 let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=init}
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
-
-let hasOutOrInoutParams funcType =
-    let typeQualifiers = set [for (ty, _) in funcType.args do yield! ty.typeQ]
-    not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
 
 // An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
 // values). We need to provide accessors for the developer (e.g. create macros for C/C++).

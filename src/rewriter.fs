@@ -539,7 +539,7 @@ let rec iterateSimplifyAndInline li =
     let li =
         li
         |> Analyzer.resolve
-        |> Analyzer.markLValues
+        |> Analyzer.markWrites
         |> Analyzer.maybeInlineVariables
     if not options.noInlining then
         Analyzer.markInlinableFunctions li
