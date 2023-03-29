@@ -159,9 +159,9 @@ let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; i
 let foldList env fct li =
     let mutable env = env
     let res = li |> List.map (fun i ->
-        let x = fct env i
-        env <- fst x
-        snd x)
+        let newEnv, x = fct env i
+        env <- newEnv
+        x)
     env, res
 
 // Applies env.fExpr recursively on all nodes of an expression.

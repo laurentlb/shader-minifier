@@ -134,33 +134,30 @@ module private VariableInlining =
         |> mapTopLevel (mapEnv mapExpr mapStmt)
         |> List.map mapTLDecl
 
-    let markWrites topLevel =
-
-        let findWrites (env: MapEnv) = function
-            | Var v as e when env.isInWritePosition && v.AsVarUse <> None ->
-                v.AsVarUse.Value.isWrite <- true
-                e
-            | FunCall(Var v, args) as e ->
-                match env.fns.TryFind v.Name with
-                | Some (fct, _) when fct.hasOutOrInoutParams ->
-                    // We need to look up which functions might write via "out" parameters.
-                    // If any parameter to the function could be written to (e.g., "out"), mark all
-                    // variables in the parameters. We don't attempt to match up param-for-param but
-                    // just mark everything if anything could write, for simplicity.
-                    let newEnv = {env with isInWritePosition = true}
-                    for arg in args do
-                        (mapExpr newEnv arg: Expr) |> ignore
-                    e
-                | _ -> e
-            | e -> e
-        mapTopLevel (mapEnv findWrites id) topLevel
-        
 let markInlinableVariables = VariableInlining.markInlinableVariables
-let markWrites = VariableInlining.markWrites
 let maybeInlineVariables topLevel =
     if options.noInlining then topLevel
     else VariableInlining.maybeInlineVariables topLevel
 
+let markWrites topLevel =
+    let findWrites (env: MapEnv) = function
+        | Var v as e when env.isInWritePosition && v.AsVarUse <> None ->
+            v.AsVarUse.Value.isWrite <- true
+            e
+        | FunCall(Var v, args) as e ->
+            match env.fns.TryFind v.Name with
+            | Some (fct, _) when fct.hasOutOrInoutParams ->
+                // We need to look up which functions might write via "out" parameters.
+                // If any parameter to the function could be written to (e.g., "out"), mark all
+                // variables in the parameters. We don't attempt to match up param-for-param but
+                // just mark everything if anything could write, for simplicity.
+                let newEnv = {env with isInWritePosition = true}
+                for arg in args do
+                    (mapExpr newEnv arg: Expr) |> ignore
+                e
+            | _ -> e
+        | e -> e
+    mapTopLevel (mapEnv findWrites id) topLevel
 
 // Create ResolvedIdent for each declaration in the file.
 // Give each Ident a reference to that ResolvedIdent.

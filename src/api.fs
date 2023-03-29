@@ -24,9 +24,9 @@ let minify (files: (string*string)[]) =
 
     for shader in shaders do
         if not options.noRemoveUnused then
-            shader.code <- Rewriter.removeUnused shader.code
+            shader.code <- Rewriter.removeUnusedFunctions shader.code
         if shader.reorderFunctions then
-            shader.code <- Rewriter.reorder shader.code
+            shader.code <- Rewriter.reorderFunctions shader.code
         shader.code <- Rewriter.simplify shader.code
     vprintf "Rewrite tricks applied. "; printSize shaders
 
