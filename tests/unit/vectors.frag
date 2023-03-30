@@ -26,4 +26,15 @@ float withExtraComponents() {
     return v2.x + v3.x + v4.x;
 }
 
-void main() { swizzles(); constructor(); constructors(); withExtraComponents(); }
+struct S{
+  vec2 p1;
+  vec2 cp1;
+  vec2 cp2;
+  vec2 p2;
+};
+
+vec2 calc(S points, float t) {
+  // #282 - not a swizzle
+  vec4 m1m2 = mix(vec4(points.p1, points.cp1), vec4(points.cp1, points.cp2), t);
+  return m1m2.xy;
+}
