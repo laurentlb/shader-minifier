@@ -20,7 +20,7 @@
 --no-remove-unused --format indented --no-renaming -o tests/unit/forward_declaration.frag.expected tests/unit/forward_declaration.frag
 --no-remove-unused --format indented --no-renaming --move-declarations -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
 --no-renaming --no-inlining --format indented -o tests/unit/pi.frag.expected tests/unit/pi.frag
---no-renaming --no-inlining --format indented -o tests/unit/vectors.frag.expected tests/unit/vectors.frag
+ --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/vectors.frag.expected tests/unit/vectors.frag
 --no-renaming --format indented -o tests/unit/deadcode.frag.expected tests/unit/deadcode.frag
 --no-renaming --no-inlining --format indented -o tests/unit/augmented.frag.expected tests/unit/augmented.frag
 --no-remove-unused --no-renaming -o tests/unit/loop.frag.expected tests/unit/loop.frag
