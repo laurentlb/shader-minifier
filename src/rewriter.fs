@@ -19,11 +19,9 @@ let private swizzleIndex = function
     | 'a' | 'w' | 'q' -> 3
     | c -> failwithf "not a swizzle (%c) " c
 
-let private renameSwizzle field =
-    field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
-
 let renameField field =
-    if isFieldSwizzle field then renameSwizzle field
+    if isFieldSwizzle field then
+        field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
     else field
 
 // Remove useless spaces in macros
@@ -250,7 +248,7 @@ let private simplifyVec (constr: Ident) args =
 
     // vec3(a.x, b.xy) => vec3(a.x, b)
     let rec dropLastSwizzle = function
-        | [Dot (expr, field) as last] ->
+        | [Dot (expr, field) as last] when isFieldSwizzle field ->
             match [for c in field -> swizzleIndex c] with
             | [0] | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
             | _ -> [last]
