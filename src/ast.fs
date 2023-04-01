@@ -151,7 +151,7 @@ type MapEnv = {
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt> // this map assumes that user-defined functions are never overloaded
-    isInWritePosition: bool
+    isInWritePosition: bool // used for findWrites only
 }
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isInWritePosition = false}

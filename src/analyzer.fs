@@ -258,13 +258,13 @@ module private FunctionInlining =
         let mutable shadowedGlobal = false
         let mutable argIsWritten = false
 
-        let visitArgUses mEnv = function
+        let visitArgUses _ = function
             | Var id as e when id.VarDecl <> None ->
                 match id.VarDecl.Value.scope with
                 | VarScope.Local ->
                     failwith "There shouldn't be any locals in a function with a single return statement."
                 | VarScope.Parameter ->
-                    argIsWritten <- argIsWritten || mEnv.isInWritePosition
+                    argIsWritten <- argIsWritten || id.VarDecl.Value.isEverWrittenAfterDecl
                     argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
                 | VarScope.Global ->
                     shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
