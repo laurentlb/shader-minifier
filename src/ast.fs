@@ -149,7 +149,7 @@ type Shader = {
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<string, Type * DeclElt> // this map assumes that variables are never shadowed
+    vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt> // this map assumes that user-defined functions are never overloaded
     isInWritePosition: bool
 }
