@@ -13,9 +13,9 @@ type Ident(name: string) =
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
 
-    member val Resolved: ResolvedIdent = ResolvedIdent.Unresolved with get, set
-    member this.AsVarUse = match this.Resolved with
-                           | ResolvedIdent.Variable rv -> Some rv
+    member val Declaration: Declaration = Declaration.Unknown with get, set
+    member this.VarDecl = match this.Declaration with
+                           | Declaration.Variable rv -> Some rv
                            | _ -> None
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
@@ -33,17 +33,15 @@ type Ident(name: string) =
     override this.GetHashCode() = name.GetHashCode()
     override this.ToString() = "ident: " + name
 
-and [<NoComparison>] [<RequireQualifiedAccess>] ResolvedIdent =
-    | Unresolved
-    | Variable of VarUse
-    | Func of CallSite
-and VarUse(ty, decl, scope) =
+and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
+    | Unknown
+    | Variable of VarDecl
+    | Func of FunctionType
+and VarDecl(ty, decl, scope) =
     member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
-    member val isWrite = false with get, set
-and CallSite(funcType) =
-    member val funcType = funcType with get, set
+    member val isEverWrittenAfterDecl = false with get, set
     
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
