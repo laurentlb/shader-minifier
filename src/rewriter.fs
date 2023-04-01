@@ -603,12 +603,12 @@ let private graphReorder nodes =
     list |> List.rev
 
 
-// get the list of external values the function depends on
+// get the list of external functions the function depends on
 let private computeDependencies f =
     let d = HashSet()
-    let collect mEnv = function
-        | Var id as e ->
-            if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore
+    let collect _ = function
+        | FunCall (Var id, _) as e ->
+            d.Add id.Name |> ignore
             e
         | e -> e
     mapTopLevel (mapEnv collect id) [f] |> ignore

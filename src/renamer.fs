@@ -54,9 +54,7 @@ module private RenamerImpl =
     let computeContextTable text =
         let contextTable = new Dictionary<(char*char), int>()
         for prev, next in Seq.pairwise text do
-            match contextTable.TryGetValue((prev, next)) with
-            | true, n -> contextTable.[(prev, next)] <- n + 1
-            | false, _ -> contextTable.[(prev, next)] <- 1
+            contextTable.[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
         contextTable
 
     // /!\ This function is a performance bottleneck.
@@ -348,7 +346,7 @@ module private RenamerImpl =
     // Compute list of variables names, based on frequency
     let computeListOfNames text =
         let charCounts = Seq.countBy id text |> dict
-        let count c = match charCounts.TryGetValue(c) with true, res -> res | _ -> 0
+        let count c = match charCounts.TryGetValue(c) with _, res -> res
         let letters = ['a'..'z'] @ ['A'..'Z'] @ ['_']
         [
             // First, use most frequent letters

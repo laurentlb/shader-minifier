@@ -11,20 +11,18 @@ open Options.Globals
 module private VariableInlining =
 
     // Return the list of variables used in the statements, with the number of references.
-    let collectReferences stmtList =
-        let count = Dictionary<string, int>()
+    let countReferences stmtList = // INCORRECT: the counts of shadowing variables are merged!
+        let counts = Dictionary<string, int>()
         let collectLocalUses _ = function
             | Var v as e ->
-                match count.TryGetValue(v.Name) with
-                | true, n -> count.[v.Name] <- n + 1
-                | false, _ -> count.[v.Name] <- 1
+                counts.[v.Name] <- match counts.TryGetValue(v.Name) with _, n -> n + 1
                 e
             | e -> e
         for expr in stmtList do
             mapStmt (mapEnv collectLocalUses id) expr |> ignore
-        count
+        counts
 
-    let collectReferencesSet expr  =
+    let collectReferencesSet expr  = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
         let result = HashSet<Ident>()
         let collectLocalUses _ = function
             | Var v as e -> result.Add(v) |> ignore<bool>; e
@@ -75,8 +73,8 @@ module private VariableInlining =
             | Jump (_, Some e) -> localExpr <- e :: localExpr
             | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
 
-        let localReferences = collectReferences [for e in localExpr -> Expr e]
-        let allReferences = collectReferences block
+        let localReferences = countReferences [for e in localExpr -> Expr e]
+        let allReferences = countReferences block
 
         for def in localDefs do
             let ident, isConst = def.Value
@@ -197,11 +195,23 @@ let resolve topLevel =
 
 module private FunctionInlining =
 
+    // Gets the list of call sites in this function
     type CallSite = {
         ident: Ident
         varsInScope: string list
         argCount: int
     }
+    let findCallSites block =
+        let callSites = List()
+        let collect (mEnv : MapEnv) = function
+            | FunCall (Var id, argExprs) as e ->
+                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; argCount = argExprs.Length }
+                e
+            | e -> e
+        mapStmt (mapEnv collect id) block |> ignore
+        callSites |> Seq.toList
+
+    // This function assumes that user-defined functions are NOT overloaded
     type FuncInfo = {
         func: TopLevel
         funcType: FunctionType
@@ -209,29 +219,16 @@ module private FunctionInlining =
         name: string
         callSites: CallSite list
     }
-
-    // get the list of external values the block depends on
-    let computeDependencies block =
-        let d = List()
-        let collect (mEnv : MapEnv) = function
-            | FunCall (Var id, argExprs) as e ->
-                if not (mEnv.vars.ContainsKey(id.Name)) then // mEnv.fns is empty because we're only visiting this function.
-                    d.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; argCount = argExprs.Length }
-                e
-            | e -> e
-        mapStmt (mapEnv collect id) block |> ignore
-        d |> Seq.toList
-
-    // This function assumes that functions are NOT overloaded
-    let computeAllDependencies code =
+    let findFuncInfos code =
         let functions = code |> List.choose (function
             | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
             | _ -> None)
-        let nodes = functions |> List.map (fun (funcType, name, block, f) ->
-            let callSites = computeDependencies block
+        let funcInfos = functions |> List.map (fun (funcType, name, block, f) ->
+            let callSites = findCallSites block
+                            // only return calls to user-defined functions
                             |> List.filter (fun callSite -> functions |> List.exists (fun (_,n,_,_) -> callSite.ident.Name = n))
             { FuncInfo.func = f; funcType = funcType; name = name; callSites = callSites; body = block })
-        nodes
+        funcInfos
 
     // To ensure correctness, we verify if it's safe to inline.
     //
@@ -280,30 +277,30 @@ module private FunctionInlining =
             not shadowedGlobal // [A]
         ok
 
-    let tryMarkFunctionToInline node callSite =
+    let tryMarkFunctionToInline funcInfo callSite =
         // We also need to check that inlining won't fail (inlining can fail because it can be forced by "i_").
-        if node.funcType.args.Length = callSite.argCount then
-            if verifyArgsUses node.func callSite then
+        if funcInfo.funcType.args.Length = callSite.argCount then
+            if verifyArgsUses funcInfo.func callSite then
                 // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
                 // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
                 callSite.ident.ToBeInlined <- true
-                node.funcType.fName.ToBeInlined <- true
+                funcInfo.funcType.fName.ToBeInlined <- true
 
     let markInlinableFunctions code =
-        let nodes = computeAllDependencies code
-        for node in nodes do
-            let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
-            let isExternal = options.hlsl && node.funcType.semantics <> []
+        let funcInfos = findFuncInfos code
+        for funcInfo in funcInfos do
+            let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
+            let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
             if canBeRenamed && not isExternal then
-                let hasOnlyInParameters = not node.funcType.hasOutOrInoutParams
-                if hasOnlyInParameters then // [F]
-                    let callSites = nodes |> List.map (fun n -> n.callSites) |> List.concat |> List.filter (fun n -> n.ident.Name = node.name)
-                    let isCalledExactlyOnce = callSites.Length = 1
-                    if isCalledExactlyOnce then // [B]
-                        match node.body with
+                if not funcInfo.funcType.hasOutOrInoutParams then // [F]
+                    let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.ident.Name = funcInfo.name)
+                    match callSites with
+                    | [callSite] -> // [B]
+                        match funcInfo.body with
                         | Jump (JumpKeyword.Return, Some _)
                         | Block [Jump (JumpKeyword.Return, Some _)] -> // [C]
-                            tryMarkFunctionToInline node callSites.Head
+                            tryMarkFunctionToInline funcInfo callSite
                         | _ -> ()
+                    | _ -> ()
 
 let markInlinableFunctions = FunctionInlining.markInlinableFunctions

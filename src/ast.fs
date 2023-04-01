@@ -143,14 +143,14 @@ type Shader = {
 }
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
-// while also collecting variable declarations along the way.
+// while also collecting visible variable and function declarations along the way.
 
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<string, Type * DeclElt>
-    fns: Map<string, FunctionType * Stmt>
+    vars: Map<string, Type * DeclElt> // this map assumes that variables are never shadowed
+    fns: Map<string, FunctionType * Stmt> // this map assumes that user-defined functions are never overloaded
     isInWritePosition: bool
 }
 
@@ -194,11 +194,11 @@ and mapDecl env (ty, vars) =
     let env, vars = foldList env aux vars
     env, (ty, vars)
 
-let rec mapStmt env i =
+let rec mapStmt env stmt =
     let aux = function
-        | Block b ->
-            let _, b = foldList env mapStmt b
-            env, Block b
+        | Block stmts ->
+            let _, stmts = foldList env mapStmt stmts
+            env, Block stmts
         | Expr e -> env, Expr (mapExpr env e)
         | Decl d ->
             let env, res = mapDecl env d
@@ -230,7 +230,7 @@ let rec mapStmt env i =
                 let _, sl = foldList env mapStmt sl
                 (mapLabel l, sl)
             env, Switch (mapExpr env e, List.map mapCase cl)
-    let env, res = aux i
+    let env, res = aux stmt
     env, env.fStmt res
 
 let mapTopLevel env li =
@@ -240,9 +240,9 @@ let mapTopLevel env li =
             let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let env, args = foldList env mapDecl fct.args
-            let env = {env with fns = env.fns.Add(fct.fName.Name, (fct, body))}
-            env, Function({ fct with args = args }, snd (mapStmt env body))
+            let envWithFunction = {env with fns = env.fns.Add(fct.fName.Name, (fct, body))}
+            let envWithFunctionAndArgs, args = foldList envWithFunction mapDecl fct.args
+            envWithFunction, Function({ fct with args = args }, snd (mapStmt envWithFunctionAndArgs body))
         | e -> env, e)
     res
 
