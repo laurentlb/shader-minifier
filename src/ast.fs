@@ -13,10 +13,12 @@ type Ident(name: string) =
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
 
+    //member val isVarRead: bool = false with get, set
+    member val isVarWrite: bool = false with get, set
     member val Declaration: Declaration = Declaration.Unknown with get, set
     member this.VarDecl = match this.Declaration with
-                           | Declaration.Variable rv -> Some rv
-                           | _ -> None
+                          | Declaration.Variable rv -> Some rv
+                          | _ -> None
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]

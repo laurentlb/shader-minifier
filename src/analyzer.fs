@@ -81,7 +81,7 @@ module private VariableInlining =
             if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
 
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                | (true, 1), (true, 1) when isConst-> ident.ToBeInlined <- true
+                | (true, 1), (true, 1) when isConst-> ident.ToBeInlined <- true // here inlining can break if the decl init uses variables that are mutated between decl and use
                 | (false, _), (false, _) -> ident.ToBeInlined <- true
                 | _ -> ()
 
@@ -99,7 +99,7 @@ module private VariableInlining =
             | e when isTrivialExpr e -> true
             | _ when not options.aggroInlining -> false
             // Allow a few things to be inlined with aggroInlining
-            | Var v
+            | Var v // here inlining can break if the decl init uses variables that are mutated between decl and use
             | Dot (Var v, _) -> isEffectivelyConst v
             | FunCall(Op op, args) ->
                 not (Builtin.assignOps.Contains op) &&
@@ -141,10 +141,11 @@ let markWrites topLevel =
     let findWrites (env: MapEnv) = function
         | Var v as e when env.isInWritePosition && v.VarDecl <> None ->
             v.VarDecl.Value.isEverWrittenAfterDecl <- true
+            v.isVarWrite <- true
             e
         | FunCall(Var v, args) as e ->
-            match env.fns.TryFind v.Name with
-            | Some (fct, _) when fct.hasOutOrInoutParams ->
+            match v.Declaration with
+            | Declaration.Func funcType when funcType.hasOutOrInoutParams ->
                 // We need to look up which functions might write via "out" parameters.
                 // If any parameter to the function could be written to (e.g., "out"), mark all
                 // variables in the parameters. We don't attempt to match up param-for-param but
@@ -164,30 +165,31 @@ let resolve topLevel =
         | Var v as e ->
             match (env.vars.TryFind v.Name, env.fns.TryFind v.Name) with
             | Some (_, decl), _ -> v.Declaration <- decl.name.Declaration
-            | _, Some (ft, _) -> v.Declaration <- Declaration.Func ft
+            | _, Some (ft, _) -> v.Declaration <- ft.fName.Declaration
             | _ -> () // TODO: resolve builtin functions
             e
         | e -> e
 
     let resolveDecl scope (ty, li) =
         for elt in li do
-            let resolved = new VarDecl(ty, elt, scope)
-            elt.name.Declaration <- Declaration.Variable resolved
+            let varDecl = new VarDecl(ty, elt, scope)
+            elt.name.Declaration <- Declaration.Variable varDecl
 
     let resolveStmt = function
         | Decl d as stmt -> resolveDecl VarScope.Local d; stmt
         | ForD(d, _, _, _) as stmt -> resolveDecl VarScope.Local d; stmt
         | x -> x
 
-    let resolveTopLevel = function
+    let resolveGlobalsAndParameters = function
         | TLDecl decl -> resolveDecl VarScope.Global decl
-        | Function (ty, _) ->
-            for decl in ty.args do resolveDecl VarScope.Parameter decl
+        | Function (funcType, _) ->
+            for decl in funcType.args do resolveDecl VarScope.Parameter decl
+            funcType.fName.Declaration <- Declaration.Func funcType
         | _ -> ()
 
-    // First, visit declarations.
+    // First, visit all declarations.
     for tl in topLevel do
-        resolveTopLevel tl
+        resolveGlobalsAndParameters tl
     mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
     // Then, associate the references.
     mapTopLevel (mapEnv resolveExpr id) topLevel

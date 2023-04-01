@@ -28,6 +28,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/numbers.frag.expected tests/unit/numbers.frag
 --preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess.frag.expected tests/unit/preprocess.frag
 --preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess_if.frag.expected tests/unit/preprocess_if.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/shadowing.frag.expected tests/unit/shadowing.frag
 
 # Unused removal tests
 

@@ -1,0 +1,15 @@
+float f(float g)
+{
+  float f=0.;
+  f+=f+++++f;
+  return f;
+}
+float g(float f)
+{
+  {
+    f++;
+    float f=f+1.;
+    f+=9.;
+  }
+  return f;
+}
