@@ -51,44 +51,39 @@ module private VariableInlining =
     // The init is considered trivial when:
     //  - it doesn't depend on a variable
     //  - it depends only on variables proven constants
-    let markSafeInlinableVariables li =
-        let markSafeInlinableLocalVariables block =
-            // Variables that are defined in this scope.
-            // The boolean indicate if the variable initialization is const.
-            let localDefs = Dictionary<string, (Ident * bool)>()
-            // List of expressions in the current block. Do not look in sub-blocks.
-            let mutable localExpr = []
-            for stmt: Stmt in block do
-                match stmt with
-                | Decl (_, declElts)
-                | ForD ((_, declElts), _, _, _) ->
-                    for def in declElts do
-                        // can only inline if it has a value
-                        match def.init with
-                        | None -> ()
-                        | Some init ->
-                            localExpr <- init :: localExpr
-                            let deps = collectReferencesSet init
-                            let isConst = deps |> Seq.forall isEffectivelyConst
-                            localDefs.[def.name.Name] <- (def.name, isConst)
-                | Expr e
-                | Jump (_, Some e) -> localExpr <- e :: localExpr
-                | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
+    let markSafelyInlinableLocals block =
+        // Variables that are defined in this scope.
+        // The boolean indicate if the variable initialization is const.
+        let localDefs = Dictionary<string, (Ident * bool)>()
+        // List of expressions in the current block. Do not look in sub-blocks.
+        let mutable localExpr = []
+        for stmt: Stmt in block do
+            match stmt with
+            | Decl (_, declElts)
+            | ForD ((_, declElts), _, _, _) ->
+                for def in declElts do
+                    // can only inline if it has a value
+                    match def.init with
+                    | None -> ()
+                    | Some init ->
+                        localExpr <- init :: localExpr
+                        let deps = collectReferencesSet init
+                        let isConst = deps |> Seq.forall isEffectivelyConst
+                        localDefs.[def.name.Name] <- (def.name, isConst)
+            | Expr e
+            | Jump (_, Some e) -> localExpr <- e :: localExpr
+            | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
 
-            let localReferences = countReferences [for e in localExpr -> Expr e]
-            let allReferences = countReferences block
+        let localReferences = countReferences [for e in localExpr -> Expr e]
+        let allReferences = countReferences block
 
-            for def in localDefs do
-                let ident, isConst = def.Value
-                if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
-                    match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                    | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
-                    | (_, 0), (_, 0) -> ident.ToBeInlined <- true
-                    | _ -> ()
-        let mapStmt = function
-            | Block b as e -> markSafeInlinableLocalVariables b; e
-            | e -> e
-        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
+        for def in localDefs do
+            let ident, isConst = def.Value
+            if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
+                match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
+                | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true
+                | (_, 0), (_, 0) -> ident.ToBeInlined <- true
+                | _ -> ()
 
     let isTrivialExpr = function
         | Var v when v.Name = "true" || v.Name = "false" -> true
@@ -113,39 +108,41 @@ module private VariableInlining =
         | _  -> false
 
     // Inline some variables, regardless of where they are used or how often they are used.
-    let inlineUnwrittenVariablesWithSimpleInit li =
-        let visitInnerDecl isTopLevel = function
-            | (ty: Type, defs) when not ty.IsExternal ->
-                for (def:DeclElt) in defs do
-                    if not def.name.VarDecl.Value.isEverWrittenAfterDecl then
-                        match def.init with
-                        | None ->
-                            // Top-level values are special, in particular in HLSL. Keep them for now.
-                            if not isTopLevel then
-                                // Never-written locals without init should be unused: inline (remove) them.
-                                def.name.ToBeInlined <- true
-                        | Some init ->
-                            if canBeInlined init then
-                                // Never-written locals and globals are inlined when their value is "simple enough".
-                                // This can increase non-compressed size but decreases compressed size.
-                                def.name.ToBeInlined <- true
+    let markUnwrittenVariablesWithSimpleInit isTopLevel = function
+        | (ty: Type, defs) when not ty.IsExternal ->
+            for (def:DeclElt) in defs do
+                if not def.name.VarDecl.Value.isEverWrittenAfterDecl then
+                    match def.init with
+                    | None ->
+                        // Top-level values are special, in particular in HLSL. Keep them for now.
+                        if not isTopLevel then
+                            // Never-written locals without init should be unused: inline (remove) them.
+                            def.name.ToBeInlined <- true
+                    | Some init ->
+                        if canBeInlined init then
+                            // Never-written locals and globals are inlined when their value is "simple enough".
+                            // This can increase non-compressed size but decreases compressed size.
+                            def.name.ToBeInlined <- true
+        | _ -> ()
+
+    let markInlinableVariables li =
+        let mapStmt stmt =
+            match stmt with
+            | Decl d -> markUnwrittenVariablesWithSimpleInit false d
+            | ForD (d, _, _, _) -> markUnwrittenVariablesWithSimpleInit false d
+            | Block b -> markSafelyInlinableLocals b
             | _ -> ()
-        let mapStmt = function
-            | Decl d as stmt -> visitInnerDecl false d; stmt
-            | ForD (d, _, _, _) as stmt -> visitInnerDecl false d; stmt
-            | s -> s
+            stmt
         // Visit locals
         mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
         // Visit globals
         for tl in li do
             match tl with
-            | TLDecl d -> visitInnerDecl true d; ()
+            | TLDecl d -> markUnwrittenVariablesWithSimpleInit true d; ()
             | _ -> ()
         ()
 
-let markInlinableVariables li =
-    VariableInlining.inlineUnwrittenVariablesWithSimpleInit li
-    VariableInlining.markSafeInlinableVariables li
+let markInlinableVariables = VariableInlining.markInlinableVariables
 
 let markWrites topLevel =
     let findWrites (env: MapEnv) = function
