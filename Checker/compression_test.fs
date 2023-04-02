@@ -3,6 +3,8 @@
 open System.Runtime.InteropServices
 open System.IO
 open System.Text
+open System.Diagnostics
+open System
 
 #nowarn "51" // use of native pointers
 
@@ -38,6 +40,12 @@ let testFiles = [
     "yx_long_way_from_home.frag"
 ]
 
+type CompressionResult = {
+    minifiedSize: int
+    compressedSize: float
+    timeSpan: TimeSpan
+}
+
 let writer = new StringWriter()
 
 let log fmt =
@@ -49,18 +57,20 @@ let log fmt =
 
 let compressionTest args files =
     Options.init(args)
-    let minified =
+    let stopwatch = Stopwatch.StartNew()
+    let minified, elapsed =
         use out = new StringWriter()
         let shaders, exportedNames = ShaderMinifier.minifyFiles [|for f in files -> "tests/real/" + f|]
         Formatter.print out shaders exportedNames Options.Text
-        out.ToString().ToCharArray()
+        out.ToString().ToCharArray(), stopwatch.Elapsed
 
     let pointer = &&minified.[0]
     log "%-40s " (match files with [f] -> f | f::_ -> f + "..." | [] -> "?")
     log "%5d " minified.Length
     let compressedSize = Crinkler.ApproximateModels4k(pointer, minified.Length)
     log "=> %8.3f\n" compressedSize
-    minified.Length, float compressedSize
+    printfn "%2.3fs" (float elapsed.TotalMilliseconds / 1000.0)
+    { CompressionResult.minifiedSize = minified.Length; compressedSize = float compressedSize; timeSpan = elapsed }
 
 let compressFile (file: string) =
     let langArg = if file.EndsWith("hlsl") then [|"--hlsl"|] else [||]
@@ -79,8 +89,10 @@ let run () =
 
     // Tests for individual files.
     let sizes = multifileOutput :: List.map compressFile testFiles
-    let minifiedSum = List.sumBy fst sizes
-    let compressedSum = List.sumBy snd sizes
+    let minifiedSum = sizes |> List.sumBy (fun r -> r.minifiedSize)
+    let compressedSum = sizes |> List.sumBy (fun r -> r.compressedSize)
+    let elapsedMilliseconds = sizes |> List.sumBy (fun r -> r.timeSpan.TotalMilliseconds)
     log "Total: %5d => %9.3f\n" minifiedSum compressedSum
+    printfn "in %2.3fs" (elapsedMilliseconds / 1000.0)
 
     File.WriteAllText("tests/compression_results.log", writer.ToString())
