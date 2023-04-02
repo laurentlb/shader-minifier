@@ -537,18 +537,11 @@ let private simplifyStmt = function
     | e -> e
 
 let rec iterateSimplifyAndInline li =
-    let li =
-        li
-        |> Analyzer.resolve
-        |> Analyzer.markWrites
-        |> Analyzer.maybeInlineVariables
     if not options.noInlining then
+        Analyzer.resolve li
+        Analyzer.markWrites li
         Analyzer.markInlinableFunctions li
-        let mapExpr _ e = e
-        let mapStmt = function
-            | Block b as e -> Analyzer.markInlinableVariables b; e
-            | e -> e
-        mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
+        Analyzer.markInlinableVariables li
     let didInline = ref false
     let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
 
@@ -608,10 +601,10 @@ let private computeDependencies f =
     let d = HashSet()
     let collect _ = function
         | FunCall (Var id, _) as e ->
-            d.Add id.Name |> ignore
+            d.Add id.Name |> ignore<bool>
             e
         | e -> e
-    mapTopLevel (mapEnv collect id) [f] |> ignore
+    mapTopLevel (mapEnv collect id) [f] |> ignore<TopLevel list>
     d |> Seq.toList
 
 // This function assumes that functions are NOT overloaded

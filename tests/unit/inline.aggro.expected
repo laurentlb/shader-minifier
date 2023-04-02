@@ -66,3 +66,16 @@ float noinl179(float x)
   x=1e2;
   return old+x;
 }
+float inlineWithShadowing(float x)
+{
+  if(x<0.)
+    {
+      float inl=3.4;
+      inl++;
+    }
+  return sin(2.5);
+}
+float inline_uninitialized()
+{
+  return c;
+}

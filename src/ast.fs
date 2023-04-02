@@ -13,10 +13,12 @@ type Ident(name: string) =
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
 
-    member val Resolved: ResolvedIdent = ResolvedIdent.Unresolved with get, set
-    member this.AsVarUse = match this.Resolved with
-                           | ResolvedIdent.Variable rv -> Some rv
-                           | _ -> None
+    //member val isVarRead: bool = false with get, set
+    member val isVarWrite: bool = false with get, set
+    member val Declaration: Declaration = Declaration.Unknown with get, set
+    member this.VarDecl = match this.Declaration with
+                          | Declaration.Variable rv -> Some rv
+                          | _ -> None
 
      // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
@@ -33,17 +35,15 @@ type Ident(name: string) =
     override this.GetHashCode() = name.GetHashCode()
     override this.ToString() = "ident: " + name
 
-and [<NoComparison>] [<RequireQualifiedAccess>] ResolvedIdent =
-    | Unresolved
-    | Variable of VarUse
-    | Func of CallSite
-and VarUse(ty, decl, scope) =
+and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
+    | Unknown
+    | Variable of VarDecl
+    | Func of FunctionType
+and VarDecl(ty, decl, scope) =
     member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
-    member val isWrite = false with get, set
-and CallSite(funcType) =
-    member val funcType = funcType with get, set
+    member val isEverWrittenAfterDecl = false with get, set
     
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
@@ -149,9 +149,9 @@ type Shader = {
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
-    vars: Map<string, Type * DeclElt> // this map assumes that variables are never shadowed
+    vars: Map<string, Type * DeclElt>
     fns: Map<string, FunctionType * Stmt> // this map assumes that user-defined functions are never overloaded
-    isInWritePosition: bool
+    isInWritePosition: bool // used for findWrites only
 }
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isInWritePosition = false}

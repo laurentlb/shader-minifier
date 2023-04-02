@@ -128,5 +128,5 @@ let private initPrivate argv needFiles =
 
 let flagsHelp = lazy (argParser.Value.PrintUsage(message = helpTextMessage))
 
-let init argv = initPrivate argv false |> ignore
+let init argv = initPrivate argv false |> ignore<bool>
 let initFiles argv = initPrivate argv true

@@ -65,6 +65,14 @@ float E3(float bad3,float ok)
 {
   return bad3+=1.;
 }
+float E4(float bad4,float ok)
+{
+  return watchout(bad4);
+}
+float E5(float bad5,float ok)
+{
+  return inuit(bad5);
+}
 float F2(out float ff)
 {
   return 7.;
@@ -87,7 +95,7 @@ float f()
   sep++;
   float _D1=D1(4.,5.);
   sep++;
-  float _E1=E1(6.,10.),_E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E3=E3(6.,10.),_E4=watchout(6.),_E5=inuit(6.);
+  float _E1=E1(6.,10.),_E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E3=E3(6.,10.),_E4=E4(6.,10.),_E5=E5(6.,10.);
   sep++;
   float o,_F2=F2(o),_F3=F3(o);
   sep++;

@@ -234,7 +234,7 @@ module private RenamerImpl =
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v
             | e -> e
-        mapExpr (mapEnv mapper id) expr |> ignore
+        mapExpr (mapEnv mapper id) expr |> ignore<Expr>
 
     let renDecl isTopLevel env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
@@ -268,15 +268,15 @@ module private RenamerImpl =
         let d = HashSet()
         let collect mEnv = function
             | Var id as e ->
-                if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore
+                if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore<bool>
                 e
             | FunCall(Var id, li) as e ->
                 match env.funRenames.TryFind id.Name with
-                | Some m -> if not (m.ContainsKey li.Length) then d.Add id.Name |> ignore
-                | None -> d.Add id.Name |> ignore
+                | Some m -> if not (m.ContainsKey li.Length) then d.Add id.Name |> ignore<bool>
+                | None -> d.Add id.Name |> ignore<bool>
                 e
             | e -> e
-        mapStmt (mapEnv collect id) block |> ignore
+        mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
         let set = HashSet(Seq.choose env.varRenames.TryFind d)
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
         let reusable = reusable |> Seq.filter (fun x -> not (List.contains x.Value options.noRenamingList))
