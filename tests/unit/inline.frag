@@ -104,3 +104,21 @@ float noinl179(float x) {
 	x = 100.0;
 	return old + x;
 }
+
+// repro for a bug
+float inlineWithShadowing(float x) {
+	float inl = sin(2.5);
+	if (x < 0.)
+	{
+	    float inl = 3.4;
+		inl++;
+	}
+	return inl;
+}
+
+// repro for a bug
+float inline_uninitialized()
+{
+    float c;
+    return c;
+}

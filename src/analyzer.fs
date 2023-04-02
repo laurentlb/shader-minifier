@@ -42,25 +42,17 @@ module private VariableInlining =
     // Mark variables as inlinable when possible.
     // Variables are always safe to inline when all of:
     //  - the variable is used only once in the current block
-    //  - the variable is not used in a sub-block (e.g. inside a loop)
-    //  - the init value refers only to constants
-    // When aggressive inlining is enabled, additionally inline when all of:
-    //  - the variable never appears in a writable position (is never written to
-    //    after initalization)
-    //  - the init value is has no dependency
-    // The init is considered trivial when:
-    //  - it doesn't depend on a variable
-    //  - it depends only on variables proven constants
+    //  - the variable is not used in a sub-block (e.g. inside a loop), for runtime performance
+    //  - the init value refers only to variables that are never written to, and functions that are builtin and pure
     let markSafelyInlinableLocals block =
         // Variables that are defined in this scope.
         // The boolean indicate if the variable initialization is const.
         let localDefs = Dictionary<string, (Ident * bool)>()
-        // List of expressions in the current block. Do not look in sub-blocks.
+        // List of all expressions in the current block. Do not look in sub-blocks.
         let mutable localExpr = []
         for stmt: Stmt in block do
             match stmt with
-            | Decl (_, declElts)
-            | ForD ((_, declElts), _, _, _) ->
+            | Decl (_, declElts) ->
                 for def in declElts do
                     // can only inline if it has a value
                     match def.init with
@@ -97,7 +89,7 @@ module private VariableInlining =
         | e when isTrivialExpr e -> true
         | _ when not options.aggroInlining -> false
         // Allow a few things to be inlined with aggroInlining
-        | Var v // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
+        | Var v
         | Dot (Var v, _) -> isEffectivelyConst v
         | FunCall(Op op, args) ->
             not (Builtin.assignOps.Contains op) &&
@@ -107,7 +99,12 @@ module private VariableInlining =
                 args |> List.forall isTrivialExpr
         | _  -> false
 
-    // Inline some variables, regardless of where they are used or how often they are used.
+    // Inline global or local variables, regardless of where they are used or how often they are used, when all of:
+    //  - it is not external
+    //  - it is never written after declaration
+    //  - it is either:
+    //      - an uninitialized local (remove it). this breaks the shader if the local is read.
+    //      - the init value is a simple constant, or with aggro inlining, it uses only builtin functions and variables never written to.
     let markUnwrittenVariablesWithSimpleInit isTopLevel = function
         | (ty: Type, defs) when not ty.IsExternal ->
             for (def:DeclElt) in defs do
