@@ -19,7 +19,7 @@ module private VariableInlining =
                 e
             | e -> e
         for expr in stmtList do
-            mapStmt (mapEnv collectLocalUses id) expr |> ignore
+            mapStmt (mapEnv collectLocalUses id) expr |> ignore<MapEnv * Stmt>
         counts
 
     let collectReferencesSet expr  = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
@@ -131,7 +131,7 @@ module private VariableInlining =
             | _ -> ()
             stmt
         // Visit locals
-        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
+        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
         // Visit globals
         for tl in li do
             match tl with
@@ -156,11 +156,11 @@ let markWrites topLevel =
                 // just mark everything if anything could write, for simplicity.
                 let newEnv = {env with isInWritePosition = true}
                 for arg in args do
-                    (mapExpr newEnv arg: Expr) |> ignore
+                    (mapExpr newEnv arg: Expr) |> ignore<Expr>
                 e
             | _ -> e
         | e -> e
-    mapTopLevel (mapEnv findWrites id) topLevel |> ignore
+    mapTopLevel (mapEnv findWrites id) topLevel |> ignore<TopLevel list>
 
 // Create an ident.Declaration for each declaration in the file.
 // Give each Ident a reference to that Declaration.
@@ -196,7 +196,7 @@ let resolve topLevel =
         resolveGlobalsAndParameters tl
     mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
     // Then, associate the references.
-    mapTopLevel (mapEnv resolveExpr id) topLevel |> ignore
+    mapTopLevel (mapEnv resolveExpr id) topLevel |> ignore<TopLevel list>
 
 
 module private FunctionInlining =
@@ -214,7 +214,7 @@ module private FunctionInlining =
                 callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; argCount = argExprs.Length }
                 e
             | e -> e
-        mapStmt (mapEnv collect id) block |> ignore
+        mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
         callSites |> Seq.toList
 
     // This function assumes that user-defined functions are NOT overloaded
@@ -274,7 +274,7 @@ module private FunctionInlining =
                     shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
                 e
             | e -> e
-        mapTopLevel (mapEnv visitArgUses id) [func] |> ignore
+        mapTopLevel (mapEnv visitArgUses id) [func] |> ignore<TopLevel list>
 
         let argsAreUsedAtMostOnce = not (argUsageCounts.Values |> Seq.exists (fun n -> n > 1))
         let ok =

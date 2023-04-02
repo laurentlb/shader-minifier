@@ -601,10 +601,10 @@ let private computeDependencies f =
     let d = HashSet()
     let collect _ = function
         | FunCall (Var id, _) as e ->
-            d.Add id.Name |> ignore
+            d.Add id.Name |> ignore<bool>
             e
         | e -> e
-    mapTopLevel (mapEnv collect id) [f] |> ignore
+    mapTopLevel (mapEnv collect id) [f] |> ignore<TopLevel list>
     d |> Seq.toList
 
 // This function assumes that functions are NOT overloaded

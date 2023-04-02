@@ -20,13 +20,13 @@ type private ParseImpl() =
         do! skipString "/*"
         do! skipManyTill anyChar (skipString "*/") }
 
-    let ws = (many (choice [spaces1; commentLine; commentBlock] <?> "") |>> ignore)
+    let ws = (many (choice [spaces1; commentLine; commentBlock] <?> "") |>> ignore<unit list>)
 
     let skipComment = skipMany (commentLine <|> commentBlock)
 
     let verbatim = parse {
         do! skipString "//["
-        do! many spaces1 |>> ignore
+        do! many spaces1 |>> ignore<unit list>
         let! content = manyCharsTill anyChar (pstring "//]")
         do! ws
         return content }
@@ -183,7 +183,7 @@ type private ParseImpl() =
     }
 
     let structDecl =
-        let semi = if options.hlsl then opt (ch ';') |>> ignore else ch ';'
+        let semi = if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
         (structSpecifier .>> semi) |>> Ast.TypeDecl
 
     // eg. "const out int", "uniform float", "int[2][3]"
@@ -256,7 +256,7 @@ type private ParseImpl() =
         let! ret = blockSpecifier (Printer.typeToS ty + s)
                       |>> Ast.TypeDecl
         // semi-colon seems to be optional in hlsl
-        do! if options.hlsl then opt (ch ';') |>> ignore else ch ';'
+        do! if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
         return ret
     }
 
