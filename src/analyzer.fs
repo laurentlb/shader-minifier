@@ -51,63 +51,69 @@ module private VariableInlining =
     // The init is considered trivial when:
     //  - it doesn't depend on a variable
     //  - it depends only on variables proven constants
-    let markInlinableLocalVariables block =
-        // Variables that are defined in this scope.
-        // The boolean indicate if the variable initialization is const.
-        let localDefs = Dictionary<string, (Ident * bool)>()
-        // List of expressions in the current block. Do not look in sub-blocks.
-        let mutable localExpr = []
-        for stmt: Stmt in block do
-            match stmt with
-            | Decl (_, li) ->
-                for def in li do
-                    // can only inline if it has a value
-                    match def.init with
-                    | None -> ()
-                    | Some init ->
-                        localExpr <- init :: localExpr
-                        let deps = collectReferencesSet init
-                        let isConst = deps |> Seq.forall isEffectivelyConst
-                        localDefs.[def.name.Name] <- (def.name, isConst)
-            | Expr e
-            | Jump (_, Some e) -> localExpr <- e :: localExpr
-            | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
+    let markSafeInlinableVariables li =
+        let markSafeInlinableLocalVariables block =
+            // Variables that are defined in this scope.
+            // The boolean indicate if the variable initialization is const.
+            let localDefs = Dictionary<string, (Ident * bool)>()
+            // List of expressions in the current block. Do not look in sub-blocks.
+            let mutable localExpr = []
+            for stmt: Stmt in block do
+                match stmt with
+                | Decl (_, declElts)
+                | ForD ((_, declElts), _, _, _) ->
+                    for def in declElts do
+                        // can only inline if it has a value
+                        match def.init with
+                        | None -> ()
+                        | Some init ->
+                            localExpr <- init :: localExpr
+                            let deps = collectReferencesSet init
+                            let isConst = deps |> Seq.forall isEffectivelyConst
+                            localDefs.[def.name.Name] <- (def.name, isConst)
+                | Expr e
+                | Jump (_, Some e) -> localExpr <- e :: localExpr
+                | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
 
-        let localReferences = countReferences [for e in localExpr -> Expr e]
-        let allReferences = countReferences block
+            let localReferences = countReferences [for e in localExpr -> Expr e]
+            let allReferences = countReferences block
 
-        for def in localDefs do
-            let ident, isConst = def.Value
-            if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
-                match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
-                | (_, 0), (_, 0) -> ident.ToBeInlined <- true
-                | _ -> ()
+            for def in localDefs do
+                let ident, isConst = def.Value
+                if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
+                    match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
+                    | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
+                    | (_, 0), (_, 0) -> ident.ToBeInlined <- true
+                    | _ -> ()
+        let mapStmt = function
+            | Block b as e -> markSafeInlinableLocalVariables b; e
+            | e -> e
+        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
+
+    let isTrivialExpr = function
+        | Var v when v.Name = "true" || v.Name = "false" -> true
+        | Int _
+        | Float _ -> true
+        | _ -> false
+
+    // Detect if a variable can be inlined, based on its value.
+    let canBeInlined (init: Expr) =
+        match init with
+        | e when isTrivialExpr e -> true
+        | _ when not options.aggroInlining -> false
+        // Allow a few things to be inlined with aggroInlining
+        | Var v // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
+        | Dot (Var v, _) -> isEffectivelyConst v
+        | FunCall(Op op, args) ->
+            not (Builtin.assignOps.Contains op) &&
+                args |> List.forall isTrivialExpr
+        | FunCall(Var fct, args) ->
+            Builtin.pureBuiltinFunctions.Contains fct.Name &&
+                args |> List.forall isTrivialExpr
+        | _  -> false
 
     // Inline some variables, regardless of where they are used or how often they are used.
-    let inlineUnwrittenVariablesWithSimpleInit topLevel =
-        let isTrivialExpr = function
-            | Var v when v.Name = "true" || v.Name = "false" -> true
-            | Int _
-            | Float _ -> true
-            | _ -> false
-
-        // Detect if a variable can be inlined, based on its value.
-        let canBeInlined (init: Expr) =
-            match init with
-            | e when isTrivialExpr e -> true
-            | _ when not options.aggroInlining -> false
-            // Allow a few things to be inlined with aggroInlining
-            | Var v // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
-            | Dot (Var v, _) -> isEffectivelyConst v
-            | FunCall(Op op, args) ->
-                not (Builtin.assignOps.Contains op) &&
-                    args |> List.forall isTrivialExpr
-            | FunCall(Var fct, args) ->
-                Builtin.pureBuiltinFunctions.Contains fct.Name &&
-                    args |> List.forall isTrivialExpr
-            | _  -> false
-
+    let inlineUnwrittenVariablesWithSimpleInit li =
         let visitInnerDecl isTopLevel = function
             | (ty: Type, defs) when not ty.IsExternal ->
                 for (def:DeclElt) in defs do
@@ -128,18 +134,18 @@ module private VariableInlining =
             | Decl d as stmt -> visitInnerDecl false d; stmt
             | ForD (d, _, _, _) as stmt -> visitInnerDecl false d; stmt
             | s -> s
-        let mapTLDecl = function
-            | TLDecl d as tl -> visitInnerDecl true d; tl
-            | d -> d
-        // Visit globals and locals, not parameters.
-        topLevel
-        |> mapTopLevel (mapEnv (fun _ -> id) mapStmt)
-        |> List.map mapTLDecl
+        // Visit locals
+        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
+        // Visit globals
+        for tl in li do
+            match tl with
+            | TLDecl d -> visitInnerDecl true d; ()
+            | _ -> ()
+        ()
 
-let markInlinableLocalVariables = VariableInlining.markInlinableLocalVariables
-let inlineUnwrittenVariablesWithSimpleInit topLevel =
-    if options.noInlining then topLevel
-    else VariableInlining.inlineUnwrittenVariablesWithSimpleInit topLevel
+let markInlinableVariables li =
+    VariableInlining.inlineUnwrittenVariablesWithSimpleInit li
+    VariableInlining.markSafeInlinableVariables li
 
 let markWrites topLevel =
     let findWrites (env: MapEnv) = function

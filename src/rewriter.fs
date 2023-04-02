@@ -537,17 +537,13 @@ let private simplifyStmt = function
     | e -> e
 
 let rec iterateSimplifyAndInline li =
-    let li =
-        li
-        |> Analyzer.resolve
-        |> Analyzer.markWrites
-        |> Analyzer.inlineUnwrittenVariablesWithSimpleInit
     if not options.noInlining then
+        let li =
+            li
+            |> Analyzer.resolve
+            |> Analyzer.markWrites
         Analyzer.markInlinableFunctions li
-        let mapStmt = function
-            | Block b as e -> Analyzer.markInlinableLocalVariables b; e
-            | e -> e
-        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
+        Analyzer.markInlinableVariables li
     let didInline = ref false
     let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
 
