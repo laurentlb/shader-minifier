@@ -538,10 +538,8 @@ let private simplifyStmt = function
 
 let rec iterateSimplifyAndInline li =
     if not options.noInlining then
-        let li =
-            li
-            |> Analyzer.resolve
-            |> Analyzer.markWrites
+        Analyzer.resolve li
+        Analyzer.markWrites li
         Analyzer.markInlinableFunctions li
         Analyzer.markInlinableVariables li
     let didInline = ref false

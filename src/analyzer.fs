@@ -160,7 +160,7 @@ let markWrites topLevel =
                 e
             | _ -> e
         | e -> e
-    mapTopLevel (mapEnv findWrites id) topLevel
+    mapTopLevel (mapEnv findWrites id) topLevel |> ignore
 
 // Create an ident.Declaration for each declaration in the file.
 // Give each Ident a reference to that Declaration.
@@ -196,7 +196,7 @@ let resolve topLevel =
         resolveGlobalsAndParameters tl
     mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
     // Then, associate the references.
-    mapTopLevel (mapEnv resolveExpr id) topLevel
+    mapTopLevel (mapEnv resolveExpr id) topLevel |> ignore
 
 
 module private FunctionInlining =
