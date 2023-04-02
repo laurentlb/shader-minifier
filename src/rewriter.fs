@@ -541,14 +541,13 @@ let rec iterateSimplifyAndInline li =
         li
         |> Analyzer.resolve
         |> Analyzer.markWrites
-        |> Analyzer.maybeInlineVariables
+        |> Analyzer.inlineUnwrittenVariablesWithSimpleInit
     if not options.noInlining then
         Analyzer.markInlinableFunctions li
-        let mapExpr _ e = e
         let mapStmt = function
-            | Block b as e -> Analyzer.markInlinableVariables b; e
+            | Block b as e -> Analyzer.markInlinableLocalVariables b; e
             | e -> e
-        mapTopLevel (mapEnv mapExpr mapStmt) li |> ignore
+        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore
     let didInline = ref false
     let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
 

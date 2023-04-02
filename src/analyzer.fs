@@ -51,7 +51,7 @@ module private VariableInlining =
     // The init is considered trivial when:
     //  - it doesn't depend on a variable
     //  - it depends only on variables proven constants
-    let markInlinableVariables block =
+    let markInlinableLocalVariables block =
         // Variables that are defined in this scope.
         // The boolean indicate if the variable initialization is const.
         let localDefs = Dictionary<string, (Ident * bool)>()
@@ -79,14 +79,13 @@ module private VariableInlining =
         for def in localDefs do
             let ident, isConst = def.Value
             if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
-
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                | (true, 1), (true, 1) when isConst-> ident.ToBeInlined <- true // here inlining can break if the decl init uses variables that are mutated between decl and use
-                | (false, _), (false, _) -> ident.ToBeInlined <- true
+                | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
+                | (_, 0), (_, 0) -> ident.ToBeInlined <- true
                 | _ -> ()
 
     // Inline some variables, regardless of where they are used or how often they are used.
-    let maybeInlineVariables topLevel =
+    let inlineUnwrittenVariablesWithSimpleInit topLevel =
         let isTrivialExpr = function
             | Var v when v.Name = "true" || v.Name = "false" -> true
             | Int _
@@ -99,7 +98,7 @@ module private VariableInlining =
             | e when isTrivialExpr e -> true
             | _ when not options.aggroInlining -> false
             // Allow a few things to be inlined with aggroInlining
-            | Var v // here inlining can break if the decl init uses variables that are mutated between decl and use
+            | Var v // INCORRECT: here inlining can break if the decl init uses variables that are mutated between decl and use
             | Dot (Var v, _) -> isEffectivelyConst v
             | FunCall(Op op, args) ->
                 not (Builtin.assignOps.Contains op) &&
@@ -109,33 +108,38 @@ module private VariableInlining =
                     args |> List.forall isTrivialExpr
             | _  -> false
 
-        let mapInnerDecl isTopLevel = function
-            | (ty: Type, defs) as d when not ty.IsExternal ->
+        let visitInnerDecl isTopLevel = function
+            | (ty: Type, defs) when not ty.IsExternal ->
                 for (def:DeclElt) in defs do
                     if not def.name.VarDecl.Value.isEverWrittenAfterDecl then
-                        if def.init.IsNone then
+                        match def.init with
+                        | None ->
                             // Top-level values are special, in particular in HLSL. Keep them for now.
                             if not isTopLevel then
+                                // Never-written locals without init should be unused: inline (remove) them.
                                 def.name.ToBeInlined <- true
-                        elif canBeInlined def.init.Value then
-                            def.name.ToBeInlined <- true
-                d
-            | d -> d
+                        | Some init ->
+                            if canBeInlined init then
+                                // Never-written locals and globals are inlined when their value is "simple enough".
+                                // This can increase non-compressed size but decreases compressed size.
+                                def.name.ToBeInlined <- true
+            | _ -> ()
         let mapStmt = function
-            | Decl d -> Decl (mapInnerDecl false d)
+            | Decl d as stmt -> visitInnerDecl false d; stmt
+            | ForD (d, _, _, _) as stmt -> visitInnerDecl false d; stmt
             | s -> s
-        let mapExpr _ e = e
         let mapTLDecl = function
-            | TLDecl d -> TLDecl (mapInnerDecl true d)
+            | TLDecl d as tl -> visitInnerDecl true d; tl
             | d -> d
+        // Visit globals and locals, not parameters.
         topLevel
-        |> mapTopLevel (mapEnv mapExpr mapStmt)
+        |> mapTopLevel (mapEnv (fun _ -> id) mapStmt)
         |> List.map mapTLDecl
 
-let markInlinableVariables = VariableInlining.markInlinableVariables
-let maybeInlineVariables topLevel =
+let markInlinableLocalVariables = VariableInlining.markInlinableLocalVariables
+let inlineUnwrittenVariablesWithSimpleInit topLevel =
     if options.noInlining then topLevel
-    else VariableInlining.maybeInlineVariables topLevel
+    else VariableInlining.inlineUnwrittenVariablesWithSimpleInit topLevel
 
 let markWrites topLevel =
     let findWrites (env: MapEnv) = function
@@ -158,8 +162,8 @@ let markWrites topLevel =
         | e -> e
     mapTopLevel (mapEnv findWrites id) topLevel
 
-// Create ResolvedIdent for each declaration in the file.
-// Give each Ident a reference to that ResolvedIdent.
+// Create an ident.Declaration for each declaration in the file.
+// Give each Ident a reference to that Declaration.
 let resolve topLevel =
     let resolveExpr (env: MapEnv) = function
         | Var v as e ->
