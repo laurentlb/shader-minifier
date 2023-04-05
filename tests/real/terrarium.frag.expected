@@ -34,16 +34,14 @@ vec2 randn(vec2 randuniform)
   vec2 r=randuniform;
   r.x=sqrt(-2.*log(1e-9+abs(r.x)));
   r.y*=6.28318;
-  r=r.x*vec2(cos(r.y),sin(r.y));
-  return r;
+  return r.x*vec2(cos(r.y),sin(r.y));
 }
 vec2 randc(vec2 randuniform)
 {
   vec2 r=randuniform;
   r.x=sqrt(r.x);
   r.y*=6.28318;
-  r=r.x*vec2(cos(r.y),sin(r.y));
-  return r;
+  return r.x*vec2(cos(r.y),sin(r.y));
 }
 vec3 S(vec3 x)
 {

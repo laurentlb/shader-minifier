@@ -433,6 +433,15 @@ let private simplifyBlock stmts =
         | Decl (_, [declElt]), Jump(JumpKeyword.Return, Some (Var v)) // int x=f();return x;  ->  return f();
             when v.Name = declElt.name.Name && declElt.init.IsSome ->
                 Some (Jump(JumpKeyword.Return, declElt.init))
+        | Expr (FunCall(Op "=", [Var v1; e])), Jump(JumpKeyword.Return, Some (Var v2)) // x=f();return x;  ->  return f();
+            when v1.Name = v2.Name ->
+                match v1.VarDecl with
+                | Some d ->
+                    if d.scope <> VarScope.Global && not (d.ty.isOutOrInout) then
+                        Some (Jump(JumpKeyword.Return, Some e))
+                    else
+                        None
+                | _ -> None
         | _ -> None)
 
     // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();

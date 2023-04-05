@@ -201,8 +201,7 @@ vec3 bump(vec3 p,vec3 n,float ds)
   vec2 e=vec2(.01,0);
   float n0=bnoise(p);
   vec3 d=vec3(bnoise(p+e.xyy)-n0,bnoise(p+e.yxy)-n0,bnoise(p+e.yyx)-n0)/e.x;
-  n=normalize(n-d*10./ds);
-  return n;
+  return normalize(n-d*10./ds);
 }
 float shadow(vec3 ro,vec3 rd,float mint)
 {

@@ -73,6 +73,8 @@ and Type = {
     typeQ: string list // type qualifiers, e.g. const, uniform, out, inout...
     arraySizes: Expr list // e.g. [3][5]
 } with
+    member this.isOutOrInout =
+        not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
 
