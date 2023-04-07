@@ -71,8 +71,7 @@ float koi(vec2 t)
   float oopx=oop.x+.4;
   d=min(d,max(oop.y,max(oopx,oopx*oopx*4-oop.y-.3)));
   oop.x+=oop.y*.6-.7;
-  d=min(d,max(oop.y,max(oop.x,oop.x*oop.x*4-oop.y-.3)));
-  return d;
+  return min(d,max(oop.y,max(oop.x,oop.x*oop.x*4-oop.y-.3)));
 }
 uvec2 coord=gl_GlobalInvocationID.xy,rstate=coord;
 vec4 w;

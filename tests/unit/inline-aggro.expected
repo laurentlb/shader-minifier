@@ -43,9 +43,7 @@ int inl8(ivec3 x)
 }
 float noinl1()
 {
-  float f=42.;
-  f=101.;
-  return f;
+  return 101.;
 }
 float noinl2()
 {

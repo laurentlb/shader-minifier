@@ -147,8 +147,7 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   specular+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
   float fresnel=pow(1.-abs(dot(norm,ray)),5.);
   fresnel=mix(.001,1.,fresnel);
-  col=mix(col,specular,fresnel);
-  return col;
+  return mix(col,specular,fresnel);
 }
 float OceanDistanceField(vec3 pos)
 {
@@ -196,8 +195,7 @@ vec3 ShadeOcean(vec3 pos,vec3 ray,vec2 fragCoord)
   if(t>0.)
     col=mix(col,ShadeBoat(pos+t*refractedRay,refractedRay),exp(-t));
   col=mix(col,reflection,pow(1.-abs(ndotr),5.));
-  col=mix(col,vec3(1),WaveCrests(pos,fragCoord));
-  return col;
+  return mix(col,vec3(1),WaveCrests(pos,fragCoord));
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)
 {
