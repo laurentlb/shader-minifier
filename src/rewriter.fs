@@ -148,7 +148,7 @@ let private simplifyOperator env = function
     | FunCall(Op "-", [Int (i1, su); Int (i2, _)]) -> Int (i1 - i2, su)
     | FunCall(Op "+", [Int (i1, su); Int (i2, _)]) -> Int (i1 + i2, su)
     | FunCall(Op "*", [Int (i1, su); Int (i2, _)]) -> Int (i1 * i2, su)
-    | FunCall(Op "/", [Int (i1, su); Int (i2, _)]) -> Int (i1 / i2, su)
+    | FunCall(Op "/", [Int (i1, su); Int (i2, _)]) when i2 <> 0 -> Int (i1 / i2, su)
     | FunCall(Op "%", [Int (i1, su); Int (i2, _)]) -> Int (i1 % i2, su)
 
     | FunCall(Op "-", [Float (0.M,su)]) -> Float (0.M, su)
@@ -156,7 +156,7 @@ let private simplifyOperator env = function
     | FunCall(Op "-", [Float (i1,su); Float (i2,_)]) -> Float (i1 - i2, su)
     | FunCall(Op "+", [Float (i1,su); Float (i2,_)]) -> Float (i1 + i2, su)
     | FunCall(Op "*", [Float (i1,su); Float (i2,_)]) -> Float (i1 * i2, su)
-    | FunCall(Op "/", [Float (i1,su); Float (i2,_)]) as e ->
+    | FunCall(Op "/", [Float (i1,su); Float (i2,_)]) as e when i2 <> 0m ->
         let div = Float (i1 / i2, su)
         if (Printer.exprToS e).Length <= (Printer.exprToS div).Length then e
         else div
