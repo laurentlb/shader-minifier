@@ -262,7 +262,7 @@ let private simplifyVec (constr: Ident) args =
 
 let private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
-        match env.fns.TryFind v.Name with
+        match env.fns.TryFind (v.Name, passedArgs.Length) with
         | None -> e
         | Some ({args = declArgs}, body) ->
             if List.length declArgs <> List.length passedArgs then
