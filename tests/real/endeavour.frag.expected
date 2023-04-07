@@ -75,8 +75,7 @@ void scene(vec3 x,out vec2 sdf)
   stroke(sdb.x,.003*step(dis,0.),sdb.x);
   sdf.x=max(sdf.x,-da);
   add(sdf,sdb,sdf);
-  vec3 y=mod(x,.1)-.05;
-  float guard=-length(max(abs(y)-vec3(.05*c.xx,.6),0.));
+  float guard=-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.));
   guard=abs(guard)+.01;
   sdf.x=min(sdf.x,guard);
 }

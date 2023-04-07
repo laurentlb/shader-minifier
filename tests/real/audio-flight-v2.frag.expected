@@ -107,9 +107,7 @@ vec2 edge(vec2 p)
 }
 vec2 map(vec3 p,float sg)
 {
-  vec2 res=vec2(100,-1);
-  float msize=7.25;
-  vec2 tun=p.xy-path(p.z);
+  vec2 res=vec2(100,-1),tun=p.xy-path(p.z);
   vec3 q=vec3(tun,p.z),o=vec3(tun+vec2(0),p.z+travelSpeed+4.25),s=q;
   o.zx*=r5;
   o.yz*=r4;
@@ -117,7 +115,7 @@ vec2 map(vec3 p,float sg)
   float obj=fBox(o,vec3(.15*offWobble))-.015;
   if(obj<res.x)
     res=vec2(obj,11),g_hp=o;
-  float pid=floor((q.z+msize/2.)/msize),trackmod=mod(pid,18.),deg=trackmod<12.?
+  float pid=floor((q.z+3.625)/7.25),trackmod=mod(pid,18.),deg=trackmod<12.?
     trackmod<6.?
       4.:
       6.:
@@ -131,8 +129,8 @@ vec2 map(vec3 p,float sg)
   float chs=floor(center.y),height=texture(iChannel0,vec2(mod(chs,16.)*.0465,.1)).x;
   height=smoothstep(.001,1.,height);
   ga=height;
-  float ids=pMod(s.z,msize);
-  vec3 qid=pMod(q,msize);
+  float ids=pMod(s.z,7.25);
+  vec3 qid=pMod(q,7.25);
   float lq=mod(ids,2.);
   iqd=qid.x;
   float zprs=mod(chs,tm<8.?

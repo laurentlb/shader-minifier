@@ -150,12 +150,10 @@ let markWrites topLevel =
         | FunCall(Var v, args) as e ->
             match v.Declaration with
             | Declaration.Func funcType when funcType.hasOutOrInoutParams ->
-                // We need to look up which functions might write via "out" parameters.
-                // If any parameter to the function could be written to (e.g., "out"), mark all
-                // variables in the parameters. We don't attempt to match up param-for-param but
-                // just mark everything if anything could write, for simplicity.
-                let newEnv = {env with isInWritePosition = true}
-                for arg in args do
+                // Writes through assignOps are already handled by mapEnv,
+                // but we also need to handle variable writes through "out" or "inout" parameters.
+                for arg, (ty, _) in List.zip args funcType.args do
+                    let newEnv = if ty.isOutOrInout then {env with isInWritePosition = true} else env
                     (mapExpr newEnv arg: Expr) |> ignore<Expr>
                 e
             | _ -> e
