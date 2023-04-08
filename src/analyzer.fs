@@ -150,12 +150,10 @@ let markWrites topLevel =
         | FunCall(Var v, args) as e ->
             match v.Declaration with
             | Declaration.Func funcType when funcType.hasOutOrInoutParams ->
-                // We need to look up which functions might write via "out" parameters.
-                // If any parameter to the function could be written to (e.g., "out"), mark all
-                // variables in the parameters. We don't attempt to match up param-for-param but
-                // just mark everything if anything could write, for simplicity.
-                let newEnv = {env with isInWritePosition = true}
-                for arg in args do
+                // Writes through assignOps are already handled by mapEnv,
+                // but we also need to handle variable writes through "out" or "inout" parameters.
+                for arg, (ty, _) in List.zip args funcType.args do
+                    let newEnv = if ty.isOutOrInout then {env with isInWritePosition = true} else env
                     (mapExpr newEnv arg: Expr) |> ignore<Expr>
                 e
             | _ -> e
@@ -166,11 +164,15 @@ let markWrites topLevel =
 // Give each Ident a reference to that Declaration.
 let resolve topLevel =
     let resolveExpr (env: MapEnv) = function
-        | Var v as e ->
-            match (env.vars.TryFind v.Name, env.fns.TryFind v.Name) with
-            | Some (_, decl), _ -> v.Declaration <- decl.name.Declaration
-            | _, Some (ft, _) -> v.Declaration <- ft.fName.Declaration
+        | FunCall (Var v, args) as e ->
+            match env.fns.TryFind (v.Name, args.Length) with
+            | Some (ft, _) -> v.Declaration <- ft.fName.Declaration
             | _ -> () // TODO: resolve builtin functions
+            e
+        | Var v as e ->
+            match env.vars.TryFind v.Name with
+            | Some (_, decl) -> v.Declaration <- decl.name.Declaration
+            | _ -> ()
             e
         | e -> e
 
@@ -191,11 +193,11 @@ let resolve topLevel =
             funcType.fName.Declaration <- Declaration.Func funcType
         | _ -> ()
 
-    // First, visit all declarations.
+    // First visit all declarations, creating them.
     for tl in topLevel do
         resolveGlobalsAndParameters tl
     mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
-    // Then, associate the references.
+    // Then, visit all uses and associate them to their declaration.
     mapTopLevel (mapEnv resolveExpr id) topLevel |> ignore<TopLevel list>
 
 
