@@ -51,7 +51,7 @@ float A2_INLINED() { return notShadowedVar; }
 float A3() { float a = 10.; return shadowedFunc(a); }
 float A4_INLINED() { return notShadowedFunc(globalFloat); }
 
-float B1() { return 2.0; }
+float B1(float x) { return pow(2.0, x); }
 float B2_INLINED() { return 2.0; }
 
 float C1() { float x = sin(0.); x++; return 3.0 + x; }
@@ -86,7 +86,7 @@ float f() {
 	int sep;
 	
     // [B] Only inline a function if it has only one call site.
-    float _B1 = B1() + B1(); // not inlined
+    float _B1 = B1(3.) + B1(4.); // not inlined
     float _B2 = B2_INLINED() * 2.0; // inlined
 	
 	sep++;

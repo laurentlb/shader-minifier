@@ -1,5 +1,6 @@
-bool success() { return true; }
-bool fail() { return false; }
+int noinline;
+bool success() { noinline++; return true; }
+bool fail() { noinline++; return false; }
 
 // After optimization, no call to fail should remain.
 

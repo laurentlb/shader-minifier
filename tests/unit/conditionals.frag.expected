@@ -1,9 +1,12 @@
+int noinline;
 bool success()
 {
+  noinline++;
   return true;
 }
 bool fail()
 {
+  noinline++;
   return false;
 }
 bool ternary()
@@ -38,10 +41,6 @@ bool and3()
 {
   return success();
 }
-int foo()
-{
-  return 1;
-}
 float ifStmtToExpr(float f)
 {
   float r,r2,r3;
@@ -50,10 +49,10 @@ float ifStmtToExpr(float f)
     2.;
   r2=f>1.?
     1.:
-    (foo(),2.);
+    (1,2.);
   if(f>1.)
     r3=1.;
   else
-     r3=2.,foo();
+     r3=2.,1;
   return r+r2+r3;
 }
