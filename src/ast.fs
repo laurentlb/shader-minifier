@@ -113,6 +113,7 @@ and FunctionType = {
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
+    member this.prototype = (this.fName.Name, this.args.Length)
 
 and TopLevel =
     | TLVerbatim of string

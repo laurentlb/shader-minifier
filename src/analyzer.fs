@@ -207,13 +207,13 @@ module private FunctionInlining =
     type CallSite = {
         ident: Ident
         varsInScope: string list
-        argCount: int
+        prototype: string * int
     }
     let findCallSites block =
         let callSites = List()
         let collect (mEnv : MapEnv) = function
             | FunCall (Var id, argExprs) as e ->
-                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; argCount = argExprs.Length }
+                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length) }
                 e
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
@@ -234,7 +234,7 @@ module private FunctionInlining =
         let funcInfos = functions |> List.map (fun (funcType, name, block, f) ->
             let callSites = findCallSites block
                             // only return calls to user-defined functions
-                            |> List.filter (fun callSite -> functions |> List.exists (fun (_,n,_,_) -> callSite.ident.Name = n))
+                            |> List.filter (fun callSite -> functions |> List.exists (fun (ft,_,_,_) -> callSite.prototype = ft.prototype))
             { FuncInfo.func = f; funcType = funcType; name = name; callSites = callSites; body = block })
         funcInfos
 
@@ -286,13 +286,11 @@ module private FunctionInlining =
         ok
 
     let tryMarkFunctionToInline funcInfo callSite =
-        // We also need to check that inlining won't fail (inlining can fail because it can be forced by "i_").
-        if funcInfo.funcType.args.Length = callSite.argCount then
-            if verifyArgsUses funcInfo.func callSite then
-                // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
-                // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
-                callSite.ident.ToBeInlined <- true
-                funcInfo.funcType.fName.ToBeInlined <- true
+        if verifyArgsUses funcInfo.func callSite then
+            // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
+            // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
+            callSite.ident.ToBeInlined <- true
+            funcInfo.funcType.fName.ToBeInlined <- true
 
     let markInlinableFunctions code =
         let funcInfos = findFuncInfos code
@@ -301,7 +299,8 @@ module private FunctionInlining =
             let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
             if canBeRenamed && not isExternal then
                 if not funcInfo.funcType.hasOutOrInoutParams then // [F]
-                    let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.ident.Name = funcInfo.name)
+                    let callSites = funcInfos |> List.collect (fun n -> n.callSites)
+                                              |> List.filter (fun callSite -> callSite.prototype = funcInfo.funcType.prototype)
                     match callSites with
                     | [callSite] -> // [B]
                         match funcInfo.body with
