@@ -279,8 +279,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
         float specular=0.,d=dStack[s][i];
         if(d<0.)
           continue;
-        float sphereR=SphereRadius(d);
-        vec3 pos=cameraPos+dir*d,normal=GetNormal(pos,sphereR),alb=Colour(pos,normal,specular);
+        vec3 pos=cameraPos+dir*d,normal=GetNormal(pos,SphereRadius(d)),alb=Colour(pos,normal,specular);
         col+=DoLighting(alb,pos,normal,dir,d,specular)*aStack[s][i];
       }
   float mi=smoothstep(1.9,0.,zoomTurn.y);

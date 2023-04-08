@@ -8,6 +8,5 @@ float foo(float a,float b)
 }
 void main()
 {
-  vec3 v=vec3(42.+foo(50.,70.));
-  gl_fragColor.xyz=v;
+  gl_fragColor.xyz=vec3(42.+foo(50.,70.));
 }

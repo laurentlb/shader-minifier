@@ -89,19 +89,17 @@ float f()
 {
   float shadowedVar=-1.,shadowedFunc=-2.,_A3=A3(),_A4=notShadowedFunc(globalFloat);
   int sep;
-  float _B1=B1()+B1();
   sep++;
   float _C1=C1();
   sep++;
-  float _D1=D1(4.,5.);
   sep++;
-  float _E1=E1(6.,10.),_E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E3=E3(6.,10.),_E4=E4(6.,10.),_E5=E5(6.,10.);
+  float _E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E4=E4(6.,10.),_E5=E5(6.,10.);
   sep++;
   float o,_F2=F2(o),_F3=F3(o);
   sep++;
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+1.+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+_D1+9.+_E1+_E2+_E3+_E4+_E5+7.+_F2+_F3;
+  return shadowedVar+shadowedFunc+1.+_A3+_A4+(B1()+B1())+4.+_C1+(3.+sin(0.))+D1(4.,5.)+9.+E1(6.,10.)+_E2+E3(6.,10.)+_E4+_E5+7.+_F2+_F3;
 }
 float g()
 {

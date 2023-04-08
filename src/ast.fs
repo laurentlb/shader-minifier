@@ -38,13 +38,15 @@ type Ident(name: string) =
 and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | Unknown
     | Variable of VarDecl
-    | Func of FunctionType
+    | Func of FunDecl
 and VarDecl(ty, decl, scope) =
     member val ty: Type = ty with get, set
     member val decl = decl: DeclElt with get, set
     member val scope = scope: VarScope with get, set
     member val isEverWrittenAfterDecl = false with get, set
-    
+and FunDecl(funcType) =
+    member val funcType: FunctionType = funcType with get, set
+    member val hasExternallyVisibleSideEffects = false with get, set
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
 and Expr =
