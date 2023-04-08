@@ -31,13 +31,13 @@ module private VariableInlining =
         result
 
     let isEffectivelyConst (ident: Ident) =
-        if ident.VarDecl.IsSome then
+        match ident.Declaration with
+        | Declaration.Variable varDecl ->
             // A variable not reassigned is effectively constant.
-            not ident.VarDecl.Value.isEverWrittenAfterDecl
-        elif Builtin.pureBuiltinFunctions.Contains ident.Name then
-            true
-        else
-            false
+            not varDecl.isEverWrittenAfterDecl
+        | Declaration.Func funDecl ->
+            not funDecl.hasExternallyVisibleSideEffects
+        | Declaration.Unknown -> Builtin.pureBuiltinFunctions.Contains ident.Name
 
     // Mark variables as inlinable when possible.
     // Variables are always safe to inline when all of:
@@ -149,16 +149,45 @@ let markWrites topLevel =
             e
         | FunCall(Var v, args) as e ->
             match v.Declaration with
-            | Declaration.Func funcType when funcType.hasOutOrInoutParams ->
+            | Declaration.Func funcDecl when funcDecl.funcType.hasOutOrInoutParams ->
                 // Writes through assignOps are already handled by mapEnv,
                 // but we also need to handle variable writes through "out" or "inout" parameters.
-                for arg, (ty, _) in List.zip args funcType.args do
+                for arg, (ty, _) in List.zip args funcDecl.funcType.args do
                     let newEnv = if ty.isOutOrInout then {env with isInWritePosition = true} else env
                     (mapExpr newEnv arg: Expr) |> ignore<Expr>
                 e
             | _ -> e
         | e -> e
     mapTopLevel (mapEnv findWrites id) topLevel |> ignore<TopLevel list>
+
+    let findExternallyVisibleSideEffect tl =
+        let mutable hasExternallyVisibleSideEffect = false
+        let findSideEffects _ = function
+            | Var v as e ->
+                let hasSideEffect =
+                    match v.Declaration with
+                    | Declaration.Variable d ->
+                        match d.scope with
+                        | VarScope.Global -> v.isVarWrite
+                        | VarScope.Parameter -> d.ty.isOutOrInout
+                        | VarScope.Local -> false
+                    // functions are processed in order, so this is initialized before use
+                    | Declaration.Func f -> f.hasExternallyVisibleSideEffects
+                    | _ -> true
+                hasExternallyVisibleSideEffect <- hasExternallyVisibleSideEffect || hasSideEffect
+                e
+            | e -> e
+        mapTopLevel (mapEnv findSideEffects id) [tl] |> ignore<TopLevel list>
+        hasExternallyVisibleSideEffect
+
+    for tl in topLevel do
+        match tl with
+        | Function (ft, _) ->
+            match ft.fName.Declaration with
+            | Declaration.Func f ->
+                f.hasExternallyVisibleSideEffects <- findExternallyVisibleSideEffect tl
+            | _ -> ()
+        | _ -> ()
 
 // Create an ident.Declaration for each declaration in the file.
 // Give each Ident a reference to that Declaration.
@@ -190,7 +219,7 @@ let resolve topLevel =
         | TLDecl decl -> resolveDecl VarScope.Global decl
         | Function (funcType, _) ->
             for decl in funcType.args do resolveDecl VarScope.Parameter decl
-            funcType.fName.Declaration <- Declaration.Func funcType
+            funcType.fName.Declaration <- Declaration.Func (new FunDecl(funcType))
         | _ -> ()
 
     // First visit all declarations, creating them.
