@@ -580,7 +580,7 @@ type private CallGraphNode = {
     func: TopLevel
     funcType: FunctionType
     name: string
-    callees: string list
+    callees: (string * int) list
 }
 
 let rec private findRemove callback = function
@@ -594,10 +594,12 @@ let rec private findRemove callback = function
 // slow, but who cares?
 let private graphReorder nodes =
     let mutable list = []
-    let mutable lastName = ""
+    let mutable lastName = ("", -1)
 
     let rec loop nodes =
-        let nodes = findRemove (fun node -> lastName <- node.name; list <- node.func :: list) nodes
+        // Find a function that doesn't call anything else
+        let nodes = findRemove (fun node -> lastName <- node.funcType.prototype; list <- node.func :: list) nodes
+        // Remove that function from the callees
         let nodes = nodes |> List.map (fun n -> { n with callees = List.except [lastName] n.callees })
         if nodes <> [] then loop nodes
 
@@ -606,11 +608,11 @@ let private graphReorder nodes =
 
 
 // get the list of external functions the function depends on
-let private computeDependencies f =
+let private findCallSites f =
     let d = HashSet()
     let collect _ = function
-        | FunCall (Var id, _) as e ->
-            d.Add id.Name |> ignore<bool>
+        | FunCall (Var id, args) as e ->
+            d.Add (id.Name, args.Length) |> ignore<bool>
             e
         | e -> e
     mapTopLevel (mapEnv collect id) [f] |> ignore<TopLevel list>
@@ -622,9 +624,9 @@ let private computeAllDependencies code =
         | Function(funcType, _) as f -> Some (funcType, funcType.fName.Name, f)
         | _ -> None)
     let nodes = functions |> List.map (fun (funcType, name, f) ->
-        let callees = computeDependencies f
-                      |> List.filter (fun name2 -> functions |> List.exists (fun (_,n,_) -> name2 = n))
-        { CallGraphNode.func = f; funcType = funcType; name = name; callees = callees })
+        let callSites = findCallSites f
+                      |> List.filter (fun prototype -> functions |> List.exists (fun (ft,_,_) -> prototype = ft.prototype))
+        { CallGraphNode.func = f; funcType = funcType; name = name; callees = callSites })
     nodes
 
 
@@ -632,7 +634,7 @@ let rec removeUnusedFunctions code =
     let nodes = computeAllDependencies code
     let isUnused node =
         let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
-        let isCalled = (nodes |> List.exists (fun n -> n.callees |> List.contains node.name))
+        let isCalled = (nodes |> List.exists (fun n -> n.callees |> List.contains node.funcType.prototype))
         let isExternal = options.hlsl && node.funcType.semantics <> []
         canBeRenamed && not isCalled && not isExternal
     let unused = set [for node in nodes do if isUnused node then yield node.func]
