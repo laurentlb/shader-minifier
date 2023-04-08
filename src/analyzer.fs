@@ -271,8 +271,7 @@ module private FunctionInlining =
     //
     // [A] Only inline a function if it never refers to a global by a name function or variable that is shadowed by a local variable in scope at the call site.
     // [B] Only inline a function if it has only one call site.
-    //     No attempt is made to detect if the function is "short enough" that it could
-    //     benefit from inlining at multiple call sites (particularly probable with compression).
+    //     Exception: if the body is "trivial" it will be inlined at all call sites.
     // [C] Only inline a function if it is a single expression return.
     //     This also ensures the function does not declare any locals.
     // [D] Only inline a function if it uses its 'in' parameters at most once.
@@ -288,7 +287,7 @@ module private FunctionInlining =
     //     Evaluating them could have side effects (e.g. a[b++]), which is a problem if they are used more than once.
     //     If the 'out' parameters are read from, inlining can change the behavior.
     //     It's fine if 'out' parameters are written in more than one place.
-    let verifyArgsUses func callSite =
+    let verifyArgsUses func callSites =
         let argUsageCounts = Dictionary<string, int>()
         let mutable shadowedGlobal = false
         let mutable argIsWritten = false
@@ -302,7 +301,8 @@ module private FunctionInlining =
                     argIsWritten <- argIsWritten || id.VarDecl.Value.isEverWrittenAfterDecl
                     argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
                 | VarScope.Global ->
-                    shadowedGlobal <- shadowedGlobal || (callSite.varsInScope |> List.contains id.Name)
+                    shadowedGlobal <- shadowedGlobal || (callSites |> List.exists (fun callSite ->
+                        callSite.varsInScope |> List.contains id.Name))
                 e
             | e -> e
         mapTopLevel (mapEnv visitArgUses id) [func] |> ignore<TopLevel list>
@@ -314,11 +314,12 @@ module private FunctionInlining =
             not shadowedGlobal // [A]
         ok
 
-    let tryMarkFunctionToInline funcInfo callSite =
-        if verifyArgsUses funcInfo.func callSite then
+    let tryMarkFunctionToInline funcInfo callSites =
+        if verifyArgsUses funcInfo.func callSites then
             // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
             // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
-            callSite.ident.ToBeInlined <- true
+            for callSite in callSites do
+                callSite.ident.ToBeInlined <- true
             funcInfo.funcType.fName.ToBeInlined <- true
 
     let markInlinableFunctions code =
@@ -330,13 +331,12 @@ module private FunctionInlining =
                 if not funcInfo.funcType.hasOutOrInoutParams then // [F]
                     let callSites = funcInfos |> List.collect (fun n -> n.callSites)
                                               |> List.filter (fun callSite -> callSite.prototype = funcInfo.funcType.prototype)
-                    match callSites with
-                    | [callSite] -> // [B]
+                    if callSites.Length > 0 then // Unused function elimination is not handled here
                         match funcInfo.body with
-                        | Jump (JumpKeyword.Return, Some _)
-                        | Block [Jump (JumpKeyword.Return, Some _)] -> // [C]
-                            tryMarkFunctionToInline funcInfo callSite
+                        | Jump (JumpKeyword.Return, Some body)
+                        | Block [Jump (JumpKeyword.Return, Some body)] -> // [C]
+                            if callSites.Length = 1 || VariableInlining.isTrivialExpr body then // [B]
+                                tryMarkFunctionToInline funcInfo callSites
                         | _ -> ()
-                    | _ -> ()
 
 let markInlinableFunctions = FunctionInlining.markInlinableFunctions
