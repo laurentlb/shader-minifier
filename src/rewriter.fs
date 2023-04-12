@@ -546,34 +546,6 @@ let private simplifyStmt = function
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
 
-let rec iterateSimplifyAndInline li =
-    if not options.noInlining then
-        Analyzer.resolve li
-        Analyzer.markWrites li
-        Analyzer.markInlinableFunctions li
-        Analyzer.markInlinableVariables li
-    let didInline = ref false
-    let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
-
-    // now that the functions were inlined, we can remove them
-    let simplified = simplified |> List.filter (function
-        | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
-        | _ -> true)
-
-    if didInline.Value then iterateSimplifyAndInline simplified else simplified
-
-let simplify li =
-    li
-    |> iterateSimplifyAndInline
-    |> List.choose (function
-        | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some
-        | TLVerbatim s -> TLVerbatim (stripSpaces s) |> Some
-        | Function (fct, _) when fct.fName.ToBeInlined -> None
-        | Function (fct, body) -> Function (rwFType fct, body) |> Some
-        | e -> e |> Some
-    )
-    |> squeezeTLDeclarations
-
           (* Reorder functions because of forward declarations *)
 
 
@@ -652,3 +624,33 @@ let reorderFunctions code =
     let order = code |> computeAllDependencies |> graphReorder
     let rest = code |> List.filter (function Function _ -> false | _ -> true)
     rest @ order
+
+
+let rec iterateSimplifyAndInline li =
+    let li = if not options.noRemoveUnused then removeUnusedFunctions li else li
+    if not options.noInlining then
+        Analyzer.resolve li
+        Analyzer.markWrites li
+        Analyzer.markInlinableFunctions li
+        Analyzer.markInlinableVariables li
+    let didInline = ref false
+    let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
+
+    // now that the functions were inlined, we can remove them
+    let simplified = simplified |> List.filter (function
+        | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
+        | _ -> true)
+
+    if didInline.Value then iterateSimplifyAndInline simplified else simplified
+
+let simplify li =
+    li
+    |> iterateSimplifyAndInline
+    |> List.choose (function
+        | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some
+        | TLVerbatim s -> TLVerbatim (stripSpaces s) |> Some
+        | Function (fct, _) when fct.fName.ToBeInlined -> None
+        | Function (fct, body) -> Function (rwFType fct, body) |> Some
+        | e -> e |> Some
+    )
+    |> squeezeTLDeclarations
