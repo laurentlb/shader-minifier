@@ -12,6 +12,7 @@ type Ident(name: string) =
     member this.OldName = name
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
+    member this.DoNotInline = this.OldName.StartsWith("noinline_")
 
     //member val isVarRead: bool = false with get, set
     member val isVarWrite: bool = false with get, set

@@ -1,6 +1,7 @@
 float f();
 
 float actually_unreachable() { return 1.5; }
+float noinline_actually_unreachable2() { return 1.5; }
 
 float f(){
   float r = 1.;
@@ -26,5 +27,6 @@ float foo(float hidden) {
 }
 
 void main(){
+  if (false) return noinline_actually_unreachable2();
   gl_FragColor = vec4(foo(3.), g());
 }

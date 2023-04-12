@@ -71,7 +71,7 @@ module private VariableInlining =
 
         for def in localDefs do
             let ident, isConst = def.Value
-            if not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
+            if not ident.DoNotInline && not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
                 | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true
                 | (_, 0), (_, 0) -> ident.ToBeInlined <- true
@@ -108,7 +108,7 @@ module private VariableInlining =
     let markUnwrittenVariablesWithSimpleInit isTopLevel = function
         | (ty: Type, defs) when not ty.IsExternal ->
             for (def:DeclElt) in defs do
-                if not def.name.VarDecl.Value.isEverWrittenAfterDecl then
+                if not def.name.DoNotInline && not def.name.VarDecl.Value.isEverWrittenAfterDecl then
                     match def.init with
                     | None ->
                         // Top-level values are special, in particular in HLSL. Keep them for now.
@@ -315,7 +315,7 @@ module private FunctionInlining =
         ok
 
     let tryMarkFunctionToInline funcInfo callSites =
-        if verifyArgsUses funcInfo.func callSites then
+        if not funcInfo.funcType.fName.DoNotInline && verifyArgsUses funcInfo.func callSites then
             // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
             // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
             for callSite in callSites do
