@@ -1,4 +1,8 @@
 vec2 pos=vec2(.5);
+float noinline_actually_unreachable2()
+{
+  return 1.5;
+}
 float foo(float hidden)
 {
   float noinline=0.;
