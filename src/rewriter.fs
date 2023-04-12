@@ -263,10 +263,9 @@ let private simplifyVec (constr: Ident) args =
 let private simplifyExpr (didInline: bool ref) env = function
     | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
         match env.fns.TryFind (v.Name, passedArgs.Length) with
-        | None -> e
-        | Some ({args = declArgs}, body) ->
+        | Some ([{args = declArgs}, body]) ->
             if List.length declArgs <> List.length passedArgs then
-                failwithf "Cannot inline %s since it doesn't have the right number of arguments" v.Name
+                failwithf "Cannot inline function %s since it doesn't have the right number of arguments" v.Name
             match body with
             | Jump (JumpKeyword.Return, Some bodyExpr)
             | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
@@ -276,7 +275,9 @@ let private simplifyExpr (didInline: bool ref) env = function
             // turned the function into a one-liner, so allow trying again on
             // the next pass. (If it didn't, we'll yell next pass.)
             | _ when didInline.Value -> e
-            | _ -> failwithf "Cannot inline %s since it consists of more than a single return" v.Name
+            | _ -> failwithf "Cannot inline function %s since it consists of more than a single return" v.Name
+        | None -> failwithf "Cannot inline function %s because it's a builtin" v.Name
+        | _ -> failwithf "Cannot inline function %s because type-based disambiguation of user-defined function overloading is not supported" v.Name
 
     | FunCall(Op _, _) as op -> simplifyOperator env op
     | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->

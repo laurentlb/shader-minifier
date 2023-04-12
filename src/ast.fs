@@ -155,7 +155,7 @@ type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
-    fns: Map<(string * int), FunctionType * Stmt> // this map assumes that user-defined functions are never overloaded by more than parameter count
+    fns: Map<(string * int), (FunctionType * Stmt) list> // This doesn't support type-based disambiguation of user-defined function overloading
     isInWritePosition: bool // used for findWrites only
 }
 
@@ -245,7 +245,8 @@ let mapTopLevel env li =
             let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let envWithFunction = {env with fns = env.fns.Add((fct.fName.Name, fct.args.Length), (fct, body))}
+            let newFns = (fct, body) :: (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+            let envWithFunction = {env with fns = env.fns.Add(fct.prototype, newFns)}
             let envWithFunctionAndArgs, args = foldList envWithFunction mapDecl fct.args
             envWithFunction, Function({ fct with args = args }, snd (mapStmt envWithFunctionAndArgs body))
         | e -> env, e)

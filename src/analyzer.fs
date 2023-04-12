@@ -195,8 +195,9 @@ let resolve topLevel =
     let resolveExpr (env: MapEnv) = function
         | FunCall (Var v, args) as e ->
             match env.fns.TryFind (v.Name, args.Length) with
-            | Some (ft, _) -> v.Declaration <- ft.fName.Declaration
-            | _ -> () // TODO: resolve builtin functions
+            | Some [(ft, _)] -> v.Declaration <- ft.fName.Declaration
+            | None -> () // TODO: resolve builtin functions
+            | _ -> () // TODO: support type-based disambiguation of user-defined function overloading
             e
         | Var v as e ->
             match env.vars.TryFind v.Name with
@@ -248,13 +249,12 @@ module private FunctionInlining =
         mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
         callSites |> Seq.toList
 
-    // This function assumes that user-defined functions are NOT overloaded
     type FuncInfo = {
         func: TopLevel
         funcType: FunctionType
         body: Stmt
         name: string
-        callSites: CallSite list
+        callSites: CallSite list // calls to other user-defined functions, from inside this function.
     }
     let findFuncInfos code =
         let functions = code |> List.choose (function
@@ -327,8 +327,10 @@ module private FunctionInlining =
         for funcInfo in funcInfos do
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
             let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
-            if canBeRenamed && not isExternal then
+            let isOverloadedAmbiguously = funcInfos |> List.except [funcInfo] |> List.exists (fun f -> f.funcType.prototype = funcInfo.funcType.prototype)
+            if canBeRenamed && not isExternal && not isOverloadedAmbiguously then
                 if not funcInfo.funcType.hasOutOrInoutParams then // [F]
+                    // Find calls to this function. This works because we checked that the function is not overloaded ambiguously.
                     let callSites = funcInfos |> List.collect (fun n -> n.callSites)
                                               |> List.filter (fun callSite -> callSite.prototype = funcInfo.funcType.prototype)
                     if callSites.Length > 0 then // Unused function elimination is not handled here
