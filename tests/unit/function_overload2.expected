@@ -1,0 +1,15 @@
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef FUNCTION_OVERLOAD2_EXPECTED_
+# define FUNCTION_OVERLOAD2_EXPECTED_
+
+const char *function_overload_frag =
+ "int H(int H,int G,int F,int E)"
+ "{"
+   "return H+G+F+E;"
+ "}"
+ "int H(int H,int G,int F)"
+ "{"
+   "return H*G*F;"
+ "}";
+
+#endif // FUNCTION_OVERLOAD2_EXPECTED_
