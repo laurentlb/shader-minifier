@@ -545,72 +545,18 @@ let private simplifyStmt = function
             | _ -> If (cond, body1, body2)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
-
-          (* Reorder functions because of forward declarations *)
-
-
-type private CallGraphNode = {
-    func: TopLevel
-    funcType: FunctionType
-    name: string
-    callees: (string * int) list
-}
-
-let rec private findRemove callback = function
-    | node :: l when node.callees.IsEmpty ->
-        //printfn "=> %s" name
-        callback node
-        l
-    | [] -> failwith "Cannot reorder functions (probably because of a recursion)."
-    | x :: l -> x :: findRemove callback l
-
-// slow, but who cares?
-let private graphReorder nodes =
-    let mutable list = []
-    let mutable lastName = ("", -1)
-
-    let rec loop nodes =
-        // Find a function that doesn't call anything else
-        let nodes = findRemove (fun node -> lastName <- node.funcType.prototype; list <- node.func :: list) nodes
-        // Remove that function from the callees
-        let nodes = nodes |> List.map (fun n -> { n with callees = List.except [lastName] n.callees })
-        if nodes <> [] then loop nodes
-
-    if nodes <> [] then loop nodes
-    list |> List.rev
-
-
-// get the list of external functions the function depends on
-let private findCallSites f =
-    let d = HashSet()
-    let collect _ = function
-        | FunCall (Var id, args) as e ->
-            d.Add (id.Name, args.Length) |> ignore<bool>
-            e
-        | e -> e
-    mapTopLevel (mapEnv collect id) [f] |> ignore<TopLevel list>
-    d |> Seq.toList
-
-// This function assumes that functions are NOT overloaded
-let private computeAllDependencies code =
-    let functions = code |> List.choose (function
-        | Function(funcType, _) as f -> Some (funcType, funcType.fName.Name, f)
-        | _ -> None)
-    let nodes = functions |> List.map (fun (funcType, name, f) ->
-        let callSites = findCallSites f
-                      |> List.filter (fun prototype -> functions |> List.exists (fun (ft,_,_) -> prototype = ft.prototype))
-        { CallGraphNode.func = f; funcType = funcType; name = name; callees = callSites })
-    nodes
-
-
-let rec removeUnusedFunctions code =
-    let nodes = computeAllDependencies code
-    let isUnused node =
-        let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
-        let isCalled = (nodes |> List.exists (fun n -> n.callees |> List.contains node.funcType.prototype))
-        let isExternal = options.hlsl && node.funcType.semantics <> []
+    
+let rec private removeUnusedFunctions code =
+    let funcInfos = Analyzer.findFuncInfos code
+    let isUnused (funcInfo : Analyzer.FuncInfo) =
+        let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
+        let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
+        let isCalled = funcInfos |> List.exists (fun n ->
+            n.callSites
+            |> List.map (fun c -> c.prototype)
+            |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
         canBeRenamed && not isCalled && not isExternal
-    let unused = set [for node in nodes do if isUnused node then yield node.func]
+    let unused = set [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo.func]
     let mutable edited = false
     let code = code |> List.filter (function
         | Function _ as t -> if Set.contains t unused then edited <- true; false else true
@@ -621,7 +567,21 @@ let rec removeUnusedFunctions code =
 let reorderFunctions code =
     if options.verbose then
         printfn "Reordering functions because of forward declarations."
-    let order = code |> computeAllDependencies |> graphReorder
+    
+    let rec graphReorder = function // slow, but who cares?
+        | [] -> []
+        | (nodes : Analyzer.FuncInfo list) ->
+            // Find a function that doesn't call anything else
+            let node = nodes |> List.tryFind (fun node -> node.callSites.IsEmpty)
+                             |> Option.defaultWith (fun _ -> failwith "Cannot reorder functions (probably because of a recursion).")
+            // Remove that function from the graph
+            let nodes = nodes |> List.except [node]
+            // Remove that function from the callSites. This step assumes no type-based overloading.
+            let nodes = nodes |> List.map (fun n -> { n with callSites = List.filter (fun c -> c.prototype <> node.funcType.prototype) n.callSites })
+            // Recurse
+            node.func :: graphReorder nodes
+
+    let order = code |> Analyzer.findFuncInfos |> graphReorder
     let rest = code |> List.filter (function Function _ -> false | _ -> true)
     rest @ order
 
