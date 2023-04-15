@@ -34,7 +34,7 @@ type Ident(name: string) =
         | :? Ident as o -> this.Name = o.Name  
         | _ -> false
     override this.GetHashCode() = name.GetHashCode()
-    override this.ToString() = "ident: " + name
+    override this.ToString() = $"<{name}>"
 
 and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | Unknown
@@ -80,13 +80,24 @@ and Type = {
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
+    override t.ToString() =
+        let name = match t.name with
+                   | TypeName n -> n
+                   | TypeStruct _ -> $"{t.name}"
+        if t.typeQ.IsEmpty && t.arraySizes.IsEmpty
+            then $"{name}"
+            else $"<{t.typeQ} {name} {t.arraySizes}>"
 
 and DeclElt = {
     name: Ident // e.g. foo
     size: Expr option // e.g. [3]
     semantics: Expr list // e.g. : color
     init: Expr option // e.g. = f(x)
-}
+} with override t.ToString() =
+        let size = if t.size = None then "" else $"[{t.size}]"
+        let init = if t.init = None then "" else $" = {t.init}"
+        let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
+        $"{t.name}{size}{init}{sem}"
 
 and Decl = Type * DeclElt list
 
@@ -117,6 +128,13 @@ and FunctionType = {
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
     member this.prototype = (this.fName.Name, this.args.Length)
+    override t.ToString() =
+        let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
+        let args = System.String.Join(", ", t.args |> List.map (function
+            | ty, [d] -> $"{ty} {d}"
+            | _ -> $"{t.args}"
+            ))
+        $"{t.retType} {t.fName} ({args}){sem}"
 
 and TopLevel =
     | TLVerbatim of string
@@ -246,10 +264,13 @@ let mapTopLevel env li =
             let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let newFns = (fct, body) :: (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
-            let envWithFunction = {env with fns = env.fns.Add(fct.prototype, newFns)}
+            let oldFns = (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+            let envWithFunction = {env with fns = env.fns.Add(fct.prototype, (fct, body) :: oldFns)}
             let envWithFunctionAndArgs, args = foldList envWithFunction mapDecl fct.args
-            envWithFunction, Function({ fct with args = args }, snd (mapStmt envWithFunctionAndArgs body))
+            let (fct, body) = { fct with args = args }, snd (mapStmt envWithFunctionAndArgs body)
+            let oldFns = (envWithFunctionAndArgs.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+            let envWithNewFunction = {envWithFunctionAndArgs with fns = env.fns.Add(fct.prototype, (fct, body) :: oldFns.Tail)}
+            envWithNewFunction, Function(fct, body)
         | e -> env, e)
     res
 
