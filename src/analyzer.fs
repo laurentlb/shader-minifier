@@ -231,15 +231,21 @@ let resolve topLevel =
     mapTopLevel (mapEnv resolveExpr id) topLevel |> ignore<TopLevel list>
 
 
-module private FunctionInlining =
-
-    // Gets the list of call sites in this function
-    type CallSite = {
-        ident: Ident
-        varsInScope: string list
-        prototype: string * int
-    }
-    let findCallSites block =
+// findFuncInfos finds the call graph, and other related informations for function inlining.
+type CallSite = {
+    ident: Ident
+    varsInScope: string list
+    prototype: string * int
+}
+type FuncInfo = {
+    func: TopLevel
+    funcType: FunctionType
+    body: Stmt
+    name: string
+    callSites: CallSite list // calls to other user-defined functions, from inside this function.
+}
+let findFuncInfos code =
+    let findCallSites block = // Gets the list of call sites in this function
         let callSites = List()
         let collect (mEnv : MapEnv) = function
             | FunCall (Var id, argExprs) as e ->
@@ -248,24 +254,17 @@ module private FunctionInlining =
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
         callSites |> Seq.toList
+    let functions = code |> List.choose (function
+        | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
+        | _ -> None)
+    let funcInfos = functions |> List.map (fun (funcType, name, block, f) ->
+        let callSites = findCallSites block
+                        // only return calls to user-defined functions
+                        |> List.filter (fun callSite -> functions |> List.exists (fun (ft,_,_,_) -> callSite.prototype = ft.prototype))
+        { FuncInfo.func = f; funcType = funcType; name = name; callSites = callSites; body = block })
+    funcInfos
 
-    type FuncInfo = {
-        func: TopLevel
-        funcType: FunctionType
-        body: Stmt
-        name: string
-        callSites: CallSite list // calls to other user-defined functions, from inside this function.
-    }
-    let findFuncInfos code =
-        let functions = code |> List.choose (function
-            | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
-            | _ -> None)
-        let funcInfos = functions |> List.map (fun (funcType, name, block, f) ->
-            let callSites = findCallSites block
-                            // only return calls to user-defined functions
-                            |> List.filter (fun callSite -> functions |> List.exists (fun (ft,_,_,_) -> callSite.prototype = ft.prototype))
-            { FuncInfo.func = f; funcType = funcType; name = name; callSites = callSites; body = block })
-        funcInfos
+module private FunctionInlining =
 
     // To ensure correctness, we verify if it's safe to inline.
     //
