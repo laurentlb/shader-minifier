@@ -247,17 +247,18 @@ let private simplifyVec (constr: Ident) args =
         | _ -> allArgs
 
     // vec3(a.x, b.xy) => vec3(a.x, b)
-    let rec dropLastSwizzle = function
+    let rec dropLastSwizzle n = function
         | [Dot (expr, field) as last] when isFieldSwizzle field ->
             match [for c in field -> swizzleIndex c] with
-            | [0] | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
+            | [0] when n = 1 -> [expr]
+            | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
             | _ -> [last]
-        | e1 :: rest -> e1 :: dropLastSwizzle rest
+        | e1 :: rest -> e1 :: dropLastSwizzle (n-1) rest
         | x -> x
 
     let args = combineSwizzles args |> List.map useInts
     let args = if args.Length = vecSize then mergeAllEquals args args else args
-    let args = dropLastSwizzle args
+    let args = dropLastSwizzle vecSize args
     FunCall (Var constr, args)
 
 let private simplifyExpr (didInline: bool ref) env = function
