@@ -1,0 +1,9 @@
+uniform vec3 v[42];
+vec3 N()
+{
+  return v[4];
+}
+vec3 N(float N)
+{
+  return v[4]+N;
+}

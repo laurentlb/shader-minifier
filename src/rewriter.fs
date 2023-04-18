@@ -69,10 +69,15 @@ let private inlineFn (declArgs:Decl list) passedArgs bodyExpr =
         let declElt = List.exactlyOne (snd declArg)
         argMap <- argMap.Add(declElt.name.Name, passedArg)
     let mapInline _ = function
-        | Var iv as ie ->
+        | Var iv ->
             match argMap.TryFind iv.Name with
             | Some inlinedExpr -> inlinedExpr
-            | _ -> ie
+            // This var isn't an argument to the inlined function (must be a
+            // global or similar). We need to create a brand-new ident.  This is
+            // because the renamer does its work via mutation on the ident. So
+            // if this function gets inlined in more than one place, we don't
+            // mutations to affect all of the inlined idents.
+            | None -> Var (Ident (iv.Name))
         | ie -> ie
     mapExpr (mapEnv mapInline id) bodyExpr
 
