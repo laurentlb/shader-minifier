@@ -43,6 +43,7 @@
 --no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-aggro.aggro.expected tests/unit/inline-aggro.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/inline-fn.expected tests/unit/inline-fn.frag
 --no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-fn.aggro.expected tests/unit/inline-fn.frag
+--no-remove-unused --format indented -o tests/unit/inline-fn-multiple.expected tests/unit/inline-fn-multiple.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/simplify.expected tests/unit/simplify.frag
 
 # Partial renaming tests
