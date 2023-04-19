@@ -74,11 +74,14 @@ let run () =
 
     // Tests for minifying multiple files together.
     // We don't have good examples of files that fit together, but these files use the same uniforms (e.g. time, tex0).
-    let multifileInputs = ["clod.frag"; "leizex.frag"; "slisesix.frag"; "motion_blur.frag"; "mandel.frag"; "kaleidoscope.frag"]
-    let multifileOutput = compressionTest [|"--format"; "text"|] multifileInputs
+    let multifileInputs1 = ["clod.frag"; "leizex.frag"; "slisesix.frag"; "motion_blur.frag"; "mandel.frag"; "kaleidoscope.frag"]
+    let multifileOutput1 = compressionTest [|"--format"; "text"|] multifileInputs1
+
+    let multifileInputs2 = ["mouton/mouton.vert"; "mouton/mouton.frag"; "mouton/fxaa.frag"]
+    let multifileOutput2 = compressionTest [|"--format"; "text"|] multifileInputs2
 
     // Tests for individual files.
-    let sizes = multifileOutput :: List.map compressFile testFiles
+    let sizes = multifileOutput1 :: multifileOutput2 :: List.map compressFile testFiles
     let minifiedSum = List.sumBy fst sizes
     let compressedSum = List.sumBy snd sizes
     log "Total: %5d => %9.3f\n" minifiedSum compressedSum

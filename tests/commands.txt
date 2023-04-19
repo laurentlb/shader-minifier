@@ -92,3 +92,5 @@
 --no-renaming --aggressive-inlining --format indented -o tests/real/buoy.frag.expected tests/real/buoy.frag
 --no-renaming --aggressive-inlining --format indented -o tests/real/orchard.frag.expected tests/real/orchard.frag
 --no-renaming --aggressive-inlining --format indented -o tests/real/robin.frag.expected tests/real/robin.frag
+
+-o tests/real/mouton/mouton.expected tests/real/mouton/mouton.vert tests/real/mouton/mouton.frag tests/real/mouton/fxaa.frag
