@@ -218,9 +218,9 @@ let resolve topLevel =
 
     let resolveGlobalsAndParameters = function
         | TLDecl decl -> resolveDecl VarScope.Global decl
-        | Function (funcType, _) ->
+        | Function (funcType, _) as tl ->
             for decl in funcType.args do resolveDecl VarScope.Parameter decl
-            funcType.fName.Declaration <- Declaration.Func (new FunDecl(funcType))
+            funcType.fName.Declaration <- Declaration.Func (new FunDecl(tl, funcType))
         | _ -> ()
 
     // First visit all declarations, creating them.
@@ -236,6 +236,7 @@ type CallSite = {
     ident: Ident
     varsInScope: string list
     prototype: string * int
+    argExprs: Expr list
 }
 type FuncInfo = {
     func: TopLevel
@@ -249,7 +250,7 @@ let findFuncInfos code =
         let callSites = List()
         let collect (mEnv : MapEnv) = function
             | FunCall (Var id, argExprs) as e ->
-                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length) }
+                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length); argExprs = argExprs }
                 e
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
@@ -268,7 +269,7 @@ module private FunctionInlining =
 
     // To ensure correctness, we verify if it's safe to inline.
     //
-    // [A] Only inline a function if it never refers to a global by a name function or variable that is shadowed by a local variable in scope at the call site.
+    // [A] Only inline a function if it never refers to a global function or variable by a name that is shadowed by a local variable in scope at the call site.
     // [B] Only inline a function if it has only one call site.
     //     Exception: if the body is "trivial" it will be inlined at all call sites.
     // [C] Only inline a function if it is a single expression return.

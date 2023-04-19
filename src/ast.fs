@@ -21,7 +21,7 @@ type Ident(name: string) =
                           | Declaration.Variable rv -> Some rv
                           | _ -> None
 
-     // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
+    // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
 
     interface System.IComparable with
@@ -41,12 +41,13 @@ and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | Variable of VarDecl
     | Func of FunDecl
 and VarDecl(ty, decl, scope) =
-    member val ty: Type = ty with get, set
-    member val decl = decl: DeclElt with get, set
-    member val scope = scope: VarScope with get, set
+    member val ty: Type = ty with get
+    member val decl = decl: DeclElt with get
+    member val scope = scope: VarScope with get
     member val isEverWrittenAfterDecl = false with get, set
-and FunDecl(funcType) =
-    member val funcType: FunctionType = funcType with get, set
+and FunDecl(func, funcType) =
+    member val func: TopLevel = func with get
+    member val funcType: FunctionType = funcType with get
     member val hasExternallyVisibleSideEffects = false with get, set
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
@@ -128,6 +129,12 @@ and FunctionType = {
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
     member this.prototype = (this.fName.Name, this.args.Length)
+    member this.parameters: (Type * DeclElt) list =
+        // Helper to extract the single DeclElt for each arg.
+        [ for (ty, declElts) in this.args do
+          yield match declElts with
+                | [declElt] -> ty, declElt
+                | _ -> failwith "invalid declElt for function argument" ]
     override t.ToString() =
         let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
         let args = System.String.Join(", ", t.args |> List.map (function

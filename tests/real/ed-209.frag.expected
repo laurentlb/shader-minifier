@@ -21,23 +21,23 @@ float sdBox(vec3 p,vec3 b)
   vec3 q=abs(p)-b;
   return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
 }
-float sdChamferedCube(vec3 p,vec3 r,float c)
+float sdChamferedCube(vec3 p,vec3 r)
 {
   float cube=sdBox(p,r);
   p.xz*=rot(.78525);
-  r.xz*=-c/1.41+1.41;
+  r.xz*=-.18/1.41+1.41;
   return max(cube,sdBox(p,r));
 }
-float sdTriPrism(vec3 p,vec2 h)
+float sdTriPrism(vec3 p)
 {
   vec3 q=abs(p);
-  return max(q.z-h.y,max(q.x*.866025+p.y*.5,-p.y)-h.x*.5);
+  return max(q.z-vec2(.1,.5).y,max(q.x*.866025+p.y*.5,-p.y)-vec2(.1,.5).x*.5);
 }
-float sdCappedCone(vec3 p,vec3 a,vec3 b,float ra,float rb)
+float sdCappedCone(vec3 p)
 {
-  float rba=rb-ra,baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
-    ra:
-    rb)),cay=abs(paba-.5)-.5,f=clamp((rba*(x-ra)+paba*baba)/(rba*rba+baba),0.,1.),cbx=x-ra-f*rba,cby=paba-f;
+  float baba=dot(vec3(0,0,-.1)-vec3(0),vec3(0,0,-.1)-vec3(0)),paba=dot(p-vec3(0),vec3(0,0,-.1)-vec3(0))/baba,x=sqrt(dot(p-vec3(0),p-vec3(0))-paba*paba*baba),cax=max(0.,x-(paba<.5?
+    .25:
+    .35)),cay=abs(paba-.5)-.5,f=clamp((.1*(x-.25)+paba*baba)/(.01+baba),0.,1.),cbx=x-.25-f*.1,cby=paba-f;
   return(cbx<0.&&cay<0.?
     -1.:
     1.)*sqrt(min(cax*cax+cay*cay*baba,cbx*cbx+cby*cby*baba));
@@ -47,10 +47,10 @@ float sdCappedCylinder(vec3 p,float h,float r)
   vec2 d=abs(vec2(length(p.xy),p.z))-vec2(h,r);
   return min(max(d.x,d.y),0.)+length(max(d,0.));
 }
-float sdCapsule(vec3 p,vec3 a,vec3 b,float r)
+float sdCapsule(vec3 p,vec3 a,vec3 b)
 {
   vec3 pa=p-a,ba=b-a;
-  return length(pa-ba*clamp(dot(pa,ba)/dot(ba,ba),0.,1.))-r;
+  return length(pa-ba*clamp(dot(pa,ba)/dot(ba,ba),0.,1.))-.2;
 }
 float sdOctogon(vec2 p,float r)
 {
@@ -128,10 +128,10 @@ MarchData gunPod(vec3 p)
   p.yz+=vec2(.1,.45);
   vec3 pp=p;
   pp.z=abs(pp.z)-.5;
-  r.d=sdCappedCone(pp,vec3(0),vec3(0,0,-.1),.25,.35);
+  r.d=sdCappedCone(pp);
   r.d=min(r.d,sdCappedCylinder(p,.35,.4));
   pp=vec3(p.x,.28-p.y,p.z);
-  r.d=min(r.d,sdTriPrism(pp,vec2(.1,.5)));
+  r.d=min(r.d,sdTriPrism(pp));
   pp=p;
   pp.x=abs(p.x);
   pp.xy*=rot(.78525);
@@ -160,7 +160,7 @@ MarchData arms(vec3 p)
   p.yz+=vec2(.24,0);
   p.xy*=rot(.15*(gunsUp-1.));
   const vec3 elbow=vec3(1.5,0,0),wrist=elbow-vec3(0,0,.3);
-  r.d=min(sdCapsule(p,vec3(0),elbow,.2),sdCapsule(p,elbow,wrist,.2));
+  r.d=min(sdCapsule(p,vec3(0),elbow),sdCapsule(p,elbow,wrist));
   p-=wrist;
   p.z-=gunsForward*.15;
   return minResult(r,gunPod(p));
@@ -235,7 +235,7 @@ MarchData legs(vec3 p)
   cp-=vec3(0,-.7,0);
   r.d=sdBox(cp-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
   cp.z+=1.;
-  r.d=min(r.d,sdChamferedCube(cp.xzy,vec2(.28-sign(abs(cp.z)-.3)*.01,.5).xyx,.18));
+  r.d=min(r.d,sdChamferedCube(cp.xzy,vec2(.28-sign(abs(cp.z)-.3)*.01,.5).xyx));
   r.d=min(r.d,foot(cp));
   if(silver<r.d)
     r.d=silver,r.mat=vec3(.8);
@@ -317,10 +317,6 @@ vec3 calcNormal(vec3 p,float t)
   vec2 e=vec2(1,-1)*.5773*(.01*t*.33);
   return normalize(e.xyy*map(p+e.xyy).d+e.yyx*map(p+e.yyx).d+e.yxy*map(p+e.yxy).d+e.xxx*map(p+e.xxx).d);
 }
-float ao(vec3 p,vec3 n,float h)
-{
-  return map(p+h*n).d/h;
-}
 vec3 vignette(vec3 col,vec2 fragCoord)
 {
   vec2 q=fragCoord.xy/iResolution.xy;
@@ -333,7 +329,7 @@ vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
   vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
   float primary=max(0.,dot(sunDir,n));
   primary*=mix(.2,1.,calcShadow(p,sunPos));
-  vec3 lig=((primary+max(0.,dot(-sunDir,n))*.2)*ao(p,n,.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
+  vec3 lig=((primary+max(0.,dot(-sunDir,n))*.2)*(map(p+.33*n).d/.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
   return mix(data.mat*lig,vec3(.01),smoothstep(.7,1.,1.+dot(rd,n)))*exp(-length(p)*.05);
 }
 vec3 getSceneColor(vec3 ro,vec3 rd)

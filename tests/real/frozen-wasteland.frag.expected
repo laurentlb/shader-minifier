@@ -203,9 +203,9 @@ vec3 bump(vec3 p,vec3 n,float ds)
   vec3 d=vec3(bnoise(p+e.xyy)-n0,bnoise(p+e.yxy)-n0,bnoise(p+e.yyx)-n0)/e.x;
   return normalize(n-d*10./ds);
 }
-float shadow(vec3 ro,vec3 rd,float mint)
+float shadow(vec3 ro,vec3 rd)
 {
-  float res=1.,t=mint;
+  float res=1.,t=.04;
   for(int i=0;i<12;i++)
     {
       float h=map(ro+rd*t);
@@ -258,7 +258,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
       vec3 pos=ro+rz*rd,nor=normal(pos,rz);
       float d=distance(pos,ro);
       nor=bump(pos,nor,d);
-      float shd=shadow(pos,ligt,.04),dif=clamp(dot(nor,ligt),0.,1.);
+      float shd=shadow(pos,ligt),dif=clamp(dot(nor,ligt),0.,1.);
       vec3 ref=reflect(rd,nor);
       float fre=pow(clamp(1.+dot(rd,nor),0.,1.),3.);
       col=vec3(.75);

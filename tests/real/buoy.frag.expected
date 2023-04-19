@@ -1,19 +1,19 @@
 #define GAMMA (2.2)
 
 vec3 localRay;
-void CamPolar(out vec3 pos,out vec3 ray,vec3 origin,vec2 rotation,float distance,float zoom,vec2 fragCoord)
+void CamPolar(out vec3 pos,out vec3 ray,vec2 rotation,vec2 fragCoord)
 {
   vec2 c=vec2(cos(rotation.x),cos(rotation.y));
   vec4 s;
   s.xy=vec2(sin(rotation.x),sin(rotation.y));
   s.zw=-s.xy;
   ray.xy=fragCoord.xy-iResolution.xy*.5;
-  ray.z=iResolution.y*zoom;
+  ray.z=iResolution.y;
   ray=normalize(ray);
   localRay=ray;
   ray.yz=ray.yz*c.xx+ray.zy*s.zx;
   ray.xz=ray.xz*c.yy+ray.zx*s.yw;
-  pos=origin-distance*vec3(c.x*s.y,s.z,c.x*c.y);
+  pos=vec3(0)-3.*vec3(c.x*s.y,s.z,c.x*c.y);
 }
 vec2 Noise(vec3 x)
 {
@@ -202,7 +202,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   ComputeBoatTransform();
   vec2 camRot=vec2(.5)+vec2(-.35,4.5)*(iMouse.yx/iResolution.yx);
   vec3 pos,ray;
-  CamPolar(pos,ray,vec3(0),camRot,3.,1.,fragCoord);
+  CamPolar(pos,ray,camRot,fragCoord);
   float to=TraceOcean(pos,ray),tb=TraceBoat(pos,ray);
   vec3 result;
   result=to>0.&&(to<tb||tb==0.)?

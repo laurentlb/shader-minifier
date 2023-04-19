@@ -1,16 +1,16 @@
 ; Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 _var_RESOLUTION: db 'n', 0
-_var_TEX0: db 'v', 0
+_var_TEX0: db 'f', 0
 _var_TEX1: db 'm', 0
 _var_TEX2: db 'o', 0
 _var_TEX3: db 'y', 0
-_var_TIME: db 'f', 0
+_var_TIME: db 'v', 0
 
 _leizex_frag:
 	db '#extension GL_EXT_gpu_shader4:enable', 10, ''
 	db 'uniform vec2 n;'
-	db 'uniform float f;'
-	db 'uniform sampler2D v,m,o,y;'
+	db 'uniform float v;'
+	db 'uniform sampler2D f,m,o,y;'
 	db 'float t(int v)'
 	db '{'
 	db   'v=v<<13^v;'
@@ -79,33 +79,33 @@ _leizex_frag:
 	db   'vec3 s=normalize(r-f),o=normalize(cross(s,vec3(0,cos(m),sin(m))));'
 	db   'v=normalize(i.x*o+i.y*normalize(cross(o,s))+s);'
 	db '}'
-	db 'vec3 c(vec3 v,float x,vec3 y)'
+	db 'vec3 s(vec3 v,vec3 y)'
 	db '{'
 	db   'float f=c(256.*y);'
-	db   'vec3 n=vec3(c(256.*(y+vec3(5e-4,0,0)))-f,c(256.*(y+vec3(0,5e-4,0)))-f,c(256.*(y+vec3(0,0,5e-4)))-f);'
-	db   'return normalize(v+x*n);'
+	db   'vec3 x=vec3(c(256.*(y+vec3(5e-4,0,0)))-f,c(256.*(y+vec3(0,5e-4,0)))-f,c(256.*(y+vec3(0,0,5e-4)))-f);'
+	db   'return normalize(v+x);'
 	db '}'
 	db 'void main()'
 	db '{'
-	db   'vec2 v=-1.+2.*gl_FragCoord.xy/n.xy;'
+	db   'vec2 f=-1.+2.*gl_FragCoord.xy/n.xy;'
 	db   'vec3 y,m;'
-	db   'c(m,y,v,f);'
-	db   'float r,s;'
-	db   'vec3 i,t;'
+	db   'c(m,y,f,v);'
+	db   'float r,t;'
+	db   'vec3 i,o;'
 	db   'for(r=.1;r<5.;)'
 	db     '{'
-	db       't=y+r*m;'
-	db       'float d=c(t,s);'
+	db       'o=y+r*m;'
+	db       'float d=c(o,t);'
 	db       'if(d<.001)'
 	db         'break;'
 	db       'r+=d*.12;'
 	db     '}'
-	db   'i=x(t);'
-	db   'vec3 d=vec3(1.+.5*c(96.*t)),o=c(i,1.,.25*t);'
-	db   'd=d*(vec3(.5,.55,.6)+vec3(.6,.5,.3)*clamp(dot(o,vec3(.8,.5,-.1)),0.,1.)*3.)*s;'
+	db   'i=x(o);'
+	db   'vec3 d=vec3(1.+.5*c(96.*o)),C=s(i,.25*o);'
+	db   'd=d*(vec3(.5,.55,.6)+vec3(.6,.5,.3)*clamp(dot(C,vec3(.8,.5,-.1)),0.,1.)*3.)*t;'
 	db   'd=d/(1.+r)+vec3(1.06,1.14,1)*(1.-exp2(-.25*r));'
 	db   'd=(d*d+d)*.5;'
 	db   'd=clamp(d*vec3(1,1.2,1),0.,1.);'
-	db   'd*=.5+.5*(1.-v.x)*(1.+v.x);'
+	db   'd*=.5+.5*(1.-f.x)*(1.+f.x);'
 	db   'gl_FragColor=vec4(d,1);'
 	db '}', 0

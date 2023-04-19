@@ -592,6 +592,87 @@ let reorderFunctions code =
     rest @ order
 
 
+// Inline the argument of a function call into the function body.
+module private ArgumentInlining =
+
+    let rec isInlinableExpr = function
+        | Var v when v.Name = "true" || v.Name = "false" -> true
+        | Int _
+        | Float _ -> true
+        | FunCall(Var fct, args) ->
+            Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
+        | _ -> false
+
+    type [<NoComparison>] Inlining = {
+        func: TopLevel
+        argIndex: int
+        varDecl: VarDecl
+        argExpr: Expr
+    }
+
+    // Find when functions are always called with the same trivial expr, that can be inlined into the function body.
+    let findInlinings code: Inlining list =
+        let mutable argInlinings = []
+        Analyzer.resolve code
+        Analyzer.markWrites code
+        let funcInfos = Analyzer.findFuncInfos code
+        for funcInfo in funcInfos do
+            let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
+            let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
+            let isAmbiguouslyOverloaded = funcInfos |> List.except [funcInfo] |> List.exists (fun f -> f.funcType.prototype = funcInfo.funcType.prototype)
+            if canBeRenamed && not isExternal && not isAmbiguouslyOverloaded then
+                let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.prototype = funcInfo.funcType.prototype)
+                for argIndex, (_, argDecl) in List.indexed funcInfo.funcType.parameters do
+                    match argDecl.name.VarDecl with
+                    | None -> ()
+                    | Some varDecl ->
+                        // Only inline 'in' parameters that are never written to.
+                        if not varDecl.ty.isOutOrInout && not varDecl.isEverWrittenAfterDecl then
+                            let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
+                            match argExprs with
+                            | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
+                                argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
+                            | _ -> ()
+        argInlinings
+
+    let apply (didInline: bool ref) code =
+        let argInlinings = findInlinings code
+
+        let removeInlined func list =
+            list
+            |> List.indexed
+            |> List.filter (fun (idx, _) -> not (argInlinings |> List.exists (fun inl -> inl.func = func && inl.argIndex = idx)))
+            |> List.map snd
+
+        let applyExpr env = function
+            | Var v as e ->
+                // Replace the parameter use site by the argument expression.
+                match argInlinings |> List.tryFind (fun inl -> Some inl.varDecl = v.VarDecl) with
+                | Some inl -> inl.argExpr |> mapExpr env
+                | None -> e
+            | FunCall (Var v, argExprs) as f ->
+                // Remove the argument expression from the call site.
+                match v.Declaration with
+                | Declaration.Func fd -> FunCall (Var v, removeInlined fd.func argExprs)
+                | _ -> f
+            | x -> x
+
+        let applyTopLevel = function
+            | Function(fct, body) as f ->
+                // Remove the parameter from the declaration.
+                let fct = {fct with args = removeInlined f fct.args}
+                // Modify the body.
+                let _, body = mapStmt (mapEnv applyExpr id) body
+                Function(fct, body)
+            | tl -> tl
+
+        if argInlinings.IsEmpty then
+            code
+        else
+            let code = code |> List.map applyTopLevel
+            didInline.Value <- true
+            code
+
 let rec iterateSimplifyAndInline li =
     let li = if not options.noRemoveUnused then removeUnusedFunctions li else li
     if not options.noInlining then
@@ -600,14 +681,16 @@ let rec iterateSimplifyAndInline li =
         Analyzer.markInlinableFunctions li
         Analyzer.markInlinableVariables li
     let didInline = ref false
-    let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
+    let li = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
 
     // now that the functions were inlined, we can remove them
-    let simplified = simplified |> List.filter (function
+    let li = li |> List.filter (function
         | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
         | _ -> true)
+    
+    let li = if options.noInlining then li else ArgumentInlining.apply didInline li
 
-    if didInline.Value then iterateSimplifyAndInline simplified else simplified
+    if didInline.Value then iterateSimplifyAndInline li else li
 
 let simplify li =
     li

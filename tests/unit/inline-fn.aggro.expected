@@ -44,10 +44,6 @@ float C1()
   x++;
   return 3.+x;
 }
-float D1(float d,float dd)
-{
-  return d+d;
-}
 float glob;
 float watchout(out float x)
 {
@@ -57,19 +53,19 @@ float inuit(inout float greenland)
 {
   return greenland++;
 }
-float E1(float bad1,float ok)
+float E1(float bad1)
 {
   return bad1++;
 }
-float E3(float bad3,float ok)
+float E3(float bad3)
 {
   return bad3+=1.;
 }
-float E4(float bad4,float ok)
+float E4(float bad4)
 {
   return watchout(bad4);
 }
-float E5(float bad5,float ok)
+float E5(float bad5)
 {
   return inuit(bad5);
 }
@@ -94,13 +90,13 @@ float f()
   float _C1=C1();
   sep++;
   sep++;
-  float _E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E4=E4(6.,10.),_E5=E5(6.,10.);
+  float _E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E4=E4(6.),_E5=E5(6.);
   sep++;
   float o,_F2=F2(o),_F3=F3(o);
   sep++;
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+1.+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+D1(4.,5.)+9.+E1(6.,10.)+_E2+E3(6.,10.)+_E4+_E5+7.+_F2+_F3;
+  return shadowedVar+shadowedFunc+1.+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+8.+9.+E1(6.)+_E2+E3(6.)+_E4+_E5+7.+_F2+_F3;
 }
 float g()
 {

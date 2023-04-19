@@ -171,10 +171,10 @@ vec3 sphere(vec2 w)
   p.y=sin(phi)*u;
   return p;
 }
-float smin(float a,float b,float k)
+float smin(float a,float b)
 {
-  float h=clamp(.5+.5*(b-a)/k,0.,1.);
-  return mix(b,a,h)-k*h*(1.-h);
+  float h=clamp(.5+.5*(b-a)/10.,0.,1.);
+  return mix(b,a,h)-10.*h*(1.-h);
 }
 void main()
 {
@@ -196,7 +196,7 @@ void main()
           col*=mix(.5,1.,cos(p.x*8)*.5+.5);
           time-=180+3.5;
           col*=max(0.,1.-time/12.);
-          float time2=smin(time,25.,10.);
+          float time2=smin(time,25.);
           w.x=R();
           w.y=R();
           w.z=R();
@@ -348,7 +348,7 @@ void main()
           camtarget=vec3(-2,.5+time2/14.,0);
           p.xyz+=(w.xyz*2-1)*pow(length(p-campos),2)*.001;
           cameraroll=1.-smoothstep(0.,30.,time);
-          cameraroll2=-smin(0,-time+40,10.)*.01;
+          cameraroll2=-smin(0,-time+40)*.01;
         }
       else if(time>=165)
         {
