@@ -218,9 +218,9 @@ let resolve topLevel =
 
     let resolveGlobalsAndParameters = function
         | TLDecl decl -> resolveDecl VarScope.Global decl
-        | Function (funcType, _) ->
+        | Function (funcType, _) as tl ->
             for decl in funcType.args do resolveDecl VarScope.Parameter decl
-            funcType.fName.Declaration <- Declaration.Func (new FunDecl(funcType))
+            funcType.fName.Declaration <- Declaration.Func (new FunDecl(tl, funcType))
         | _ -> ()
 
     // First visit all declarations, creating them.
@@ -236,6 +236,7 @@ type CallSite = {
     ident: Ident
     varsInScope: string list
     prototype: string * int
+    argExprs: Expr list
 }
 type FuncInfo = {
     func: TopLevel
@@ -243,13 +244,15 @@ type FuncInfo = {
     body: Stmt
     name: string
     callSites: CallSite list // calls to other user-defined functions, from inside this function.
+    isResolvable: bool // Currently we cannot resolve overloaded functions based on argument types.
+    isOverloaded: bool
 }
 let findFuncInfos code =
     let findCallSites block = // Gets the list of call sites in this function
         let callSites = List()
         let collect (mEnv : MapEnv) = function
             | FunCall (Var id, argExprs) as e ->
-                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length) }
+                callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length); argExprs = argExprs }
                 e
             | e -> e
         mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
@@ -257,18 +260,20 @@ let findFuncInfos code =
     let functions = code |> List.choose (function
         | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
         | _ -> None)
-    let funcInfos = functions |> List.map (fun (funcType, name, block, f) ->
+    let funcInfos = functions |> List.map (fun ((funcType, name, block, func) as f) ->
         let callSites = findCallSites block
                         // only return calls to user-defined functions
-                        |> List.filter (fun callSite -> functions |> List.exists (fun (ft,_,_,_) -> callSite.prototype = ft.prototype))
-        { FuncInfo.func = f; funcType = funcType; name = name; callSites = callSites; body = block })
+                        |> List.filter (fun callSite -> functions |> List.exists (fun (ft, _, _, _) -> callSite.prototype = ft.prototype))
+        let isResolvable = not (functions |> List.except [f] |> List.exists (fun (ft, _, _, _) -> ft.prototype = funcType.prototype))
+        let isOverloaded = not (functions |> List.except [f] |> List.exists (fun (ft, _, _, _) -> ft.fName = funcType.fName))
+        { FuncInfo.func = func; funcType = funcType; name = name; callSites = callSites; body = block; isResolvable = isResolvable; isOverloaded = isOverloaded })
     funcInfos
 
 module private FunctionInlining =
 
     // To ensure correctness, we verify if it's safe to inline.
     //
-    // [A] Only inline a function if it never refers to a global by a name function or variable that is shadowed by a local variable in scope at the call site.
+    // [A] Only inline a function if it never refers to a global function or variable by a name that is shadowed by a local variable in scope at the call site.
     // [B] Only inline a function if it has only one call site.
     //     Exception: if the body is "trivial" it will be inlined at all call sites.
     // [C] Only inline a function if it is a single expression return.
@@ -325,17 +330,14 @@ module private FunctionInlining =
         let funcInfos = findFuncInfos code
         for funcInfo in funcInfos do
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
-            let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
-            let isOverloadedAmbiguously = funcInfos |> List.except [funcInfo] |> List.exists (fun f -> f.funcType.prototype = funcInfo.funcType.prototype)
-            if canBeRenamed && not isExternal && not isOverloadedAmbiguously then
+            if canBeRenamed && not funcInfo.funcType.isExternal && funcInfo.isResolvable then
                 if not funcInfo.funcType.hasOutOrInoutParams then // [F]
                     // Find calls to this function. This works because we checked that the function is not overloaded ambiguously.
                     let callSites = funcInfos |> List.collect (fun n -> n.callSites)
                                               |> List.filter (fun callSite -> callSite.prototype = funcInfo.funcType.prototype)
                     if callSites.Length > 0 then // Unused function elimination is not handled here
-                        match funcInfo.body with
-                        | Jump (JumpKeyword.Return, Some body)
-                        | Block [Jump (JumpKeyword.Return, Some body)] -> // [C]
+                        match funcInfo.body.asStmtList with
+                        | [Jump (JumpKeyword.Return, Some body)] -> // [C]
                             if callSites.Length = 1 || VariableInlining.isTrivialExpr body then // [B]
                                 tryMarkFunctionToInline funcInfo callSites
                         | _ -> ()

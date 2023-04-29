@@ -1,0 +1,85 @@
+float noinline_canInlineWhenResolvable()
+{
+  return 11.;
+}
+float noinline_cannotInlineWhenNotResolvable(float a)
+{
+  return a+11.;
+}
+float noinline_cannotInlineWhenNotResolvable(vec2 a)
+{
+  return a+11.;
+}
+float noinline_canInlineWhenInParameter()
+{
+  return 21.;
+}
+float noinline_cannotInlineWhenOutParameter(out float a)
+{
+  return a+21.;
+}
+float noinline_cannotInlineWhenInOutParameter(inout float a)
+{
+  return a+22.;
+}
+float noinline_canInlineWhenArgIsAlwaysTheSame()
+{
+  return 31.;
+}
+float noinline_cannotInlineWhenArgsAreDifferent(float a)
+{
+  return a+31.;
+}
+float noinline_canInlineWhenArgIsInlinable1()
+{
+  return true+40.;
+}
+float noinline_canInlineWhenArgIsInlinable2()
+{
+  return-18+40.;
+}
+float noinline_canInlineWhenArgIsInlinable3()
+{
+  return 496.;
+}
+float noinline_canInlineWhenArgIsInlinable4()
+{
+  return vec3(9)+40.;
+}
+float noinline_canInlineWhenArgIsInlinable5()
+{
+  return acos(-1.)+40.;
+}
+float noinline_canInlineWhenArgIsInlinable6()
+{
+  return 1./3.+40.;
+}
+float noinline_cannotInlineWhenArgIsNotInlinable(float a)
+{
+  return a+41.;
+}
+float f()
+{
+  float s=0;
+  s+=noinline_canInlineWhenResolvable();
+  s+=noinline_cannotInlineWhenNotResolvable(1.);
+  s+=noinline_canInlineWhenInParameter();
+  s+=noinline_cannotInlineWhenOutParameter(s);
+  s+=noinline_cannotInlineWhenInOutParameter(s);
+  s+=noinline_canInlineWhenArgIsAlwaysTheSame();
+  s+=noinline_cannotInlineWhenArgsAreDifferent(1.);
+  s+=noinline_cannotInlineWhenArgsAreDifferent(2.);
+  s+=noinline_canInlineWhenArgIsInlinable1();
+  s+=noinline_canInlineWhenArgIsInlinable2();
+  s+=noinline_canInlineWhenArgIsInlinable3();
+  s+=noinline_canInlineWhenArgIsInlinable4();
+  s+=noinline_canInlineWhenArgIsInlinable5();
+  s+=noinline_canInlineWhenArgIsInlinable6();
+  s+=noinline_cannotInlineWhenArgIsNotInlinable(s);
+  s+=noinline_cannotInlineWhenArgIsNotInlinable(acos(s));
+  return s;
+}
+void main()
+{
+  f();
+}

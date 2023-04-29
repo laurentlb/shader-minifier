@@ -126,9 +126,9 @@ float isoSurface(vec3 p)
   p*=4.+10.*max(0.,Y.z-EXPLOSIONTIME);
   return-.4+p.x*p.x*p.x*p.x*p.x*p.x*p.x*p.x+p.y*p.y*p.y*p.y*p.y*p.y*p.y*p.y+p.z*p.z*p.z*p.z*p.z*p.z*p.z*p.z;
 }
-float traceIso(vec3 ro,vec3 rd,float mint,float maxt,float s)
+float traceIso(vec3 ro,vec3 rd,float mint,float maxt)
 {
-  float lt,liso,exact,delt=(maxt-mint)/s;
+  float lt,liso,exact,delt=(maxt-mint)/99.;
   for(float t=mint;t<maxt;t+=delt)
     {
       vec3 p=ro+t*rd;
@@ -220,7 +220,7 @@ void main()
     }
   lightDir=normalize(lightPos-ro);
   float dist=length(ro-artifactPos.xyz)-1.,isoDistance=artifactPos.w==1.?
-    traceIso(ro,rd,dist,dist+2.,99.):
+    traceIso(ro,rd,dist,dist+2.):
     FAR;
   if(isoDistance<FAR)
     {

@@ -31,9 +31,9 @@ void stroke(float d0,float s,out float d)
 {
   d=abs(d0)-s;
 }
-void zextrude(float z,float d2d,float h,out float d)
+void zextrude(float z,float d2d,out float d)
 {
-  d=length(max(vec2(-d2d,abs(z)-.5*h),0.));
+  d=length(max(vec2(-d2d,abs(z)-5e3),0.));
 }
 void add(vec2 sda,vec2 sdb,out vec2 dst)
 {
@@ -65,7 +65,7 @@ void scene(vec3 x,out vec2 sdf)
   float R=.07+.1*sdf.x,dis;
   lfnoise(.5*x.y*c.xx,dis);
   vec2 sdb,ya=abs(x.xz-.4*dis*c.xy)+.045*c.yx-.065*c.xy;
-  zextrude(x.y,-length(ya)+R,1e4,sdb.x);
+  zextrude(x.y,-length(ya)+R,sdb.x);
   float da;
   stroke(sdb.x,.003,da);
   sdb.y=2.;

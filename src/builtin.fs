@@ -45,6 +45,15 @@ let assignOps = set [
     "<<="; ">>="; "&="; "^="; "|="
     "++"; "--"; "$++"; "$--"
 ]
+let nonAssignOps = set [
+    "*"; "/"; "%"
+    "+"; "-"
+    "<<"; ">>"
+    "<"; ">"; "<="; ">="
+    "=="; "!="
+    "&"; "^"; "|"
+    "&&"; "^^"; "||"
+]
 
 let castFunctions = builtinTypes - set ["void"]
 let trigonometryFunctions = set([
