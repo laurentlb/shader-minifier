@@ -1,12 +1,4 @@
-float foo()
-{
-  return 42.;
-}
-float foo()
-{
-  return 50.;
-}
 void main()
 {
-  gl_fragColor.xyz=vec3(foo()+foo());
+  gl_fragColor.xyz=vec3(92);
 }

@@ -9,7 +9,7 @@
 
 # Unit tests
 
---no-remove-unused --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
+--no-remove-unused --no-inlining --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
 --no-remove-unused --hlsl --no-inlining --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
 --no-remove-unused --no-renaming --no-inlining --move-declarations --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
 --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
@@ -45,6 +45,7 @@
 --no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-fn.aggro.expected tests/unit/inline-fn.frag
 --no-remove-unused --format indented -o tests/unit/inline-fn-multiple.expected tests/unit/inline-fn-multiple.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/simplify.expected tests/unit/simplify.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frag
 
 # Partial renaming tests
 

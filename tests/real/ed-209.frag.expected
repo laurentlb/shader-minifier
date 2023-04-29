@@ -30,12 +30,14 @@ float sdChamferedCube(vec3 p,vec3 r)
 }
 float sdTriPrism(vec3 p)
 {
+  vec2 h=vec2(.1,.5);
   vec3 q=abs(p);
-  return max(q.z-vec2(.1,.5).y,max(q.x*.866025+p.y*.5,-p.y)-vec2(.1,.5).x*.5);
+  return max(q.z-h.y,max(q.x*.866025+p.y*.5,-p.y)-h.x*.5);
 }
 float sdCappedCone(vec3 p)
 {
-  float baba=dot(vec3(0,0,-.1)-vec3(0),vec3(0,0,-.1)-vec3(0)),paba=dot(p-vec3(0),vec3(0,0,-.1)-vec3(0))/baba,x=sqrt(dot(p-vec3(0),p-vec3(0))-paba*paba*baba),cax=max(0.,x-(paba<.5?
+  vec3 b=vec3(0,0,-.1),a=vec3(0);
+  float baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
     .25:
     .35)),cay=abs(paba-.5)-.5,f=clamp((.1*(x-.25)+paba*baba)/(.01+baba),0.,1.),cbx=x-.25-f*.1,cby=paba-f;
   return(cbx<0.&&cay<0.?

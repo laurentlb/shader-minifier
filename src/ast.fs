@@ -12,6 +12,7 @@ type Ident(name: string) =
     member this.OldName = name
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
+    // This prefix disables function inlining and variable inlining.
     member this.DoNotInline = this.OldName.StartsWith("noinline_")
 
     //member val isVarRead: bool = false with get, set
@@ -114,6 +115,9 @@ and Stmt =
     | Jump of JumpKeyword * Expr option (*break, continue, return (expr)?, discard*)
     | Verbatim of string
     | Switch of Expr * (CaseLabel * Stmt list) list
+with member this.asStmtList = match this with
+                              | Block stmts -> stmts
+                              | stmt -> [stmt]
 
 and CaseLabel =
     | Case of Expr
@@ -125,6 +129,7 @@ and FunctionType = {
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
 } with
+    member this.isExternal = options.hlsl && this.semantics <> []
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty

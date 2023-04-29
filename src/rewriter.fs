@@ -272,9 +272,8 @@ let private simplifyExpr (didInline: bool ref) env = function
         | Some ([{args = declArgs}, body]) ->
             if List.length declArgs <> List.length passedArgs then
                 failwithf "Cannot inline function %s since it doesn't have the right number of arguments" v.Name
-            match body with
-            | Jump (JumpKeyword.Return, Some bodyExpr)
-            | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
+            match body.asStmtList with
+            | [Jump (JumpKeyword.Return, Some bodyExpr)] ->
                 didInline.Value <- true
                 inlineFn declArgs passedArgs bodyExpr
             // Don't yell if we've done some inlining this pass -- maybe it
@@ -556,12 +555,11 @@ let rec private removeUnusedFunctions code =
     let funcInfos = Analyzer.findFuncInfos code
     let isUnused (funcInfo : Analyzer.FuncInfo) =
         let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
-        let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
         let isCalled = funcInfos |> List.exists (fun n ->
             n.callSites
             |> List.map (fun c -> c.prototype)
             |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
-        canBeRenamed && not isCalled && not isExternal
+        canBeRenamed && not isCalled && not funcInfo.funcType.isExternal
     let unused = set [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo.func]
     let mutable edited = false
     let code = code |> List.filter (function
@@ -601,6 +599,7 @@ module private ArgumentInlining =
         | Float _ -> true
         | FunCall(Var fct, args) ->
             Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
+        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
         | _ -> false
 
     type [<NoComparison>] Inlining = {
@@ -618,21 +617,18 @@ module private ArgumentInlining =
         let funcInfos = Analyzer.findFuncInfos code
         for funcInfo in funcInfos do
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
-            let isExternal = options.hlsl && funcInfo.funcType.semantics <> []
-            let isAmbiguouslyOverloaded = funcInfos |> List.except [funcInfo] |> List.exists (fun f -> f.funcType.prototype = funcInfo.funcType.prototype)
-            if canBeRenamed && not isExternal && not isAmbiguouslyOverloaded then
+            // If the function is overloaded, removing a parameter could conflict with another overload.
+            if canBeRenamed && not funcInfo.funcType.isExternal && funcInfo.isOverloaded then
                 let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.prototype = funcInfo.funcType.prototype)
                 for argIndex, (_, argDecl) in List.indexed funcInfo.funcType.parameters do
                     match argDecl.name.VarDecl with
-                    | None -> ()
-                    | Some varDecl ->
-                        // Only inline 'in' parameters that are never written to.
-                        if not varDecl.ty.isOutOrInout && not varDecl.isEverWrittenAfterDecl then
-                            let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
-                            match argExprs with
-                            | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
-                                argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
-                            | _ -> ()
+                    | Some varDecl when not varDecl.ty.isOutOrInout -> // Only inline 'in' parameters.
+                        let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
+                        match argExprs with
+                        | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
+                            argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
+                        | _ -> ()
+                    | _ -> ()
         argInlinings
 
     let apply (didInline: bool ref) code =
@@ -644,12 +640,7 @@ module private ArgumentInlining =
             |> List.filter (fun (idx, _) -> not (argInlinings |> List.exists (fun inl -> inl.func = func && inl.argIndex = idx)))
             |> List.map snd
 
-        let applyExpr env = function
-            | Var v as e ->
-                // Replace the parameter use site by the argument expression.
-                match argInlinings |> List.tryFind (fun inl -> Some inl.varDecl = v.VarDecl) with
-                | Some inl -> inl.argExpr |> mapExpr env
-                | None -> e
+        let applyExpr _ = function
             | FunCall (Var v, argExprs) as f ->
                 // Remove the argument expression from the call site.
                 match v.Declaration with
@@ -659,11 +650,18 @@ module private ArgumentInlining =
 
         let applyTopLevel = function
             | Function(fct, body) as f ->
-                // Remove the parameter from the declaration.
-                let fct = {fct with args = removeInlined f fct.args}
-                // Modify the body.
+                // Handle argument inlining for other functions called by f.
                 let _, body = mapStmt (mapEnv applyExpr id) body
-                Function(fct, body)
+                // Handle argument inlining for f. Remove the parameter from the declaration.
+                let fct = {fct with args = removeInlined f fct.args}
+                // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
+                let decls =
+                    argInlinings
+                    |> List.filter (fun inl -> inl.func = f)
+                    |> List.map (fun inl -> Decl (
+                        {inl.varDecl.ty with typeQ = inl.varDecl.ty.typeQ |> List.filter ((=) "const")},
+                        [{inl.varDecl.decl with init = Some inl.argExpr}]))
+                Function(fct, Block (decls @ body.asStmtList))
             | tl -> tl
 
         if argInlinings.IsEmpty then
