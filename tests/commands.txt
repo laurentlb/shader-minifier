@@ -9,7 +9,7 @@
 
 # Unit tests
 
---no-remove-unused --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
+--no-remove-unused --no-inlining --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
 --no-remove-unused --hlsl --no-inlining --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
 --no-remove-unused --no-renaming --no-inlining --move-declarations --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
 --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
@@ -43,7 +43,9 @@
 --no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-aggro.aggro.expected tests/unit/inline-aggro.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/inline-fn.expected tests/unit/inline-fn.frag
 --no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-fn.aggro.expected tests/unit/inline-fn.frag
+--no-remove-unused --format indented -o tests/unit/inline-fn-multiple.expected tests/unit/inline-fn-multiple.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/simplify.expected tests/unit/simplify.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frag
 
 # Partial renaming tests
 
@@ -65,6 +67,7 @@
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
 --no-remove-unused --no-inlining -o tests/unit/function_overload.expected tests/unit/function_overload.frag
+--no-remove-unused -o tests/unit/function_overload2.expected tests/unit/function_overload.frag
 -o tests/unit/overload.expected tests/unit/overload.frag
 --no-remove-unused -o tests/unit/externals.expected tests/unit/externals.frag
 --no-remove-unused -o tests/unit/qualifiers.expected tests/unit/qualifiers.frag
@@ -90,3 +93,5 @@
 --no-renaming --aggressive-inlining --format indented -o tests/real/buoy.frag.expected tests/real/buoy.frag
 --no-renaming --aggressive-inlining --format indented -o tests/real/orchard.frag.expected tests/real/orchard.frag
 --no-renaming --aggressive-inlining --format indented -o tests/real/robin.frag.expected tests/real/robin.frag
+
+-o tests/real/mouton/mouton.expected tests/real/mouton/mouton.vert tests/real/mouton/mouton.frag tests/real/mouton/fxaa.frag

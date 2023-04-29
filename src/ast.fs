@@ -12,6 +12,7 @@ type Ident(name: string) =
     member this.OldName = name
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
+    // This prefix disables function inlining and variable inlining.
     member this.DoNotInline = this.OldName.StartsWith("noinline_")
 
     //member val isVarRead: bool = false with get, set
@@ -21,7 +22,7 @@ type Ident(name: string) =
                           | Declaration.Variable rv -> Some rv
                           | _ -> None
 
-     // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
+    // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
 
     interface System.IComparable with
@@ -34,19 +35,20 @@ type Ident(name: string) =
         | :? Ident as o -> this.Name = o.Name  
         | _ -> false
     override this.GetHashCode() = name.GetHashCode()
-    override this.ToString() = "ident: " + name
+    override this.ToString() = $"<{name}>"
 
 and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | Unknown
     | Variable of VarDecl
     | Func of FunDecl
 and VarDecl(ty, decl, scope) =
-    member val ty: Type = ty with get, set
-    member val decl = decl: DeclElt with get, set
-    member val scope = scope: VarScope with get, set
+    member val ty: Type = ty with get
+    member val decl = decl: DeclElt with get
+    member val scope = scope: VarScope with get
     member val isEverWrittenAfterDecl = false with get, set
-and FunDecl(funcType) =
-    member val funcType: FunctionType = funcType with get, set
+and FunDecl(func, funcType) =
+    member val func: TopLevel = func with get
+    member val funcType: FunctionType = funcType with get
     member val hasExternallyVisibleSideEffects = false with get, set
 and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 
@@ -80,13 +82,24 @@ and Type = {
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
+    override t.ToString() =
+        let name = match t.name with
+                   | TypeName n -> n
+                   | TypeStruct _ -> $"{t.name}"
+        if t.typeQ.IsEmpty && t.arraySizes.IsEmpty
+            then $"{name}"
+            else $"<{t.typeQ} {name} {t.arraySizes}>"
 
 and DeclElt = {
     name: Ident // e.g. foo
     size: Expr option // e.g. [3]
     semantics: Expr list // e.g. : color
     init: Expr option // e.g. = f(x)
-}
+} with override t.ToString() =
+        let size = if t.size = None then "" else $"[{t.size}]"
+        let init = if t.init = None then "" else $" = {t.init}"
+        let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
+        $"{t.name}{size}{init}{sem}"
 
 and Decl = Type * DeclElt list
 
@@ -102,6 +115,9 @@ and Stmt =
     | Jump of JumpKeyword * Expr option (*break, continue, return (expr)?, discard*)
     | Verbatim of string
     | Switch of Expr * (CaseLabel * Stmt list) list
+with member this.asStmtList = match this with
+                              | Block stmts -> stmts
+                              | stmt -> [stmt]
 
 and CaseLabel =
     | Case of Expr
@@ -113,10 +129,24 @@ and FunctionType = {
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
 } with
+    member this.isExternal = options.hlsl && this.semantics <> []
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
     member this.prototype = (this.fName.Name, this.args.Length)
+    member this.parameters: (Type * DeclElt) list =
+        // Helper to extract the single DeclElt for each arg.
+        [ for (ty, declElts) in this.args do
+          yield match declElts with
+                | [declElt] -> ty, declElt
+                | _ -> failwith "invalid declElt for function argument" ]
+    override t.ToString() =
+        let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
+        let args = System.String.Join(", ", t.args |> List.map (function
+            | ty, [d] -> $"{ty} {d}"
+            | _ -> $"{t.args}"
+            ))
+        $"{t.retType} {t.fName} ({args}){sem}"
 
 and TopLevel =
     | TLVerbatim of string
@@ -246,10 +276,13 @@ let mapTopLevel env li =
             let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let newFns = (fct, body) :: (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
-            let envWithFunction = {env with fns = env.fns.Add(fct.prototype, newFns)}
+            let oldFns = (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+            let envWithFunction = {env with fns = env.fns.Add(fct.prototype, (fct, body) :: oldFns)}
             let envWithFunctionAndArgs, args = foldList envWithFunction mapDecl fct.args
-            envWithFunction, Function({ fct with args = args }, snd (mapStmt envWithFunctionAndArgs body))
+            let (fct, body) = { fct with args = args }, snd (mapStmt envWithFunctionAndArgs body)
+            let oldFns = (envWithFunctionAndArgs.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+            let envWithNewFunction = {envWithFunctionAndArgs with fns = env.fns.Add(fct.prototype, (fct, body) :: oldFns.Tail)}
+            envWithNewFunction, Function(fct, body)
         | e -> env, e)
     res
 

@@ -206,8 +206,7 @@ module private RenamerImpl =
             env
 
     let renFctName env (f: FunctionType) =
-        let isExternal = options.hlsl && f.semantics <> []
-        if (isExternal && options.preserveExternals) || options.preserveAllGlobals then
+        if (f.isExternal && options.preserveExternals) || options.preserveAllGlobals then
             env
         elif List.contains f.fName.Name options.noRenamingList then
             env
@@ -218,7 +217,7 @@ module private RenamerImpl =
                 env
             | None ->
                 let newEnv = renFunction env (List.length f.args) f.fName
-                if isExternal then export env ExportPrefix.HlslFunction f.fName
+                if f.isExternal then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
     let renList env fct li =

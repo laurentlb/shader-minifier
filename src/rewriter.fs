@@ -69,10 +69,15 @@ let private inlineFn (declArgs:Decl list) passedArgs bodyExpr =
         let declElt = List.exactlyOne (snd declArg)
         argMap <- argMap.Add(declElt.name.Name, passedArg)
     let mapInline _ = function
-        | Var iv as ie ->
+        | Var iv ->
             match argMap.TryFind iv.Name with
             | Some inlinedExpr -> inlinedExpr
-            | _ -> ie
+            // This var isn't an argument to the inlined function (must be a
+            // global or similar). We need to create a brand-new ident.  This is
+            // because the renamer does its work via mutation on the ident. So
+            // if this function gets inlined in more than one place, we don't
+            // mutations to affect all of the inlined idents.
+            | None -> Var (Ident (iv.Name))
         | ie -> ie
     mapExpr (mapEnv mapInline id) bodyExpr
 
@@ -247,17 +252,18 @@ let private simplifyVec (constr: Ident) args =
         | _ -> allArgs
 
     // vec3(a.x, b.xy) => vec3(a.x, b)
-    let rec dropLastSwizzle = function
+    let rec dropLastSwizzle n = function
         | [Dot (expr, field) as last] when isFieldSwizzle field ->
             match [for c in field -> swizzleIndex c] with
-            | [0] | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
+            | [0] when n = 1 -> [expr]
+            | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
             | _ -> [last]
-        | e1 :: rest -> e1 :: dropLastSwizzle rest
+        | e1 :: rest -> e1 :: dropLastSwizzle (n-1) rest
         | x -> x
 
     let args = combineSwizzles args |> List.map useInts
     let args = if args.Length = vecSize then mergeAllEquals args args else args
-    let args = dropLastSwizzle args
+    let args = dropLastSwizzle vecSize args
     FunCall (Var constr, args)
 
 let private simplifyExpr (didInline: bool ref) env = function
@@ -266,9 +272,8 @@ let private simplifyExpr (didInline: bool ref) env = function
         | Some ([{args = declArgs}, body]) ->
             if List.length declArgs <> List.length passedArgs then
                 failwithf "Cannot inline function %s since it doesn't have the right number of arguments" v.Name
-            match body with
-            | Jump (JumpKeyword.Return, Some bodyExpr)
-            | Block [Jump (JumpKeyword.Return, Some bodyExpr)] ->
+            match body.asStmtList with
+            | [Jump (JumpKeyword.Return, Some bodyExpr)] ->
                 didInline.Value <- true
                 inlineFn declArgs passedArgs bodyExpr
             // Don't yell if we've done some inlining this pass -- maybe it
@@ -545,72 +550,17 @@ let private simplifyStmt = function
             | _ -> If (cond, body1, body2)
     | Verbatim s -> Verbatim (stripSpaces s)
     | e -> e
-
-          (* Reorder functions because of forward declarations *)
-
-
-type private CallGraphNode = {
-    func: TopLevel
-    funcType: FunctionType
-    name: string
-    callees: (string * int) list
-}
-
-let rec private findRemove callback = function
-    | node :: l when node.callees.IsEmpty ->
-        //printfn "=> %s" name
-        callback node
-        l
-    | [] -> failwith "Cannot reorder functions (probably because of a recursion)."
-    | x :: l -> x :: findRemove callback l
-
-// slow, but who cares?
-let private graphReorder nodes =
-    let mutable list = []
-    let mutable lastName = ("", -1)
-
-    let rec loop nodes =
-        // Find a function that doesn't call anything else
-        let nodes = findRemove (fun node -> lastName <- node.funcType.prototype; list <- node.func :: list) nodes
-        // Remove that function from the callees
-        let nodes = nodes |> List.map (fun n -> { n with callees = List.except [lastName] n.callees })
-        if nodes <> [] then loop nodes
-
-    if nodes <> [] then loop nodes
-    list |> List.rev
-
-
-// get the list of external functions the function depends on
-let private findCallSites f =
-    let d = HashSet()
-    let collect _ = function
-        | FunCall (Var id, args) as e ->
-            d.Add (id.Name, args.Length) |> ignore<bool>
-            e
-        | e -> e
-    mapTopLevel (mapEnv collect id) [f] |> ignore<TopLevel list>
-    d |> Seq.toList
-
-// This function assumes that functions are NOT overloaded
-let private computeAllDependencies code =
-    let functions = code |> List.choose (function
-        | Function(funcType, _) as f -> Some (funcType, funcType.fName.Name, f)
-        | _ -> None)
-    let nodes = functions |> List.map (fun (funcType, name, f) ->
-        let callSites = findCallSites f
-                      |> List.filter (fun prototype -> functions |> List.exists (fun (ft,_,_) -> prototype = ft.prototype))
-        { CallGraphNode.func = f; funcType = funcType; name = name; callees = callSites })
-    nodes
-
-
-let rec removeUnusedFunctions code =
-    let nodes = computeAllDependencies code
-    let isUnused node =
-        let canBeRenamed = not (options.noRenamingList |> List.contains node.name) // noRenamingList includes "main"
-        let isCalled = (nodes |> List.exists (fun n -> n.callees |> List.contains node.funcType.prototype))
-        let isExternal = options.hlsl && node.funcType.semantics <> []
-        canBeRenamed && not isCalled && not isExternal
-    let unused = set [for node in nodes do if isUnused node then yield node.func]
+    
+let rec private removeUnusedFunctions code =
+    let funcInfos = Analyzer.findFuncInfos code
+    let isUnused (funcInfo : Analyzer.FuncInfo) =
+        let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
+        let isCalled = funcInfos |> List.exists (fun n ->
+            n.callSites
+            |> List.map (fun c -> c.prototype)
+            |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
+        canBeRenamed && not isCalled && not funcInfo.funcType.isExternal
+    let unused = set [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo.func]
     let mutable edited = false
     let code = code |> List.filter (function
         | Function _ as t -> if Set.contains t unused then edited <- true; false else true
@@ -621,10 +571,105 @@ let rec removeUnusedFunctions code =
 let reorderFunctions code =
     if options.verbose then
         printfn "Reordering functions because of forward declarations."
-    let order = code |> computeAllDependencies |> graphReorder
+    
+    let rec graphReorder = function // slow, but who cares?
+        | [] -> []
+        | (nodes : Analyzer.FuncInfo list) ->
+            // Find a function that doesn't call anything else
+            let node = nodes |> List.tryFind (fun node -> node.callSites.IsEmpty)
+                             |> Option.defaultWith (fun _ -> failwith "Cannot reorder functions (probably because of a recursion).")
+            // Remove that function from the graph
+            let nodes = nodes |> List.except [node]
+            // Remove that function from the callSites. This step assumes no type-based overloading.
+            let nodes = nodes |> List.map (fun n -> { n with callSites = List.filter (fun c -> c.prototype <> node.funcType.prototype) n.callSites })
+            // Recurse
+            node.func :: graphReorder nodes
+
+    let order = code |> Analyzer.findFuncInfos |> graphReorder
     let rest = code |> List.filter (function Function _ -> false | _ -> true)
     rest @ order
 
+
+// Inline the argument of a function call into the function body.
+module private ArgumentInlining =
+
+    let rec isInlinableExpr = function
+        | Var v when v.Name = "true" || v.Name = "false" -> true
+        | Int _
+        | Float _ -> true
+        | FunCall(Var fct, args) ->
+            Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
+        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
+        | _ -> false
+
+    type [<NoComparison>] Inlining = {
+        func: TopLevel
+        argIndex: int
+        varDecl: VarDecl
+        argExpr: Expr
+    }
+
+    // Find when functions are always called with the same trivial expr, that can be inlined into the function body.
+    let findInlinings code: Inlining list =
+        let mutable argInlinings = []
+        Analyzer.resolve code
+        Analyzer.markWrites code
+        let funcInfos = Analyzer.findFuncInfos code
+        for funcInfo in funcInfos do
+            let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
+            // If the function is overloaded, removing a parameter could conflict with another overload.
+            if canBeRenamed && not funcInfo.funcType.isExternal && funcInfo.isOverloaded then
+                let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.prototype = funcInfo.funcType.prototype)
+                for argIndex, (_, argDecl) in List.indexed funcInfo.funcType.parameters do
+                    match argDecl.name.VarDecl with
+                    | Some varDecl when not varDecl.ty.isOutOrInout -> // Only inline 'in' parameters.
+                        let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
+                        match argExprs with
+                        | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
+                            argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
+                        | _ -> ()
+                    | _ -> ()
+        argInlinings
+
+    let apply (didInline: bool ref) code =
+        let argInlinings = findInlinings code
+
+        let removeInlined func list =
+            list
+            |> List.indexed
+            |> List.filter (fun (idx, _) -> not (argInlinings |> List.exists (fun inl -> inl.func = func && inl.argIndex = idx)))
+            |> List.map snd
+
+        let applyExpr _ = function
+            | FunCall (Var v, argExprs) as f ->
+                // Remove the argument expression from the call site.
+                match v.Declaration with
+                | Declaration.Func fd -> FunCall (Var v, removeInlined fd.func argExprs)
+                | _ -> f
+            | x -> x
+
+        let applyTopLevel = function
+            | Function(fct, body) as f ->
+                // Handle argument inlining for other functions called by f.
+                let _, body = mapStmt (mapEnv applyExpr id) body
+                // Handle argument inlining for f. Remove the parameter from the declaration.
+                let fct = {fct with args = removeInlined f fct.args}
+                // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
+                let decls =
+                    argInlinings
+                    |> List.filter (fun inl -> inl.func = f)
+                    |> List.map (fun inl -> Decl (
+                        {inl.varDecl.ty with typeQ = inl.varDecl.ty.typeQ |> List.filter ((=) "const")},
+                        [{inl.varDecl.decl with init = Some inl.argExpr}]))
+                Function(fct, Block (decls @ body.asStmtList))
+            | tl -> tl
+
+        if argInlinings.IsEmpty then
+            code
+        else
+            let code = code |> List.map applyTopLevel
+            didInline.Value <- true
+            code
 
 let rec iterateSimplifyAndInline li =
     let li = if not options.noRemoveUnused then removeUnusedFunctions li else li
@@ -634,14 +679,16 @@ let rec iterateSimplifyAndInline li =
         Analyzer.markInlinableFunctions li
         Analyzer.markInlinableVariables li
     let didInline = ref false
-    let simplified = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
+    let li = mapTopLevel (mapEnv (simplifyExpr didInline) simplifyStmt) li
 
     // now that the functions were inlined, we can remove them
-    let simplified = simplified |> List.filter (function
+    let li = li |> List.filter (function
         | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
         | _ -> true)
+    
+    let li = if options.noInlining then li else ArgumentInlining.apply didInline li
 
-    if didInline.Value then iterateSimplifyAndInline simplified else simplified
+    if didInline.Value then iterateSimplifyAndInline li else li
 
 let simplify li =
     li

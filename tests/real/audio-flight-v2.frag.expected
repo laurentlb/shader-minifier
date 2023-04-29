@@ -59,10 +59,10 @@ float fBox2(vec2 p,vec2 b)
   vec2 d=abs(p)-b;
   return length(max(d,vec2(0)))+vmax(min(d,vec2(0)));
 }
-float sdCap(vec3 p,float h,float r)
+float sdCap(vec3 p)
 {
-  p.y-=clamp(p.y,0.,h);
-  return length(p)-r;
+  p.y-=clamp(p.y,0.,1.16);
+  return length(p)-.015;
 }
 vec2 path(float z)
 {
@@ -145,7 +145,7 @@ vec2 map(vec3 p,float sg)
   vec2 d1=fragtail(q);
   d1.x=max(d1.x,-d4a);
   s.z=abs(s.z);
-  float blt=sdCap(s-vec3(2.45,-.58,2.725),1.16,.015);
+  float blt=sdCap(s-vec3(2.45,-.58,2.725));
   if(lq<2.)
     d1.x=min(blt,d1.x);
   if(d1.x<res.x)
@@ -163,13 +163,13 @@ vec2 map(vec3 p,float sg)
     objglow+=5e-4/(5e-4+obj*obj);
   return res;
 }
-vec2 marcher(vec3 ro,vec3 rd,int maxstep,float sg)
+vec2 marcher(vec3 ro,vec3 rd)
 {
   float d=0.,m=-1.;
-  for(int i=0;i<maxstep;i++)
+  for(int i=0;i<164;i++)
     {
       vec3 p=ro+rd*d;
-      vec2 t=map(p,sg);
+      vec2 t=map(p,1.);
       if(abs(t.x)<d*MINDIST||d>MAXDIST)
         break;
       d+=i<42?
@@ -215,7 +215,7 @@ void mainImage(out vec4 O,vec2 F)
       vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),c=ro+f*.183,rd=c+uv.x*r+uv.y*normalize(cross(f,r))-ro;
       rd.xy=r2(.2*sin(time*.3)-path(lp.z).x/24.)*rd.xy;
       rd.xz=r2(y-path(lp.z+1.).y/14.)*rd.xz;
-      vec2 t=marcher(ro,rd,164,1.);
+      vec2 t=marcher(ro,rd);
       float d=t.x,m=t.y;
       s_hp=g_hp;
       if(d<MAXDIST)

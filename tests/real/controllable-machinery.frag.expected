@@ -44,9 +44,9 @@ float PrBoxDf(vec3 p,vec3 b)
   d=abs(p)-b;
   return min(max(d.x,max(d.y,d.z)),0.)+length(max(d,0.));
 }
-float PrRoundBoxDf(vec3 p,vec3 b,float r)
+float PrRoundBoxDf(vec3 p,vec3 b)
 {
-  return length(max(abs(p)-b,0.))-r;
+  return length(max(abs(p)-b,0.))-.02;
 }
 float PrCylDf(vec3 p,float r,float h)
 {
@@ -177,18 +177,18 @@ float ObjDf(vec3 p)
   DMIN(8);
   q=p-vec3(.65,-.14,1);
   q.x=abs(q.x)-.3;
-  d=PrRoundBoxDf(q,vec3(.01,1.08,.06),.02);
+  d=PrRoundBoxDf(q,vec3(.01,1.08,.06));
   q=p-vec3(-.05,-.68,0);
   q.xz=abs(q.xz)-vec2(1,.2);
-  d=min(d,PrRoundBoxDf(q,vec3(.04,.55,.01),.02));
+  d=min(d,PrRoundBoxDf(q,vec3(.04,.55,.01)));
   q=p-vec3(-1.05,-.14,1);
-  d=min(d,PrRoundBoxDf(q,vec3(.04,1.08,.01),.02));
+  d=min(d,PrRoundBoxDf(q,vec3(.04,1.08,.01)));
   q=p-vec3(-1.05,-.68,.6);
   q.z=abs(q.z)-.2;
-  d=min(d,PrRoundBoxDf(q,vec3(.04,.55,.01),.02));
+  d=min(d,PrRoundBoxDf(q,vec3(.04,.55,.01)));
   q=p-vec3(-.33,-.68,1.555);
   q.x=abs(q.x)-.3;
-  d=min(d,PrRoundBoxDf(q,vec3(.01,.55,.04),.02));
+  d=min(d,PrRoundBoxDf(q,vec3(.01,.55,.04)));
   DMIN(4);
   q=p-vec3(.65,bEdge,1);
   d=PrCylDf(q.yzx,.04,.62);
@@ -205,7 +205,7 @@ float ObjDf(vec3 p)
   d=min(d,PrCylDf(q,.03,.25));
   DMIN(5);
   q=p-vec3(0,-1.2,.9);
-  d=PrRoundBoxDf(q,vec3(1.7,.03,1.5),.02);
+  d=PrRoundBoxDf(q,vec3(1.7,.03,1.5));
   DMIN(6);
   q=p-wgObj.xyz;
   d=PrRoundCylDf(q.xzy,wgObj.w,.02,.02);
@@ -293,7 +293,7 @@ float BlkHit(vec3 ro,vec3 rd)
     }
   return dMin;
 }
-float BlkHitSh(vec3 ro,vec3 rd,float rng)
+float BlkHitSh(vec3 ro,vec3 rd)
 {
   vec4 a4;
   vec3 rm,rdm,v,tm,tp;
@@ -314,7 +314,7 @@ float BlkHitSh(vec3 ro,vec3 rd,float rng)
       if(df>0.&&dn<min(df,dMin))
         dMin=dn;
     }
-  return smoothstep(0.,rng,dMin);
+  return smoothstep(0.,6.,dMin);
 }
 float ObjSShadow(vec3 ro,vec3 rd)
 {
@@ -433,7 +433,7 @@ vec3 ShowScene(vec3 ro,vec3 rd)
             }
         }
       sh=min(ObjSShadow(ro,ltDir),GearSShadow(ro,ltDir));
-      sh=.6+.4*min(sh,BlkHitSh(ro+.01*ltDir,ltDir,6.));
+      sh=.6+.4*min(sh,BlkHitSh(ro+.01*ltDir,ltDir));
       nDotL=max(dot(vn,ltDir),0.);
       if(isMet)
         nDotL*=nDotL;
