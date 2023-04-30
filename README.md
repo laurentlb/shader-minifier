@@ -180,6 +180,7 @@ Then, in your C or C++ code, include the file:
 
 ```c
 const char* shaderSources[] = {
+#define SHADER_MINIFIER_IMPL
 #include shaders.h
 };
 ```

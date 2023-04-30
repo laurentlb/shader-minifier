@@ -1,4 +1,7 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
 # define VAR_ambientLight "r"
 # define VAR_diffuseColor "c"
 # define VAR_emissiveColor "p"
@@ -8,6 +11,9 @@
 # define VAR_specularColor "i"
 # define VAR_texture0 "v"
 # define VAR_viewVec "d"
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/inout.frag
 "#version 330\n"
@@ -55,3 +61,5 @@
    "i=e(d,v,p);"
    "return mix(c,vec3(pow(clamp(dot(p,r),0.,1.),s)*(s+4.)/8.),i);"
  "}",
+
+#endif

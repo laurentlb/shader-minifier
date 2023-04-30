@@ -66,7 +66,7 @@ type PrinterImpl(outputFormat) =
             match outputFormat with
             | Options.IndentedText -> Environment.NewLine + new string(' ', indent * 2)
             | Options.Text | Options.JS -> ""
-            | Options.CHeader | Options.CList -> out "\"%s%s\"" Environment.NewLine spaces
+            | Options.CVariables | Options.CArray -> out "\"%s%s\"" Environment.NewLine spaces
             | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
             | Options.Rust -> out "\\%s%s" Environment.NewLine spaces
 
@@ -134,7 +134,7 @@ type PrinterImpl(outputFormat) =
         match outputFormat with
         | Options.Text | Options.JS | Options.IndentedText -> "\n"
         | Options.Nasm -> "', 10, '"
-        | Options.CHeader | Options.CList | Options.Rust ->  "\\n"
+        | Options.CVariables | Options.CArray | Options.Rust ->  "\\n"
 
     // Print HLSL semantics
     let semToS sem =
@@ -180,7 +180,7 @@ type PrinterImpl(outputFormat) =
         | Options.IndentedText -> s
         | Options.Text -> s
         | Options.JS -> s
-        | Options.CHeader | Options.CList | Options.JS | Options.Rust -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
+        | Options.CVariables | Options.CArray | Options.JS | Options.Rust -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
         | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
 
     /// Detect if the current statement might accept a dangling else.

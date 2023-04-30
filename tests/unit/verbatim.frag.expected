@@ -1,4 +1,10 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/verbatim.frag
 "//Test case for https://github.com/laurentlb/Shader_Minifier/issues/168\n"
@@ -14,3 +20,5 @@
    "int x;\nint y;\n"
    "return x+y;"
  "}",
+
+#endif

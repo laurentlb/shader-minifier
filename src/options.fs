@@ -9,8 +9,8 @@ let debugMode = false
 type OutputFormat =
     | [<CustomCommandLine("text")>] Text
     | [<CustomCommandLine("indented")>] IndentedText
-    | [<CustomCommandLine("c-variables")>] CHeader
-    | [<CustomCommandLine("c-array")>] CList
+    | [<CustomCommandLine("c-variables")>] CVariables
+    | [<CustomCommandLine("c-array")>] CArray
     | [<CustomCommandLine("js")>] JS
     | [<CustomCommandLine("nasm")>] Nasm
     | [<CustomCommandLine("rust")>] Rust
@@ -64,7 +64,7 @@ type CliArguments =
 
 type Options() =
     member val outputName = "shader_code.h" with get, set
-    member val outputFormat = CHeader with get, set
+    member val outputFormat = CVariables with get, set
     member val verbose = false with get, set
     member val smoothstepTrick = false with get, set
     member val canonicalFieldNames = "xyzw" with get, set
@@ -108,7 +108,7 @@ let private initPrivate argv needFiles =
         false
     else
         options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
-        options.outputFormat <- args.GetResult(FormatArg, defaultValue = CHeader)
+        options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
         options.verbose <- args.Contains(Verbose)
         options.smoothstepTrick <- args.Contains(Smoothstep)
         options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
