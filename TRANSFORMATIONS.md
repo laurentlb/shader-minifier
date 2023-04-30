@@ -333,6 +333,13 @@ This happens when:
 - the function has no out/inout arguments,
 - the function does not use a global that would be shadowed by a local
   that is in scope at the call site.
+  
+Shader minifier will try to automatically inline an argument of a function call
+into the function body, as a declaration that may then be further inlined.
+This happens when:
+- the argument value is always the same for all call sites.
+- the parameter is an 'in' parameter.
+- the function is not overloaded (otherwise, removing a parameter could conflict with another overload).
 
 If inlining causes a bug in your code, you can disable it with `--no-inlining`
 and please report a bug.

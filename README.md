@@ -121,7 +121,8 @@ OPTIONS:
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
-    --no-inlining         Do not automatically inline variables and functions
+    --no-inlining         Do not automatically inline variables, functions
+                          and arguments
     --aggressive-inlining Aggressively inline constants. This can reduce output
                           size due to better constant folding. It can also
                           increase output size due to repeated inlined
