@@ -2,6 +2,9 @@
 
 Here is a list of transformations that Shader Minifier applies to the shader code.
 
+Some of the transformations are not completely safe and may break in some corner
+cases. If you observe differences, don't hesitate to [report a bug](#Feedback).
+
 
 ## Whitespace and comments removal
 

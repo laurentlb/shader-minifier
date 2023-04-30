@@ -38,6 +38,32 @@ In brief:
 - Rename variables, typically to one character.
 - Remove unused local variables, unused functions and other dead code.
 
+- [Whitespace and comments removal](TRANSFORMATIONS.md#Whitespace and comments removal)
+- [Parentheses simplifications](TRANSFORMATIONS.md#Parentheses simplifications)
+- [Curly braces removal](TRANSFORMATIONS.md#Curly braces removal)
+- [Literal numbers](TRANSFORMATIONS.md#Literal numbers)
+- [Constant arithmetic](TRANSFORMATIONS.md#Constant arithmetic)
+- [Conditionals evaluation](TRANSFORMATIONS.md#Conditionals evaluation)
+- [Commutative operators](TRANSFORMATIONS.md#Commutative operators)
+- [Comma operator](TRANSFORMATIONS.md#Comma operator)
+- [Useless else after return](TRANSFORMATIONS.md#Useless else after return)
+- [Ternary operator](TRANSFORMATIONS.md#Ternary operator)
+- [Loops](TRANSFORMATIONS.md#Loops)
+- [Merge declarations](TRANSFORMATIONS.md#Merge declarations)
+- [Group declarations](TRANSFORMATIONS.md#Group declarations)
+- [Augmented operators](TRANSFORMATIONS.md#Augmented operators)
+- [Rename vector fields](TRANSFORMATIONS.md#Rename vector fields)
+- [Automatic inlining](TRANSFORMATIONS.md#Automatic inlining)
+- [Aggressive inlining](TRANSFORMATIONS.md#Aggressive inlining)
+- [Explicit inlining](TRANSFORMATIONS.md#Explicit inlining)
+- [Vector constructors](TRANSFORMATIONS.md#Vector constructors)
+- [Function predeclarations](TRANSFORMATIONS.md#Function predeclarations)
+- [Unused local variables](TRANSFORMATIONS.md#Unused local variables)
+- [Dead code removal](TRANSFORMATIONS.md#Dead code removal)
+- [Unused function removal](TRANSFORMATIONS.md#Unused function removal)
+- [Smoothstep transformation](TRANSFORMATIONS.md#Smoothstep transformation)
+- [Renaming](TRANSFORMATIONS.md#Renaming)
+
 Other transformations try to make the code more compression friendly, e.g.
 
 - Consistently rename vector fields (e.g. use `foo.xy` instead of `foo.rg`) to
@@ -220,7 +246,7 @@ resulting assembly may be different, but the minified shader should
 have the same behaviour as the original one. Or at least that's the
 intent.
 
-Some of the transformations are not completely safe and may break in some corner
+Some of the [transformations](TRANSFORMATIONS.md) are not completely safe and may break in some corner
 cases. If you observe differences, don't hesitate to [report a bug](#Feedback).
 
 ### Macros
