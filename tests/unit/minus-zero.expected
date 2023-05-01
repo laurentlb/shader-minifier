@@ -1,7 +1,15 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/minus-zero.frag
 "void main()"
  "{"
    "float a=0.;"
  "}",
+
+#endif

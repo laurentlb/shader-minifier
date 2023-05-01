@@ -1,4 +1,10 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/float.frag
 "void precision()"
@@ -22,3 +28,5 @@
    "float f1=1.5,f2=3e-7,f3=.42,f6=-.002,f7=2e-9,f8=2e6,f9=2e10;"
    "gl_FragColor=vec4(0);"
  "}",
+
+#endif

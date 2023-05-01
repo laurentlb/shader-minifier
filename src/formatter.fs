@@ -8,7 +8,7 @@ let private formatPrefix = function
     | Ast.ExportPrefix.Variable -> "var"
     | Ast.ExportPrefix.HlslFunction -> "F"
 
-let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
+let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
     let fileName =
         if options.outputName = "" || options.outputName = "-" then "shader_code.h"
         else Path.GetFileName options.outputName
@@ -16,25 +16,41 @@ let private printHeader out (shaders: Ast.Shader[]) asAList exportedNames =
 
     fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
-    if not asAList then
-        fprintfn out "#ifndef %s" macroName
-        fprintfn out "# define %s" macroName
+    fprintfn out "#ifndef %s" macroName
+    fprintfn out "# define %s" macroName
 
     for value: Ast.ExportedName in List.sort exportedNames do
-        // let newName = Printer.identTable.[int newName]
         fprintfn out "# define %s_%s \"%s\"" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
 
     fprintfn out ""
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        if asAList then
-            fprintfn out "// %s" shader.filename
-            fprintfn out "\"%s\"," (Printer.print shader.code)
-        else
-            fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (Printer.print shader.code)
+        fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (Printer.print shader.code)
         fprintfn out ""
 
-    if not asAList then fprintfn out "#endif // %s" macroName
+    fprintfn out "#endif // %s" macroName
+
+let private printCArray out (shaders: Ast.Shader[]) exportedNames =
+    fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
+
+    fprintfn out "#ifndef SHADER_MINIFIER_IMPL"
+    fprintfn out "#ifndef SHADER_MINIFIER_HEADER"
+    fprintfn out "# define SHADER_MINIFIER_HEADER"
+
+    for value: Ast.ExportedName in List.sort exportedNames do
+        fprintfn out "# define %s_%s \"%s\"" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
+
+    fprintfn out "#endif"
+    fprintfn out ""
+    fprintfn out "#else // if SHADER_MINIFIER_IMPL"
+
+    fprintfn out ""
+    for shader in shaders do
+        fprintfn out "// %s" shader.filename
+        fprintfn out "\"%s\"," (Printer.print shader.code)
+        fprintfn out ""
+
+    fprintfn out "#endif"
 
 let private printNoHeader out (shaders: Ast.Shader[]) =
     let str = [for shader in shaders -> Printer.print shader.code] |> String.concat "\n"
@@ -86,8 +102,8 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
 let print out shaders exportedNames = function
     | Options.IndentedText -> printIndented out shaders
     | Options.Text -> printNoHeader out shaders
-    | Options.CHeader -> printHeader out shaders false exportedNames
-    | Options.CList -> printHeader out shaders true exportedNames
+    | Options.CVariables -> printCVariables out shaders exportedNames
+    | Options.CArray -> printCArray out shaders exportedNames
     | Options.JS -> printJSHeader out shaders exportedNames
     | Options.Nasm -> printNasmHeader out shaders exportedNames
     | Options.Rust -> printRustHeader out shaders exportedNames

@@ -1,4 +1,7 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
 # define VAR_mouse "s"
 # define VAR_resolution "v"
 # define VAR_tex0 "y"
@@ -6,6 +9,9 @@
 # define VAR_tex2 "o"
 # define VAR_tex3 "w"
 # define VAR_time "z"
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/real/kinder_painter.frag
 "uniform vec2 v;"
@@ -188,3 +194,5 @@
    "w=mix(w,C,.5-.5*o.w);"
    "gl_FragColor=w;"
  "}",
+
+#endif

@@ -1,4 +1,10 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/many_variables.frag
 "int L(float L,float K,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
@@ -13,3 +19,5 @@
    "int x=1,y=2,z=3,at=4,aa=5,ab=6,ac=7,aA=8;"
    "return Y+m+v+aA;"
  "}",
+
+#endif

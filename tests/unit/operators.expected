@@ -1,4 +1,10 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef SHADER_MINIFIER_IMPL
+#ifndef SHADER_MINIFIER_HEADER
+# define SHADER_MINIFIER_HEADER
+#endif
+
+#else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/operators.frag
 "#version 330\n"
@@ -24,3 +30,5 @@
  "{"
    "return a*b*(c*d)*(a*b);"
  "}",
+
+#endif
