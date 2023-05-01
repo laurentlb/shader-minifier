@@ -85,7 +85,7 @@ type PrinterImpl(outputFormat) =
             match f, args with
             | Op "?:", [a1; a2; a3] ->
                 let prec = precedence.["?:"]
-                let res = out "%s?%s%s:%s%s" (exprToSLevel indent prec a1)
+                let res = out "%s?%s%s:%s%s" (exprToSLevel indent (prec+1) a1)
                             (nl (indent+1)) (exprToSLevel (indent+1) prec a2)
                             (nl (indent+1)) (exprToSLevel (indent+1) prec a3)
                 if prec < level then out "(%s)" res else res

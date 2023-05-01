@@ -8,7 +8,7 @@ float noinline_cannotInlineWhenNotResolvable(float a)
 }
 float noinline_cannotInlineWhenNotResolvable(vec2 a)
 {
-  return a+11.;
+  return length(a)+11.;
 }
 float noinline_canInlineWhenInParameter()
 {
@@ -32,11 +32,11 @@ float noinline_cannotInlineWhenArgsAreDifferent(float a)
 }
 float noinline_canInlineWhenArgIsInlinable1()
 {
-  return true+40.;
+  return 20.;
 }
 float noinline_canInlineWhenArgIsInlinable2()
 {
-  return-18+40.;
+  return float(-18)+40.;
 }
 float noinline_canInlineWhenArgIsInlinable3()
 {
@@ -44,7 +44,7 @@ float noinline_canInlineWhenArgIsInlinable3()
 }
 float noinline_canInlineWhenArgIsInlinable4()
 {
-  return vec3(9)+40.;
+  return vec3(9).x;
 }
 float noinline_canInlineWhenArgIsInlinable5()
 {
@@ -60,7 +60,7 @@ float noinline_cannotInlineWhenArgIsNotInlinable(float a)
 }
 float f()
 {
-  float s=0;
+  float s=0.;
   s+=noinline_canInlineWhenResolvable();
   s+=noinline_cannotInlineWhenNotResolvable(1.);
   s+=noinline_canInlineWhenInParameter();
