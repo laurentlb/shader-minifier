@@ -1,0 +1,13 @@
+float foo(bool a,bool b,bool c)
+{
+  return(a?
+    b:
+    c)?
+    .1:
+    .2;
+}
+void main()
+{
+  float f1=1.5-5./6.,n=1./(f1+10.+12.);
+  gl_FragColor=vec4(n,1./(float(171)*((2.+f1)*64.-7.+12.)),n,0);
+}
