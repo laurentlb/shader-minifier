@@ -44,6 +44,8 @@ type PrinterImpl(outputFormat) =
     let commaListToS toS li =
         List.map toS li |> String.concat ","
 
+    let isIdentChar c = System.Char.IsLetterOrDigit c || c = '_'
+
     let floatToS f =
         let a = abs (float f)
         let str1 = a.ToString("#.################", System.Globalization.CultureInfo.InvariantCulture)
@@ -122,12 +124,12 @@ type PrinterImpl(outputFormat) =
 
     // Add a space if needed
     let sp (s: string) =
-        if s.Length > 0 && System.Char.IsLetterOrDigit (s.[0]) then " " + s
+        if s.Length > 0 && isIdentChar (s.[0]) then " " + s
         else s
 
     let sp2 (s: string) (s2: string) =
-        if s.Length > 0 && System.Char.IsLetterOrDigit(s.[s.Length-1]) &&
-            s2.Length > 0 && System.Char.IsLetterOrDigit(s2.[0]) then s + " " + s2
+        if s.Length > 0 && isIdentChar(s.[s.Length-1]) &&
+            s2.Length > 0 && isIdentChar(s2.[0]) then s + " " + s2
         else s + s2
 
     let backslashN() =
@@ -233,7 +235,7 @@ type PrinterImpl(outputFormat) =
         | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS indent exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
-            let s = if s.Length > 0 && System.Char.IsLetterOrDigit s.[s.Length - 1] then s + " " else s
+            let s = if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s
             if s <> "" && s.[0] = '#' then out "%s%s" (backslashN()) (escape s)
             else escape s
         | Switch(e, cl) ->
@@ -258,7 +260,7 @@ type PrinterImpl(outputFormat) =
     let topLevelToS = function
         | TLVerbatim s ->
             // add a space at end when it seems to be needed
-            let trailing = if s.Length > 0 && System.Char.IsLetterOrDigit s.[s.Length - 1] then " " else ""
+            let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
             out "%s%s%s" (nl 0) (escape s) trailing
         | Function (fct, Block []) -> out "%s%s%s{}" (nl 0) (funToS fct) (nl 0)
         | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (stmtToS 0 body)
