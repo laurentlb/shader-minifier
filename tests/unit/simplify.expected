@@ -1,4 +1,7 @@
+#version 330
+
+out vec3 output;
 void main()
 {
-  gl_fragColor.xyz=vec3(92);
+  output.xyz=vec3(92);
 }

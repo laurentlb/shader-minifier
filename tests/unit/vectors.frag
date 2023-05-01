@@ -29,10 +29,9 @@ float withExtraComponents() {
 
 float withExtraComponentsUnsafe(in vec3 a) {
     vec3 v1 = vec3(a.x);
-    vec3 v2 = vec3(1.0, a.x);
-    vec2 v3 = vec3(1.0, a.y);
+    vec2 v3 = vec2(1.0, a.y);
     vec3 v4 = vec3(1.0, 2.0, a.y);
-    return v1.x + v2.x + v3.x + v4.x;
+    return v1.x + v3.x + v4.x;
 }
 
 struct S{
