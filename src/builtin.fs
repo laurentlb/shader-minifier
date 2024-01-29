@@ -2,6 +2,14 @@ module Builtin
 
 // source: https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
 
+let keywords = System.Collections.Generic.HashSet<_>([
+  "if"; "else"; "break"; "continue"; "do"; "for"; "while"; "switch"; "case"; "default";
+  "in"; "out"; "inout"; "discard"; "return"; "lowp"; "mediump"; "highp"; "precision";
+  "struct"; "layout"; "centroid"; "flat"; "smooth"; "noperspective"; "patch"; "sample"; "invariant";
+  "precise"; "subroutine"; "coherent"; "volatile"; "restrict"; "readonly"; "writeonly";
+  "const"; "uniform"; "buffer"; "shared"; "attribute"; "varying"
+])
+
 let builtinTypes = set([
     yield! [ "void"; "bool"; "int"; "uint"; "float"; "double" ]
     for p in [""; "d"; "b"; "i"; "u"] do

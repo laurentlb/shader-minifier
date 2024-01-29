@@ -1,4 +1,4 @@
-void precision() {
+void floatPrecision() {
   float a = 0.00000012345;
   float b = 1.234567891234;
   float c = 1234567.891234;
