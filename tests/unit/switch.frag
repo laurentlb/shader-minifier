@@ -40,3 +40,19 @@ float switchMultiple() {
       return 0.0;
   }
 }
+
+const int LBL1 = 1, LBL2 = 2, LBL3 = 3, LBL4 = 4, LBL5 = 5;
+void foo() {}
+
+int switchStringLabels(int value)
+{
+  switch (value)
+  {
+    case LBL1: foo();
+    case LBL2: foo();
+    case LBL3: { foo(); break; }
+    case LBL4: foo(); foo(); break;
+    case LBL5: foo(); foo(); return 18;
+  }
+  return 1;
+}
