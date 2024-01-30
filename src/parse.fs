@@ -37,6 +37,7 @@ type private ParseImpl() =
     let ident =
         let nonDigit = asciiLetter <|> pchar '_'
         let p = pipe2 nonDigit (manyChars (nonDigit <|> digit <?> "")) (fun c s -> Ast.Ident (c.ToString() + s))
+        let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
     let opp = new OperatorPrecedenceParser<_,_,_>()

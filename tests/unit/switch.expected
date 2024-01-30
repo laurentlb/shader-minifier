@@ -43,3 +43,28 @@ float D()
       return 0.;
   }
 }
+void c()
+{}
+int D(int G)
+{
+  switch(G){
+    case 1:
+      c();
+    case 2:
+      c();
+    case 3:
+      {
+        c();
+        break;
+      }
+    case 4:
+      c();
+      c();
+      break;
+    case 5:
+      c();
+      c();
+      return 18;
+  }
+  return 1;
+}
