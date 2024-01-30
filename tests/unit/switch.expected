@@ -5,7 +5,9 @@ void h()
       break;
   }
 }
+
 #define GOOD 42
+
 void G()
 {
   switch(42){
@@ -65,47 +67,4 @@ int D(int G)
       return 18;
   }
   return 1;
-}"
-Expected 401: "void h()
-{
-  switch(42){
-    case 42:
-      break;
-  }
-}
-#define GOOD 42
-void G()
-{
-  switch(42){
-    case GOOD:
-      break;
-  }
-}
-void G(int G)
-{
-  switch(G){
-    case 0:
-      break;
-  }
-}
-void h(int G)
-{
-  switch(G+42){
-    case 0:
-      break;
-  }
-}
-float D()
-{
-  switch(42){
-    case 42:
-      
-      
-      return 6.6;
-    case 43:
-      
-      return 7.7;
-    default:
-      return 0.;
-  }
 }
