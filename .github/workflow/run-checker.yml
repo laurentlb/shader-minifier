@@ -1,0 +1,28 @@
+
+name: run Checker (tests)
+
+on: [pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '8.x', '7.x', '6.x' ]
+
+    steps:
+      - run: echo "runner.os = ${{ runner.os }}"
+      - run: echo "github.event_name = ${{ github.event_name }}"
+      - run: echo "github.ref = ${{ github.ref }}"
+      - run: echo "github.repository = ${{ github.repository }}"
+      - run: echo "github.workspace = ${{ github.workspace }}"
+      - uses: actions/checkout@v4
+
+      - name: Setup dotnet ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Run the Checker
+        run: bash check.bash
