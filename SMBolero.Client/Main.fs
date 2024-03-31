@@ -10,7 +10,7 @@ open Bolero.Templating.Client
 type Page =
     | [<EndPoint "?main">] Home
     | [<EndPoint "?flags">] FlagPage
-    | [<EndPoint "?help">] Help
+    | [<EndPoint "?about">] About
 
 /// The Elmish application's model.
 type Model =
@@ -104,12 +104,12 @@ let view model dispatch =
         .Menu(concat {
             menuItem model Home "Minifier"
             menuItem model FlagPage "Flags"
-            menuItem model Help "Help"
+            menuItem model About "About"
         })
         .Body(
             cond model.page <| function
             | Home -> homePage model dispatch
-            | Help -> aboutPage model dispatch
+            | About -> aboutPage model dispatch
             | FlagPage -> flagPage model dispatch
         )
         .Error(

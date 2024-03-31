@@ -1,7 +1,8 @@
 :root {
-    --bg-main: #f1b99c;
-    --bg-light: #ffece3;
-    --border: #971f1f;
+    --bg-main: #101020;
+    --bg-light: #202040;
+    --border: #404080;
+    --text-color: #f0f0f0;
 }
 
 body {
@@ -9,7 +10,7 @@ body {
     font-size: 1em;
     margin: 0px;
     margin-bottom: 10px;
-    color: #333;
+    color: var(--text-color);
     background-color: var(--bg-main);
 }
 
@@ -19,7 +20,7 @@ body {
 
 .header {
     background-color: black;
-    color: var(--bg-light);
+    color: #eee;
     padding-left: 188px;
     padding-right: 0px;
     line-height: 1.6em;
@@ -35,11 +36,8 @@ body {
 .left {
     font-size: 1em;
     width: 164px;
-    background: var(--bg-light) repeat-x top;
-    border-bottom: solid 3px black;
-    border-right: solid 3px black;
-    border-left: solid 1px black;
-    border-top: none;
+    background-color: var(--bg-light);
+    border: solid 1px #000;
     position: absolute;
     padding-top: 6px;
     top: 0px;
@@ -107,11 +105,6 @@ label {
 }
 
 #content {
-    background-color: white;
-    border-left: solid 1px black;
-    border-top: solid 1px black;
-    border-right: solid 3px black;
-    border-bottom: solid 3px black;
     max-width: 800px;
     margin: 0px auto;
     padding: 10px 20px;
@@ -126,21 +119,14 @@ label {
 #menu a {
     display: block;
     margin: 0;
-    margin-left: 4px;
-    /*  border-left: 4px transparent solid; */
-    border-bottom: 1px dashed #A0C0F0;
     text-decoration: none;
-    color: #333;
-    padding-left: 5px;
+    color: var(--text-color);
 }
 
-    #menu a:hover {
-        margin-left: 0px;
-        border-left: 4px solid #002299;
-        border-bottom: 1px solid #3388AA;
-        background-color: var(--bg-main);
-        color: black;
-    }
+#menu a:hover {
+    background-color: var(--bg-main);
+    color: var(--text-color);
+}
 
 .field legend:hover {
     color: white;
@@ -149,30 +135,23 @@ label {
 }
 
 .center a {
-    color: #338;
+    color: #88f;
     text-decoration: none;
     font-weight: bold;
 }
 
 .center a:visited {
-    color: #068;
     text-decoration: none;
     font-weight: bold;
 }
 
 .center a:hover {
-    color: black;
     text-decoration: underline;
     font-weight: bold;
 }
 
 .center .field a:hover {
     text-decoration: none;
-}
-
-.center p {
-    margin-right: 10px;
-    margin-left: 10px;
 }
 
 .center .item, .center .block, fieldset {
@@ -193,33 +172,24 @@ label {
     content: ':';
 }
 
+button, textarea, input {
+    background-color: #1a1a2a;
+    border: 1px solid var(--border);
+    color: var(--text-color);
+    padding: 4px;
+}
 
 textarea {
     box-sizing: border-box;
     width: 100%;
 }
 
-#display {
-    width: 50em;
-    background-color: black;
-    display: block;
-    color: white;
-    font-family: monospace;
-    font-size: 11px;
-    border: 1px solid white;
-}
-
-.code {
-    font-size: 11px;
-    white-space: pre;
-    font-family: monospace;
-    border-left: 3px double black;
-    margin: 5px;
-    padding-left: 5px;
+code {
+    color: #ccf;
+    padding: 8px;
 }
 
 .center pre {
-    font-size: 11px;
     white-space: pre;
     font-family: monospace;
     border-left: solid 3px #666;
@@ -228,59 +198,17 @@ textarea {
     padding-left: 8px;
 }
 
-.box {
-    border: 2px black solid;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 0.8em;
-    padding: 6px;
-    background-color: #EEEEEE;
-    color: black;
-    font-variant: normal;
-}
-
-.box h4 {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 1em;
-    border: 0px black;
-    font-variant: normal;
-    color: white;
-    background-color: #AAAAAA;
-    text-align: center;
-}
-
-.box2 {
-    border: 1px black solid;
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 0.8em;
-    padding: 4px;
-    background-color: #EEEEEE;
-    color: black;
-    font-variant: normal;
-}
-
-.center ul {
-    list-style-type: square;
-}
-
-legend {
-    font-weight: bold;
-    border: solid 1px var(--border);
-}
-
-.clickable {
-    cursor: pointer;
-}
-
-img {
-    border: none;
-    background: transparent;
-}
-
 .size {
     text-align: right;
     font-size: 0.8em;
 }
 
+#minify-btn {
+    background-color: #4e2d9d;
+    margin: 8px 0;
+    padding: 8px;
+    float: right;
+}
 
 
 
