@@ -18,6 +18,7 @@ type Model =
         page: Page
         shaderInput: string
         shaderOutput: string
+        shaderSize: int
         flags: string
         error: string option
     }
@@ -27,6 +28,7 @@ let initModel =
         page = Home
         shaderInput = "out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(1.,1.,1.,1.);\n}"
         shaderOutput = ""
+        shaderSize = 0
         flags = "--format text"
         error = None
     }
@@ -46,9 +48,9 @@ let minify flags content =
         let shaders, exportedNames = ShaderMinifier.minify [|"input", content|]
         let out = new System.IO.StringWriter()
         Formatter.print out shaders exportedNames Options.Globals.options.outputFormat
-        out.ToString()
+        out.ToString(), ShaderMinifier.getSize shaders
     with
-        | e -> e.Message
+        | e -> e.Message, 0
 
 let update message model =
     match message with
@@ -56,8 +58,8 @@ let update message model =
         { model with page = page }, Cmd.none
     | Minify ->
         printfn "Minify %s" model.flags
-        let out = minify (model.flags.Split(' ')) model.shaderInput
-        { model with shaderOutput = out }, Cmd.none
+        let out, size = minify (model.flags.Split(' ')) model.shaderInput
+        { model with shaderOutput = out ; shaderSize = size }, Cmd.none
     | SetShader value ->
         { model with shaderInput = value }, Cmd.none
     | SetFlags value ->
@@ -87,6 +89,7 @@ let homePage model dispatch =
         .Minify(fun _ -> dispatch Minify)
         .ShaderInput(model.shaderInput, fun v -> dispatch (SetShader v))
         .ShaderOutput(model.shaderOutput)
+        .ShaderSize(if model.shaderSize = 0 then "" else $"size: {model.shaderSize}")
         .Flags(model.flags, fun v -> dispatch (SetFlags v))
         .Elt()
 
