@@ -210,6 +210,10 @@ code {
     float: right;
 }
 
+.size {
+    text-align: right;
+    font-size: 0.8em;
+}
 
 
 /* Let's be modern and support mobile*/
