@@ -87,10 +87,12 @@ h6 {
 }
 
 label {
-    display: inline-block;
     min-width: 150px;
-    font-variant: small-caps;
-    text-align: right;
+    display: inline-block;
+}
+
+summary {
+    cursor: pointer;
 }
 
 .center big {
@@ -102,6 +104,11 @@ label {
     margin-left: 188px;
     margin-right: 10px;
     margin-bottom: 10px;
+}
+
+details ul {
+    padding-left: 1em;
+    list-style: none;
 }
 
 #content {
