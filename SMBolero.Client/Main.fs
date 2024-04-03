@@ -27,7 +27,6 @@ type Model =
         shaderInput: string
         shaderOutput: string
         shaderSize: int
-        oldFlags: string
         flags: Flags
         error: string option
     }
@@ -38,7 +37,6 @@ let initModel =
         shaderInput = "out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(1.,1.,1.,1.);\n}"
         shaderOutput = ""
         shaderSize = 0
-        oldFlags = ""
         flags = {Flags.inlining=true; removeUnused=true; renaming=true; other=""; format="text"}
         error = None
     }
@@ -48,7 +46,6 @@ type Message =
     | SetPage of Page
     | Minify
     | SetShader of string
-    | SetOldFlags of string
     | Error of exn
     | ClearError
 
@@ -73,17 +70,12 @@ let update message model =
             if not model.flags.removeUnused then yield "--no-remove-unused"
             if not model.flags.renaming then yield "--no-renaming"
             yield! model.flags.other.Split(' ')
-            yield! model.oldFlags.Split(' ')
         |]
         printfn "Minify %s" (String.concat " " allFlags)
         let out, size = minify allFlags model.shaderInput
         { model with shaderOutput = out ; shaderSize = size }, Cmd.none
     | SetShader value ->
         { model with shaderInput = value }, Cmd.none
-    | SetOldFlags value ->
-        printfn "SetOldFlags %s" value
-        { model with oldFlags = value }, Cmd.none
-
     | Error exn ->
         { model with error = Some exn.Message }, Cmd.none
     | ClearError ->
@@ -109,7 +101,6 @@ let homePage model dispatch =
         .ShaderInput(model.shaderInput, fun v -> dispatch (SetShader v))
         .ShaderOutput(model.shaderOutput)
         .ShaderSize(if model.shaderSize = 0 then "" else $"size: {model.shaderSize}")
-        .OldFlags(model.oldFlags, fun v -> dispatch (SetOldFlags v))
         .Format(model.flags.format, fun v -> model.flags.format <- v)
         .Inlining(model.flags.inlining, fun v -> model.flags.inlining <- v)
         .RemoveUnused(model.flags.removeUnused, fun v -> model.flags.removeUnused <- v)

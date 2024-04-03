@@ -3,6 +3,7 @@
     --bg-light: #202040;
     --border: #404080;
     --text-color: #f0f0f0;
+    --alt-text-color: #aac;
 }
 
 body {
@@ -18,9 +19,10 @@ body {
     width: 100%;
 }
 
+
 .header {
     background-color: black;
-    color: #eee;
+    color: var(--alt-text-color);
     padding-left: 188px;
     padding-right: 0px;
     line-height: 1.6em;
@@ -39,9 +41,9 @@ body {
     background-color: var(--bg-light);
     border: solid 1px #000;
     position: absolute;
-    padding-top: 6px;
     top: 0px;
     left: 10px;
+    color: var(--alt-text-color);
 }
 
 .center h1 {
@@ -63,10 +65,6 @@ body {
     letter-spacing: 2px;
 }
 
-.center form div {
-    margin-bottom: 5px;
-}
-
 .center h3 {
     font-size: 1.1em;
     margin-top: 1em;
@@ -78,14 +76,6 @@ body {
     font-weight: bold;
 }
 
-h5 {
-    font-size: 1em;
-}
-
-h6 {
-    font-size: 1em;
-}
-
 label {
     min-width: 150px;
     display: inline-block;
@@ -95,15 +85,8 @@ summary {
     cursor: pointer;
 }
 
-.center big {
-    margin-top: 8px;
-}
-
 .center {
-    margin-top: 10px;
-    margin-left: 188px;
-    margin-right: 10px;
-    margin-bottom: 10px;
+    margin: 10px 10px 10px 188px;
 }
 
 details ul {
@@ -111,10 +94,13 @@ details ul {
     list-style: none;
 }
 
+details li {
+    display: flex;
+}
+
 #content {
     max-width: 800px;
     margin: 0px auto;
-    padding: 10px 20px;
 }
 
 #menu ul, #menu li {
@@ -127,18 +113,12 @@ details ul {
     display: block;
     margin: 0;
     text-decoration: none;
-    color: var(--text-color);
+    color: var(--alt-text-color);
+    padding: 4px;
 }
 
 #menu a:hover {
     background-color: var(--bg-main);
-    color: var(--text-color);
-}
-
-.field legend:hover {
-    color: white;
-    background-color: var(--border);
-    border: solid 1px #225;
 }
 
 .center a {
@@ -157,38 +137,21 @@ details ul {
     font-weight: bold;
 }
 
-.center .field a:hover {
-    text-decoration: none;
-}
-
-.center .item, .center .block, fieldset {
-    margin-bottom: 20px;
-    margin-left: 20px;
-    margin-right: 20px;
-    background-color: white;
-    padding: 4px;
-    border: solid 1px var(--border);
-    display: block;
-}
-
-.center .item a {
-    background-color: #AADDFF;
-}
-
-.center .item a:after {
-    content: ':';
-}
-
-button, textarea, input {
+button, textarea, input, select {
     background-color: #1a1a2a;
     border: 1px solid var(--border);
     color: var(--text-color);
-    padding: 4px;
+    font-size: 1em;
+}
+
+button {
+    cursor: pointer;
 }
 
 textarea {
     box-sizing: border-box;
     width: 100%;
+    padding: 4px;
 }
 
 code {
@@ -205,35 +168,28 @@ code {
     padding-left: 8px;
 }
 
-.size {
-    text-align: right;
-    font-size: 0.8em;
-}
-
 #minify-btn {
-    background-color: #4e2d9d;
+    background-color: #404080;
     margin: 8px 0;
     padding: 8px;
+    font-variant: small-caps;
+    font-size: 1em;
     float: right;
 }
 
 .size {
     text-align: right;
     font-size: 0.8em;
+    color: var(--alt-text-color);
 }
 
 
 /* Let's be modern and support mobile*/
 @media (max-width: 750px) {
     .left {
-        font-size: 1em;
         position: static;
-        background-color: var(--bg-light);
         margin: 1em;
-        padding: 10px;
-        left: 0px;
         width: auto;
-        border-top: solid 1px black;
     }
 
     #menu {
@@ -260,7 +216,7 @@ code {
         margin: 1em;
     }
 
-    #header {
+    .header {
         padding-left: 1em;
     }
 
