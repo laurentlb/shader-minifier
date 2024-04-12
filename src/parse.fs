@@ -175,7 +175,7 @@ type private ParseImpl() =
         pipe2 name (between (ch '{') (ch '}') decls)
             (fun n d ->
                 Option.iter (fun (i:Ast.Ident) -> forbiddenNames <- i.Name::forbiddenNames) n
-                Ast.TypeStruct(prefix, n, d))
+                Ast.TypeBlock(prefix, n, d))
 
     let structSpecifier = parse {
         let! str = keyword "struct"

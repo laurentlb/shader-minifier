@@ -71,7 +71,8 @@ and Expr =
 
 and TypeSpec =
     | TypeName of string
-    | TypeStruct of string(*type*) * Ident option(*name*) * Decl list
+    // e.g. struct foo { float x; float y; }
+    | TypeBlock of string(*type*) * Ident option(*name*) * Decl list
 
 and Type = {
     name: TypeSpec // e.g. int
@@ -85,7 +86,7 @@ and Type = {
     override t.ToString() =
         let name = match t.name with
                    | TypeName n -> n
-                   | TypeStruct _ -> $"{t.name}"
+                   | TypeBlock _ -> $"{t.name}"
         if t.typeQ.IsEmpty && t.arraySizes.IsEmpty
             then $"{name}"
             else $"<{t.typeQ} {name} {t.arraySizes}>"

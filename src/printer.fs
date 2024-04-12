@@ -150,7 +150,7 @@ type PrinterImpl(outputFormat) =
 
     and typeSpecToS = function
         | TypeName s -> s
-        | TypeStruct(prefix, id, decls) -> structToS prefix id decls
+        | TypeBlock(prefix, id, decls) -> structToS prefix id decls
 
     and typeToS (ty: Type) =
         let get = function

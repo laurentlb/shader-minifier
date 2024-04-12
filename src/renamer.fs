@@ -330,8 +330,18 @@ module private RenamerImpl =
             renList env renCase cl |> ignore<Env>
             env
 
+    // e.g. struct foo { int a; float b; }
+    //   or uniform foo { int a; float b; }
+    let renTyBlock (env: Env) = function
+        | TypeBlock("struct", _, _) -> env
+        | TypeBlock(_, _, fields) ->
+            // treat the fields as if they were global variables
+            renList env (renDecl true) fields
+        | _ -> env
+
     let rec renTopLevelName env = function
         | TLDecl d -> renDecl true env d
+        | TypeDecl tyDecl -> renTyBlock env tyDecl
         | Function(fct, _) -> renFctName env fct
         | _ -> env
 
