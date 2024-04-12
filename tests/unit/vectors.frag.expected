@@ -30,7 +30,8 @@ float withExtraComponentsUnsafe(vec3 a)
   vec2 v3=vec2(1,a.y);
   vec3 v4=vec3(1,2,a.y);
   return v1.x+v3.x+v4.x;
-}struct S{vec2 p1;vec2 cp1;vec2 cp2;vec2 p2;};
+}
+struct S{vec2 p1;vec2 cp1;vec2 cp2;vec2 p2;};
 vec2 calc(S points,float t)
 {
   vec4 m1m2=mix(vec4(points.p1,points.cp1),vec4(points.cp1,points.cp2),t);

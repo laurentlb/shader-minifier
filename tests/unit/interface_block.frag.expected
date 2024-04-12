@@ -1,4 +1,5 @@
-uniform MyBlock{vec3 M;float v;};void mainImage(out vec4 m,vec2 B)
+uniform MyBlock{vec3 M;float v;};
+void mainImage(out vec4 m,vec2 B)
 {
   m=vec4(M,v);
 }

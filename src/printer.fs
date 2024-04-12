@@ -286,7 +286,7 @@ type PrinterImpl(indented) =
         | Precision ty -> out "precision %s;" (typeToS ty);
         | TLDecl (_, []) -> ""
         | TLDecl decl -> out "%s%s;" (nl 0) (declToS 0 decl)
-        | TypeDecl t -> out "%s;" (typeSpecToS t)
+        | TypeDecl t -> out "%s%s;" (nl 0) (typeSpecToS t)
 
     let print tl = 
         let mutable wasMacro = true
