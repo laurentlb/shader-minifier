@@ -30,6 +30,7 @@
 --preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess_if.frag.expected tests/unit/preprocess_if.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/shadowing.frag.expected tests/unit/shadowing.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/precedence.frag.expected tests/unit/precedence.frag
+--no-remove-unused --format indented -o tests/unit/interface_block.frag.expected tests/unit/interface_block.frag
 
 # Unused removal tests
 
