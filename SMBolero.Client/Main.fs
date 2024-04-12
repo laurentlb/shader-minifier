@@ -12,6 +12,14 @@ type Page =
     | [<EndPoint "?flags">] FlagPage
     | [<EndPoint "?about">] About
 
+type Flags = {
+    mutable format: string
+    mutable inlining: bool
+    mutable removeUnused: bool
+    mutable renaming: bool
+    mutable other: string
+}
+
 /// The Elmish application's model.
 type Model =
     {
@@ -19,7 +27,7 @@ type Model =
         shaderInput: string
         shaderOutput: string
         shaderSize: int
-        flags: string
+        flags: Flags
         error: string option
     }
 
@@ -29,7 +37,7 @@ let initModel =
         shaderInput = "out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(1.,1.,1.,1.);\n}"
         shaderOutput = ""
         shaderSize = 0
-        flags = "--format text"
+        flags = {Flags.inlining=true; removeUnused=true; renaming=true; other=""; format="text"}
         error = None
     }
 
@@ -38,7 +46,6 @@ type Message =
     | SetPage of Page
     | Minify
     | SetShader of string
-    | SetFlags of string
     | Error of exn
     | ClearError
 
@@ -57,14 +64,18 @@ let update message model =
     | SetPage page ->
         { model with page = page }, Cmd.none
     | Minify ->
-        printfn "Minify %s" model.flags
-        let out, size = minify (model.flags.Split(' ')) model.shaderInput
+        let allFlags = [|
+            yield! ["--format"; model.flags.format]
+            if not model.flags.inlining then yield "--no-inlining"
+            if not model.flags.removeUnused then yield "--no-remove-unused"
+            if not model.flags.renaming then yield "--no-renaming"
+            yield! model.flags.other.Split(' ')
+        |]
+        printfn "Minify %s" (String.concat " " allFlags)
+        let out, size = minify allFlags model.shaderInput
         { model with shaderOutput = out ; shaderSize = size }, Cmd.none
     | SetShader value ->
         { model with shaderInput = value }, Cmd.none
-    | SetFlags value ->
-        { model with flags = value }, Cmd.none
-
     | Error exn ->
         { model with error = Some exn.Message }, Cmd.none
     | ClearError ->
@@ -90,7 +101,11 @@ let homePage model dispatch =
         .ShaderInput(model.shaderInput, fun v -> dispatch (SetShader v))
         .ShaderOutput(model.shaderOutput)
         .ShaderSize(if model.shaderSize = 0 then "" else $"size: {model.shaderSize}")
-        .Flags(model.flags, fun v -> dispatch (SetFlags v))
+        .Format(model.flags.format, fun v -> model.flags.format <- v)
+        .Inlining(model.flags.inlining, fun v -> model.flags.inlining <- v)
+        .RemoveUnused(model.flags.removeUnused, fun v -> model.flags.removeUnused <- v)
+        .Renaming(model.flags.renaming, fun v -> model.flags.renaming <- v)
+        .OtherFlags(model.flags.other, fun v -> model.flags.other <- v)
         .Elt()
 
 let menuItem (model: Model) (page: Page) (text: string) =

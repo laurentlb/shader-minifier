@@ -23,18 +23,36 @@
       </div>
 
       <template id="Home">
-          <h1>Shader Minifier</h1>
-
           <textarea rows="15" id="input" bind="${ShaderInput}" autofocus></textarea>
           <div>
-              <input type="text" style="width: 50%" name="flags" bind="${Flags}" />
               <button onclick="${Minify}" class="button" id="minify-btn">Minify!</button>
+              <details>
+                  <summary id="flag-container">Flags</summary>
+                  <ul>
+                      <li>
+                          <label>Format</label>
+                          <select id="options" bind="${Format}">
+                              <option value="text">Text</option>
+                              <option value="indented">Indented</option>
+                              <option value="c-variables">C variables</option>
+                              <option value="c-array">C Array</option>
+                              <option value="js">JS</option>
+                              <option value="nasm">Nasm</option>
+                              <option value="rust">Rust</option>
+                          </select>
+                      <li><label for="inlining-chk">Inlining</label>
+                        <input type="checkbox" id="inlining-chk" bind="${Inlining}">
+                      <li><label for="renaming-chk">Renaming</label>
+                        <input type="checkbox" id="renaming-chk" bind="${Renaming}">
+                      <li><label for="unused-chk">Remove unused</label>
+                        <input type="checkbox" id="unused-chk" bind="${RemoveUnused}">
+                      <li><label for="other-flags">Other flags</label>
+                        <input type="text" style="width: 100%" name="flags" bind="${OtherFlags}">
+                  </ul>
+              </details>
           </div>
           <textarea rows="15" id="output" readonly>${ShaderOutput}</textarea>
           <div class="size">${ShaderSize}</div>
-          <p>
-              Tip: use the flags <code>--format indented --no-renaming</code> for debugging.
-          </p>
       </template>
 
       <template id="FlagPage">
