@@ -138,6 +138,8 @@ OPTIONS:
     --no-remove-unused    Do not remove unused code
     --move-declarations   Move declarations to group them
     --preprocess          Evaluate some of the file preprocessor directives
+    --export-kkp-symbol-maps
+                          Export kkpView symbol maps
     --help                display this list of options.
 ```
 
@@ -277,6 +279,12 @@ On the other hand, Shader Minifier will aggressively use function overloading in
 the output. If two functions have a different number of arguments, they may have
 the same name in the output. This reduces the number of identifiers used by the
 shader and make it more compression friendly.
+
+### kkpView symbol maps
+
+Shader Minifier can export symbol files that map the minified code back to names
+from the original source code. This lets you visualize shader size using
+https://github.com/ConspiracyHu/rekkrunchy-with-analytics
 
 ### Shader Minifier performance
 

@@ -1,9 +1,44 @@
 ﻿module Printer
 
 open System
+open System.Linq
+open System.Collections.Generic
 open Ast
 open Options.Globals
 open System.Text.RegularExpressions
+
+let private kkpSymFormat shaderSymbol minifiedSize (symbolPool: string array) (symbolIndexes: int16 array) =
+    // https://github.com/ConspiracyHu/kkpView-public/blob/main/README.md
+    let bytes = List<byte>(capacity = 2 * symbolIndexes.Length)
+    let ascii (s: string) = bytes.AddRange(System.Text.Encoding.ASCII.GetBytes s)
+    let asciiz s = ascii s; bytes.Add(byte 0)
+    let fourByteInteger n = bytes.AddRange(List.map byte [ n; n >>> 8; n >>> 16; n >>> 24 ])
+    let twoByteInteger n = bytes.AddRange(List.map byte [ n; n >>> 8 ])
+    ascii "PHXP"                        // 4 bytes: FOURCC: 'PHXP'
+    asciiz shaderSymbol                 // ASCIIZ string: name of the shader described by this sym file.
+    fourByteInteger minifiedSize        // 4 bytes: minified data size (Ds) of the shader.
+    fourByteInteger symbolPool.Length   // 4 bytes: symbol count (Sc).
+    for symbolName in symbolPool do     // For each symbol (Sc),
+        asciiz symbolName               //     ASCIIZ string: name of the symbol.
+    for symbolIndex in symbolIndexes do // For each byte in the minified shader (Ds),
+        twoByteInteger symbolIndex      //     2 bytes: symbol index in the symbol pool.
+    bytes.ToArray()
+
+type SymbolMap() =
+    let symbolRefs = List<string>() // one per byte in the minified shader
+    member _.AddMapping (str: string) (symbolName: string) =
+        if str.ToCharArray() |> Array.exists (fun c -> int(c) >= 256) then failwith "cannot process a non-byte char"
+        for i in 1..str.Length do
+            symbolRefs.Add(symbolName)
+    member _.SymFileBytes (shaderFilename: string) (minifiedShader: string) =
+        if minifiedShader.Length <> symbolRefs.Count then failwith "minified byte size doesn't match symbols"
+        let shaderSymbol = "shader::" + shaderFilename // "::" is the separator for tree structure
+        let mutable i = 0 // indexMap maps each distinct symbol name to its index in the pool
+        let indexMap = symbolRefs.Distinct().ToDictionary(id, (fun _ -> i <- i + 1; int16(i - 1)))
+        let symbolIndexes = symbolRefs.Select(fun symbolRef -> indexMap[symbolRef]).ToArray()
+        let symbolPool = indexMap.OrderBy(fun kv -> kv.Value).Select(fun kv -> kv.Key).ToArray()
+        let bytes = kkpSymFormat shaderSymbol minifiedShader.Length symbolPool symbolIndexes
+        bytes
 
 type PrinterImpl(outputFormat) =
 
@@ -270,7 +305,7 @@ type PrinterImpl(outputFormat) =
         | TLDecl decl -> out "%s%s;" (nl 0) (declToS 0 decl)
         | TypeDecl t -> out "%s;" (typeSpecToS t)
 
-    member _.Print tl =
+    let print tl = 
         let mutable wasMacro = true
         // handle the required \n before a macro
         ignoreFirstNewLine <- true
@@ -280,12 +315,32 @@ type PrinterImpl(outputFormat) =
             wasMacro <- isMacro
             if needEndLine then out "%s%s" (backslashN()) (topLevelToS x)
             else topLevelToS x
+        tl |> List.map f
 
-        tl |> List.map f |> String.concat ""
     member _.ExprToS = exprToS
     member _.TypeToS = typeToS
+    member _.Print tl = print tl |> String.concat ""
+    member _.PrintAndWriteSymbols shader =
+        let tlStrings = print shader.code
+        let minifiedShader = tlStrings |> String.concat ""
+        let symbolMap = SymbolMap()
+        for (tl, tlString) in List.zip shader.code tlStrings do
+            let symbolName =
+                match tl with
+                | Function (fct, _) -> fct.fName.OldName
+                | TLDecl (_, declElts) -> declElts |> List.map (fun declElt -> declElt.name.OldName) |> String.concat ","
+                | TypeDecl (TypeBlock (_, Some name, _)) -> name.OldName
+                | TypeDecl _ -> "*type decl*" // unnamed TypeBlock (a top-level TypeDecl cannot be a TypeName)
+                | Precision _ -> "*precision*"
+                | TLVerbatim s when s.StartsWith("#define") -> "#define"
+                | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
+            symbolMap.AddMapping tlString symbolName
+        let bytes = symbolMap.SymFileBytes shader.filename minifiedShader
+        System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
+        minifiedShader
 
 let print tl = (new PrinterImpl(options.outputFormat)).Print(tl)
+let printAndWriteSymbols shader = (new PrinterImpl(options.outputFormat)).PrintAndWriteSymbols shader
 let printText tl = (new PrinterImpl(Options.Text)).Print(tl)
 let exprToS x = (new PrinterImpl(Options.Text)).ExprToS 0 x
 let typeToS ty = (new PrinterImpl(Options.Text)).TypeToS ty

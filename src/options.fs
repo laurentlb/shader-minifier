@@ -39,6 +39,7 @@ type CliArguments =
     | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
     | [<CustomCommandLine("--preprocess")>] Preprocess
+    | [<CustomCommandLine("--export-kkp-symbol-maps")>] ExportKkpSymbolMaps
     | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
@@ -49,8 +50,8 @@ type CliArguments =
             | Hlsl -> "Use HLSL (default is GLSL)"
             | FormatArg _ -> "Choose to format the output (use 'text' if you want just the shader)"
             | FieldNames _ -> "Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'"
-            | PreserveExternals _ -> "Do not rename external values (e.g. uniform)"
-            | PreserveAllGlobals _ -> "Do not rename functions and global variables"
+            | PreserveExternals -> "Do not rename external values (e.g. uniform)"
+            | PreserveAllGlobals -> "Do not rename functions and global variables"
             | NoInlining -> "Do not automatically inline variables and functions"
             | AggroInlining -> "Aggressively inline constants. This can reduce output size due to better constant folding. It can also increase output size due to repeated inlined constants, but this increased redundancy can be beneficial to compression, leading to a smaller final compressed size anyway. Does nothing if inlining is disabled."
             | NoRenaming -> "Do not rename anything"
@@ -60,6 +61,7 @@ type CliArguments =
             | NoRemoveUnused -> "Do not remove unused code"
             | MoveDeclarations -> "Move declarations to group them"
             | Preprocess -> "Evaluate some of the file preprocessor directives"
+            | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
             | Filenames _ -> "List of files to minify"
 
 type Options() =
@@ -79,6 +81,7 @@ type Options() =
     member val noRemoveUnused = false with get, set
     member val moveDeclarations = false with get, set
     member val preprocess = false with get, set
+    member val exportKkpSymbolMaps = false with get, set
     member val filenames = [||]: string[] with get, set
 
 module Globals =
@@ -122,6 +125,7 @@ let private initPrivate argv needFiles =
         options.noRemoveUnused <- args.Contains(NoRemoveUnused)
         options.moveDeclarations <- args.Contains(MoveDeclarations)
         options.preprocess <- args.Contains(Preprocess)
+        options.exportKkpSymbolMaps <- args.Contains(ExportKkpSymbolMaps)
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
         true

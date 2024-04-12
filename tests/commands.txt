@@ -61,6 +61,10 @@
 
 --no-remove-unused --move-declarations --format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
 
+# kkp symbols tests
+
+--no-remove-unused --no-renaming --export-kkp-symbol-maps --format indented -o tests/unit/symbols.frag.expected tests/unit/symbols.frag
+
 # Tests with full renaming
 
 --no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag

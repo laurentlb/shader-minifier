@@ -4,6 +4,11 @@ open System
 open System.IO
 open Options.Globals
 
+let minify shader =
+    if options.exportKkpSymbolMaps
+    then Printer.printAndWriteSymbols shader
+    else Printer.print shader.code
+
 let private formatPrefix = function
     | Ast.ExportPrefix.Variable -> "var"
     | Ast.ExportPrefix.HlslFunction -> "F"
@@ -25,7 +30,7 @@ let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (Printer.print shader.code)
+        fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (minify shader)
         fprintfn out ""
 
     fprintfn out "#endif // %s" macroName
@@ -47,20 +52,20 @@ let private printCArray out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         fprintfn out "// %s" shader.filename
-        fprintfn out "\"%s\"," (Printer.print shader.code)
+        fprintfn out "\"%s\"," (minify shader)
         fprintfn out ""
 
     fprintfn out "#endif"
 
 let private printNoHeader out (shaders: Ast.Shader[]) =
-    let str = [for shader in shaders -> Printer.print shader.code] |> String.concat "\n"
+    let str = [for shader in shaders -> minify shader] |> String.concat "\n"
     fprintf out "%s" str
 
 let private printIndented out (shaders: Ast.Shader[]) =
     [for shader in shaders do
         if shaders.Length > 1 then
             yield "// " + shader.filename
-        yield Printer.print shader.code]
+        yield minify shader]
     |> String.concat "\n\n"
     |> fprintf out "%s"
 
@@ -73,7 +78,7 @@ let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "var %s = `%s`" name (Printer.print shader.code)
+        fprintfn out "var %s = `%s`" name (minify shader)
         fprintfn out ""
 
 let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
@@ -85,7 +90,7 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (Printer.print shader.code)
+        fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (minify shader)
         fprintfn out ""
 
 let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
@@ -97,7 +102,7 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
     for shader in shaders do
         fprintfn out ""
         let name = (Path.GetFileName shader.filename).Replace(".", "_")    
-        fprintfn out "pub const %s: &'static [u8] = b\"\\%s %s\\0\";" (name.ToUpper()) Environment.NewLine (Printer.print shader.code)
+        fprintfn out "pub const %s: &'static [u8] = b\"\\%s %s\\0\";" (name.ToUpper()) Environment.NewLine (minify shader)
 
 let print out shaders exportedNames = function
     | Options.IndentedText -> printIndented out shaders
