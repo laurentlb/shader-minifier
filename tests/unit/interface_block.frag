@@ -1,3 +1,5 @@
+#version 140
+
 uniform MyBlock
 {
   vec3 color; // treated as a global variable
