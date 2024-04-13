@@ -16,7 +16,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/inout.frag
-"#version 330\n"
+ "#version 330\n"
  "uniform samplerCube v;"
  "in vec3 m,d;"
  "out vec4 f;"
@@ -39,7 +39,7 @@
  "}",
 
 // tests/unit/inout2.frag
-"#version 330\n"
+ "#version 330\n"
  "uniform samplerCube v;"
  "uniform float s;"
  "uniform vec3 r,c,p,i;"

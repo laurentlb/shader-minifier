@@ -100,7 +100,8 @@ type PrinterImpl(indented) =
             ""
         else
             if indented then
-                "\000" + new string(' ', indent)
+                // Use \t for indentation (space would be ambiguous, since a non-indented line can start with a space).
+                "\000" + new string('\t', indent)
             else
                 ""
 

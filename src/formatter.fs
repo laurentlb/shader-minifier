@@ -18,11 +18,12 @@ let private formatPrefix = function
     | Ast.ExportPrefix.Variable -> "var"
     | Ast.ExportPrefix.HlslFunction -> "F"
 
-let private splitIndent (str: string) = [
-    for line in str.Split([|'\000'|]) do
-        // count the number of spaces at the beginning of the string
-        let indentSize = line |> Seq.takeWhile (fun c -> c = ' ') |> Seq.length
-        yield line.Substring(0, indentSize), line.Substring(indentSize)
+let private getLines shader = [
+    let lines = minify shader
+    for line in lines.Split([|'\000'|]) do
+        // count the number of \t at the beginning of the string
+        let indentLevel = line |> Seq.takeWhile (fun c -> c = '\t') |> Seq.length
+        yield new String(' ', 2 * indentLevel), line.Substring(indentLevel)
     ]
 
 let private escape (str: string) =
@@ -46,9 +47,10 @@ let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
         fprintfn out "const char *%s =" name
-        let lines = splitIndent (minify shader)
-        let lines = [for indent, line in lines do sprintf " %s\"%s\"" (indent + indent) (escape line)]
-        fprintfn out "%s;" (String.concat Environment.NewLine lines)
+        let lines = String.concat Environment.NewLine [
+            for indent, line in getLines shader do
+                sprintf " %s\"%s\"" indent (escape line)]
+        fprintfn out "%s;" lines
         fprintfn out ""
 
     fprintfn out "#endif // %s" macroName
@@ -70,9 +72,10 @@ let private printCArray out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         fprintfn out "// %s" shader.filename
-        let lines = splitIndent (minify shader)
-        let lines = [for indent, line in lines do sprintf " %s\"%s\"" (indent + indent) (escape line)]
-        fprintfn out "%s," (String.concat Environment.NewLine lines)
+        let lines = String.concat Environment.NewLine [
+            for indent, line in getLines shader do
+                sprintf " %s\"%s\"" indent (escape line)]
+        fprintfn out "%s," lines
         fprintfn out ""
 
     fprintfn out "#endif"
@@ -85,8 +88,8 @@ let private printIndented out (shaders: Ast.Shader[]) =
     [for shader in shaders do
         if shaders.Length > 1 then
             yield "// " + shader.filename
-        for indent, line in splitIndent (minify shader) do
-            yield indent + indent + line + Environment.NewLine
+        for indent, line in getLines shader do
+            yield indent + line + Environment.NewLine
         yield Environment.NewLine
     ]
     |> String.concat ""
@@ -119,9 +122,10 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
         // fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (minify shader)
 
         fprintfn out "_%s:" name // \tdb '%s', 0" name Environment.NewLine (minify shader)
-        let lines = splitIndent (minify shader)
-        let lines = [for indent, line in lines do sprintf "\tdb %s'%s'" (indent + indent) (escape line)]
-        fprintfn out "%s, 0" (String.concat Environment.NewLine lines)
+        let lines = String.concat Environment.NewLine [
+            for indent, line in getLines shader do
+                sprintf "\tdb %s'%s'" indent (escape line)]
+        fprintfn out "%s, 0" lines
 
         fprintfn out ""
 
@@ -135,9 +139,10 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out ""
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
         fprintfn out "pub const %s: &'static [u8] = b\"\\" (name.ToUpper())
-        let lines = splitIndent (minify shader)
-        let lines = [for indent, line in lines do sprintf " %s%s\\" (indent + indent) (escape line)]
-        fprintfn out "%s0\";" (String.concat Environment.NewLine lines)
+        let lines = String.concat Environment.NewLine [
+            for indent, line in getLines shader do
+                sprintf " %s%s\\" indent (escape line)]
+        fprintfn out "%s0\";" lines
 
 let print out shaders exportedNames = function
     | Options.IndentedText -> printIndented out shaders

@@ -14,7 +14,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/real/kinder_painter.frag
-"uniform vec2 v;"
+ "uniform vec2 v;"
  "uniform float z;"
  "uniform vec4 s;"
  "uniform sampler2D y,f,o,w;"
