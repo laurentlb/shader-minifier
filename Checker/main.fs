@@ -15,9 +15,9 @@ type CliArguments =
     interface IArgParserTemplate with
         member s.Usage =
             match s with
-            | Update_Golden _ -> "Update the golden tests"
-            | Skip_GLSL_Compile _ -> "Skip the GLSL compilation of shaders"
-            | Skip_Performance_Tests _ -> "Skip the tests of performance"
+            | Update_Golden -> "Update the golden tests"
+            | Skip_GLSL_Compile -> "Skip the GLSL compilation of shaders"
+            | Skip_Performance_Tests -> "Skip the tests of performance"
 
 let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine()
 //let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine([|"--update-golden"|])
