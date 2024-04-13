@@ -105,6 +105,9 @@ let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out ""
 
 let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
+    let escape (str: string) =
+        str.Replace("\"", "\\\"").Replace("\n", "', 10, '")
+
     fprintfn out "; Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
     for value: Ast.ExportedName in List.sort exportedNames do
@@ -113,7 +116,13 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (minify shader)
+        // fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (minify shader)
+
+        fprintfn out "_%s:" name // \tdb '%s', 0" name Environment.NewLine (minify shader)
+        let lines = splitIndent (minify shader)
+        let lines = [for indent, line in lines do sprintf "\tdb %s'%s'" (indent + indent) (escape line)]
+        fprintfn out "%s, 0" (String.concat Environment.NewLine lines)
+
         fprintfn out ""
 
 let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
@@ -124,8 +133,8 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
 
     for shader in shaders do
         fprintfn out ""
-        let name = (Path.GetFileName shader.filename).Replace(".", "_")    
-        fprintfn out "pub const %s: &'static [u8] = b\"\\" (name.ToUpper()) //  %s\\0\";" (name.ToUpper()) Environment.NewLine (minify shader)
+        let name = (Path.GetFileName shader.filename).Replace(".", "_")
+        fprintfn out "pub const %s: &'static [u8] = b\"\\" (name.ToUpper())
         let lines = splitIndent (minify shader)
         let lines = [for indent, line in lines do sprintf " %s%s\\" (indent + indent) (escape line)]
         fprintfn out "%s0\";" (String.concat Environment.NewLine lines)
