@@ -6,8 +6,8 @@ open Microsoft.FSharp.Text
 open Options.Globals
 
 let getSize (shaders: Ast.Shader[]) =
-    shaders |> Array.map (fun s -> Printer.printText s.code)
-    |> Array.sumBy (fun s -> s.Length)
+    shaders |> Array.map (fun s -> Printer.print s.code)
+        |> Array.sumBy (fun s -> s.Length)
 
 let private printSize (shaders: Ast.Shader[]) =
     if options.verbose then
