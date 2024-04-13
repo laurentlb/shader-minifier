@@ -49,8 +49,8 @@ let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
         let lines = splitIndent (minify shader)
         let lines = [for indent, line in lines do sprintf " %s\"%s\"" (indent + indent) (escape line)]
         fprintfn out "%s;" (String.concat Environment.NewLine lines)
+        fprintfn out ""
 
-    fprintfn out ""
     fprintfn out "#endif // %s" macroName
 
 let private printCArray out (shaders: Ast.Shader[]) exportedNames =
@@ -125,7 +125,10 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
     for shader in shaders do
         fprintfn out ""
         let name = (Path.GetFileName shader.filename).Replace(".", "_")    
-        fprintfn out "pub const %s: &'static [u8] = b\"\\%s %s\\0\";" (name.ToUpper()) Environment.NewLine (minify shader)
+        fprintfn out "pub const %s: &'static [u8] = b\"\\" (name.ToUpper()) //  %s\\0\";" (name.ToUpper()) Environment.NewLine (minify shader)
+        let lines = splitIndent (minify shader)
+        let lines = [for indent, line in lines do sprintf " %s%s\\" (indent + indent) (escape line)]
+        fprintfn out "%s0\";" (String.concat Environment.NewLine lines)
 
 let print out shaders exportedNames = function
     | Options.IndentedText -> printIndented out shaders
