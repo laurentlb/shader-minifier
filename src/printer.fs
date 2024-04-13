@@ -92,17 +92,12 @@ type PrinterImpl(indented) =
         let sign = if f < 0.M then "-" else ""
         sign + str
 
-    let mutable ignoreFirstNewLine = true
     let nl indent = // newline and optionally indent
-        if ignoreFirstNewLine then
-            ignoreFirstNewLine <- false
-            ""
+        if indented then
+            // Use \t for indentation (space would be ambiguous, since a non-indented line can start with a space).
+            "\000" + new string('\t', indent)
         else
-            if indented then
-                // Use \t for indentation (space would be ambiguous, since a non-indented line can start with a space).
-                "\000" + new string('\t', indent)
-            else
-                ""
+            ""
 
     let rec exprToS indent exp = exprToSLevel indent 0 exp
 
@@ -291,7 +286,6 @@ type PrinterImpl(indented) =
     let print tl = 
         let mutable wasMacro = true
         // handle the required \n before a macro
-        ignoreFirstNewLine <- true
         let f x =
             let isMacro = match x with TLVerbatim s -> s <> "" && s.[0] = '#' | _ -> false
             let needEndLine = isMacro && not wasMacro

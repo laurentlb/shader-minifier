@@ -22,7 +22,7 @@ let private formatPrefix = function
 
 let private getLines shader = [
     let lines = minify shader
-    for line in lines.Split([|'\000'|]) do
+    for line in lines.Trim([|'\000'|]).Split([|'\000'|]) do
         // count the number of \t at the beginning of the string
         let indentLevel = line |> Seq.takeWhile (fun c -> c = '\t') |> Seq.length
         yield new String(' ', 2 * indentLevel), line.Substring(indentLevel)
