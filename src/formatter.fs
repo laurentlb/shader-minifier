@@ -5,9 +5,14 @@ open System.IO
 open Options.Globals
 
 let minify shader =
-    if options.exportKkpSymbolMaps
-    then Printer.printAndWriteSymbols shader
-    else Printer.print shader.code
+    if options.exportKkpSymbolMaps then
+        Printer.writeSymbols shader
+
+    match options.outputFormat with
+    | Options.Text | Options.JS ->
+        Printer.print shader.code
+    | Options.IndentedText | Options.CVariables | Options.CArray | Options.JS | Options.Nasm | Options.Rust ->
+        Printer.printIndented shader.code
 
 let private formatPrefix = function
     | Ast.ExportPrefix.Variable -> "var"
@@ -42,9 +47,10 @@ let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
         fprintfn out "const char *%s =" name
         let lines = splitIndent (minify shader)
-        let lines = [for indent, line in lines do sprintf "  %s\"%s\"" indent (escape line)]
+        let lines = [for indent, line in lines do sprintf " %s\"%s\"" (indent + indent) (escape line)]
         fprintfn out "%s;" (String.concat Environment.NewLine lines)
 
+    fprintfn out ""
     fprintfn out "#endif // %s" macroName
 
 let private printCArray out (shaders: Ast.Shader[]) exportedNames =
@@ -65,12 +71,8 @@ let private printCArray out (shaders: Ast.Shader[]) exportedNames =
     for shader in shaders do
         fprintfn out "// %s" shader.filename
         let lines = splitIndent (minify shader)
-        let lines = [for indent, line in lines do sprintf "  %s\"%s\"" indent (escape line)]
-
-        for indent, line in splitIndent (minify shader) do
-            fprintfn out "  %s\"%s\"" indent (escape line)
-
-        fprintfn out "\"%s\"," (String.concat Environment.NewLine lines)
+        let lines = [for indent, line in lines do sprintf " %s\"%s\"" (indent + indent) (escape line)]
+        fprintfn out "%s," (String.concat Environment.NewLine lines)
         fprintfn out ""
 
     fprintfn out "#endif"
@@ -83,8 +85,11 @@ let private printIndented out (shaders: Ast.Shader[]) =
     [for shader in shaders do
         if shaders.Length > 1 then
             yield "// " + shader.filename
-        yield minify shader]
-    |> String.concat "\n\n"
+        for indent, line in splitIndent (minify shader) do
+            yield indent + indent + line + Environment.NewLine
+        yield Environment.NewLine
+    ]
+    |> String.concat ""
     |> fprintf out "%s"
 
 let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =

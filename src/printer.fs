@@ -164,8 +164,6 @@ type PrinterImpl(indented) =
             s2.Length > 0 && isIdentChar(s2.[0]) then s + " " + s2
         else s + s2
 
-    let backslashN() = "\n"
-
     // Print HLSL semantics
     let semToS sem =
         let res = sem |> List.map (exprToS 0) |> String.concat ":"
@@ -204,8 +202,6 @@ type PrinterImpl(indented) =
 
         if vars.IsEmpty then ""
         else out "%s %s" (typeToS ty) (vars |> commaListToS out1)
-
-    let escape (s: string) = s
 
     /// Detect if the current statement might accept a dangling else.
     /// Note that the function needs to be recursive to detect things like:
@@ -258,8 +254,8 @@ type PrinterImpl(indented) =
         | Verbatim s ->
             // add a space at end when it seems to be needed
             let s = if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s
-            if s <> "" && s.[0] = '#' then out "%s%s" (backslashN()) (escape s)
-            else escape s
+            if s <> "" && s.[0] = '#' then out "\n%s" s
+            else s
         | Switch(e, cl) ->
             let labelToS = function
                 | Case e -> out "case %s:" (exprToS indent e)
@@ -283,7 +279,7 @@ type PrinterImpl(indented) =
         | TLVerbatim s ->
             // add a space at end when it seems to be needed
             let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
-            out "%s%s%s" (nl 0) (escape s) trailing
+            out "%s%s%s" (nl 0) s trailing
         | Function (fct, Block []) -> out "%s%s%s{}" (nl 0) (funToS fct) (nl 0)
         | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (stmtToS 0 body)
         | Function (fct, body) -> out "%s%s%s{%s%s}" (nl 0) (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
@@ -300,14 +296,14 @@ type PrinterImpl(indented) =
             let isMacro = match x with TLVerbatim s -> s <> "" && s.[0] = '#' | _ -> false
             let needEndLine = isMacro && not wasMacro
             wasMacro <- isMacro
-            if needEndLine then out "%s%s" (backslashN()) (topLevelToS x)
+            if needEndLine then out "\n%s" (topLevelToS x)
             else topLevelToS x
         tl |> List.map f
 
     member _.ExprToS = exprToS
     member _.TypeToS = typeToS
     member _.Print tl = print tl |> String.concat ""
-    member _.PrintAndWriteSymbols shader =
+    member _.WriteSymbols shader =
         let tlStrings = print shader.code
         let minifiedShader = tlStrings |> String.concat ""
         let symbolMap = SymbolMap()
@@ -324,10 +320,10 @@ type PrinterImpl(indented) =
             symbolMap.AddMapping tlString symbolName
         let bytes = symbolMap.SymFileBytes shader.filename minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
-        minifiedShader
 
-let print tl = (new PrinterImpl(true)).Print(tl)
-let printAndWriteSymbols shader = (new PrinterImpl(false)).PrintAndWriteSymbols shader
+let print tl = (new PrinterImpl(false)).Print(tl)
+let printIndented tl = (new PrinterImpl(true)).Print(tl)
+let writeSymbols shader = (new PrinterImpl(false)).WriteSymbols shader
 let printText tl = (new PrinterImpl(false)).Print(tl)
 let exprToS x = (new PrinterImpl(false)).ExprToS 0 x
 let typeToS ty = (new PrinterImpl(false)).TypeToS ty
