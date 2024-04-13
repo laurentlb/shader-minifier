@@ -694,7 +694,9 @@ let simplify li =
     li
     |> iterateSimplifyAndInline
     |> List.choose (function
-        | TLDecl (ty, li) -> TLDecl (rwType ty, declsNotToInline li) |> Some
+        | TLDecl (ty, li) ->
+            let li = declsNotToInline li
+            if li = [] then None else TLDecl (rwType ty, li) |> Some
         | TLVerbatim s -> TLVerbatim (stripSpaces s) |> Some
         | Function (fct, _) when fct.fName.ToBeInlined -> None
         | Function (fct, body) -> Function (rwFType fct, body) |> Some

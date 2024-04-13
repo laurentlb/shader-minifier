@@ -1,2 +1,6 @@
 #version 120
-precision highp float;precision mediump int;precision lowp sampler2D;precision lowp samplerCube;
+
+precision highp float;
+precision mediump int;
+precision lowp sampler2D;
+precision lowp samplerCube;
