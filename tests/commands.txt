@@ -63,7 +63,7 @@
 
 # kkp symbols tests
 
---no-remove-unused --no-renaming --export-kkp-symbol-maps --format indented -o tests/unit/symbols.frag.expected tests/unit/symbols.frag
+--no-remove-unused --no-renaming --export-kkp-symbol-maps --format text -o tests/unit/symbols.frag.expected tests/unit/symbols.frag
 
 # Tests with full renaming
 

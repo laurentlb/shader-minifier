@@ -7,7 +7,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/verbatim.frag
-"//Test case for https://github.com/laurentlb/Shader_Minifier/issues/168\n"
+ "//Test case for https://github.com/laurentlb/Shader_Minifier/issues/168\n"
  "int foo(int x){\nreturn 2;\n}\n"
  "int my_function()"
  "{"

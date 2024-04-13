@@ -7,7 +7,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/float.frag
-"void floatPrecision()"
+ "void floatPrecision()"
  "{"
    "float a=1.2345e-7,b=1.234567891234,c=1234567.891234,d=1.234567e14;"
  "}"

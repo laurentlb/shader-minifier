@@ -7,7 +7,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/operators.frag
-"#version 330\n"
+ "#version 330\n"
  "void main()"
  "{"
    "int a=11,b=7,c=2;"

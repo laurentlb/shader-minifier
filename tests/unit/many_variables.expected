@@ -7,7 +7,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/many_variables.frag
-"int L(float L,float K,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
+ "int L(float L,float K,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
  "{"
    "float M=L,f=K,N=J,O=I,P=H,Q=G;"
    "int R=1,S=2,T=3,U=4,V=5,W=6,X=7,Y=8;"

@@ -7,7 +7,7 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/minus-zero.frag
-"void main()"
+ "void main()"
  "{"
    "float a=0.;"
  "}",

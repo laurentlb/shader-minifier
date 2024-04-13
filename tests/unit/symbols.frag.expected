@@ -1,19 +1,5 @@
 #extension GL_EXT_gpu_shader4:enable
-
 #define TEST
-
 #ifndef A
-
 #endif
-
-vec3 color;struct s{vec4 n,f;bool ok;};
-float sdf(vec3 p)
-{
-  color=vec3(1);
-  return length(p)-1.;
-}
-void main()
-{
-  int ijk=32;
-  ijk+=ijk;
-}
+vec3 color;struct s{vec4 n,f;bool ok;};float sdf(vec3 p){color=vec3(1);return length(p)-1.;}void main(){int ijk=32;ijk+=ijk;}
