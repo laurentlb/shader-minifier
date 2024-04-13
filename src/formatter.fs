@@ -6,6 +6,8 @@ open Options.Globals
 
 let minify shader =
     if options.exportKkpSymbolMaps then
+        if options.outputFormat = Options.IndentedText then
+            failwith "exporting symbols is not compatible with indented mode"
         Printer.writeSymbols shader
 
     match options.outputFormat with
