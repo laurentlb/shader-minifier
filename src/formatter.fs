@@ -13,6 +13,16 @@ let private formatPrefix = function
     | Ast.ExportPrefix.Variable -> "var"
     | Ast.ExportPrefix.HlslFunction -> "F"
 
+let private splitIndent (str: string) = [
+    for line in str.Split([|'\000'|]) do
+        // count the number of spaces at the beginning of the string
+        let indentSize = line |> Seq.takeWhile (fun c -> c = ' ') |> Seq.length
+        yield line.Substring(0, indentSize), line.Substring(indentSize)
+    ]
+
+let private escape (str: string) =
+    str.Replace("\"", "\\\"").Replace("\n", "\\n")
+
 let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
     let fileName =
         if options.outputName = "" || options.outputName = "-" then "shader_code.h"
@@ -30,8 +40,10 @@ let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "const char *%s =%s \"%s\";" name Environment.NewLine (minify shader)
-        fprintfn out ""
+        fprintfn out "const char *%s =" name
+        let lines = splitIndent (minify shader)
+        let lines = [for indent, line in lines do sprintf "  %s\"%s\"" indent (escape line)]
+        fprintfn out "%s;" (String.concat Environment.NewLine lines)
 
     fprintfn out "#endif // %s" macroName
 
@@ -52,7 +64,13 @@ let private printCArray out (shaders: Ast.Shader[]) exportedNames =
     fprintfn out ""
     for shader in shaders do
         fprintfn out "// %s" shader.filename
-        fprintfn out "\"%s\"," (minify shader)
+        let lines = splitIndent (minify shader)
+        let lines = [for indent, line in lines do sprintf "  %s\"%s\"" indent (escape line)]
+
+        for indent, line in splitIndent (minify shader) do
+            fprintfn out "  %s\"%s\"" indent (escape line)
+
+        fprintfn out "\"%s\"," (String.concat Environment.NewLine lines)
         fprintfn out ""
 
     fprintfn out "#endif"

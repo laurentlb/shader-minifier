@@ -40,7 +40,7 @@ type SymbolMap() =
         let bytes = kkpSymFormat shaderSymbol minifiedShader.Length symbolPool symbolIndexes
         bytes
 
-type PrinterImpl(outputFormat) =
+type PrinterImpl(indented) =
 
     let out a = sprintf a
 
@@ -99,13 +99,10 @@ type PrinterImpl(outputFormat) =
             ignoreFirstNewLine <- false
             ""
         else
-            let spaces = new string(' ', indent * 2 + 1)
-            match outputFormat with
-            | Options.IndentedText -> Environment.NewLine + new string(' ', indent * 2)
-            | Options.Text | Options.JS -> ""
-            | Options.CVariables | Options.CArray -> out "\"%s%s\"" Environment.NewLine spaces
-            | Options.Nasm -> out "'%s\tdb%s'" Environment.NewLine spaces
-            | Options.Rust -> out "\\%s%s" Environment.NewLine spaces
+            if indented then
+                "\000" + new string(' ', indent)
+            else
+                ""
 
     let rec exprToS indent exp = exprToSLevel indent 0 exp
 
@@ -167,11 +164,7 @@ type PrinterImpl(outputFormat) =
             s2.Length > 0 && isIdentChar(s2.[0]) then s + " " + s2
         else s + s2
 
-    let backslashN() =
-        match outputFormat with
-        | Options.Text | Options.JS | Options.IndentedText -> "\n"
-        | Options.Nasm -> "', 10, '"
-        | Options.CVariables | Options.CArray | Options.Rust ->  "\\n"
+    let backslashN() = "\n"
 
     // Print HLSL semantics
     let semToS sem =
@@ -212,13 +205,7 @@ type PrinterImpl(outputFormat) =
         if vars.IsEmpty then ""
         else out "%s %s" (typeToS ty) (vars |> commaListToS out1)
 
-    let escape (s: string) =
-        match outputFormat with
-        | Options.IndentedText -> s
-        | Options.Text -> s
-        | Options.JS -> s
-        | Options.CVariables | Options.CArray | Options.JS | Options.Rust -> s.Replace("\"", "\\\"").Replace("\n", "\\n")
-        | Options.Nasm -> s.Replace("'", "\'").Replace("\n", "', 10, '")
+    let escape (s: string) = s
 
     /// Detect if the current statement might accept a dangling else.
     /// Note that the function needs to be recursive to detect things like:
@@ -339,8 +326,8 @@ type PrinterImpl(outputFormat) =
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
         minifiedShader
 
-let print tl = (new PrinterImpl(options.outputFormat)).Print(tl)
-let printAndWriteSymbols shader = (new PrinterImpl(options.outputFormat)).PrintAndWriteSymbols shader
-let printText tl = (new PrinterImpl(Options.Text)).Print(tl)
-let exprToS x = (new PrinterImpl(Options.Text)).ExprToS 0 x
-let typeToS ty = (new PrinterImpl(Options.Text)).TypeToS ty
+let print tl = (new PrinterImpl(true)).Print(tl)
+let printAndWriteSymbols shader = (new PrinterImpl(false)).PrintAndWriteSymbols shader
+let printText tl = (new PrinterImpl(false)).Print(tl)
+let exprToS x = (new PrinterImpl(false)).ExprToS 0 x
+let typeToS ty = (new PrinterImpl(false)).TypeToS ty
