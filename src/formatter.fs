@@ -47,8 +47,7 @@ let private printCVariables out (shaders: Ast.Shader[]) exportedNames =
 
     fprintfn out ""
     for shader in shaders do
-        let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "const char *%s =" name
+        fprintfn out "const char *%s =" shader.mangledFilename
         let lines = String.concat Environment.NewLine [
             for indent, line in getLines shader do
                 sprintf " %s\"%s\"" indent (escape line)]
@@ -105,8 +104,7 @@ let private printJSHeader out (shaders: Ast.Shader[]) exportedNames =
 
     fprintfn out ""
     for shader in shaders do
-        let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "var %s = `%s`" name (minify shader)
+        fprintfn out "var %s = `%s`" shader.mangledFilename (minify shader)
         fprintfn out ""
 
 let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
@@ -120,10 +118,9 @@ let private printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
 
     fprintfn out ""
     for shader in shaders do
-        let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        // fprintfn out "_%s:%s\tdb '%s', 0" name Environment.NewLine (minify shader)
+        // fprintfn out "_%s:%s\tdb '%s', 0" shader.mangledFilename Environment.NewLine (minify shader)
 
-        fprintfn out "_%s:" name // \tdb '%s', 0" name Environment.NewLine (minify shader)
+        fprintfn out "_%s:" shader.mangledFilename // \tdb '%s', 0" shader.mangledFilename Environment.NewLine (minify shader)
         let lines = String.concat Environment.NewLine [
             for indent, line in getLines shader do
                 sprintf "\tdb %s'%s'" indent (escape line)]
@@ -139,8 +136,7 @@ let private printRustHeader out (shaders: Ast.Shader[]) exportedNames =
 
     for shader in shaders do
         fprintfn out ""
-        let name = (Path.GetFileName shader.filename).Replace(".", "_")
-        fprintfn out "pub const %s: &'static [u8] = b\"\\" (name.ToUpper())
+        fprintfn out "pub const %s: &'static [u8] = b\"\\" (shader.mangledFilename.ToUpper())
         let lines = String.concat Environment.NewLine [
             for indent, line in getLines shader do
                 sprintf " %s%s\\" indent (escape line)]
