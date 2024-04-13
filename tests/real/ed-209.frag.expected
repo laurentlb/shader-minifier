@@ -6,7 +6,8 @@
 
 #define SHADOW_STEPS 30.0
 
-float stretch,gunsUp,gunsForward,edWalk,edTwist,edDown,edShoot,doorOpen,glow;struct MarchData{float d;vec3 mat;float specPower;};
+float stretch,gunsUp,gunsForward,edWalk,edTwist,edDown,edShoot,doorOpen,glow;
+struct MarchData{float d;vec3 mat;float specPower;};
 mat2 rot(float a)
 {
   float c=cos(a),s=sin(a);
