@@ -30,9 +30,8 @@ type SymbolMap() =
         if str.ToCharArray() |> Array.exists (fun c -> int(c) >= 256) then failwith "cannot process a non-byte char"
         for i in 1..str.Length do
             symbolRefs.Add(symbolName)
-    member _.SymFileBytes (shaderFilename: string) (minifiedShader: string) =
+    member _.SymFileBytes (shaderSymbol: string) (minifiedShader: string) =
         if minifiedShader.Length <> symbolRefs.Count then failwith "minified byte size doesn't match symbols"
-        let shaderSymbol = "shader::" + shaderFilename // "::" is the separator for tree structure
         let mutable i = 0 // indexMap maps each distinct symbol name to its index in the pool
         let indexMap = symbolRefs.Distinct().ToDictionary(id, (fun _ -> i <- i + 1; int16(i - 1)))
         let symbolIndexes = symbolRefs.Select(fun symbolRef -> indexMap[symbolRef]).ToArray()
@@ -319,7 +318,8 @@ type PrinterImpl(indented) =
                 | TLVerbatim s when s.StartsWith("#define") -> "#define"
                 | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
             symbolMap.AddMapping tlString symbolName
-        let bytes = symbolMap.SymFileBytes shader.filename minifiedShader
+        let shaderSymbol = "shader::" + shader.mangledFilename // "::" is the separator for tree structure
+        let bytes = symbolMap.SymFileBytes shaderSymbol minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
 
 let print tl = (new PrinterImpl(false)).Print(tl)

@@ -177,7 +177,7 @@ type Shader = {
     mutable code: TopLevel list
     forbiddenNames: string list
     reorderFunctions: bool  // set to true if we saw a forward declaration
-}
+} with member this.mangledFilename = (System.IO.Path.GetFileName this.filename).Replace(".", "_")
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting visible variable and function declarations along the way.
