@@ -274,14 +274,13 @@ type PrinterImpl(indented) =
         | TLVerbatim s ->
             // add a space at end when it seems to be needed
             let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
-            out "%s%s%s" (nl 0) s trailing
-        | Function (fct, Block []) -> out "%s%s%s{}" (nl 0) (funToS fct) (nl 0)
-        | Function (fct, (Block _ as body)) -> out "%s%s%s" (nl 0) (funToS fct) (stmtToS 0 body)
-        | Function (fct, body) -> out "%s%s%s{%s%s}" (nl 0) (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
+            out "%s%s" s trailing
+        | Function (fct, Block []) -> out "%s%s{}" (funToS fct) (nl 0)
+        | Function (fct, (Block _ as body)) -> out "%s%s" (funToS fct) (stmtToS 0 body)
+        | Function (fct, body) -> out "%s%s{%s%s}" (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
         | Precision ty -> out "precision %s;" (typeToS ty);
-        | TLDecl (_, []) -> ""
-        | TLDecl decl -> out "%s%s;" (nl 0) (declToS 0 decl)
-        | TypeDecl t -> out "%s%s;" (nl 0) (typeSpecToS t)
+        | TLDecl decl -> out "%s;" (declToS 0 decl)
+        | TypeDecl t -> out "%s;" (typeSpecToS t)
 
     let print tl = 
         let mutable wasMacro = true
@@ -290,8 +289,8 @@ type PrinterImpl(indented) =
             let isMacro = match x with TLVerbatim s -> s <> "" && s.[0] = '#' | _ -> false
             let needEndLine = isMacro && not wasMacro
             wasMacro <- isMacro
-            if needEndLine then out "\n%s" (topLevelToS x)
-            else topLevelToS x
+            if needEndLine then out "\n%s" (nl 0 + topLevelToS x)
+            else nl 0 + topLevelToS x
         tl |> List.map f
 
     member _.ExprToS = exprToS
