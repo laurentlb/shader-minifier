@@ -15,8 +15,6 @@ type OutputFormat =
     | [<CustomCommandLine("nasm")>] Nasm
     | [<CustomCommandLine("rust")>] Rust
 
-let text() = Text
-
 type FieldSet =
     | RGBA
     | XYZW
