@@ -87,3 +87,15 @@ let pureBuiltinFunctions =
 // Type qualifiers telling that a global variables is an 'external' name
 // (it may be referenced from other files).
 let externalQualifiers = set ["in"; "out"; "attribute"; "varying"; "uniform"]
+
+let isFieldSwizzle s =
+    Seq.forall (fun c -> Seq.contains c "rgba") s ||
+    Seq.forall (fun c -> Seq.contains c "xyzw") s ||
+    Seq.forall (fun c -> Seq.contains c "stpq") s
+
+let swizzleIndex = function
+    | 'r' | 'x' | 's' -> 0
+    | 'g' | 'y' | 't' -> 1
+    | 'b' | 'z' | 'p' -> 2
+    | 'a' | 'w' | 'q' -> 3
+    | c -> failwithf "not a swizzle (%c) " c
