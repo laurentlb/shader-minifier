@@ -4,7 +4,7 @@ open System
 open System.IO
 open Options.Globals
 
-let minify shader =
+let private minify shader =
     if options.exportKkpSymbolMaps then
         if options.outputFormat = Options.IndentedText then
             failwith "exporting symbols is not compatible with indented mode"

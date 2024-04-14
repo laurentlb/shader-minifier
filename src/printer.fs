@@ -39,7 +39,9 @@ type SymbolMap() =
         let bytes = kkpSymFormat shaderSymbol minifiedShader.Length symbolPool symbolIndexes
         bytes
 
-type PrinterImpl(indented) =
+let stripIndentation (s: string) = s.Replace("\000", "").Replace("\t", "") // see PrinterImpl.nl
+
+type PrinterImpl() =
 
     let out a = sprintf a
 
@@ -92,12 +94,9 @@ type PrinterImpl(indented) =
         let sign = if f < 0.M then "-" else ""
         sign + str
 
-    let nl indent = // newline and optionally indent
-        if indented then
-            // Use \t for indentation (space would be ambiguous, since a non-indented line can start with a space).
-            "\000" + new string('\t', indent)
-        else
-            ""
+    let nl indent = // newline and indent that might be stripped later. Use \0 for unessential newline.
+        // Use \t for indentation (space would be ambiguous, since a non-indented line can start with a space).
+         "\000" + new string('\t', indent)
 
     let rec exprToS indent exp = exprToSLevel indent 0 exp
 
@@ -282,7 +281,7 @@ type PrinterImpl(indented) =
         | TLDecl decl -> out "%s;" (declToS 0 decl)
         | TypeDecl t -> out "%s;" (typeSpecToS t)
 
-    let print tl = 
+    let printIndented tl = 
         let mutable wasMacro = true
         // handle the required \n before a macro
         let f x =
@@ -295,9 +294,9 @@ type PrinterImpl(indented) =
 
     member _.ExprToS = exprToS
     member _.TypeToS = typeToS
-    member _.Print tl = print tl |> String.concat ""
+    member _.PrintIndented tl = printIndented tl |> String.concat ""
     member _.WriteSymbols shader =
-        let tlStrings = print shader.code
+        let tlStrings = printIndented shader.code |> List.map stripIndentation
         let minifiedShader = tlStrings |> String.concat ""
         let symbolMap = SymbolMap()
         for (tl, tlString) in List.zip shader.code tlStrings do
@@ -311,13 +310,12 @@ type PrinterImpl(indented) =
                 | TLVerbatim s when s.StartsWith("#define") -> "#define"
                 | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
             symbolMap.AddMapping tlString symbolName
-        let shaderSymbol = "shader::" + shader.mangledFilename // "::" is the separator for tree structure
+        let shaderSymbol = shader.mangledFilename
         let bytes = symbolMap.SymFileBytes shaderSymbol minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
 
-let print tl = (new PrinterImpl(false)).Print(tl)
-let printIndented tl = (new PrinterImpl(true)).Print(tl)
-let writeSymbols shader = (new PrinterImpl(false)).WriteSymbols shader
-let printText tl = (new PrinterImpl(false)).Print(tl)
-let exprToS x = (new PrinterImpl(false)).ExprToS 0 x
-let typeToS ty = (new PrinterImpl(false)).TypeToS ty
+let printIndented tl = (new PrinterImpl()).PrintIndented tl // Indentation is encoded using \0 and \t
+let print tl = printIndented tl |> stripIndentation
+let writeSymbols shader = (new PrinterImpl()).WriteSymbols shader
+let exprToS x = (new PrinterImpl()).ExprToS 0 x |> stripIndentation
+let typeToS ty = (new PrinterImpl()).TypeToS ty |> stripIndentation

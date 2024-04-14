@@ -389,7 +389,7 @@ module private RenamerImpl =
         let forbiddenNames = (Seq.head shaders).forbiddenNames
 
         // Compute the list of variable names to use
-        let text = [for shader in shaders -> Printer.printText shader.code] |> String.concat "\0"
+        let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
 

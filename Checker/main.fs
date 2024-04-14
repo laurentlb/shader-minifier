@@ -45,7 +45,7 @@ let canBeCompiled content =
 
 let doMinify content =
     let arr = ShaderMinifier.minify [|"input", content|] |> fst |> Array.map (fun s -> s.code)
-    Printer.printText arr.[0]
+    Printer.print arr.[0]
 
 let testMinifyAndCompile (file: string) =
     try
