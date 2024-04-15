@@ -109,7 +109,7 @@ type private ParseImpl() =
 
     // Operators
 
-    let precedence1 = [
+    let precedence = [
         ["*"; "/"; "%"], Associativity.Left
         ["+"; "-"], Associativity.Left
         ["<<"; ">>"], Associativity.Left
@@ -121,9 +121,6 @@ type private ParseImpl() =
         ["&&"], Associativity.Left
         ["^^"], Associativity.Left
         ["||"], Associativity.Left
-    ]
-    // precedence of ?: is between precedence1 and precedence2
-    let precedence2 = [
         ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Associativity.Right
     ]
 
@@ -133,26 +130,25 @@ type private ParseImpl() =
         let mutable precCounter = 20 // we have at most 20 different precedence levels
         let addInfix li =
             for ops, assoc in li do
+                precCounter <- precCounter - 1
                 for op in ops do
                     opp.AddOperator(InfixOperator(op, ws, precCounter, assoc, fun x y -> Ast.FunCall(Ast.Op op, [x; y])))
-                precCounter <- precCounter - 1
 
         let addPrefix() =
+            precCounter <- precCounter - 1
             for op in ["++"; "--"; "+"; "-"; "~"; "!"] do
                 opp.AddOperator(PrefixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Op op, [x])))
-            precCounter <- precCounter - 1
 
         let addPostfix() =
+            precCounter <- precCounter - 1
             for op in ["++"; "--"] do
                 opp.AddOperator(PostfixOperator(op, ws, precCounter, true, fun x -> Ast.FunCall(Ast.Op ("$"+op), [x])))
-            precCounter <- precCounter - 1
 
         addPostfix()
         addPrefix()
-        addInfix precedence1
+        addInfix precedence
+        // same precedence as =
         opp.AddOperator(TernaryOperator("?", ws, ":", ws, precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Op "?:", [x; y; z])))
-        // same precedence as ?:
-        addInfix precedence2
 
     let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
     let statement, stmtRef = createParserForwardedToRef()
