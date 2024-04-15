@@ -1,0 +1,11 @@
+#version 450
+
+float f0()
+{
+  return 2.;
+}
+float f1()
+{
+  float b=1.;
+  return b=2.;
+}
