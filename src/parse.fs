@@ -109,7 +109,7 @@ type private ParseImpl() =
 
     // Operators
 
-    let precedence1 = [
+    let precedence = [
         ["*"; "/"; "%"], Associativity.Left
         ["+"; "-"], Associativity.Left
         ["<<"; ">>"], Associativity.Left
@@ -121,16 +121,13 @@ type private ParseImpl() =
         ["&&"], Associativity.Left
         ["^^"], Associativity.Left
         ["||"], Associativity.Left
-    ]
-    // precedence of ?: is between precedence1 and precedence2
-    let precedence2 = [
         ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Associativity.Right
     ]
 
     // Add all the operators in the OperatorParser
     let () =
         // we start with operators with highest priority, then we decrement the counter.
-        let mutable precCounter = 20 //(we have at most 20 different priorities)
+        let mutable precCounter = 20 // we have at most 20 different precedence levels
         let addInfix li =
             for ops, assoc in li do
                 precCounter <- precCounter - 1
@@ -149,10 +146,9 @@ type private ParseImpl() =
 
         addPostfix()
         addPrefix()
-        addInfix precedence1
-        precCounter <- precCounter - 1
+        addInfix precedence
+        // same precedence as =
         opp.AddOperator(TernaryOperator("?", ws, ":", ws, precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Op "?:", [x; y; z])))
-        addInfix precedence2
 
     let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
     let statement, stmtRef = createParserForwardedToRef()
