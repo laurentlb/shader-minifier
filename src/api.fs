@@ -21,6 +21,7 @@ let private readFile file =
     stream.ReadToEnd()
 
 let minify (files: (string*string)[]) =
+    let names = files |> Array.map (fun (n,_) -> n) |> String.Concat in debug $"----- minifying {names}"
     vprintf "Input file size is: %d\n" (files |> Array.sumBy (fun (_, s) -> s.Length))
     let shaders = files |> Array.map (fun (f, c) -> Parse.runParser f c)
     vprintf "File parsed. "; printSize shaders

@@ -2,6 +2,7 @@
 
 open System.IO
 open Argu
+open System
 
 let version = "1.3.6" // Shader Minifier version
 let debugMode = false
@@ -23,6 +24,7 @@ type FieldSet =
 type CliArguments =
     | [<CustomCommandLine("-o")>] OutputName of string
     | [<CustomCommandLine("-v")>] Verbose
+    | [<CustomCommandLine("--debug")>] Debug
     | [<CustomCommandLine("--hlsl")>] Hlsl
     | [<CustomCommandLine("--format")>] FormatArg of OutputFormat
     | [<CustomCommandLine("--field-names")>] FieldNames of FieldSet
@@ -45,6 +47,7 @@ type CliArguments =
             match s with
             | OutputName _ -> "Set the output filename (default is shader_code.h)"
             | Verbose -> "Verbose, display additional information"
+            | Debug -> "Debug, display more additional information"
             | Hlsl -> "Use HLSL (default is GLSL)"
             | FormatArg _ -> "Choose to format the output (use 'text' if you want just the shader)"
             | FieldNames _ -> "Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'"
@@ -66,6 +69,7 @@ type Options() =
     member val outputName = "shader_code.h" with get, set
     member val outputFormat = CVariables with get, set
     member val verbose = false with get, set
+    member val debug = false with get, set
     member val smoothstepTrick = false with get, set
     member val canonicalFieldNames = "xyzw" with get, set
     member val preserveExternals = false with get, set
@@ -87,6 +91,9 @@ module Globals =
 
     // like printfn when verbose option is set
     let vprintf fmt = fprintf (if options.verbose then stdout else TextWriter.Null) fmt
+
+    let forceDebug = Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.Process ||| EnvironmentVariableTarget.User) <> null
+    let debug str = fprintfn (if options.debug || forceDebug then stdout else IO.TextWriter.Null) "%s" str
 
 open Globals
 
@@ -111,6 +118,7 @@ let private initPrivate argv needFiles =
         options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
         options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
         options.verbose <- args.Contains(Verbose)
+        options.debug <- args.Contains(Debug)
         options.smoothstepTrick <- args.Contains(Smoothstep)
         options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
         options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)

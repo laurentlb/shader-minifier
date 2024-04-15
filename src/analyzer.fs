@@ -73,8 +73,12 @@ module private VariableInlining =
             let ident, isConst = def.Value
             if not ident.DoNotInline && not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                | (_, 1), (_, 1) when isConst -> ident.ToBeInlined <- true
-                | (_, 0), (_, 0) -> ident.ToBeInlined <- true
+                | (_, 1), (_, 1) when isConst ->
+                    debug $"inlining variable '{Printer.debugIdent ident}' because it's safe to inline and used only once"
+                    ident.ToBeInlined <- true
+                | (_, 0), (_, 0) ->
+                    debug $"inlining variable '{Printer.debugIdent ident}' because it's safe to inline and unused"
+                    ident.ToBeInlined <- true
                 | _ -> ()
 
     let isTrivialExpr = function
@@ -114,11 +118,13 @@ module private VariableInlining =
                         // Top-level values are special, in particular in HLSL. Keep them for now.
                         if not isTopLevel then
                             // Never-written locals without init should be unused: inline (remove) them.
+                            debug $"inlining (removing) unassigned local '{Printer.debugDecl def}'"
                             def.name.ToBeInlined <- true
                     | Some init ->
                         if canBeInlined init then
                             // Never-written locals and globals are inlined when their value is "simple enough".
                             // This can increase non-compressed size but decreases compressed size.
+                            debug $"inlining variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
                             def.name.ToBeInlined <- true
         | _ -> ()
 
@@ -322,6 +328,7 @@ module private FunctionInlining =
         if not funcInfo.funcType.fName.DoNotInline && verifyArgsUses funcInfo.func callSites then
             // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
             // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
+            debug $"inlining function '{funcInfo.funcType}' into {callSites.Length} call sites"
             for callSite in callSites do
                 callSite.ident.ToBeInlined <- true
             funcInfo.funcType.fName.ToBeInlined <- true
