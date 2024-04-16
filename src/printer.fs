@@ -319,3 +319,16 @@ let print tl = printIndented tl |> stripIndentation
 let writeSymbols shader = (new PrinterImpl()).WriteSymbols shader
 let exprToS x = (new PrinterImpl()).ExprToS 0 x |> stripIndentation
 let typeToS ty = (new PrinterImpl()).TypeToS ty |> stripIndentation
+
+let debugDecl (t: DeclElt) =
+    let size = if t.size = None then "" else $"[{t.size}]"
+    let init = match t.init with
+                | Some e -> $" = {exprToS e}"
+                | None -> ""
+    let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
+    $"{t.name.OldName}{size}{init}{sem}"
+
+let debugIdent (ident: Ident) =
+    match ident.Declaration with
+    | Declaration.Variable rv -> debugDecl rv.decl
+    | _ -> ident.OldName.ToString()

@@ -43,8 +43,8 @@ let canBeCompiled content =
             printfn "compilation failed: %s" info
             false
 
-let doMinify content =
-    let arr = ShaderMinifier.minify [|"input", content|] |> fst |> Array.map (fun s -> s.code)
+let doMinify file content =
+    let arr = ShaderMinifier.minify [|file, content|] |> fst |> Array.map (fun s -> s.code)
     Printer.print arr.[0]
 
 let testMinifyAndCompile (file: string) =
@@ -54,7 +54,7 @@ let testMinifyAndCompile (file: string) =
             printfn "Invalid input file '%s'" file
             false
         else
-            let minified = doMinify content + "\n"
+            let minified = doMinify file content + "\n"
             if not (canBeCompiled minified) then
                 printfn "Minification broke the file '%s'" file
                 printfn "%s" minified

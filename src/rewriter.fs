@@ -348,7 +348,7 @@ module private RewriterImpl =
 
     // Squeeze top-level declarations, e.g. uniforms
     let rec squeezeTLDeclarations = function
-        | []-> []
+        | [] -> []
         | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 ->
             squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeTLDeclarations l
@@ -549,7 +549,9 @@ module private RewriterImpl =
                 |> List.map (fun c -> c.prototype)
                 |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
             canBeRenamed && not isCalled && not funcInfo.funcType.isExternal
-        let unused = set [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo.func]
+        let unused = [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo]
+        if not unused.IsEmpty then debug($"removing unused functions: " + String.Join(", ", unused |> List.map (fun fi -> fi.funcType)))
+        let unused = unused |> List.map (fun fi -> fi.func) |> set
         let mutable edited = false
         let code = code |> List.filter (function
             | Function _ as t -> if Set.contains t unused then edited <- true; false else true
@@ -615,6 +617,7 @@ module private ArgumentInlining =
                         let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
                         match argExprs with
                         | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
+                            debug $"inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{funcInfo.funcType}'"
                             argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
                         | _ -> ()
                     | _ -> ()
@@ -677,7 +680,10 @@ let rec private iterateSimplifyAndInline li =
     
     let li = if options.noInlining then li else ArgumentInlining.apply didInline li
 
-    if didInline.Value then iterateSimplifyAndInline li else li
+    if didInline.Value
+    then debug $"inlining happened: running analysis again..."
+         iterateSimplifyAndInline li
+    else li
 
 let simplify li =
     li
