@@ -5,6 +5,8 @@ open Options.Globals
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
 
+type Location = { line: int; col: int }
+
 type Ident(name: string) =
     let mutable newName = name
 
@@ -15,12 +17,10 @@ type Ident(name: string) =
     // This prefix disables function inlining and variable inlining.
     member this.DoNotInline = this.OldName.StartsWith("noinline_")
 
-    member val LineNb = -1 with get, set
-    member val ColNb = -1 with get, set
+    member val Loc = {line = -1; col = -1} with get, set
 
     new(name, lineNb, colNb) as this = Ident(name) then
-        this.LineNb <- lineNb
-        this.ColNb <- colNb
+        this.Loc <- {line = lineNb; col = colNb}
 
     //member val isVarRead: bool = false with get, set
     member val isVarWrite: bool = false with get, set
