@@ -16,11 +16,11 @@ type Ident(name: string) =
     member this.DoNotInline = this.OldName.StartsWith("noinline_")
 
     member val LineNb = -1 with get, set
+    member val ColNb = -1 with get, set
 
-    static member WithLineNb(name, lineNb) =
-        let id = Ident(name)
-        id.LineNb <- lineNb
-        id
+    new(name, lineNb, colNb) as this = Ident(name) then
+        this.LineNb <- lineNb
+        this.ColNb <- colNb
 
     //member val isVarRead: bool = false with get, set
     member val isVarWrite: bool = false with get, set
