@@ -15,6 +15,13 @@ type Ident(name: string) =
     // This prefix disables function inlining and variable inlining.
     member this.DoNotInline = this.OldName.StartsWith("noinline_")
 
+    member val LineNb = -1 with get, set
+
+    static member WithLineNb(name, lineNb) =
+        let id = Ident(name)
+        id.LineNb <- lineNb
+        id
+
     //member val isVarRead: bool = false with get, set
     member val isVarWrite: bool = false with get, set
     member val Declaration: Declaration = Declaration.Unknown with get, set
