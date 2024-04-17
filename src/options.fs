@@ -92,8 +92,8 @@ module Globals =
     // like printfn when verbose option is set
     let vprintf fmt = fprintf (if options.verbose then stdout else TextWriter.Null) fmt
 
-    let forceDebug = Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.Process ||| EnvironmentVariableTarget.User) <> null
-    let debug str = fprintfn (if options.debug || forceDebug then stdout else IO.TextWriter.Null) "%s" str
+    let forceDebug = Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) <> "no"
+    let debug str = if options.debug || forceDebug then printfn "%s" str
 
 open Globals
 
