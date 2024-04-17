@@ -74,10 +74,10 @@ module private VariableInlining =
             if not ident.DoNotInline && not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
                 | (_, 1), (_, 1) when isConst ->
-                    debug $"inlining variable '{Printer.debugIdent ident}' because it's safe to inline and used only once"
+                    debug $"inlining local variable '{Printer.debugIdent ident}' because it's safe to inline and used only once"
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
-                    debug $"inlining variable '{Printer.debugIdent ident}' because it's safe to inline and unused"
+                    debug $"inlining local variable '{Printer.debugIdent ident}' because it's safe to inline and unused"
                     ident.ToBeInlined <- true
                 | _ -> ()
 
@@ -124,7 +124,8 @@ module private VariableInlining =
                         if canBeInlined init then
                             // Never-written locals and globals are inlined when their value is "simple enough".
                             // This can increase non-compressed size but decreases compressed size.
-                            debug $"inlining variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
+                            let varKind = if isTopLevel then "global" else "local"
+                            debug $"inlining {varKind} variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
                             def.name.ToBeInlined <- true
         | _ -> ()
 

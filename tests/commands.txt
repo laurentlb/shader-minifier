@@ -49,6 +49,7 @@
 --no-remove-unused --format indented -o tests/unit/inline-fn-multiple.expected tests/unit/inline-fn-multiple.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/simplify.expected tests/unit/simplify.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/bug321.expected tests/unit/bug321.frag
 
 # Partial renaming tests
 

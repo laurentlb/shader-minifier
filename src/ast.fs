@@ -196,7 +196,11 @@ type MapEnv = {
     vars: Map<string, Type * DeclElt>
     fns: Map<(string * int), (FunctionType * Stmt) list> // This doesn't support type-based disambiguation of user-defined function overloading
     isInWritePosition: bool // used for findWrites only
-}
+} with
+    member this.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
+        let oldFnsList = (this.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+        let newFnsList = (fct, body) :: (if replaceMostRecentOverload then oldFnsList.Tail else oldFnsList)
+        {this with fns = this.fns.Add(fct.prototype, newFnsList)}
 
 let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isInWritePosition = false}
 
@@ -284,13 +288,24 @@ let mapTopLevel env li =
             let env, res = mapDecl env t
             env, TLDecl res
         | Function(fct, body) ->
-            let oldFns = (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
-            let envWithFunction = {env with fns = env.fns.Add(fct.prototype, (fct, body) :: oldFns)}
-            let envWithFunctionAndArgs, args = foldList envWithFunction mapDecl fct.args
-            let (fct, body) = { fct with args = args }, snd (mapStmt envWithFunctionAndArgs body)
-            let oldFns = (envWithFunctionAndArgs.fns.TryFind(fct.prototype) |> Option.defaultValue [])
-            let envWithNewFunction = {envWithFunctionAndArgs with fns = env.fns.Add(fct.prototype, (fct, body) :: oldFns.Tail)}
-            envWithNewFunction, Function(fct, body)
+            // Back up the vars without the parameters.
+            let varsWithoutParameters = env.vars
+            // Add the function to env.fns, to have it when transforming the parameters.
+            let env = env.withFunction(fct, body, replaceMostRecentOverload = false)
+            // Transform the parameters and add them to env.vars, to have them when transforming the body.
+            let env, args = foldList env mapDecl fct.args
+            // Update env.fns with the transformed parameters.
+            let fct = { fct with args = args }
+            let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
+
+            // Transform the body. The env modifications (local variables) are discarded.
+            let _, body = mapStmt env body
+            // Update env.fns with the transformed body.
+            let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
+
+            // Remove the parameters from env.vars, so that following functions don't see them.
+            let env = {env with vars = varsWithoutParameters}
+            env, Function(fct, body)
         | e -> env, e)
     res
 
