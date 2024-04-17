@@ -478,7 +478,7 @@ module private RewriterImpl =
     let simplifyStmt = function
         | Block [] as e -> e
         | Block b -> match simplifyBlock b with
-                        | [stmt] -> stmt
+                        | [stmt] as b when hasNoDecl b -> stmt
                         | stmts -> Block stmts
         | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
         | ForD ((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, squeezeBlockWithComma body)
