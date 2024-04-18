@@ -76,7 +76,7 @@ type PrinterImpl(withLocations) =
         if id.IsUniqueId then
             string (char (1000 + int id.Name))
         else if withLocations then
-            out "%s:%d@%d" id.Name id.Loc.line id.Loc.col
+            out "%s@%d,%d@" id.Name id.Loc.line id.Loc.col
         else
             id.Name
 
