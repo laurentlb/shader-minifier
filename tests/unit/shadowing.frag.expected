@@ -13,9 +13,12 @@ float g(float f)
   }
   return f;
 }
+
+#define noinline_random 4
+
 int m1()
 {
-  if(rand()>.5)
+  if(noinline_random>.5)
     return 2;
 }
 struct S{int x;};

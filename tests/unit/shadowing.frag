@@ -14,10 +14,12 @@ float g(float f)
 	return f;
 }
 
+#define noinline_random 4
+
 int m1()
 {
 	int x = 1;
-	if (rand() >.5)
+	if (noinline_random > 0.5)
 	{
 		int x = 2, y = x; // y is initialized to 2
 		return y;

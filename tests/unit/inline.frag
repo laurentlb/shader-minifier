@@ -133,4 +133,5 @@ float dontCompressAssigments()
 {
 	glo = 10.;
 	glo = 50. + noinline_readsTheGlobal();
+	return glo*glo;
 }
