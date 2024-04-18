@@ -40,8 +40,7 @@ float multiPass2()
 }
 int dont_inline_lvalue()
 {
-  int a=1;
-  a=2;
+  int a=2;
   return 3;
 }
 vec4 fragColor247;
@@ -89,4 +88,15 @@ float inline_uninitialized()
 {
   float c;
   return c;
+}
+float glo;
+float noinline_readsTheGlobal()
+{
+  return glo;
+}
+float dontCompressAssigments()
+{
+  glo=10.;
+  glo=50.+noinline_readsTheGlobal();
+  return glo*glo;
 }

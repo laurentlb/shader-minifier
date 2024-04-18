@@ -40,8 +40,7 @@ vec4 BPos(float t)
 }
 float PrBoxDf(vec3 p,vec3 b)
 {
-  vec3 d;
-  d=abs(p)-b;
+  vec3 d=abs(p)-b;
   return min(max(d.x,max(d.y,d.z)),0.)+length(max(d,0.));
 }
 float PrRoundBoxDf(vec3 p,vec3 b)
@@ -78,8 +77,7 @@ float Maxv2(vec2 p)
 }
 float SmoothMin(float a,float b,float r)
 {
-  float h;
-  h=clamp(.5+.5*(b-a)/r,0.,1.);
+  float h=clamp(.5+.5*(b-a)/r,0.,1.);
   return mix(b-h*r,a,h);
 }
 float SmoothMax(float a,float b,float r)
@@ -100,8 +98,7 @@ mat3 StdVuMat(float el,float az)
 }
 vec2 Rot2D(vec2 q,float a)
 {
-  vec2 cs;
-  cs=sin(a+vec2(1.57079635,0));
+  vec2 cs=sin(a+vec2(1.57079635,0));
   return vec2(dot(q,vec2(cs.x,-cs.y)),dot(q.yx,cs));
 }
 float GearWlDf(vec3 p,float rad,float wlThk,float tWid,float nt,float aRot,bool bev,float dMin)
@@ -241,8 +238,7 @@ float GearRay(vec3 ro,vec3 rd)
 vec3 GearNf(vec3 p)
 {
   vec4 v;
-  vec2 e;
-  e=vec2(5e-4,-5e-4);
+  vec2 e=vec2(5e-4,-5e-4);
   for(int j=VAR_ZERO;j<4;j++)
     v[j]=GearDf(p+(j<2?
       j==0?
@@ -257,8 +253,7 @@ vec3 GearNf(vec3 p)
 vec3 ObjNf(vec3 p)
 {
   vec4 v;
-  vec2 e;
-  e=vec2(5e-4,-5e-4);
+  vec2 e=vec2(5e-4,-5e-4);
   for(int j=VAR_ZERO;j<4;j++)
     v[j]=ObjDf(p+(j<2?
       j==0?
@@ -447,8 +442,7 @@ vec3 ShowScene(vec3 ro,vec3 rd)
 }
 vec4 Loadv4(int idVar)
 {
-  float fi;
-  fi=float(idVar);
+  float fi=float(idVar);
   return texture(txBuf,(vec2(mod(fi,128.),floor(fi/128.))+.5)/txSize);
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)

@@ -1,4 +1,4 @@
-int n;
+float n;
 const float s = 1.;
 float a(float s)
 {
@@ -6,7 +6,7 @@ float a(float s)
     n = 2.;
     return s;
 }
-float main()
+float b()
 {
     float t = 3.;
     t -= s;

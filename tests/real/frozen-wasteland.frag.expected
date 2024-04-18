@@ -234,8 +234,7 @@ vec3 Sky(vec3 rd,vec3 ligt)
 }
 float Occ(vec3 p)
 {
-  float h=0.;
-  h=clamp(map(p),.5,1.);
+  float h=clamp(map(p),.5,1.);
   return sqrt(h);
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)

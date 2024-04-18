@@ -74,10 +74,10 @@ module private VariableInlining =
             if not ident.DoNotInline && not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
                 | (_, 1), (_, 1) when isConst ->
-                    debug $"inlining local variable '{Printer.debugIdent ident}' because it's safe to inline and used only once"
+                    debug $"inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
-                    debug $"inlining local variable '{Printer.debugIdent ident}' because it's safe to inline and unused"
+                    debug $"inlining (removing) local variable '{Printer.debugIdent ident}' because it's safe to inline and unused"
                     ident.ToBeInlined <- true
                 | _ -> ()
 
