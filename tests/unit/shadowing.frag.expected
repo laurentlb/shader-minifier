@@ -27,13 +27,7 @@ void m4(int k)
 {
   return k;
 }
-void m5()
-{
-  float m=9.;
-  m=58.;
-  return 55.+2.*m;
-}
 void m6()
 {
-  m5();
+  171.;
 }

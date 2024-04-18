@@ -419,6 +419,14 @@ module private RewriterImpl =
             | Decl (_, []) -> false
             | _ -> true)
 
+        let exprUsesIdentName expr identName =
+            let mutable idents = []
+            let collectLocalUses _ = function
+                | Var v as e -> idents <- v :: idents; e
+                | e -> e
+            mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
+            idents |> List.exists (fun i -> i.Name = identName)
+
         // Merge two consecutive items into one, everywhere possible in a list.
         let rec squeeze (f : 'a * 'a -> 'a list option) = function
             | h1 :: h2 :: t ->
@@ -446,16 +454,14 @@ module private RewriterImpl =
                             None
                     | _ -> None
             | Expr (FunCall (Op "=", [Var name; init1])), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
-                when name.Name = name2.Name -> // m=14.;m=58.;  ->  14.;m=58.;
-                // Only if `init2` does not use `name`.
-                let mutable idents = []
-                let collectLocalUses _ = function
-                    | Var v as e -> idents <- v :: idents; e
-                    | e -> e
-                mapExpr (mapEnv collectLocalUses id) init2 |> ignore<Expr>
-                if idents |> List.exists (fun i -> i.Name = name.Name)
-                then None
-                else Some [Expr init1; assign2]
+                when name.Name = name2.Name
+                    && not (exprUsesIdentName init2 name.Name) -> // m=14.;m=58.;  ->  14.;m=58.;
+                Some [Expr init1; assign2]
+            | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
+                when declElt.name.Name = name2.Name
+                    && not (exprUsesIdentName init2 declElt.name.Name)
+                    && declElt.init |> Option.defaultValue (Int (0, "")) |> isPure -> // float m=14.;m=58.;  ->  float m=58.;
+                Some [Decl (ty, [{declElt with init = Some init2}])]
             | _ -> None)
 
         // Remove pure expression statements.

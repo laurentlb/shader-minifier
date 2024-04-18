@@ -35,8 +35,6 @@ float multiPass2()
 }
 int dont_inline_lvalue()
 {
-  int a=1;
-  a=2;
   return 3;
 }
 vec4 fragColor247;
