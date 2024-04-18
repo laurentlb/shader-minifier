@@ -41,7 +41,7 @@ type SymbolMap() =
 
 let stripIndentation (s: string) = s.Replace("\000", "").Replace("\t", "") // see PrinterImpl.nl
 
-type PrinterImpl() =
+type PrinterImpl(withLocations) =
 
     let out a = sprintf a
 
@@ -75,7 +75,10 @@ type PrinterImpl() =
         // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
         if id.IsUniqueId then
             string (char (1000 + int id.Name))
-        else id.Name
+        else if withLocations then
+            out "%s:%d@%d" id.Name id.Loc.line id.Loc.col
+        else
+            id.Name
 
     let commaListToS toS li =
         List.map toS li |> String.concat ","
@@ -314,11 +317,12 @@ type PrinterImpl() =
         let bytes = symbolMap.SymFileBytes shaderSymbol minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
 
-let printIndented tl = (new PrinterImpl()).PrintIndented tl // Indentation is encoded using \0 and \t
+let printIndented tl = (new PrinterImpl(false)).PrintIndented tl // Indentation is encoded using \0 and \t
 let print tl = printIndented tl |> stripIndentation
-let writeSymbols shader = (new PrinterImpl()).WriteSymbols shader
-let exprToS x = (new PrinterImpl()).ExprToS 0 x |> stripIndentation
-let typeToS ty = (new PrinterImpl()).TypeToS ty |> stripIndentation
+let writeSymbols shader = (new PrinterImpl(false)).WriteSymbols shader
+let exprToS x = (new PrinterImpl(false)).ExprToS 0 x |> stripIndentation
+let typeToS ty = (new PrinterImpl(false)).TypeToS ty |> stripIndentation
+let printWithLoc tl = (new PrinterImpl(true)).PrintIndented tl
 
 let debugDecl (t: DeclElt) =
     let size = if t.size = None then "" else $"[{t.size}]"
