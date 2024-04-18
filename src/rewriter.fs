@@ -466,7 +466,7 @@ module private RewriterImpl =
             | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
                 when declElt.name.Name = name2.Name
                     && not (exprUsesIdentName init2 declElt.name.Name)
-                    && declElt.init |> Option.defaultValue (Int (0, "")) |> isPure ->
+                    && declElt.init |> Option.map isPure |> Option.defaultValue true ->
                 Some [Decl (ty, [{declElt with init = Some init2}])]
             | _ -> None)
 
