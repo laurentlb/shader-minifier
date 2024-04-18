@@ -77,3 +77,13 @@ float inline_uninitialized()
 {
   return c;
 }
+float glo;
+float noinline_readsTheGlobal()
+{
+  return glo;
+}
+float dontCompressAssigments()
+{
+  glo=10.;
+  glo=50.+noinline_readsTheGlobal();
+}

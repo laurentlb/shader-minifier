@@ -453,14 +453,20 @@ module private RewriterImpl =
                         else
                             None
                     | _ -> None
+            // Remove unused assignment immediately followed by re-assignment:  m=14.;m=58.;  ->  14.;m=58.;
             | Expr (FunCall (Op "=", [Var name; init1])), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
-                when name.Name = name2.Name
-                    && not (exprUsesIdentName init2 name.Name) -> // m=14.;m=58.;  ->  14.;m=58.;
-                Some [Expr init1; assign2]
+                when name.Name = name2.Name && not (exprUsesIdentName init2 name.Name) ->
+                match name.Declaration with
+                | Declaration.Variable decl when decl.scope = VarScope.Global ->
+                    // The assignment should not be removed if init2 calls a function that reads the global variable.
+                    None // Safely assume it could happen.
+                | Declaration.Variable _ -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
+                | _ -> None
+            // Compact a pure declaration immediately followed by re-assignment:  float m=14.;m=58.;  ->  float m=58.;
             | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
                 when declElt.name.Name = name2.Name
                     && not (exprUsesIdentName init2 declElt.name.Name)
-                    && declElt.init |> Option.defaultValue (Int (0, "")) |> isPure -> // float m=14.;m=58.;  ->  float m=58.;
+                    && declElt.init |> Option.defaultValue (Int (0, "")) |> isPure ->
                 Some [Decl (ty, [{declElt with init = Some init2}])]
             | _ -> None)
 
