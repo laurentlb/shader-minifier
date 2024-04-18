@@ -37,7 +37,7 @@ type private ParseImpl() =
     let ident =
         let nonDigit = asciiLetter <|> pchar '_'
         let p = pipe3 getPosition nonDigit (manyChars (nonDigit <|> digit <?> "")) (
-            fun pos c s -> Ast.Ident.WithLineNb (c.ToString() + s, int pos.Line))
+            fun pos c s -> Ast.Ident(c.ToString() + s, int pos.Line, int pos.Column))
         let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
