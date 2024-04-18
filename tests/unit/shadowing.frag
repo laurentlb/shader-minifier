@@ -19,7 +19,7 @@ float g(float f)
 int m1()
 {
 	int x = 1;
-	if (noinline_random > 0.5)
+	if (noinline_random > 3)
 	{
 		int x = 2, y = x; // y is initialized to 2
 		return y;
@@ -34,7 +34,7 @@ S m2()
 	return S; // 'S' is now visible as a variable
 }
 
-void m4(int k)
+int m4(int k)
 {
 	//int k = k + 3; // redeclaration error of the name k
 	{
@@ -48,7 +48,7 @@ void m4(int k)
 	// same scope, this causes a redeclaration error.
 }
 
-void m5(float k)
+float m5(float k)
 {
 	float m = 9.;
 	m = 14.;

@@ -18,7 +18,7 @@ float g(float f)
 
 int m1()
 {
-  if(noinline_random>.5)
+  if(noinline_random>3)
     return 2;
 }
 struct S{int x;};
@@ -26,7 +26,7 @@ S m2()
 {
   return S(0);
 }
-void m4(int k)
+int m4(int k)
 {
   return k;
 }
