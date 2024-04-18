@@ -11,6 +11,15 @@ let renameField field =
         field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
     else field
 
+let rec private isPure = function
+    | Var v when v.Name = "true" || v.Name = "false" -> true
+    | Int _
+    | Float _ -> true
+    | FunCall(Var fct, args) ->
+        Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isPure args
+    | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isPure args
+    | _ -> false
+
 module private RewriterImpl =
 
     // Remove useless spaces in macros
@@ -449,6 +458,11 @@ module private RewriterImpl =
                 else Some [Expr init1; assign2]
             | _ -> None)
 
+        // Remove pure expression statements.
+        let b = b |> List.filter (function
+            | Expr e when isPure e -> false
+            | _ -> true)
+
         // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
         let b = b |> List.collect (function
             | Block b when hasNoDecl b -> b
@@ -594,14 +608,7 @@ let reorderFunctions code =
 // Inline the argument of a function call into the function body.
 module private ArgumentInlining =
 
-    let rec isInlinableExpr = function
-        | Var v when v.Name = "true" || v.Name = "false" -> true
-        | Int _
-        | Float _ -> true
-        | FunCall(Var fct, args) ->
-            Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
-        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
-        | _ -> false
+    let isInlinableExpr e = isPure e
 
     type [<NoComparison>] Inlining = {
         func: TopLevel

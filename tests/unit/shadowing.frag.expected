@@ -30,7 +30,6 @@ void m4(int k)
 void m5()
 {
   float m=9.;
-  14.;
   m=58.;
   return 55.+2.*m;
 }
