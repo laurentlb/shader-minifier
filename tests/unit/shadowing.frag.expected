@@ -13,3 +13,24 @@ float g(float f)
   }
   return f;
 }
+
+#define noinline_random 4
+
+int m1()
+{
+  if(noinline_random>3)
+    return 2;
+}
+struct S{int x;};
+S m2()
+{
+  return S(0);
+}
+int m4(int k)
+{
+  return k;
+}
+void m6()
+{
+  171.;
+}

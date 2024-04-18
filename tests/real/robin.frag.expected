@@ -35,8 +35,7 @@ float noise(vec3 x)
 }
 float fbm(vec3 p)
 {
-  float f;
-  f=1.6*noise(p);
+  float f=1.6*noise(p);
   p*=2.02;
   f+=.35*noise(p);
   p*=2.33;

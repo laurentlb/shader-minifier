@@ -274,8 +274,7 @@ MarchData room(vec3 p)
   r.d=min(backWall,max(length(p.z),-doorHole+.1));
   if(r.d==backWall)
     {
-      float ocp;
-      ocp=min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9)));
+      float ocp=min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9)));
       ocp=max(ocp,min(.7-abs(xy.x+1.2),-xy.y));
       ocp=min(ocp,max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))));
       if(ocp<.3)
