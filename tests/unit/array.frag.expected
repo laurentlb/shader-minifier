@@ -21,8 +21,8 @@ const char *array_frag =
  "void main()"
  "{"
    "float[2] test=float[](5.,7.);"
-   "func_bank(test)[0];"
-   "func_bank(test)[1];"
+   "func_bank(test);"
+   "func_bank(test);"
  "}";
 
 #endif // ARRAY_FRAG_EXPECTED_
