@@ -75,7 +75,7 @@ module private RewriterImpl =
                 // because the renamer does its work via mutation on the ident. So
                 // if this function gets inlined in more than one place, we don't
                 // mutations to affect all of the inlined idents.
-                | None -> Var (Ident (iv.Name))
+                | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
             | ie -> ie
         mapExpr (mapEnv mapInline id) bodyExpr
 
