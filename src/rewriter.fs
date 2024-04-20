@@ -12,9 +12,10 @@ let renameField field =
     else field
 
 let rec private isPure = function
-    | Var v when v.Name = "true" || v.Name = "false" -> true
-    | Int _
+    | Int _ -> true
     | Float _ -> true
+    | Var v -> true
+    | Dot(v, _)  -> true
     | FunCall(Var fct, args) ->
         Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isPure args
     | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isPure args
@@ -620,7 +621,14 @@ let reorderFunctions code =
 // Inline the argument of a function call into the function body.
 module private ArgumentInlining =
 
-    let isInlinableExpr e = isPure e
+    let rec isInlinableExpr = function
+        // This is different that purity: reading a variable is pure, but non-inlinable in general.
+        | Var v when v.Name = "true" || v.Name = "false" -> true
+        | Int _
+        | Float _ -> true
+        | FunCall(Var fct, args) -> Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
+        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
+        | _ -> false
 
     type [<NoComparison>] Inlining = {
         func: TopLevel

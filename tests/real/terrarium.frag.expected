@@ -95,7 +95,7 @@ void main()
           else if(r<1.07)
             col=mix(col,0.,.2),p.xy=p.xy+vec2(-.5,-.866025),p=S(p);
           else
-             mix(col,0.,.2),col=1.,p.xy=p.xy+vec2(-.5,.866025),p=S(p),p.z+=.1;
+             col=1.,p.xy=p.xy+vec2(-.5,.866025),p=S(p),p.z+=.1;
           if(time>48.)
             p.z=mix(p.z,mod(p.z+time/2.+2,4.)-2,smoothstep(48.,49.,time));
         }
