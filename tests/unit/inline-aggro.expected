@@ -29,8 +29,7 @@ float inl6()
 }
 void notevil()
 {
-  float x=101.;
-  x=42.;
+  float x=42.;
 }
 float inl7()
 {

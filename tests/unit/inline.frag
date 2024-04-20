@@ -122,3 +122,16 @@ float inline_uninitialized()
     float c;
     return c;
 }
+
+// repro for a bug
+float glo;
+float noinline_readsTheGlobal()
+{
+	return glo;
+}
+float dontCompressAssigments()
+{
+	glo = 10.;
+	glo = 50. + noinline_readsTheGlobal();
+	return glo*glo;
+}

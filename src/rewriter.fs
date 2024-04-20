@@ -11,6 +11,15 @@ let renameField field =
         field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
     else field
 
+let rec private isPure = function
+    | Var v when v.Name = "true" || v.Name = "false" -> true
+    | Int _
+    | Float _ -> true
+    | FunCall(Var fct, args) ->
+        Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isPure args
+    | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isPure args
+    | _ -> false
+
 module private RewriterImpl =
 
     // Remove useless spaces in macros
@@ -410,34 +419,61 @@ module private RewriterImpl =
             | Decl (_, []) -> false
             | _ -> true)
 
+        let exprUsesIdentName expr identName =
+            let mutable idents = []
+            let collectLocalUses _ = function
+                | Var v as e -> idents <- v :: idents; e
+                | e -> e
+            mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
+            idents |> List.exists (fun i -> i.Name = identName)
+
         // Merge two consecutive items into one, everywhere possible in a list.
-        let rec squeeze (f : 'a * 'a -> 'a option) = function
+        let rec squeeze (f : 'a * 'a -> 'a list option) = function
             | h1 :: h2 :: t ->
                 match f (h1, h2) with
-                    | Some x -> squeeze f (x :: t)
+                    | Some xs -> squeeze f (xs @ t)
                     | None -> h1 :: (squeeze f (h2 :: t))
             | h :: t -> h :: t
             | [] -> []
-
-        // Merge preceding expression into a for's init.
         let b = b |> squeeze (function
+            // Merge preceding expression into a for's init.
             | (Expr e, ForE (None, cond, inc, body)) -> // a=0;for(;i<5;++i);  ->  for(a=0;i<5;++i);
-                Some (ForE (Some e, cond, inc, body))
+                Some [ForE (Some e, cond, inc, body)]
             | (Expr e, While (cond, body)) -> // a=0;while(i<5);  ->  for(a=0;i<5;);
-                Some (ForE(Some e, Some cond, None, body))
+                Some [ForE(Some e, Some cond, None, body)]
             | Decl (_, [declElt]), Jump(JumpKeyword.Return, Some (Var v)) // int x=f();return x;  ->  return f();
                 when v.Name = declElt.name.Name && declElt.init.IsSome ->
-                    Some (Jump(JumpKeyword.Return, declElt.init))
+                    Some [Jump(JumpKeyword.Return, declElt.init)]
             | Expr (FunCall(Op "=", [Var v1; e])), Jump(JumpKeyword.Return, Some (Var v2)) // x=f();return x;  ->  return f();
                 when v1.Name = v2.Name ->
                     match v1.VarDecl with
                     | Some d ->
                         if d.scope <> VarScope.Global && not (d.ty.isOutOrInout) then
-                            Some (Jump(JumpKeyword.Return, Some e))
+                            Some [Jump(JumpKeyword.Return, Some e)]
                         else
                             None
                     | _ -> None
+            // Remove unused assignment immediately followed by re-assignment:  m=14.;m=58.;  ->  14.;m=58.;
+            | Expr (FunCall (Op "=", [Var name; init1])), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
+                when name.Name = name2.Name && not (exprUsesIdentName init2 name.Name) ->
+                match name.Declaration with
+                | Declaration.Variable decl when decl.scope = VarScope.Global ->
+                    // The assignment should not be removed if init2 calls a function that reads the global variable.
+                    None // Safely assume it could happen.
+                | Declaration.Variable _ -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
+                | _ -> None
+            // Compact a pure declaration immediately followed by re-assignment:  float m=14.;m=58.;  ->  float m=58.;
+            | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
+                when declElt.name.Name = name2.Name
+                    && not (exprUsesIdentName init2 declElt.name.Name)
+                    && declElt.init |> Option.map isPure |> Option.defaultValue true ->
+                Some [Decl (ty, [{declElt with init = Some init2}])]
             | _ -> None)
+
+        // Remove pure expression statements.
+        let b = b |> List.filter (function
+            | Expr e when isPure e -> false
+            | _ -> true)
 
         // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
         let b = b |> List.collect (function
@@ -478,7 +514,7 @@ module private RewriterImpl =
     let simplifyStmt = function
         | Block [] as e -> e
         | Block b -> match simplifyBlock b with
-                        | [stmt] -> stmt
+                        | [stmt] as b when hasNoDecl b -> stmt
                         | stmts -> Block stmts
         | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
         | ForD ((ty, d), cond, inc, body) -> ForD((rwType ty, declsNotToInline d), cond, inc, squeezeBlockWithComma body)
@@ -584,14 +620,7 @@ let reorderFunctions code =
 // Inline the argument of a function call into the function body.
 module private ArgumentInlining =
 
-    let rec isInlinableExpr = function
-        | Var v when v.Name = "true" || v.Name = "false" -> true
-        | Int _
-        | Float _ -> true
-        | FunCall(Var fct, args) ->
-            Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
-        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
-        | _ -> false
+    let isInlinableExpr e = isPure e
 
     type [<NoComparison>] Inlining = {
         func: TopLevel

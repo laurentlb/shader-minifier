@@ -204,8 +204,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   vec3 pos,ray;
   CamPolar(pos,ray,camRot,fragCoord);
   float to=TraceOcean(pos,ray),tb=TraceBoat(pos,ray);
-  vec3 result;
-  result=to>0.&&(to<tb||tb==0.)?
+  vec3 result=to>0.&&(to<tb||tb==0.)?
     ShadeOcean(pos+ray*to,ray,fragCoord):
     tb>0.?
       ShadeBoat(pos+ray*tb,ray):
