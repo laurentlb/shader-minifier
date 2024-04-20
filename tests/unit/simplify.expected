@@ -22,7 +22,7 @@ float baz(float a)
   return-c+-c+c;
 }
 out vec3 output;
-void main(float x)
+void notMain(float x)
 {
   output.xyz=vec3(92)+vec3(bar(x)+baz(x));
 }

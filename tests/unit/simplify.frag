@@ -36,7 +36,7 @@ out vec3 output;
 float foo(float a) { if (n == 1) return 0.; if (n == 2) return a; return 1.; }
 float foo(float a, float b) { if (y > a) return 0.; if (y < b) return a; return 1.; }
 
-void main(float x) {
+void notMain(float x) {
 	vec3 v = vec3(foo(42.) + foo(50., 70.));
 	output.rgb = v + vec3(bar(x) + baz(x));
 }
