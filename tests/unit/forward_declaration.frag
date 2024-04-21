@@ -18,6 +18,6 @@ void e() {
 }
 
 int x;
-void c() {x;}
+void c() {x++;}
 
-void d() {x;}
+void d() {x++;}

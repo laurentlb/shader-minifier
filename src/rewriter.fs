@@ -11,14 +11,21 @@ let renameField field =
         field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
     else field
 
-let rec private isPure = function
-    | Var v when v.Name = "true" || v.Name = "false" -> true
+let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
+
+let rec private sideEffects = function
+    | Var _ -> []
     | Int _
-    | Float _ -> true
-    | FunCall(Var fct, args) ->
-        Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isPure args
-    | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isPure args
-    | _ -> false
+    | Float _ -> []
+    | Dot(v, _)  -> sideEffects v
+    | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
+    | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
+    | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
+    | FunCall(Dot(d, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
+    | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
+    | e -> [e]
+
+let rec private isPure e = sideEffects e = []
 
 module private RewriterImpl =
 
@@ -465,15 +472,20 @@ module private RewriterImpl =
             // Compact a pure declaration immediately followed by re-assignment:  float m=14.;m=58.;  ->  float m=58.;
             | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
                 when declElt.name.Name = name2.Name
-                    && not (exprUsesIdentName init2 declElt.name.Name)
-                    && declElt.init |> Option.map isPure |> Option.defaultValue true ->
-                Some [Decl (ty, [{declElt with init = Some init2}])]
+                    && not (exprUsesIdentName init2 declElt.name.Name) ->
+                    match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
+                    | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
+                    | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
             | _ -> None)
 
-        // Remove pure expression statements.
-        let b = b |> List.filter (function
-            | Expr e when isPure e -> false
-            | _ -> true)
+        // Reduces impure expression statements to their side effects.
+        let b = b |> List.collect (function
+            | Expr e ->
+                match sideEffects e with
+                | [] -> [] // Remove pure statements.
+                | [e] -> [Expr e]
+                | sideEffects -> [Expr (commaSeparatedExprs sideEffects)]
+            | s -> [s])
 
         // Inline inner decl-less blocks. (Presence of decl could lead to redefinitions.)  a();{b();}c();  ->  a();b();c();
         let b = b |> List.collect (function
@@ -620,7 +632,14 @@ let reorderFunctions code =
 // Inline the argument of a function call into the function body.
 module private ArgumentInlining =
 
-    let isInlinableExpr e = isPure e
+    let rec isInlinableExpr = function
+        // This is different that purity: reading a variable is pure, but non-inlinable in general.
+        | Var v when v.Name = "true" || v.Name = "false" -> true
+        | Int _
+        | Float _ -> true
+        | FunCall(Var fct, args) -> Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
+        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
+        | _ -> false
 
     type [<NoComparison>] Inlining = {
         func: TopLevel

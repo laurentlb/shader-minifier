@@ -156,7 +156,6 @@ bool jellyfish()
      w.xy*=5.,w.z=pow(w.z,5.),p.xz=(disc(fract(w.xy))*.01/(1.01-w.z)+floor(w.xy)/2.-1.)*.25,p.y=w.z*2.-1.5+(3.-length(fract(w.xy)-.5))*.3-.8-(.5+.5*cos(floor(w.xy).x))*.2,p.y*=2,p.xz*=1.5,p.xyz+=of,p.x+=(fbm(p.yz/4.*vec2(1,6)-time2/10)-1.2)*pow(1.-w.z,.75),p.z+=(fbm(p.yx/4.*vec2(1,6)+time2/10)-1.2)*pow(1.-w.z,.75);
   p-=of;
   p.yz*=rotmat(cos(of.x+p.y/2)*.2);
-  p*.8+.4*sin(of.x*2+of.z*10);
   p+=of;
   p*=.2;
   return false;
@@ -424,7 +423,6 @@ void main()
                   w.y=R();
                   w.z=R();
                   w.w=R();
-                  w.w<.5;
                 }
             }
           p.xyz+=(w.xyz*2-1)*pow(length(p),2)*.001;
@@ -476,7 +474,6 @@ void main()
                 w.y=R();
                 w.z=R();
                 w.w=R();
-                w.w<.5;
               }
           }
           p.xyz+=(w.xyz*2-1)*pow(length(p),2)*.001;
