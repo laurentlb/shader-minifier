@@ -21,7 +21,7 @@ let rec private sideEffects = function
     | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
     | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
     | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
-    | FunCall(Dot(d, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
+    | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
     | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
     | e -> [e]
 
@@ -113,6 +113,12 @@ module private RewriterImpl =
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
         | FunCall(Op "+", [e]) -> e
+        // e1 - - e2 -> e1 + e2
+        | FunCall(Op "-", [e1; FunCall(Op "-", [e2])]) ->
+            FunCall(Op "+", [e1; e2]) |> env.fExpr env
+        // e1 + - e2 -> e1 - e2
+        | FunCall(Op "+", [e1; FunCall(Op "-", [e2])]) ->
+            FunCall(Op "-", [e1; e2]) |> env.fExpr env
 
         | FunCall(Op ",", [e1; FunCall(Op ",", [e2; e3])]) ->
             FunCall(Op ",", [env.fExpr env (FunCall(Op ",", [e1; e2])); e3])
@@ -470,7 +476,7 @@ module private RewriterImpl =
                 | Declaration.Variable _ -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
                 | _ -> None
             // Compact a pure declaration immediately followed by re-assignment:  float m=14.;m=58.;  ->  float m=58.;
-            | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
+            | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])))
                 when declElt.name.Name = name2.Name
                     && not (exprUsesIdentName init2 declElt.name.Name) ->
                     match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
