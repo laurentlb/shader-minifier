@@ -1,5 +1,6 @@
 #version 330
 
+int i;
 float bar(float x)
 {
   float a=6.;
@@ -19,7 +20,7 @@ float baz(float a)
   b+=sin(a);
   float c=b+5.;
   c+=sin(b);
-  return-c+-c+c;
+  return-c-c+c;
 }
 out vec3 output;
 void notMain(float x)

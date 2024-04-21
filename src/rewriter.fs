@@ -113,6 +113,12 @@ module private RewriterImpl =
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
         | FunCall(Op "+", [e]) -> e
+        // e1 - - e2 -> e1 + e2
+        | FunCall(Op "-", [e1; FunCall(Op "-", [e2])]) ->
+            FunCall(Op "+", [e1; e2]) |> env.fExpr env
+        // e1 + - e2 -> e1 - e2
+        | FunCall(Op "+", [e1; FunCall(Op "-", [e2])]) ->
+            FunCall(Op "-", [e1; e2]) |> env.fExpr env
 
         | FunCall(Op ",", [e1; FunCall(Op ",", [e2; e3])]) ->
             FunCall(Op ",", [env.fExpr env (FunCall(Op ",", [e1; e2])); e3])
