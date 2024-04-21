@@ -1,5 +1,7 @@
 #version 330
 
+int i;
+
 float bar(float x)
 {
 	float a = x;
