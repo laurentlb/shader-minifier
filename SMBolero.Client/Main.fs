@@ -25,7 +25,6 @@ type Model =
     {
         page: Page
         shaderInput: string
-        shaderOutput: string
         shaderSize: int
         flags: Flags
         error: string option
@@ -35,7 +34,6 @@ let initModel =
     {
         page = Home
         shaderInput = "out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(1.,1.,1.,1.);\n}"
-        shaderOutput = ""
         shaderSize = 0
         flags = {Flags.inlining=true; removeUnused=true; renaming=true; other=""; format="text"}
         error = None
@@ -50,16 +48,19 @@ type Message =
     | ClearError
 
 let minify flags content =
-    try
-        Options.init flags
-        let shaders, exportedNames = ShaderMinifier.minify [|"input", content|]
-        let out = new System.IO.StringWriter()
-        Formatter.print out shaders exportedNames Options.Globals.options.outputFormat
-        out.ToString(), ShaderMinifier.getSize shaders
-    with
-        | e -> e.Message, 0
+    Options.init flags
+    let shaders, exportedNames = ShaderMinifier.minify [|"input", content|]
+    let out = new System.IO.StringWriter()
+    Formatter.withLocations <- false
+    Formatter.print out shaders exportedNames Options.Globals.options.outputFormat
 
-let update message model =
+    let withLoc = new System.IO.StringWriter()
+    Formatter.withLocations <- true
+    Formatter.print withLoc shaders exportedNames Options.Globals.options.outputFormat
+
+    out.ToString(), ShaderMinifier.getSize shaders, withLoc.ToString()
+
+let update (jsRuntime: Microsoft.JSInterop.IJSRuntime) message model =
     match message with
     | SetPage page ->
         { model with page = page }, Cmd.none
@@ -72,8 +73,15 @@ let update message model =
             yield! model.flags.other.Split(' ')
         |]
         printfn "Minify %s" (String.concat " " allFlags)
-        let out, size = minify allFlags model.shaderInput
-        { model with shaderOutput = out ; shaderSize = size }, Cmd.none
+        try
+            let out, size, withLoc = minify allFlags model.shaderInput
+            jsRuntime.InvokeAsync("updateShader", [|model.shaderInput; withLoc|]) |> ignore
+            { model with shaderSize = size }, Cmd.none
+        with
+            | e ->
+                printfn "Error: %s" e.Message
+                jsRuntime.InvokeAsync("updateShader", [|model.shaderInput; e.Message|]) |> ignore
+                { model with shaderSize = 0 }, Cmd.none
     | SetShader value ->
         { model with shaderInput = value }, Cmd.none
     | Error exn ->
@@ -99,8 +107,7 @@ let homePage model dispatch =
     Main.Home()
         .Minify(fun _ -> dispatch Minify)
         .ShaderInput(model.shaderInput, fun v -> dispatch (SetShader v))
-        .ShaderOutput(model.shaderOutput)
-        .ShaderSize(if model.shaderSize = 0 then "" else $"size: {model.shaderSize}")
+        .ShaderSize(if model.shaderSize = 0 then "" else $"generated, size: {model.shaderSize}")
         .Format(model.flags.format, fun v -> model.flags.format <- v)
         .Inlining(model.flags.inlining, fun v -> model.flags.inlining <- v)
         .RemoveUnused(model.flags.removeUnused, fun v -> model.flags.removeUnused <- v)
@@ -142,7 +149,7 @@ type MyApp() =
     inherit ProgramComponent<Model, Message>()
 
     override this.Program =
-        Program.mkProgram (fun _ -> initModel, Cmd.ofMsg (Message.SetPage Home)) update view
+        Program.mkProgram (fun _ -> initModel, Cmd.ofMsg (Message.SetPage Home)) (update this.JSRuntime) view
         |> Program.withRouter router
 #if DEBUG
         |> Program.withHotReload
