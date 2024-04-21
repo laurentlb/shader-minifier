@@ -522,6 +522,49 @@ module private RewriterImpl =
             | stmts -> stmts
         let b = replaceIfReturnsWithReturnTernary b
 
+        // Reuse an existing local variable declaration that won't be used anymore,
+        // instead of introducing a new one.  float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
+        let b =
+            if blockLevel <> BlockLevel.FunctionRoot
+            then b
+            else
+                let tryReplaceWithPrecedingAndFollowing f (xs : Stmt list) =
+                    let rec go f preceding = function
+                        | head :: tail -> match f (preceding, head, tail) with
+                                          | None -> head :: go f (head :: preceding) tail // preceding is reversed, that's good
+                                          | Some xs -> xs @ tail
+                        | [] -> []
+                    in go f [] xs
+                b |> tryReplaceWithPrecedingAndFollowing (function
+                | (preceding2, Decl (ty2, [declElt2]), following2) // TODO: handle multiple variables in the same declaration.
+                    // We ensure control flow analysis is trivial by only doing this at the root block level.
+                    when blockLevel = BlockLevel.FunctionRoot ->
+                        let compatibleDeclElts = preceding2 |> List.collect (function
+                            // The previous declaration must have the same type.
+                            | Decl (ty1, declElts1) when ty2 = ty1 ->
+                                let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
+                                    // The first variable must not be used after the second is declared.
+                                    Analyzer.varsInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                                declElts1 |> List.filter (fun declElt1 ->
+                                    // The previous declaration must have the same size and semantics
+                                    declElt1.size = declElt2.size &&
+                                    declElt1.semantics = declElt2.semantics &&
+                                    firstIsNotUsedAfterSecondDeclared declElt1 following2
+                                )
+                            | _ -> [])
+                        match compatibleDeclElts |> List.tryHead with
+                        | Some (declElt1) ->
+                            match declElt2.init with
+                            | Some init ->
+                                debug $"eliminating declaration of local variable '{declElt2.name}' by reusing existing variable '{declElt1.name}'"
+                                for v in Analyzer.varsInStmt (Block following2) do // Rename all uses of var2 to use var1 instead.
+                                    if v.Name = declElt2.name.Name then
+                                        v.Rename(declElt1.name.Name)
+                                Some [Expr (FunCall (Op "=", [Var declElt1.name; init]))]
+                            | None -> Some []
+                        | _ -> None
+                | _ -> None)
+
         // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
         let b = squeezeConsecutiveDeclarations b
 
@@ -742,6 +785,9 @@ let rec private iterateSimplifyAndInline li =
 let simplify li =
     li
     |> iterateSimplifyAndInline
+    // If adding a second iterateSimplifyAndInline changes something (currently it does),
+    // it means we should improve didInline detection or reconsider rewrite order.
+    //|> iterateSimplifyAndInline
     |> List.choose (function
         | TLDecl (ty, li) ->
             let li = RewriterImpl.declsNotToInline li

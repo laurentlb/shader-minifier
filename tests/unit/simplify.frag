@@ -30,6 +30,16 @@ float baz(float a)
 	c += sin(b);
 	return c + (-(c - -c));
 }
+float reuse_a_instead_of_declaring_c()
+{
+  float a = 34.;
+  sin(a *= 10), sin(a *= 20), sin(a *= 30);
+  float b = a + 4.;
+  b += sin(a);
+  float c = b + 5.;
+  c += sin(b);
+  return c + (-(c - -c));
+}
 
 int n = 2;
 float y = 47.;
@@ -40,5 +50,5 @@ float foo(float a, float b) { if (y > a) return 0.; if (y < b) return a; return 
 
 void notMain(float x) {
 	vec3 v = vec3(foo(42.) + foo(50., 70.));
-	output.rgb = v + vec3(bar(x) + baz(x));
+	output.rgb = v + vec3(bar(x) + baz(x) + reuse_a_instead_of_declaring_c(x));
 }

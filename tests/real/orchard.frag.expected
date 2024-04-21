@@ -278,9 +278,9 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
   
 #endif
 
-  vec3 seedDir=normalize(vec3(0,0,1));
-  seedDir=viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*seedDir;
-  vec3 rd=seedDir,col=vec3(0),sky=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs(rd.y));
+  lookat=normalize(vec3(0,0,1));
+  lookat=viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*lookat;
+  vec3 rd=lookat,col=vec3(0),sky=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs(rd.y));
   float alpha=marchScene(camera,rd,fragCoord);
   vec4 mat;
   if(alpha>0.)
@@ -304,12 +304,12 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
         temp=mix(sky,temp,exp(-d*.01));
         col+=temp*stack[i].alpha;
       }
-  vec4 cc=getClouds(camera,rd);
+  mat=getClouds(camera,rd);
   sky+=pow(max(dot(sunLight,rd),0.),20.)*SUN_COLOUR*.03;
-  sky=mix(sky,cc.xyz,cc.w);
+  sky=mix(sky,mat.xyz,mat.w);
   col+=sky*(1.-alpha);
-  float d=stack[0].dist;
-  col+=floatingSeeds(camera,rd,d);
+  alpha=stack[0].dist;
+  col+=floatingSeeds(camera,rd,alpha);
   col+=pow(max(dot(sunLight,rd),0.),6.)*SUN_COLOUR*.2;
   col=clamp(col,0.,1.);
   col=col*col*(3.-2.*col);

@@ -115,13 +115,15 @@ vec2 map(vec3 p,float sg)
   float obj=fBox(o,vec3(.15*offWobble))-.015;
   if(obj<res.x)
     res=vec2(obj,11),g_hp=o;
-  float pid=floor((q.z+3.625)/7.25),trackmod=mod(pid,18.),deg=trackmod<12.?
-    trackmod<6.?
+  float pid=floor((q.z+3.625)/7.25);
+  pid=mod(pid,18.);
+  pid=pid<12.?
+    pid<6.?
       4.:
       6.:
     10.;
-  pModPolar(q.xy,deg);
-  pModPolar(s.xy,deg*.5);
+  pModPolar(q.xy,pid);
+  pModPolar(s.xy,pid*.5);
   vec3 r=s,fs=s-vec3(2.85,0,0);
   r=vec3(abs(r.x),abs(r.y),r.z);
   fs.z*=2.;
@@ -129,9 +131,9 @@ vec2 map(vec3 p,float sg)
   float chs=floor(center.y),height=texture(iChannel0,vec2(mod(chs,16.)*.0465,.1)).x;
   height=smoothstep(.001,1.,height);
   ga=height;
-  float ids=pMod(s.z,7.25);
+  pid=pMod(s.z,7.25);
   vec3 qid=pMod(q,7.25);
-  float lq=mod(ids,2.);
+  float lq=mod(pid,2.);
   iqd=qid.x;
   float zprs=mod(chs,tm<8.?
     tm<4.?
@@ -246,14 +248,15 @@ void mainImage(out vec4 O,vec2 F)
       C+=abs(beams*.65)*hsv2rgb(vec3(s_hp.z*.025,.8,.6));
       C+=abs(flight*.75)*vec3(.5,1,.2);
     }
-  float px=1./R.x,d1=fBox2(uv+vec2(-.485,.2675),vec2(.005))-.002;
-  d1=smoothstep(px,-px,d1);
+  crop=1./R.x;
+  float d1=fBox2(uv+vec2(-.485,.2675),vec2(.005))-.002;
+  d1=smoothstep(crop,-crop,d1);
   C=mix(C,vec3(.212,.671,.576),d1);
   d1=fBox2(uv+vec2(-.465,.2675),vec2(.005))-.002;
-  d1=smoothstep(px,-px,d1);
+  d1=smoothstep(crop,-crop,d1);
   C=mix(C,vec3(.757,.686,.341),d1);
   d1=fBox2(uv+vec2(-.445,.2675),vec2(.005))-.002;
-  d1=smoothstep(px,-px,d1);
+  d1=smoothstep(crop,-crop,d1);
   C=mix(C,vec3(.882,.459,.867),d1);
   C=pow(C,vec3(.4545));
   O=vec4(C,1);

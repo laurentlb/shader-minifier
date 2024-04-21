@@ -96,11 +96,12 @@ float f()
   sep++;
   float _E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E4=E4(),_E5=E5();
   sep++;
-  float o,_F2=F2(o),_F3=F3(o);
+  float o,_F2=F2(o);
+  o=F3(o);
   sep++;
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+1.+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+8.+9.+E1()+_E2+E3()+_E4+_E5+7.+_F2+_F3;
+  return shadowedVar+shadowedFunc+1.+_A3+_A4+_B1+4.+_C1+(3.+sin(0.))+8.+9.+E1()+_E2+E3()+_E4+_E5+7.+_F2+o;
 }
 float g()
 {

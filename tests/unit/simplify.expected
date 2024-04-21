@@ -22,8 +22,18 @@ float baz(float a)
   c+=sin(b);
   return-c-c+c;
 }
+float reuse_a_instead_of_declaring_c()
+{
+  float a=34.;
+  a*=10,a*=20,a*=30;
+  float b=a+4.;
+  b+=sin(a);
+  a=b+5.;
+  a+=sin(b);
+  return-a-a+a;
+}
 out vec3 output;
 void notMain(float x)
 {
-  output.xyz=vec3(92)+vec3(bar(x)+baz(x));
+  output.xyz=vec3(92)+vec3(bar(x)+baz(x)+reuse_a_instead_of_declaring_c(x));
 }
