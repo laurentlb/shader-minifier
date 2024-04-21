@@ -84,7 +84,7 @@ module private RewriterImpl =
                 // mutations to affect all of the inlined idents.
                 | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
             | ie -> ie
-        mapExpr (mapEnv mapInline id) bodyExpr
+        mapExpr (mapEnvExpr mapInline) bodyExpr
 
     /// Expression that doesn't need parentheses around it.
     let (|NoParen|_|) = function
@@ -416,7 +416,7 @@ module private RewriterImpl =
         | Switch (_e, cases) -> cases |> List.forall (fun (_label, stmts) -> hasNoContinue stmts)
         | _ -> true)
 
-    let simplifyBlock stmts = 
+    let simplifyBlock blockLevel stmts = 
         let b = stmts
         // Avoid some optimizations when there are preprocessor directives.
         let hasPreprocessor = Seq.exists (function Verbatim _ -> true | _ -> false) b
@@ -437,7 +437,7 @@ module private RewriterImpl =
             let collectLocalUses _ = function
                 | Var v as e -> idents <- v :: idents; e
                 | e -> e
-            mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
+            mapExpr (mapEnvExpr collectLocalUses) expr |> ignore<Expr>
             idents |> List.exists (fun i -> i.Name = identName)
 
         // Merge two consecutive items into one, everywhere possible in a list.
@@ -529,9 +529,9 @@ module private RewriterImpl =
         let b = if hasPreprocessor || not options.moveDeclarations then b else groupDeclarations b
         b
 
-    let simplifyStmt = function
+    let simplifyStmt (env : MapEnv) = function
         | Block [] as e -> e
-        | Block b -> match simplifyBlock b with
+        | Block b -> match simplifyBlock env.blockLevel b with
                         | [stmt] as b when hasNoDecl b -> stmt
                         | stmts -> Block stmts
         | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
@@ -697,7 +697,7 @@ module private ArgumentInlining =
         let applyTopLevel = function
             | Function(fct, body) as f ->
                 // Handle argument inlining for other functions called by f.
-                let _, body = mapStmt (mapEnv applyExpr id) body
+                let _, body = mapStmt BlockLevel.FunctionRoot (mapEnvExpr applyExpr) body
                 // Handle argument inlining for f. Remove the parameter from the declaration.
                 let fct = {fct with args = removeInlined f fct.args}
                 // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
