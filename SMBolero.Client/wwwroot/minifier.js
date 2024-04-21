@@ -56,7 +56,6 @@ function addAnnotations(str, sourceMap, div, isMin) {
 }
 
 function show(x, hash) {
-    // TODO: support multiple references
     const links = document.querySelectorAll("." + hash);
     removeHighlights();
     for (const link of links) {
