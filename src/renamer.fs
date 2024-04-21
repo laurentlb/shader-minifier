@@ -233,7 +233,7 @@ module private RenamerImpl =
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v
             | e -> e
-        mapExpr (mapEnv mapper id) expr |> ignore<Expr>
+        mapExpr (mapEnvExpr mapper) expr |> ignore<Expr>
 
     let renDecl isTopLevel env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
@@ -275,7 +275,7 @@ module private RenamerImpl =
                 | None -> d.Add id.Name |> ignore<bool>
                 e
             | e -> e
-        mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
+        mapStmt BlockLevel.Unknown (mapEnvExpr collect) block |> ignore<MapEnv * Stmt>
         let set = HashSet(Seq.choose env.varRenames.TryFind d)
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
         let reusable = reusable |> Seq.filter (fun x -> not (List.contains x.Value options.noRenamingList))

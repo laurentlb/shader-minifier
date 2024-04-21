@@ -19,7 +19,7 @@ module private VariableInlining =
                 e
             | e -> e
         for expr in stmtList do
-            mapStmt (mapEnv collectLocalUses id) expr |> ignore<MapEnv * Stmt>
+            mapStmt BlockLevel.Unknown (mapEnvExpr collectLocalUses) expr |> ignore<MapEnv * Stmt>
         counts
 
     let collectReferencesSet expr  = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
@@ -27,7 +27,7 @@ module private VariableInlining =
         let collectLocalUses _ = function
             | Var v as e -> result.Add(v) |> ignore<bool>; e
             | e -> e
-        mapExpr (mapEnv collectLocalUses id) expr |> ignore<Expr>
+        mapExpr (mapEnvExpr collectLocalUses) expr |> ignore<Expr>
         result
 
     let isEffectivelyConst (ident: Ident) =
@@ -130,7 +130,7 @@ module private VariableInlining =
         | _ -> ()
 
     let markInlinableVariables li =
-        let mapStmt stmt =
+        let mapStmt _ stmt =
             match stmt with
             | Decl d -> markUnwrittenVariablesWithSimpleInit false d
             | ForD (d, _, _, _) -> markUnwrittenVariablesWithSimpleInit false d
@@ -165,7 +165,7 @@ let markWrites topLevel =
                 e
             | _ -> e
         | e -> e
-    mapTopLevel (mapEnv findWrites id) topLevel |> ignore<TopLevel list>
+    mapTopLevel (mapEnvExpr findWrites) topLevel |> ignore<TopLevel list>
 
     let findExternallyVisibleSideEffect tl =
         let mutable hasExternallyVisibleSideEffect = false
@@ -184,7 +184,7 @@ let markWrites topLevel =
                 hasExternallyVisibleSideEffect <- hasExternallyVisibleSideEffect || hasSideEffect
                 e
             | e -> e
-        mapTopLevel (mapEnv findSideEffects id) [tl] |> ignore<TopLevel list>
+        mapTopLevel (mapEnvExpr findSideEffects) [tl] |> ignore<TopLevel list>
         hasExternallyVisibleSideEffect
 
     for tl in topLevel do
@@ -218,7 +218,7 @@ let resolve topLevel =
             let varDecl = new VarDecl(ty, elt, scope)
             elt.name.Declaration <- Declaration.Variable varDecl
 
-    let resolveStmt = function
+    let resolveStmt _ = function
         | Decl d as stmt -> resolveDecl VarScope.Local d; stmt
         | ForD(d, _, _, _) as stmt -> resolveDecl VarScope.Local d; stmt
         | x -> x
@@ -235,7 +235,7 @@ let resolve topLevel =
         resolveGlobalsAndParameters tl
     mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
     // Then, visit all uses and associate them to their declaration.
-    mapTopLevel (mapEnv resolveExpr id) topLevel |> ignore<TopLevel list>
+    mapTopLevel (mapEnvExpr resolveExpr) topLevel |> ignore<TopLevel list>
 
 
 // findFuncInfos finds the call graph, and other related informations for function inlining.
@@ -262,7 +262,7 @@ let findFuncInfos code =
                 callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length); argExprs = argExprs }
                 e
             | e -> e
-        mapStmt (mapEnv collect id) block |> ignore<MapEnv * Stmt>
+        mapStmt BlockLevel.Unknown (mapEnvExpr collect) block |> ignore<MapEnv * Stmt>
         callSites |> Seq.toList
     let functions = code |> List.choose (function
         | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
@@ -316,7 +316,7 @@ module private FunctionInlining =
                         callSite.varsInScope |> List.contains id.Name))
                 e
             | e -> e
-        mapTopLevel (mapEnv visitArgUses id) [func] |> ignore<TopLevel list>
+        mapTopLevel (mapEnvExpr visitArgUses) [func] |> ignore<TopLevel list>
 
         let argsAreUsedAtMostOnce = not (argUsageCounts.Values |> Seq.exists (fun n -> n > 1))
         let ok =

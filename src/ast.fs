@@ -189,20 +189,32 @@ type Shader = {
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting visible variable and function declarations along the way.
 
+[<NoComparison>] [<RequireQualifiedAccess>]
+type BlockLevel = FunctionRoot | Nested | Unknown
+
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
-    fStmt: Stmt -> Stmt
+    fStmt: MapEnv -> Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<(string * int), (FunctionType * Stmt) list> // This doesn't support type-based disambiguation of user-defined function overloading
     isInWritePosition: bool // used for findWrites only
+    blockLevel: BlockLevel
 } with
     member this.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
         let oldFnsList = (this.fns.TryFind(fct.prototype) |> Option.defaultValue [])
         let newFnsList = (fct, body) :: (if replaceMostRecentOverload then oldFnsList.Tail else oldFnsList)
         {this with fns = this.fns.Add(fct.prototype, newFnsList)}
 
-let mapEnv fe fi = {fExpr = fe; fStmt = fi; vars = Map.empty; fns = Map.empty; isInWritePosition = false}
+let mapEnv fe fi = {
+    fExpr = fe
+    fStmt = fi
+    vars = Map.empty
+    fns = Map.empty
+    isInWritePosition = false
+    blockLevel = BlockLevel.Unknown
+}
+let mapEnvExpr fe = mapEnv fe (fun _ -> id)
 
 let foldList env fct li =
     let mutable env = env
@@ -242,30 +254,32 @@ and mapDecl env (ty, vars) =
     let env, vars = foldList env aux vars
     env, (ty, vars)
 
-let rec mapStmt env stmt =
+let rec mapStmt blockLevel env stmt =
+    let mapStmt' = mapStmt BlockLevel.Nested
+    let env = {env with blockLevel = BlockLevel.Nested}
     let aux = function
         | Block stmts ->
-            let _, stmts = foldList env mapStmt stmts
+            let _, stmts = foldList env mapStmt' stmts
             env, Block stmts
         | Expr e -> env, Expr (mapExpr env e)
         | Decl d ->
             let env, res = mapDecl env d
             env, Decl res
         | If(cond, th, el) ->
-            env, If (mapExpr env cond, snd (mapStmt env th), Option.map (mapStmt env >> snd) el)
+            env, If (mapExpr env cond, snd (mapStmt' env th), Option.map (mapStmt' env >> snd) el)
         | While(cond, body) ->
-            env, While (mapExpr env cond, snd (mapStmt env body))
+            env, While (mapExpr env cond, snd (mapStmt' env body))
         | DoWhile(cond, body) ->
-            env, DoWhile (mapExpr env cond, snd (mapStmt env body))
+            env, DoWhile (mapExpr env cond, snd (mapStmt' env body))
         | ForD(init, cond, inc, body) ->
             let env', decl = mapDecl env init
             let res = ForD (decl, Option.map (mapExpr env') cond,
-                            Option.map (mapExpr env') inc, snd (mapStmt env' body))
+                            Option.map (mapExpr env') inc, snd (mapStmt' env' body))
             if options.hlsl then env', res
             else env, res
         | ForE(init, cond, inc, body) ->
             let res = ForE (Option.map (mapExpr env) init, Option.map (mapExpr env) cond,
-                            Option.map (mapExpr env) inc, snd (mapStmt env body))
+                            Option.map (mapExpr env) inc, snd (mapStmt' env body))
             env, res
         | Jump(k, e) ->
             env, Jump (k, Option.map (mapExpr env) e)
@@ -275,11 +289,12 @@ let rec mapStmt env stmt =
                 | Case e -> Case (mapExpr env e)
                 | Default -> Default
             let mapCase (l, sl) =
-                let _, sl = foldList env mapStmt sl
+                let _, sl = foldList env mapStmt' sl
                 (mapLabel l, sl)
             env, Switch (mapExpr env e, List.map mapCase cl)
     let env, res = aux stmt
-    env, env.fStmt res
+    let env = {env with blockLevel = blockLevel}
+    env, env.fStmt env res
 
 let mapTopLevel env li =
     let _, res = li |> foldList env (fun env tl ->
@@ -299,7 +314,7 @@ let mapTopLevel env li =
             let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
 
             // Transform the body. The env modifications (local variables) are discarded.
-            let _, body = mapStmt env body
+            let _, body = mapStmt BlockLevel.FunctionRoot env body
             // Update env.fns with the transformed body.
             let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
 
