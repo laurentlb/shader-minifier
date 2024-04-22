@@ -4,6 +4,8 @@
     --border: #404080;
     --text-color: #f0f0f0;
     --alt-text-color: #aac;
+    scrollbar-width: thin;
+    scrollbar-color: var(--alt-text-color) transparent;
 }
 
 body {
@@ -99,7 +101,7 @@ details li {
 }
 
 #content {
-    max-width: 800px;
+    max-width: 1500px;
     margin: 0px auto;
 }
 
@@ -146,12 +148,16 @@ button, textarea, input, select {
 
 button {
     cursor: pointer;
+    background-color: #404080;
+    font-variant: small-caps;
+    font-size: 1em;
 }
 
 textarea {
     box-sizing: border-box;
     width: 100%;
     padding: 4px;
+    scrollbar-width: thin;
 }
 
 code {
@@ -169,19 +175,68 @@ code {
 }
 
 #minify-btn {
-    background-color: #404080;
     margin: 8px 0;
     padding: 8px;
-    font-variant: small-caps;
-    font-size: 1em;
     float: right;
 }
 
-.size {
-    text-align: right;
+.output-header {
     font-size: 0.8em;
     color: var(--alt-text-color);
+    width: 33.3%;
+    text-align: center;
+    line-height: 32px;
+    height: 32px;
 }
+
+
+.clickable {
+    cursor: pointer;
+}
+
+/* Style for the source/minified columns. */
+
+.comment {
+    color: #888;
+}
+
+.output {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    place-content: space-between;
+}
+
+.source, .minified {
+    padding: 3em 0em 3em 1em;
+    font-size: 1.2em;
+    font-family: monospace;
+    white-space: pre-wrap;
+
+    line-break: anywhere;
+    box-sizing: border-box;
+    width: 49.5%;
+
+    overflow-y: scroll;
+    scrollbar-width: thin;
+    max-height: 100vh;
+    background-color: rgb(26, 26, 42);
+    border: 1px solid var(--border);
+}
+
+.highlight {
+    background-color: var(--bg-light);
+    color: #ff0 !important;
+    text-decoration-line: underline !important;
+}
+
+.ident {
+    color: #88c;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* */
 
 
 /* Let's be modern and support mobile*/
