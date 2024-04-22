@@ -40,7 +40,7 @@ function addAnnotations(str, sourceMap, div, isMin) {
             const hash1 = getHash(i, offset);
             if (sourceMap[hash1]) {
                 const hash2 = getHash(sourceMap[hash1].line, sourceMap[hash1].col);
-                return `<a id=${getPrefix(isMin)}${hash1} class="ident" onclick="show(this, '${getPrefix(!isMin)}${hash2}')">${match}</a>`;
+                return `<a class="${getPrefix(isMin)}${hash2} ident" onclick="show(this, '${getPrefix(!isMin)}${hash1}')">${match}</a>`;
             }
             return match;
         });
@@ -56,10 +56,11 @@ function addAnnotations(str, sourceMap, div, isMin) {
 }
 
 function show(x, hash) {
-    // TODO: support multiple references
-    const link = document.getElementById(hash);
+    const links = document.querySelectorAll("." + hash);
     removeHighlights();
-    addHighlight(link);
+    for (const link of links) {
+        addHighlight(link);
+    }
     addHighlight(x);
 }
 function removeHighlights() {
@@ -95,4 +96,9 @@ function copyBtn() {
     const minified = document.querySelector('.minified');
     console.log("Copy", minified.textContent);
     navigator.clipboard.writeText(minified.textContent);
+    const icon = document.querySelector('.copy-icon');
+
+    // animation
+    icon.classList.remove('animated-icon');
+    setTimeout(() => icon.classList.add('animated-icon'), 0);
 }

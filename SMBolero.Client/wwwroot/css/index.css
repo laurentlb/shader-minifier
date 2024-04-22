@@ -183,10 +183,8 @@ code {
 .output-header {
     font-size: 0.8em;
     color: var(--alt-text-color);
-    width: 33.3%;
+    width: 49.5%;
     text-align: center;
-    line-height: 32px;
-    height: 32px;
 }
 
 
@@ -205,6 +203,7 @@ code {
     display: flex;
     flex-wrap: wrap;
     place-content: space-between;
+    position: relative;
 }
 
 .source, .minified {
@@ -234,6 +233,20 @@ code {
     color: #88c;
     font-weight: bold;
     cursor: pointer;
+}
+
+.animated-icon {
+    transition: transform 0.5s;
+    animation: rotate 0.5s;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* */
