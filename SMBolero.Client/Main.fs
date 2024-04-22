@@ -5,6 +5,7 @@ open Bolero
 open Bolero.Html
 open Bolero.Remoting.Client
 open Bolero.Templating.Client
+open Microsoft.JSInterop
 
 /// Routing endpoints definition.
 type Page =
@@ -59,6 +60,12 @@ let minify flags content =
     Formatter.print withLoc shaders exportedNames Options.Globals.options.outputFormat
 
     out.ToString(), ShaderMinifier.getSize shaders, withLoc.ToString()
+
+module API =
+    [<JSInvokableAttribute("minify")>]
+    let minify flags content =
+        let result, _, _ = minify flags content
+        result
 
 let update (jsRuntime: Microsoft.JSInterop.IJSRuntime) message model =
     match message with
