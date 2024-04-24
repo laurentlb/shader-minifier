@@ -416,7 +416,7 @@ module private RewriterImpl =
         | Switch (_e, cases) -> cases |> List.forall (fun (_label, stmts) -> hasNoContinue stmts)
         | _ -> true)
 
-    let simplifyBlock blockLevel stmts = 
+    let simplifyBlock (mightBenefitFromAnotherPass: bool ref) blockLevel stmts = 
         let b = stmts
         // Avoid some optimizations when there are preprocessor directives.
         let hasPreprocessor = Seq.exists (function Verbatim _ -> true | _ -> false) b
@@ -473,12 +473,15 @@ module private RewriterImpl =
                 | Declaration.Variable decl when decl.scope = VarScope.Global ->
                     // The assignment should not be removed if init2 calls a function that reads the global variable.
                     None // Safely assume it could happen.
-                | Declaration.Variable _ -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
+                | Declaration.Variable _ ->
+                    mightBenefitFromAnotherPass.Value <- true
+                    Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
                 | _ -> None
             // Compact a pure declaration immediately followed by re-assignment:  float m=14.;m=58.;  ->  float m=58.;
             | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])))
                 when declElt.name.Name = name2.Name
                     && not (exprUsesIdentName init2 declElt.name.Name) ->
+                    mightBenefitFromAnotherPass.Value <- true
                     match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
                     | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
                     | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
@@ -517,6 +520,7 @@ module private RewriterImpl =
         // if(a)return b;return c;  ->  return a?b:c;
         let rec replaceIfReturnsWithReturnTernary = function
             | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest ->
+                mightBenefitFromAnotherPass.Value <- true
                 [Jump(JumpKeyword.Return, Some (FunCall(Op "?:", [cond; retT; retF])))]
             | stmt :: rest -> stmt :: replaceIfReturnsWithReturnTernary rest
             | stmts -> stmts
@@ -556,6 +560,7 @@ module private RewriterImpl =
                         | Some (declElt1) ->
                             match declElt2.init with
                             | Some init ->
+                                mightBenefitFromAnotherPass.Value <- true
                                 debug $"eliminating declaration of local variable '{declElt2.name}' by reusing existing variable '{declElt1.name}'"
                                 for v in Analyzer.varsInStmt (Block following2) do // Rename all uses of var2 to use var1 instead.
                                     if v.Name = declElt2.name.Name then
@@ -572,9 +577,9 @@ module private RewriterImpl =
         let b = if hasPreprocessor || not options.moveDeclarations then b else groupDeclarations b
         b
 
-    let simplifyStmt (env : MapEnv) = function
+    let simplifyStmt mightBenefitFromAnotherPass (env : MapEnv) = function
         | Block [] as e -> e
-        | Block b -> match simplifyBlock env.blockLevel b with
+        | Block b -> match simplifyBlock mightBenefitFromAnotherPass env.blockLevel b with
                         | [stmt] as b when hasNoDecl b -> stmt
                         | stmts -> Block stmts
         | Decl (ty, li) -> Decl (rwType ty, declsNotToInline li)
@@ -698,7 +703,7 @@ module private ArgumentInlining =
     }
 
     // Find when functions are always called with the same trivial expr, that can be inlined into the function body.
-    let findInlinings code: Inlining list =
+    let private findInlinings code: Inlining list =
         let mutable argInlinings = []
         Analyzer.resolve code
         Analyzer.markWrites code
@@ -767,18 +772,20 @@ let rec private iterateSimplifyAndInline li =
         Analyzer.markWrites li
         Analyzer.markInlinableFunctions li
         Analyzer.markInlinableVariables li
-    let didInline = ref false
-    let li = mapTopLevel (mapEnv (RewriterImpl.simplifyExpr didInline) RewriterImpl.simplifyStmt) li
+    let mightBenefitFromAnotherPass = ref false
+    let li = mapTopLevel (mapEnv
+        (RewriterImpl.simplifyExpr mightBenefitFromAnotherPass)
+        (RewriterImpl.simplifyStmt mightBenefitFromAnotherPass)) li
 
     // now that the functions were inlined, we can remove them
     let li = li |> List.filter (function
         | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
         | _ -> true)
     
-    let li = if options.noInlining then li else ArgumentInlining.apply didInline li
+    let li = if options.noInlining then li else ArgumentInlining.apply mightBenefitFromAnotherPass li
 
-    if didInline.Value
-    then debug $"inlining happened: running analysis again..."
+    if mightBenefitFromAnotherPass.Value
+    then debug $"significant changes happened: running analysis again..."
          iterateSimplifyAndInline li
     else li
 

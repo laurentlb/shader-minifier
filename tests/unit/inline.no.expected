@@ -23,8 +23,7 @@ int arithmetic2()
 }
 int unusedVars()
 {
-  int a=arithmetic(),13;
-  a=10;
+  int a=arithmetic(),10;
   return a*3;
 }
 int unusedVars2()

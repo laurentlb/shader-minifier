@@ -15,8 +15,8 @@
    "int d=1,e=2,g=3,h=4,j=5,k=6,l=7,m=8;"
    "i=0.;"
    "int n=1,o=2,p=3,q=4,r=5,s=6,t=7,u=8;"
-   "float v=0.;"
-   "int w=1,x=2,y=3,z=4,at=5,ai=6,aa=7,aA=8;"
+   "i=0.;"
+   "int v=1,w=2,x=3,y=4,z=5,at=6,ai=7,aA=8;"
    "return Y+m+u+aA;"
  "}",
 

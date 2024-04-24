@@ -313,8 +313,8 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
   col+=pow(max(dot(sunLight,rd),0.),6.)*SUN_COLOUR*.2;
   col=clamp(col,0.,1.);
   col=col*col*(3.-2.*col);
-  vec2 q=fragCoord/iResolution.xy;
-  col*=.3+.7*pow(90.*q.x*q.y*(1.-q.x)*(1.-q.y),.5);
+  mouseXY=fragCoord/iResolution.xy;
+  col*=.3+.7*pow(90.*mouseXY.x*mouseXY.y*(1.-mouseXY.x)*(1.-mouseXY.y),.5);
   col*=smoothstep(0.,5.,time);
   fragColour=vec4(sqrt(col),1);
 }

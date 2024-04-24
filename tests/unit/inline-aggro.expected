@@ -28,9 +28,7 @@ float inl6()
   return 2.*baz;
 }
 void notevil()
-{
-  float x=42.;
-}
+{}
 float inl7()
 {
   notevil();

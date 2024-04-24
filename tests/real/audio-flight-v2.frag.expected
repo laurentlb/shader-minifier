@@ -132,9 +132,9 @@ vec2 map(vec3 p,float sg)
   height=smoothstep(.001,1.,height);
   ga=height;
   pid=pMod(s.z,7.25);
-  vec3 qid=pMod(q,7.25);
-  float lq=mod(pid,2.);
-  iqd=qid.x;
+  o=pMod(q,7.25);
+  pid=mod(pid,2.);
+  iqd=o.x;
   float zprs=mod(chs,tm<8.?
     tm<4.?
       tm<4.?
@@ -144,21 +144,21 @@ vec2 map(vec3 p,float sg)
     floor(height*1.45)),d4a=length(r.xy-vec2(2.5,1.75))-.1,d4=length(r.xy-vec2(2.5,1.75))-.04+.027+.027*sin(r.z-time*4.5);
   if(d4<res.x)
     res=vec2(d4,12),g_hp=p;
-  vec2 d1=fragtail(q);
-  d1.x=max(d1.x,-d4a);
+  tun=fragtail(q);
+  tun.x=max(tun.x,-d4a);
   s.z=abs(s.z);
-  float blt=sdCap(s-vec3(2.45,-.58,2.725));
-  if(lq<2.)
-    d1.x=min(blt,d1.x);
-  if(d1.x<res.x)
-    res=d1.xy,g_hp=p;
+  d4a=sdCap(s-vec3(2.45,-.58,2.725));
+  if(pid<2.)
+    tun.x=min(d4a,tun.x);
+  if(tun.x<res.x)
+    res=tun.xy,g_hp=p;
   float me=fBox(fs-vec3(0,0,center.y),vec3(.05,.15+height,.25)),next=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25)),dlt=min(me,next);
   if(dlt<res.x)
     res=vec2(dlt,4),g_hp=p;
   if(sg==1.)
     beams+=1e-4/(3e-6+d4*d4);
-  if(sg==1.&&lq<1.)
-    flight+=.00025/(1e-7+blt*blt);
+  if(sg==1.&&pid<1.)
+    flight+=.00025/(1e-7+d4a*d4a);
   if(sg==1.&&zprs<.1)
     glow+=.00015/(2e-6+dlt*dlt);
   if(sg==1.&&tm<13.25)

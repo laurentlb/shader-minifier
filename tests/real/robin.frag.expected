@@ -284,9 +284,9 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
         vec3 pos=cameraPos+dir*d,normal=GetNormal(pos,SphereRadius(d)),alb=Colour(pos,normal,specular);
         cu+=DoLighting(alb,pos,normal,dir,d,specular)*aStack[s][i];
       }
-  float mi=smoothstep(1.9,0.,zoomTurn.y);
-  vec3 back=mix(CubeMap(iChannel2,dir,128.),CubeMap(iChannel3,dir,64.)*.7,mi);
-  cu+=back*back*SUN_COLOUR*(1.-jump);
+  t=smoothstep(1.9,0.,zoomTurn.y);
+  dir=mix(CubeMap(iChannel2,dir,128.),CubeMap(iChannel3,dir,64.)*.7,t);
+  cu+=dir*dir*SUN_COLOUR*(1.-jump);
   cu=PostEffects(cu,xy)*smoothstep(0.,2.,iTime);
   fragColor=vec4(cu,1);
 }
