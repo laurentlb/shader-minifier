@@ -4,6 +4,9 @@ open System
 open System.IO
 open Options.Globals
 
+// TODO(rubix): clean up the mess
+let mutable withLocations = false
+
 module private Impl =
 
     let private minify shader =
@@ -14,9 +17,15 @@ module private Impl =
 
         match options.outputFormat with
         | Options.Text | Options.JS ->
-            Printer.print shader.code
+            if withLocations then
+                Printer.printWithLoc shader.code |> Printer.stripIndentation
+            else
+                Printer.print shader.code
         | Options.IndentedText | Options.CVariables | Options.CArray | Options.JS | Options.Nasm | Options.Rust ->
-            Printer.printIndented shader.code
+            if withLocations then
+                Printer.printWithLoc shader.code
+            else
+                Printer.printIndented shader.code
 
     let private formatPrefix = function
         | Ast.ExportPrefix.Variable -> "var"
