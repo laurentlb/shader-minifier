@@ -427,11 +427,6 @@ module private RewriterImpl =
                 | Some x when not hasPreprocessor -> List.truncate (x+1) b
                 | _ -> b
 
-        // Remove "empty" declarations of vars that were inlined. This is mandatory for correctness, not an optional optimization.
-        let b = b |> List.filter (function
-            | Decl (_, []) -> false
-            | _ -> true)
-
         let exprUsesIdentName expr identName =
             let mutable idents = []
             let collectLocalUses _ = function
@@ -529,6 +524,7 @@ module private RewriterImpl =
         // Reuse an existing local variable declaration that won't be used anymore,
         // instead of introducing a new one.  float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
         let b =
+            // We ensure control flow analysis is trivial by only doing this at the root block level.
             if blockLevel <> BlockLevel.FunctionRoot
             then b
             else
@@ -540,35 +536,56 @@ module private RewriterImpl =
                         | [] -> []
                     in go f [] xs
                 b |> tryReplaceWithPrecedingAndFollowing (function
-                | (preceding2, Decl (ty2, [declElt2]), following2) // TODO: handle multiple variables in the same declaration.
-                    // We ensure control flow analysis is trivial by only doing this at the root block level.
-                    when blockLevel = BlockLevel.FunctionRoot ->
-                        let compatibleDeclElts = preceding2 |> List.collect (function
-                            // The previous declaration must have the same type.
-                            | Decl (ty1, declElts1) when ty2 = ty1 ->
-                                let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
-                                    // The first variable must not be used after the second is declared.
-                                    Analyzer.varsInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
-                                declElts1 |> List.filter (fun declElt1 ->
-                                    // The previous declaration must have the same size and semantics
-                                    declElt1.size = declElt2.size &&
-                                    declElt1.semantics = declElt2.semantics &&
-                                    firstIsNotUsedAfterSecondDeclared declElt1 following2
-                                )
-                            | _ -> [])
-                        match compatibleDeclElts |> List.tryHead with
-                        | Some (declElt1) ->
-                            match declElt2.init with
-                            | Some init ->
-                                mightBenefitFromAnotherPass.Value <- true
-                                debug $"eliminating declaration of local variable '{declElt2.name}' by reusing existing variable '{declElt1.name}'"
-                                for v in Analyzer.varsInStmt (Block following2) do // Rename all uses of var2 to use var1 instead.
-                                    if v.Name = declElt2.name.Name then
-                                        v.Rename(declElt1.name.Name)
-                                Some [Expr (FunCall (Op "=", [Var declElt1.name; init]))]
-                            | None -> Some []
+                    | (preceding2, Decl (ty2, declElts), following2) ->
+                        let findAssignmentReplacement declElt2 =
+                            let compatibleDeclElts = preceding2 |> List.collect (function
+                                // The previous declaration must have the same type.
+                                | Decl (ty1, declElts1) when ty2 = ty1 ->
+                                    let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
+                                        // The first variable must not be used after the second is declared.
+                                        Analyzer.varsInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                                    declElts1 |> List.filter (fun declElt1 ->
+                                        // The previous declaration must have the same size and semantics
+                                        declElt1.size = declElt2.size &&
+                                        declElt1.semantics = declElt2.semantics &&
+                                        firstIsNotUsedAfterSecondDeclared declElt1 following2
+                                    )
+                                | _ -> [])
+                            debug $"DEBUG {declElt2.name.Loc}: found {compatibleDeclElts.Length} compatible preceding var decl to reuse, for eliminating declaration of local variable '{declElt2.name}''"
+                            match compatibleDeclElts |> List.tryHead with
+                            | Some (declElt1) ->
+                                match declElt2.init with
+                                | Some init ->
+                                    mightBenefitFromAnotherPass.Value <- true
+                                    debug $"{declElt2.name.Loc}: eliminating declaration of local variable '{declElt2.name}' by reusing existing variable '{declElt1.name}'"
+                                    for v in Analyzer.varsInStmt (Block following2) do // Rename all uses of var2 to use var1 instead.
+                                        if v.Name = declElt2.name.Name then
+                                            v.Rename(declElt1.name.Name)
+                                    Some [Expr (FunCall (Op "=", [Var declElt1.name; init]))]
+                                | None -> Some []
+                            | _ -> None
+                        //let findPrecedingAndFollowing item list = ([item] @ list, [item])
+                        match declElts with
+                        | [declElt2] ->
+                            match findAssignmentReplacement declElt2 with
+                            | Some stmts -> Some stmts // replace the Decl with the assignment
+                            | None -> None
+                        //| otherDecl :: declElt2 :: [] ->
+                        //    match findAssignmentReplacement declElt2 with // Keep the decl for the previous elements, move the assignment on the next line
+                        //    | Some stmts -> ???
+                        //    | None -> None
+                        //| otherDecl :: declElt2 :: nextDecl :: otherDecls -> // Keep the decl for the other elements, move the assignment into a comma-expr of the following decl
+                        //    match findAssignmentReplacement declElt2 with
+                        //    | Some stmts -> ???
+                        //    | None -> None
+                        //| ... 
                         | _ -> None
-                | _ -> None)
+                    | _ -> None)
+                
+        // Remove "empty" declarations of vars that were inlined. This is mandatory for correctness, not an optional optimization.
+        let b = b |> List.filter (function
+            | Decl (_, []) -> false
+            | _ -> true)
 
         // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
         let b = squeezeConsecutiveDeclarations b
@@ -719,7 +736,7 @@ module private ArgumentInlining =
                         let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
                         match argExprs with
                         | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
-                            debug $"inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{funcInfo.funcType}'"
+                            debug $"{varDecl.decl.name.Loc}: inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{funcInfo.funcType}'"
                             argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
                         | _ -> ()
                     | _ -> ()

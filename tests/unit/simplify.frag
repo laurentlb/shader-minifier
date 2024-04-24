@@ -41,6 +41,20 @@ float reuse_a_instead_of_declaring_c()
   return c + (-(c - -c));
 }
 
+/*
+float more_var_decl_reuse(float x) {
+	float a = 1.+x;
+	int b = 3+int(x), b2 = 5+int(a);
+	float c = a, c2 = 9.+a;
+	int d = 3+b+b2, d2 = d+b2-b;
+	float e = c*c2, e2 = 4.-c-c2;
+	int f = 3*d*d2, f2 = 4/d2-d;
+	float g = e-float(f)+e2, g2 = 4.-g+e2+e;
+	int h = 3*f-f2, h2 = 7*f2-f;
+	return float(h*h2)*g*g2*x + g2/h2-h;
+}
+*/
+
 int n = 2;
 float y = 47.;
 out vec3 output;
