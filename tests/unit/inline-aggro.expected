@@ -27,14 +27,13 @@ float inl6()
 {
   return 2.*baz;
 }
-void notevil()
+float notevil(float y)
 {
-  float x=42.;
+  return 42.+(y*=y);
 }
-float inl7()
+float inl7(float u)
 {
-  notevil();
-  return 101.;
+  return 101.+notevil(u);
 }
 int inl8(ivec3 x)
 {

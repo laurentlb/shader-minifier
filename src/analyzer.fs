@@ -112,7 +112,9 @@ module private VariableInlining =
     let markUnwrittenVariablesWithSimpleInit isTopLevel = function
         | (ty: Type, defs) when not ty.IsExternal ->
             for (def:DeclElt) in defs do
-                if not def.name.DoNotInline && not def.name.VarDecl.Value.isEverWrittenAfterDecl then
+                if not def.name.ToBeInlined && // already done in a previous pass
+                   not def.name.DoNotInline &&
+                   not def.name.VarDecl.Value.isEverWrittenAfterDecl then
                     match def.init with
                     | None ->
                         // Top-level values are special, in particular in HLSL. Keep them for now.

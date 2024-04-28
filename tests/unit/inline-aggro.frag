@@ -36,11 +36,11 @@ float inl6() {
 	return 2.0 * baz;
 }
 
-void notevil(in float x) { x = 42.0; }
-float inl7() {
+float notevil(in float x, float y) { x = 42.0; return x + (y *= y); }
+float inl7(float u) {
 	float f = 101.0;
-	notevil(f);
-	return f;
+	float z = notevil(f, u);
+	return f + z;
 }
 
 int inl8(in ivec3 x) {

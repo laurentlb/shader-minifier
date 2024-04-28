@@ -655,7 +655,7 @@ module private ArgumentInlining =
     }
 
     // Find when functions are always called with the same trivial expr, that can be inlined into the function body.
-    let findInlinings code: Inlining list =
+    let private findInlinings code: Inlining list =
         let mutable argInlinings = []
         Analyzer.resolve code
         Analyzer.markWrites code
@@ -717,7 +717,7 @@ module private ArgumentInlining =
             didInline.Value <- true
             code
 
-let rec private iterateSimplifyAndInline li =
+let rec private iterateSimplifyAndInline passCount li =
     let li = if not options.noRemoveUnused then RewriterImpl.removeUnusedFunctions li else li
     if not options.noInlining then
         Analyzer.resolve li
@@ -725,6 +725,7 @@ let rec private iterateSimplifyAndInline li =
         Analyzer.markInlinableFunctions li
         Analyzer.markInlinableVariables li
     let didInline = ref false
+    let before = Printer.print li
     let li = mapTopLevel (mapEnv (RewriterImpl.simplifyExpr didInline) RewriterImpl.simplifyStmt) li
 
     // now that the functions were inlined, we can remove them
@@ -734,14 +735,19 @@ let rec private iterateSimplifyAndInline li =
     
     let li = if options.noInlining then li else ArgumentInlining.apply didInline li
 
-    if didInline.Value
-    then debug $"inlining happened: running analysis again..."
-         iterateSimplifyAndInline li
-    else li
+    if passCount > 10 then
+        debug $"! possible unstable loop in change detection. stopping analysis."
+        li
+    else
+        let after = Printer.print li
+        if after <> before then
+            debug $"- significant changes happened: running analysis again..."
+            iterateSimplifyAndInline (passCount + 1) li
+        else li
 
 let simplify li =
     li
-    |> iterateSimplifyAndInline
+    |> iterateSimplifyAndInline 1
     |> List.choose (function
         | TLDecl (ty, li) ->
             let li = RewriterImpl.declsNotToInline li

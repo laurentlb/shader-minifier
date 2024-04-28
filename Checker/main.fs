@@ -71,7 +71,7 @@ let testPerformance files =
     let contents = files |> Array.map File.ReadAllText
     let stopwatch = Stopwatch.StartNew()
     for str in contents do
-        doMinify str |> ignore
+        doMinify "perf test" str |> ignore<string>
     let time = stopwatch.Elapsed
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
