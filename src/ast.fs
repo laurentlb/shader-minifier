@@ -5,6 +5,7 @@ open Options.Globals
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
 
+[<StructuredFormatDisplay("{line}:{col}")>]
 type Location = { line: int; col: int }
 
 type Ident(name: string) =

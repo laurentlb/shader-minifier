@@ -604,7 +604,8 @@ module private RewriterImpl =
                 |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
             canBeRenamed && not isCalled && not funcInfo.funcType.isExternal
         let unused = [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo]
-        if not unused.IsEmpty then debug($"removing unused functions: " + String.Join(", ", unused |> List.map (fun fi -> fi.funcType)))
+        if not unused.IsEmpty then
+            debug($"removing unused functions: " + String.Join(", ", unused |> List.map (fun fi -> Printer.debugFunc fi.funcType)))
         let unused = unused |> List.map (fun fi -> fi.func) |> set
         let mutable edited = false
         let code = code |> List.filter (function
@@ -671,7 +672,7 @@ module private ArgumentInlining =
                         let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
                         match argExprs with
                         | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
-                            debug $"inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{funcInfo.funcType}'"
+                            debug $"{varDecl.decl.name.Loc}: inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{Printer.debugFunc funcInfo.funcType}'"
                             argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
                         | _ -> ()
                     | _ -> ()

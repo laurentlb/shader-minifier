@@ -297,6 +297,7 @@ type PrinterImpl(withLocations) =
 
     member _.ExprToS = exprToS
     member _.TypeToS = typeToS
+    member _.FunToS = funToS
     member _.PrintIndented tl = printIndented tl |> String.concat ""
     member _.WriteSymbols shader =
         let tlStrings = printIndented shader.code |> List.map stripIndentation
@@ -336,3 +337,5 @@ let debugIdent (ident: Ident) =
     match ident.Declaration with
     | Declaration.Variable rv -> debugDecl rv.decl
     | _ -> ident.OldName.ToString()
+
+let debugFunc (funcType: FunctionType) = (new PrinterImpl(false)).FunToS funcType
