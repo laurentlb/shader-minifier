@@ -36,5 +36,5 @@ int other(int a, int b, int c, int d) {
 float f(float x)
 {
 	float a = (x += 1.0, length(vec3(x)));
-	return a*a*a;
+	return a*a*sin((a*=a, a));
 }

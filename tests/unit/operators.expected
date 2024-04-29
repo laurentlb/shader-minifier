@@ -29,7 +29,7 @@
  "float f(float x)"
  "{"
    "float a=(x+=1.,length(vec3(x)));"
-   "return a*a*a;"
+   "return a*a*sin((a*=a,a));"
  "}",
 
 #endif
