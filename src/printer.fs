@@ -194,6 +194,8 @@ type PrinterImpl(withLocations) =
             let init =
                 match decl.init with
                 | None -> ""
+                // comma operators must be wrapped by parentheses, only in a decl.
+                | Some (FunCall (Op ",", _) as i) -> out "=(%s)" (exprToS indent i)
                 | Some i -> out "=%s" (exprToS indent i)
             out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
 

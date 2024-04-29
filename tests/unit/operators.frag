@@ -32,3 +32,9 @@ int no_parens2(int a, int b, int c) {
 int other(int a, int b, int c, int d) {
     return (a*b)*(c*d)*(a*b);
 }
+
+float f(float x)
+{
+	float a = (x += 1.0, length(vec3(x)));
+	return a*a*a;
+}
