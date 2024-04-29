@@ -129,7 +129,7 @@ type PrinterImpl(withLocations) =
             | Op op, [a1; a2] ->
                 let prec = precedence.[op]
                 let res =
-                    if prec = 1 then // "=", "+=", or other operator with right-associativity
+                    if prec = precedence.["="] then // "=", "+=", or other operator with right-associativity
                         out "%s%s%s" (exprToSLevel indent (prec+1) a1) op (exprToSLevel indent prec a2)
                     else
                         out "%s%s%s" (exprToSLevel indent prec a1) op (exprToSLevel indent (prec+1) a2)
