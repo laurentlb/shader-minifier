@@ -120,10 +120,6 @@ type PrinterImpl(withLocations) =
                             (nl (indent+1)) (exprToSLevel (indent+1) prec a2)
                             (nl (indent+1)) (exprToSLevel (indent+1) prec a3)
                 if prec < level then out "(%s)" res else res
-            // Function calls.
-            | Var op, _ ->
-                // We set level to 1 in case in case a comma operator is used in the argument list.
-                out "%s(%s)" (idToS op) (commaListToS (exprToSLevel indent 1) args)
             
             // Unary operators. _++ is prefix and $++ is postfix
             | Op op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel indent precedence.[op] a1) op.[1..]
@@ -133,20 +129,24 @@ type PrinterImpl(withLocations) =
             | Op op, [a1; a2] ->
                 let prec = precedence.[op]
                 let res =
-                    if prec = 1 then // "=", "+=", or other operator with right-associativity
+                    if prec = precedence.["="] then // "=", "+=", or other operator with right-associativity
                         out "%s%s%s" (exprToSLevel indent (prec+1) a1) op (exprToSLevel indent prec a2)
                     else
                         out "%s%s%s" (exprToSLevel indent prec a1) op (exprToSLevel indent (prec+1) a2)
                 if prec < level then out "(%s)" res
                 else res
-            | _ -> out "%s(%s)" (exprToS indent f) (commaListToS (exprToS indent) args)
+
+            // Function calls.
+            | _ -> // We set the level in case a comma operator is used in the argument list.
+                   out "%s(%s)" (exprToS indent f) (commaListToS (exprToSLevel indent (precedence.[","] + 1)) args)
         | Subscript(arr, ind) ->
             out "%s[%s]" (exprToS indent arr) (exprToSOpt indent "" ind)
         | Cast(id, e) ->
             // Cast seems to have the same precedence as unary minus
             out "(%s)%s" id.Name (exprToSLevel indent precedence.["_-"] e)
         | VectorExp(li) ->
-            out "{%s}" (commaListToS (exprToS indent) li)
+            // We set the level in case a comma operator is used in the argument list.
+            out "{%s}" (commaListToS (exprToSLevel indent (precedence.[","] + 1)) li)
         | Dot(e, field) ->
             out "%s.%s" (exprToSLevel indent precedence.["."] e) field
         | VerbatimExp s -> s
@@ -194,7 +194,8 @@ type PrinterImpl(withLocations) =
             let init =
                 match decl.init with
                 | None -> ""
-                | Some i -> out "=%s" (exprToS indent i)
+                | Some i -> // We set the level in case a comma operator is used in the argument list.
+                            out "=%s" (exprToSLevel indent (precedence.[","] + 1) i)
             out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
 
         if vars.IsEmpty then ""
