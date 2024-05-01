@@ -8,4 +8,5 @@ void main() {
     double half_pi = 1.5707963267948966;
     double minus_half_pi = -1.5707963267948966;
     double precise_pi = 3.14159265358979323846264338327950288419716939937510;
+	gl_FragColor = vec4(pi+minus_pi+tau+minus_tau+half_pi+minus_half_pi+precise_pi);
 }
