@@ -6,21 +6,21 @@ float simple_var_decl_reuse(float x)
   int b2=5+int(a);
   float c=a;
   sep+=vec3(0);
-  float c2=9.+a;
+  a=9.+a;
   int d=3+b+b2;
   sep+=vec3(0);
-  int d2=d+b2-b;
-  float e=c*c2;
+  b2=d+b2-b;
+  float e=c*a;
   sep+=vec3(0);
-  float e2=4.-c-c2;
-  int f=3*d*d2;
+  c=4.-c-a;
+  b=3*d*b2;
   sep+=vec3(0);
-  int f2=4/d2-d;
-  float g=e-float(f)+e2;
-  int g2=4.-g+e2+e,h=3*f-f2;
+  d=4/b2-d;
+  a=e-float(b)+c;
+  int g2=4.-a+c+e,h=3*b-d;
   sep+=vec3(0);
-  int h2=7*f2-f;
-  return length(sep)+float(h*h2)*g*g2*x+g2/h2-h;
+  d=7*d-b;
+  return length(sep)+float(h*d)*a*g2*x+g2/d-h;
 }
 float multidecl_var_decl_reuse(float x)
 {

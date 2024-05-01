@@ -41,10 +41,11 @@ void add(vec2 sda,vec2 sdb,out vec2 dst)
 }
 void dhexagonpattern(vec2 p,out float d,out vec2 ind)
 {
-  vec2 q=vec2(p.x*1.2,p.y+p.x*.6),pi=floor(q),pf=fract(q);
+  vec2 q=vec2(p.x*1.2,p.y+p.x*.6),pi=floor(q);
+  q=fract(q);
   float v=mod(pi.x+pi.y,3.),ca=step(1.,v),cb=step(2.,v);
-  vec2 ma=step(pf.xy,pf.yx);
-  d=dot(ma,1.-pf.yx+ca*(pf.x+pf.y-1.)+cb*(pf.yx-2.*pf.xy));
+  vec2 ma=step(q.xy,q.yx);
+  d=dot(ma,1.-q.yx+ca*(q.x+q.y-1.)+cb*(q.yx-2.*q.xy));
   ind=pi+ca-cb*ma;
   ind=vec2(ind.x/1.2,ind.y);
   ind=vec2(ind.x,ind.y-ind.x*.6);
@@ -66,18 +67,17 @@ void scene(vec3 x,out vec2 sdf)
   lfnoise(.5*x.y*c.xx,dis);
   vec2 sdb,ya=abs(x.xz-.4*dis*c.xy)+.045*c.yx-.065*c.xy;
   zextrude(x.y,-length(ya)+R,sdb.x);
-  float da;
-  stroke(sdb.x,.003,da);
+  stroke(sdb.x,.003,R);
   sdb.y=2.;
   vec2 ind;
   dhexagonpattern(vec2(56,12)*vec2(x.y,atan(ya.y,ya.x)),dis,ind);
   stroke(dis,.2,dis);
   stroke(sdb.x,.003*step(dis,0.),sdb.x);
-  sdf.x=max(sdf.x,-da);
+  sdf.x=max(sdf.x,-R);
   add(sdf,sdb,sdf);
-  float guard=-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.));
-  guard=abs(guard)+.01;
-  sdf.x=min(sdf.x,guard);
+  R=-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.));
+  R=abs(R)+.01;
+  sdf.x=min(sdf.x,R);
 }
 void normal(vec3 x,out vec3 n)
 {

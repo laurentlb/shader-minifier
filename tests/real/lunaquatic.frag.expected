@@ -41,17 +41,18 @@ float smoothrnd(vec2 x)
   x=mod(x,1e3);
   vec2 a=fract(x);
   x-=a;
-  vec2 u=a*a*(3.-2.*a);
-  return mix(mix(rnd(x+vec2(0)),rnd(x+vec2(1,0)),u.x),mix(rnd(x+vec2(0,1)),rnd(x+vec2(1)),u.x),u.y);
+  a=a*a*(3.-2.*a);
+  return mix(mix(rnd(x+vec2(0)),rnd(x+vec2(1,0)),a.x),mix(rnd(x+vec2(0,1)),rnd(x+vec2(1)),a.x),a.y);
 }
 float height(vec2 x)
 {
-  float maxV=Y.z-EXPLOSIONTIME,l=mix(1.,max(0.,artifactPos.w-artifactPos.y),1.-(maxV>0.&&length(x-artifactPos.xz)<maxV?
+  float maxV=Y.z-EXPLOSIONTIME;
+  maxV=mix(1.,max(0.,artifactPos.w-artifactPos.y),1.-(maxV>0.&&length(x-artifactPos.xz)<maxV?
     1.:
     0.))/pow(1./max(0.,1.-length(artifactPos.xz-x)*.8),2.);
   x+=length(x-ro.xy);
   x*=min(length(x-ro.xy)*5.,4.);
-  return caustic(x.x+Y.z*.75,x.y*.5,.3)*.006+caustic(x.x*.1+Y.z*.2,x.y*.1,.02)*.125-.15-l*2.;
+  return caustic(x.x+Y.z*.75,x.y*.5,.3)*.006+caustic(x.x*.1+Y.z*.2,x.y*.1,.02)*.125-.15-maxV*2.;
 }
 vec3 getWaterNormal(vec3 p)
 {
@@ -107,11 +108,12 @@ vec4 calcPlanet(vec3 ro,vec3 rd)
 vec3 calculateSky(vec3 ro,vec3 rd,int addPlanet)
 {
   vec3 color=max(vec3(0),(max(vec3(0),pow(dot(lightDir,rd),6.))*.7-rd.y)*mix(vec3(1,.5,0),vec3(1),min(1.,lightDir.y*1.5))+lightDir.y*3.);
-  float phi=atan(rd.x,rd.z),theta=acos(rd.y/length(rd)),coeff=smoothstep(0.,.5,norm(.5*smoothrnd(3e2*vec2(phi,theta)))+norm(.75*smoothrnd(5e2*vec2(phi,theta)))-1.25)*saturate(1.-lightDir.y*5.);
+  float phi=atan(rd.x,rd.z),theta=acos(rd.y/length(rd));
+  theta=smoothstep(0.,.5,norm(.5*smoothrnd(3e2*vec2(phi,theta)))+norm(.75*smoothrnd(5e2*vec2(phi,theta)))-1.25)*saturate(1.-lightDir.y*5.);
   if(addPlanet>0)
     {
       vec4 p=calcPlanet(ro,rd);
-      color+=coeff*saturate(1.-p.w)+p.xyz;
+      color+=theta*saturate(1.-p.w)+p.xyz;
     }
   rd.xy+=ro.xy*1e-4;
   color+=(calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.1)*3.)+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.2)*5.)*.1+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.4)*7.)*.1-calculateSkySub(normalize(rd+vec3(sin(Y.z*.2),0,0)*.5))*1.5)*saturate(rd.y+.5);
@@ -219,12 +221,13 @@ void main()
       rd=rotateY(rd,atan(dir.y,dir.x)-pi/2.);
     }
   lightDir=normalize(lightPos-ro);
-  float dist=length(ro-artifactPos.xyz)-1.,isoDistance=artifactPos.w==1.?
-    traceIso(ro,rd,dist,dist+2.):
+  t=length(ro-artifactPos.xyz)-1.;
+  t=artifactPos.w==1.?
+    traceIso(ro,rd,t,t+2.):
     FAR;
-  if(isoDistance<FAR)
+  if(t<FAR)
     {
-      ro+=isoDistance*rd;
+      ro+=t*rd;
       vec3 n=normalize(vec3(isoSurface(vec3(ro.x-1e-4,ro.yz))-isoSurface(vec3(ro.x+1e-4,ro.yz)),isoSurface(vec3(ro.x,ro.y-1e-4,ro.z))-isoSurface(vec3(ro.x,ro.y+1e-4,ro.z)),isoSurface(vec3(ro.xy,ro.z-1e-4))-isoSurface(vec3(ro.xy,ro.z+1e-4))));
       rd=reflect(rd,n);
     }

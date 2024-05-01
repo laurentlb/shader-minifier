@@ -221,10 +221,10 @@ vec3 Clouds(vec3 sky,vec3 rd)
   rd.y=v;
   rd.xz=rd.xz*v-time*8.;
   rd.xz*=4e-4;
-  float f=Noise3d(rd.xzz*3.)*Noise3d(rd.zxx*1.3)*2.5;
-  f=f*pow(ele,.5)*2.;
-  f=clamp(f-.15,.01,1.);
-  return mix(sky,vec3(1),f);
+  v=Noise3d(rd.xzz*3.)*Noise3d(rd.zxx*1.3)*2.5;
+  v=v*pow(ele,.5)*2.;
+  v=clamp(v-.15,.01,1.);
+  return mix(sky,vec3(1),v);
 }
 vec3 Sky(vec3 rd,vec3 ligt)
 {
@@ -249,29 +249,31 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   vec3 ro=vec3(smoothstep(0.,1.,tri(time*1.5)*.3)*1.5,smoothstep(0.,1.,tri(time*3.)*3.)*.08,-time*3.5-130.);
   ro.y-=camHeight(ro.zx)-.4;
   mo.x+=smoothstep(.7,1.,sin(time*.35))*.5-1.5-smoothstep(-.7,-1.,sin(time*.35))*.5;
-  vec3 eyedir=normalize(vec3(cos(mo.x),mo.y*2.-.05+sin(time*.5)*.1,sin(mo.x))),rightdir=normalize(vec3(cos(mo.x+1.5708),0,sin(mo.x+1.5708))),rd=normalize(p.x*rightdir+p.y*normalize(cross(rightdir,eyedir))+eyedir),ligt=normalize(vec3(1.5,.9,-.5));
-  float fg,rz=march(ro,rd,fg,fragCoord);
-  vec3 sky=Sky(rd,ligt),col=sky;
+  vec3 eyedir=normalize(vec3(cos(mo.x),mo.y*2.-.05+sin(time*.5)*.1,sin(mo.x))),rightdir=normalize(vec3(cos(mo.x+1.5708),0,sin(mo.x+1.5708)));
+  rightdir=normalize(p.x*rightdir+p.y*normalize(cross(rightdir,eyedir))+eyedir);
+  eyedir=normalize(vec3(1.5,.9,-.5));
+  float fg,rz=march(ro,rightdir,fg,fragCoord);
+  vec3 sky=Sky(rightdir,eyedir),col=sky;
   if(rz<FAR)
     {
-      vec3 pos=ro+rz*rd,nor=normal(pos,rz);
+      vec3 pos=ro+rz*rightdir,nor=normal(pos,rz);
       float d=distance(pos,ro);
       nor=bump(pos,nor,d);
-      float shd=shadow(pos,ligt),dif=clamp(dot(nor,ligt),0.,1.);
-      vec3 ref=reflect(rd,nor);
-      float fre=pow(clamp(1.+dot(rd,nor),0.,1.),3.);
+      float shd=shadow(pos,eyedir),dif=clamp(dot(nor,eyedir),0.,1.);
+      vec3 ref=reflect(rightdir,nor);
+      float fre=pow(clamp(1.+dot(rightdir,nor),0.,1.),3.);
       col=vec3(.75);
-      col=col*dif*shd+pow(clamp(dot(ref,ligt),0.,1.),5.)*2.*fre*shd*SUN_COLOUR+abs(nor.y)*vec3(.12,.13,.13);
+      col=col*dif*shd+pow(clamp(dot(ref,eyedir),0.,1.),5.)*2.*fre*shd*SUN_COLOUR+abs(nor.y)*vec3(.12,.13,.13);
       d=Occ(pos+nor*3.);
       col*=vec3(d,d,min(d*1.2,1.));
       col=mix(col,sky,smoothstep(FAR-25.,FAR,rz));
     }
   else
-     col=Clouds(col,rd);
+     col=Clouds(col,rightdir);
   col=mix(col,vec3(.6,.65,.7),fg);
   col=mix(col,vec3(.5),-.3);
   col=sqrt(col);
-  float f=smoothstep(0.,3.,iTime)*.5;
-  col*=f+f*pow(70.*q.x*q.y*(1.-q.x)*(1.-q.y),.2);
+  fg=smoothstep(0.,3.,iTime)*.5;
+  col*=fg+fg*pow(70.*q.x*q.y*(1.-q.x)*(1.-q.y),.2);
   fragColor=vec4(col,1);
 }
