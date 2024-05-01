@@ -17,11 +17,11 @@ float simple_var_decl_reuse(float x)
 	sep += vec3(0.); // prevents squeezeConsecutiveDeclarations
 	int f2 = 4/d2-d;
 	float g = e-float(f)+e2;
-	int g2 = 4.-g+e2+e;
+	int g2 = int(4.-g+e2+e);
 	int h = 3*f-f2;
 	sep += vec3(0.); // prevents squeezeConsecutiveDeclarations
 	int h2 = 7*f2-f;
-	return length(sep)+float(h*h2)*g*g2*x + g2/h2-h;
+	return length(sep)+float(h*h2)*g*float(g2)*x + float(g2/h2-h);
 }
 float multidecl_var_decl_reuse(float x)
 {
@@ -33,5 +33,5 @@ float multidecl_var_decl_reuse(float x)
 	int f = 3*d*d2, f2 = 4/d2-d;
 	float g = e-float(f)+e2, g2 = 4.-g+e2+e;
 	int h = 3*f-f2, h2 = 7*f2-f;
-	return float(h*h2)*g*g2*x + g2/h2-h;
+	return float(h*h2)*g*g2*x + g2/float(h2-h);
 }
