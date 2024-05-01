@@ -3,8 +3,9 @@
 float result;
 void main()
 {
-  float x=.5,a=.6*x*x;
-  result=a;
+  float x=.5;
+  x=.6*x*x;
+  result=x;
 }
 int arithmetic()
 {
@@ -16,13 +17,14 @@ int vars(int arg,int arg2)
 }
 int arithmetic2()
 {
-  int a=2,b=3,c=a+b;
-  return 4*a*c;
+  int a=2,b=3;
+  b=a+b;
+  return 4*a*b;
 }
 int unusedVars()
 {
-  int a=arithmetic(),b=13,c=10;
-  return c*3;
+  int a=(arithmetic(),10);
+  return a*3;
 }
 int unusedVars2()
 {
@@ -31,8 +33,9 @@ int unusedVars2()
 }
 int multiPass()
 {
-  int one=1,two=one*2;
-  return two+1;
+  int one=1;
+  one*=2;
+  return one+1;
 }
 float multiPass2()
 {
@@ -65,8 +68,9 @@ uniform int time;
 in int sync;
 int dependOnConst()
 {
-  int x=time+sync,y=x*2;
-  return y*3;
+  int x=time+sync;
+  x*=2;
+  return x*3;
 }
 float noinl179(float x)
 {

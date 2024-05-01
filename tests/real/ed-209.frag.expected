@@ -118,9 +118,9 @@ MarchData headLower(vec3 p)
   p=op;
   p.y=abs(p.y+.16)-.06;
   p.z-=-1.1;
-  float cheeks=max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.));
-  cheeks=max(cheeks,p.z+.2);
-  r.d=max(r.d,-cheeks);
+  roof=max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.));
+  roof=max(roof,p.z+.2);
+  r.d=max(r.d,-roof);
   setBodyMaterial(r);
   return r;
 }
@@ -146,10 +146,10 @@ MarchData gunPod(vec3 p)
   d=min(d,sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
   if(d<r.d)
     d=max(d,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=d,r.mat=vec3(.02);
-  float fs=fireShock();
-  if(fs>.5)
+  bump=fireShock();
+  if(bump>.5)
     {
-      d=sdCappedCylinder(pp,.01+pp.z*.05,fract(fs*3322.423)*.5+.9);
+      d=sdCappedCylinder(pp,.01+pp.z*.05,fract(bump*3322.423)*.5+.9);
       if(d<r.d)
         r.d=d,r.mat=vec3(1),glow+=.1/(.01+d*d*4e2);
     }
@@ -205,8 +205,8 @@ MarchData waist(vec3 p)
   r.d=min(r.d,sdBox(pp,vec3(.24,.2,.14+.2*pp.y)));
   p=pp;
   pp.xz=abs(pp.xz)-vec2(.12,.25);
-  float pistons=min(sdCappedCylinder(pp.xzy,.1,.325),sdCappedCylinder(pp.xzy,.05,.5));
-  r.d=min(r.d,max(pistons,pp.y));
+  bump=min(sdCappedCylinder(pp.xzy,.1,.325),sdCappedCylinder(pp.xzy,.05,.5));
+  r.d=min(r.d,max(bump,pp.y));
   p.y+=.68;
   r.d=min(r.d,sdBox(p,vec3(sign(abs(p.y)-.04)*.005+.26,.2,.34)));
   if(d<r.d)
@@ -234,14 +234,14 @@ MarchData legs(vec3 p)
   pp.xz=abs(pp.xz)-vec2(.12,.25);
   p.y+=.68;
   p.xy=abs(p.xy)-.12;
-  float silver=sdBox(p,vec3(.07,.05,1.2));
+  legAngle=sdBox(p,vec3(.07,.05,1.2));
   cp-=vec3(0,-.7,0);
   r.d=sdBox(cp-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
   cp.z+=1.;
   r.d=min(r.d,sdChamferedCube(cp.xzy,vec2(.28-sign(abs(cp.z)-.3)*.01,.5).xyx));
   r.d=min(r.d,foot(cp));
-  if(silver<r.d)
-    r.d=silver,r.mat=vec3(.8);
+  if(legAngle<r.d)
+    r.d=legAngle,r.mat=vec3(.8);
   return r;
 }
 MarchData ed209(vec3 p)
@@ -284,12 +284,12 @@ MarchData room(vec3 p)
   p.x-=frameInner.x;
   p.xz*=rot(doorOpen*2.1);
   p.x+=doorWidth;
-  float door=sdBox(p,vec3(doorWidth,frameInner.yz));
+  doorHole=sdBox(p,vec3(doorWidth,frameInner.yz));
   p=abs(p)-vec3(doorWidth*.5,1.1,.14);
-  door=max(door,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1))));
-  float d=min(doorFrame,door);
-  if(d<r.d)
-    r.d=d,r.mat=vec3(.02,.02,.024),r.specPower=10.;
+  doorHole=max(doorHole,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1))));
+  doorFrame=min(doorFrame,doorHole);
+  if(doorFrame<r.d)
+    r.d=doorFrame,r.mat=vec3(.02,.02,.024),r.specPower=10.;
   return r;
 }
 MarchData map(vec3 p)
@@ -331,8 +331,8 @@ vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
   vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
   float primary=max(0.,dot(sunDir,n));
   primary*=mix(.2,1.,calcShadow(p,sunPos));
-  vec3 lig=((primary+max(0.,dot(-sunDir,n))*.2)*(map(p+.33*n).d/.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
-  return mix(data.mat*lig,vec3(.01),smoothstep(.7,1.,1.+dot(rd,n)))*exp(-length(p)*.05);
+  sunDir=((primary+max(0.,dot(-sunDir,n))*.2)*(map(p+.33*n).d/.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
+  return mix(data.mat*sunDir,vec3(.01),smoothstep(.7,1.,1.+dot(rd,n)))*exp(-length(p)*.05);
 }
 vec3 getSceneColor(vec3 ro,vec3 rd)
 {

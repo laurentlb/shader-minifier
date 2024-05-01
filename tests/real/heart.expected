@@ -13,6 +13,7 @@ pub const HEART_FRAG: &'static [u8] = b"\
    float m=mod(v,2.)/2.,a=pow(m,.2)*.5+.5;\
    a-=a*.2*sin(m*6.2831*5.)*exp(-m*6.);\
    f*=vec2(.5,1.5)+a*vec2(.5,-.5);\
-   float r=atan(f.x,f.y)/3.141593,s=length(f),e=abs(r),x=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e);\
-   gl_FragColor=vec4(step(s,x)*pow(1.-s/x,.25),0,0,1);\
+   a=atan(f.x,f.y)/3.141593;\
+   float r=length(f),e=abs(a),x=(13.*e-22.*e*e+10.*e*e*e)/(6.-5.*e);\
+   gl_FragColor=vec4(step(r,x)*pow(1.-r/x,.25),0,0,1);\
  }\0";
