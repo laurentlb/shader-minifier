@@ -32,6 +32,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/precedence.frag.expected tests/unit/precedence.frag
 --no-remove-unused --format indented -o tests/unit/interface_block.frag.expected tests/unit/interface_block.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/ternary.frag.expected tests/unit/ternary.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/reuse-var.frag.expected tests/unit/reuse-var.frag
 
 # Unused removal tests
 
