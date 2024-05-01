@@ -1,7 +1,8 @@
 #version 400
 
+out vec4 fragColor;
 void main()
 {
   double pi=acos(-1.),minus_pi=-acos(-1.),tau=2.*acos(-1.),minus_tau=-2.*acos(-1.),half_pi=acos(0.),minus_half_pi=-acos(0.),precise_pi=acos(-1.);
-  gl_FragColor=vec4(pi+minus_pi+tau+minus_tau+half_pi+minus_half_pi+precise_pi);
+  fragColor=vec4(pi+minus_pi+tau+minus_tau+half_pi+minus_half_pi+precise_pi);
 }

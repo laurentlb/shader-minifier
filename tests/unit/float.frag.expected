@@ -27,10 +27,11 @@
    "float a=0.,b=0.,c=0.;"
    "return a*x+b*x+c*x;"
  "}"
- "void main(float x)"
+ "float x;"
+ "void main()"
  "{"
    "float f1=1.5,f2=3e-7,f3=.42,f6=-.002,f7=2e-9,f8=2e6,f9=2e10;"
-   "gl_FragColor=vec4(f1*x+f2*x+f3*x+f4*x+f5*x+f6*x+f7*x+f8*x+f9*x);"
+   "gl_FragColor=vec4(f1*x+f2*x+f3*x+f6*x+f7*x+f8*x+f9*x);"
  "}",
 
 #endif

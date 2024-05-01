@@ -33,7 +33,9 @@ float zero(float x) {
   return a*x+b*x+c*x;
 }
 
-void main(float x)
+float x;
+
+void main()
 {
 float f1 = 1.5;
 float f2 = .0000003;
@@ -43,5 +45,5 @@ float f7 = 2E-9;
 float f8 = 2E+6;
 float f9 = 2e10;
 
-gl_FragColor=vec4(f1*x+f2*x+f3*x+f4*x+f5*x+f6*x+f7*x+f8*x+f9*x);
+gl_FragColor=vec4(f1*x+f2*x+f3*x+f6*x+f7*x+f8*x+f9*x);
 }
