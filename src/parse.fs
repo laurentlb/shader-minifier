@@ -222,7 +222,10 @@ type private ParseImpl() =
         let arraySizes = many (between (ch '[') (ch ']') expr)
         pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
-    let qualifier = if options.hlsl then hlslQualifier else glslQualifier
+    let qualifier = parse {
+        let! ret = if options.hlsl then hlslQualifier else glslQualifier
+        return ret
+    }
     let specifiedType = parse {
         let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
         return ret
