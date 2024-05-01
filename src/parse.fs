@@ -185,8 +185,7 @@ type private ParseImpl() =
         (structSpecifier .>> semi) |>> Ast.TypeDecl
 
     // eg. "const out int", "uniform float", "int[2][3]"
-    let specifiedTypeGLSL =
-        let storage = ["const"; "inout"; "in"; "out"; "centroid"
+    let glslStorage = ["const"; "inout"; "in"; "out"; "centroid"
                        "patch"; "sample"; "uniform"; "buffer"; "shared"; "coherent"
                        "volatile"; "restrict"; "readonly"; "writeonly"; "subroutine"
                        "attribute"; "varying"
@@ -195,15 +194,15 @@ type private ParseImpl() =
                        "smooth"; "flat"; "noperspective"
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
-        let layout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
-                     |>> (function s -> "layout(" + s + ")")
-        let qualifier = many (storage <|> layout)
+    let glslLayout = keyword "layout" >>. ch '(' >>. manyCharsTill anyChar (ch ')')
+                      |>> (function s -> "layout(" + s + ")")
+    let glslQualifier = many (glslStorage <|> glslLayout)
+    let specifiedTypeGLSL =
         let typeSpec = structSpecifier <|> (ident |>> (fun id -> Ast.TypeName id.Name))
         let arraySizes = many (between (ch '[') (ch ']') expr)
-        pipe3 qualifier typeSpec arraySizes (fun tyQ name sizes -> Ast.makeType name tyQ sizes)
+        pipe3 glslQualifier typeSpec arraySizes (fun tyQ name sizes -> Ast.makeType name tyQ sizes)
 
-    let specifiedTypeHLSL =
-        let storage = ["extern"; "nointerpolation"; "precise"; "shared"; "groupshared"
+    let hlslStorage = ["extern"; "nointerpolation"; "precise"; "shared"; "groupshared"
                        "static"; "uniform"; "volatile"; "const"; "row_major"; "column_major"
                        "inline"; "target"
                        "out"; "in"; "inout"
@@ -213,15 +212,17 @@ type private ParseImpl() =
                        "point"; "line"; "triangle"; "lineadj"; "triangleadj"
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
-        let qualifier = many storage
+    let hlslQualifier = many hlslStorage
+    let specifiedTypeHLSL =
         let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
                    |> opt
                    |>> (function Some s -> "<" + s + ">" | None -> "")
         let typeName = pipe2 (ident |>> (fun id -> id.Name)) generic (+)
         let typeSpec = structSpecifier <|> (typeName |>> Ast.TypeName)
         let arraySizes = many (between (ch '[') (ch ']') expr)
-        pipe4 qualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
+        pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
+    let qualifier = if options.hlsl then hlslQualifier else glslQualifier
     let specifiedType = parse {
         let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
         return ret
@@ -347,6 +348,9 @@ type private ParseImpl() =
     let precision =
          keyword "precision" >>. (specifiedType |>> Ast.Precision) .>> ch ';'
 
+    let loneLayoutQualifier =
+        qualifier .>> ch ';' |>> (fun list -> String.concat " " list + ";")
+
     let toplevel =
         let decl = declaration .>> ch ';'
         let item = choice [
@@ -356,6 +360,7 @@ type private ParseImpl() =
                     attempt decl |>> Ast.TLDecl
                     structDecl
                     attempt interfaceBlock
+                    loneLayoutQualifier |>> Ast.TLVerbatim
                     precision
                     pfunction
         ]
