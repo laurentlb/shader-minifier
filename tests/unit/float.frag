@@ -1,18 +1,20 @@
-void floatPrecision() {
+float floatPrecision(float x) {
   float a = 0.00000012345;
   float b = 1.234567891234;
   float c = 1234567.891234;
   float d = 123456700000000.;
+  return a*x+b*x+c*x+d*x;
 }
 
-void largeNumbers() {
+float largeNumbers(float x) {
   float a = 4.1e8;
   float b = 4.2e10;
   float c = 4.3e12;
   float d = 4.4e14;
+  return a*x+b*x+c*x+d*x;
 }
 
-void smallNumbers() {
+float smallNumbers(float x) {
   float a = 4e-1;
   float b = 4e-2;
   float c = 4e-3;
@@ -21,13 +23,17 @@ void smallNumbers() {
   float f = 4e-10;
   float g = 4e-12;
   float h = 4e-14;
+  return a*x+b*x+c*x+d*x+e*x+f*x+g*x+h*x;
 }
 
-void zero() {
+float zero(float x) {
   float a = 0.;
   float b = .0;
   float c = -.0;
+  return a*x+b*x+c*x;
 }
+
+float x;
 
 void main()
 {
@@ -39,5 +45,5 @@ float f7 = 2E-9;
 float f8 = 2E+6;
 float f9 = 2e10;
 
-gl_FragColor=vec4(0.);
+gl_FragColor=vec4(f1*x+f2*x+f3*x+f6*x+f7*x+f8*x+f9*x);
 }

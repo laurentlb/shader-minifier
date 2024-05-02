@@ -8,6 +8,14 @@ open Options.Globals
 // information in the AST nodes, e.g. find which variables are modified,
 // which declarations can be inlined.
 
+let varUsesInStmt stmt = 
+    let mutable idents = []
+    let collectLocalUses _ = function
+        | Var v as e -> idents <- v :: idents; e
+        | e -> e
+    mapStmt BlockLevel.Unknown (mapEnvExpr collectLocalUses) stmt |> ignore<MapEnv * Stmt>
+    idents
+
 module private VariableInlining =
 
     // Return the list of variables used in the statements, with the number of references.
@@ -21,14 +29,6 @@ module private VariableInlining =
         for expr in stmtList do
             mapStmt BlockLevel.Unknown (mapEnvExpr collectLocalUses) expr |> ignore<MapEnv * Stmt>
         counts
-
-    let collectReferencesSet expr  = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
-        let result = HashSet<Ident>()
-        let collectLocalUses _ = function
-            | Var v as e -> result.Add(v) |> ignore<bool>; e
-            | e -> e
-        mapExpr (mapEnvExpr collectLocalUses) expr |> ignore<Expr>
-        result
 
     let isEffectivelyConst (ident: Ident) =
         match ident.Declaration with
@@ -59,8 +59,8 @@ module private VariableInlining =
                     | None -> ()
                     | Some init ->
                         localExpr <- init :: localExpr
-                        let deps = collectReferencesSet init
-                        let isConst = deps |> Seq.forall isEffectivelyConst
+                        let isConst = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
+                            varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
                         localDefs.[def.name.Name] <- (def.name, isConst)
             | Expr e
             | Jump (_, Some e) -> localExpr <- e :: localExpr

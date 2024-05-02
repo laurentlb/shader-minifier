@@ -416,6 +416,61 @@ module private RewriterImpl =
         | Switch (_e, cases) -> cases |> List.forall (fun (_label, stmts) -> hasNoContinue stmts)
         | _ -> true)
 
+    // Reuse an existing local variable declaration that won't be used anymore, instead of introducing a new one.
+    // The reused identifier gets compressed better, and the declaration is sometimes removed.
+    // float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
+    let reuseExistingVarDecl b =
+        let tryReplaceWithPrecedingAndFollowing f (xs : Stmt list) =
+            let rec go f preceding = function
+                | head :: tail ->
+                    match f (preceding, head, tail) with
+                    | None -> head :: go f (head :: preceding) tail // preceding is reversed, that's good
+                    | Some xs -> xs @ tail
+                | [] -> []
+            go f [] xs
+        b |> tryReplaceWithPrecedingAndFollowing (function
+        | (preceding2, Decl (ty2, declElts), following2) ->
+            let findAssignmentReplacementFor declElt2 =
+                let compatibleDeclElts = preceding2 |> List.collect (function
+                    // The previous declaration must have the same type.
+                    | Decl (ty1, declElts1) when ty2 = ty1 ->
+                        let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
+                            // The first variable must not be used after the second is declared.
+                            Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                        declElts1 |> List.filter (fun declElt1 ->
+                            // The previous declaration must have the same size and semantics
+                            declElt1.size = declElt2.size &&
+                            declElt1.semantics = declElt2.semantics &&
+                            firstIsNotUsedAfterSecondDeclared declElt1 following2
+                        )
+                    | _ -> [])
+                match compatibleDeclElts |> List.tryHead with
+                | Some (declElt1) ->
+                    debug $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
+                    for v in Analyzer.varUsesInStmt (Block following2) do // Rename all uses of var2 to use var1 instead.
+                        if v.Name = declElt2.name.Name then
+                            v.Rename(declElt1.name.Name)
+                    match declElt2.init with
+                    | Some init -> Some [Expr (FunCall (Op "=", [Var declElt1.name; init]))]
+                    | None -> Some []
+                | _ -> None
+            match declElts, (declElts |> List.rev) with
+            //| [declElt2], _  -> // float d1=f(); ...; float d2=g();  ->  ...; d1=g();
+            //    match findAssignmentReplacementFor declElt2 with
+            //    | Some stmts -> Some stmts // Replace the Decl with the assignment. Largest win
+            //    | None -> None
+            //| (declElt2 :: others), _ -> // float d1=f(); ...; float d2=g(),d3=h();  ->  ...; d1=g(); float d3=h();
+            //    match findAssignmentReplacementFor declElt2 with
+            //    | Some stmts -> Some (stmts @ [Decl (ty2, others)]) // Keep the Decl, add an assignment before it.
+            //    | None -> None
+            //| _, (declElt2 :: others) -> // float d1=f(); ...; float d3=h(),d2=g();  ->  ...; float d3=h(); d1=g();
+            //    match findAssignmentReplacementFor declElt2 with
+            //    | Some stmts -> Some (Decl (ty2, others) :: stmts) // Keep the Decl, add an assignment after it.
+            //    | None -> None
+            // For a decl sandwiched between others, we could consider moving the assignment into a comma-expr of the init of the next decl, but this adds parentheses.
+            | _ -> None
+        | _ -> None)
+
     let simplifyBlock blockLevel stmts = 
         let b = stmts
         // Avoid some optimizations when there are preprocessor directives.
@@ -521,6 +576,12 @@ module private RewriterImpl =
             | stmt :: rest -> stmt :: replaceIfReturnsWithReturnTernary rest
             | stmts -> stmts
         let b = replaceIfReturnsWithReturnTernary b
+
+        let b =
+            // We ensure control flow analysis is trivial by only doing this at the root block level.
+            if blockLevel <> BlockLevel.FunctionRoot || hasPreprocessor
+            then b
+            else reuseExistingVarDecl b
 
         // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
         let b = squeezeConsecutiveDeclarations b

@@ -8,10 +8,11 @@
 
 // tests/unit/operators.frag
  "#version 330\n"
- "void main()"
+ "float notmain()"
  "{"
    "int a=11,b=7,c=2;"
    "float f=1.4/3.,g=mod(8.,3.),z=122121;"
+   "return a+b+c+f+g+z;"
  "}"
  "int no_parens(int a,int b,int c)"
  "{"

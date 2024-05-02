@@ -7,26 +7,31 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/float.frag
- "void floatPrecision()"
+ "float floatPrecision(float x)"
  "{"
    "float a=1.2345e-7,b=1.234567891234,c=1234567.891234,d=1.234567e14;"
+   "return a*x+b*x+c*x+d*x;"
  "}"
- "void largeNumbers()"
+ "float largeNumbers(float x)"
  "{"
    "float a=4.1e8,b=4.2e10,c=4.3e12,d=4.4e14;"
+   "return a*x+b*x+c*x+d*x;"
  "}"
- "void smallNumbers()"
+ "float smallNumbers(float x)"
  "{"
    "float a=.4,b=.04,c=.004,d=4e-4,e=4e-8,f=4e-10,g=4e-12,h=4e-14;"
+   "return a*x+b*x+c*x+d*x+e*x+f*x+g*x+h*x;"
  "}"
- "void zero()"
+ "float zero(float x)"
  "{"
    "float a=0.,b=0.,c=0.;"
+   "return a*x+b*x+c*x;"
  "}"
+ "float x;"
  "void main()"
  "{"
    "float f1=1.5,f2=3e-7,f3=.42,f6=-.002,f7=2e-9,f8=2e6,f9=2e10;"
-   "gl_FragColor=vec4(0);"
+   "gl_FragColor=vec4(f1*x+f2*x+f3*x+f6*x+f7*x+f8*x+f9*x);"
  "}",
 
 #endif

@@ -1,6 +1,6 @@
 #version 330
 
-void main()
+float notmain()
 {
   int a = 1 + 2 * 3 + 4;
   int b = 14 / 2;
@@ -18,6 +18,8 @@ void main()
     (1. >= 2. ? 1 : 2) * 1000 +
 	(1. == 2. ? 1 : 2) * 10000 +
 	(1. != 2. ? 1 : 2) * 100000;
+
+  return a+b+c+f+g+z;
 }
 
 int no_parens(int a, int b, int c) {
