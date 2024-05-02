@@ -17,20 +17,27 @@ float simple_var_decl_reuse(float x)
   sep+=vec3(0);
   d=4/b2-d;
   a=e-float(b)+c;
-  int g2=int(4.-a+c+e),h=3*b-d;
+  b2=int(4.-a+c+e);
+  int h=3*b-d;
   sep+=vec3(0);
   d=7*d-b;
-  return length(sep)+float(h*d)*a*float(g2)*x+float(g2/d-h);
+  return length(sep)+float(h*d)*a*float(b2)*x+float(b2/d-h);
 }
 float multidecl_var_decl_reuse(float x)
 {
   float a=1.+x;
   int b=3+int(x),b2=5+int(a);
-  float c=a,c2=9.+a;
-  int d=3+b+b2,d2=d+b2-b;
-  float e=c*c2,e2=4.-c-c2;
-  int f=3*d*d2,f2=4/d2-d;
-  float g=e-float(f)+e2,g2=4.-g+e2+e;
-  int h=3*f-f2,h2=7*f2-f;
-  return float(h*h2)*g*g2*x+g2/float(h2-h);
+  a=a;
+  float c2=9.+a;
+  b=3+b+b2;
+  b2=d+b2-b;
+  c2=a*c2;
+  a=4.-a-c2;
+  b=3*b*b2;
+  b2=4/b2-b;
+  c2=c2-float(b)+a;
+  a=4.-g+a+c2;
+  b=3*b-b2;
+  b2=7*b2-b;
+  return float(b*b2)*c2*a*x+a/float(b2-b);
 }

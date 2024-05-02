@@ -280,16 +280,17 @@ MarchData room(vec3 p)
       if(ocp<.3)
         r.mat=vec3(.39,.57,.71);
     }
-  float doorFrame=max(sdBox(p,frameInner+vec3(.4,.4,.1)),-doorHole),doorWidth=frameInner.x*.5;
+  doorHole=max(sdBox(p,frameInner+vec3(.4,.4,.1)),-doorHole);
+  backWall=frameInner.x*.5;
   p.x-=frameInner.x;
   p.xz*=rot(doorOpen*2.1);
-  p.x+=doorWidth;
-  doorHole=sdBox(p,vec3(doorWidth,frameInner.yz));
-  p=abs(p)-vec3(doorWidth*.5,1.1,.14);
-  doorHole=max(doorHole,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1))));
-  doorFrame=min(doorFrame,doorHole);
-  if(doorFrame<r.d)
-    r.d=doorFrame,r.mat=vec3(.02,.02,.024),r.specPower=10.;
+  p.x+=backWall;
+  float door=sdBox(p,vec3(backWall,frameInner.yz));
+  p=abs(p)-vec3(backWall*.5,1.1,.14);
+  door=max(door,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1))));
+  door=min(doorHole,door);
+  if(door<r.d)
+    r.d=door,r.mat=vec3(.02,.02,.024),r.specPower=10.;
   return r;
 }
 MarchData map(vec3 p)

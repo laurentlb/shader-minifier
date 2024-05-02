@@ -9,15 +9,17 @@
 // tests/unit/many_variables.frag
  "int L(float L,float K,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
  "{"
-   "float M=L,f=K,N=J,O=I,P=H,Q=G;"
-   "int R=1,S=2,T=3,U=4,V=5,W=6,X=7,Y=8;"
-   "float i=F,Z=E,_=D,a=C,b=B,c=A;"
-   "int d=1,e=2,g=3,h=4,j=5,k=6,l=7,m=8;"
-   "i=0.;"
-   "int n=1,o=2,p=3,q=4,r=5,s=6,t=7,u=8;"
-   "i=0.;"
-   "int v=1,w=2,x=3,y=4,z=5,at=6,ai=7,aA=8;"
-   "return Y+m+u+aA;"
+   "float i=L,f=K,M=J,N=I,O=H,P=G;"
+   "int r=1,Q=2,R=3,S=4,T=5,U=6,V=7,W=8;"
+   "i=A;"
+   "r=4;"
+   "r=5;"
+   "int X=6,Y=7,Z=8;"
+   "float _=0.;"
+   "int a=1,b=2,c=3,d=4,e=5,g=6,h=7,j=8;"
+   "float k=0.;"
+   "int l=1,m=2,n=3,o=4,p=5,q=6,s=7,t=8;"
+   "return W+Z+j+t;"
  "}",
 
 #endif

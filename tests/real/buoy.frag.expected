@@ -144,11 +144,12 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   albedo=mix(vec3(.04),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.6)));
   albedo=mix(vec3(1,.8,.08),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
   albedo*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
-  vec3 specular=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1),rr=reflect(ray,norm);
-  specular+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
+  lightDir=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1);
+  vec3 rr=reflect(ray,norm);
+  lightDir+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
   aa=pow(1.-abs(dot(norm,ray)),5.);
   aa=mix(.001,1.,aa);
-  return mix(albedo,specular,aa);
+  return mix(albedo,lightDir,aa);
 }
 float OceanDistanceField(vec3 pos)
 {

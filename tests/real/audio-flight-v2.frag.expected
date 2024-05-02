@@ -124,43 +124,49 @@ vec2 map(vec3 p,float sg)
     10.;
   pModPolar(q.xy,pid);
   pModPolar(s.xy,pid*.5);
-  vec3 r=s,fs=s-vec3(2.85,0,0);
-  r=vec3(abs(r.x),abs(r.y),r.z);
+  o=s;
+  vec3 fs=s-vec3(2.85,0,0);
+  o=vec3(abs(o.x),abs(o.y),o.z);
   fs.z*=2.;
-  vec2 center=floor(fs.xz)+.5,neighbour=center+edge(fs.xz-center);
-  float chs=floor(center.y),height=texture(iChannel0,vec2(mod(chs,16.)*.0465,.1)).x;
+  tun=floor(fs.xz)+.5;
+  vec2 neighbour=center+edge(fs.xz-center);
+  pid=floor(tun.y);
+  float height=texture(iChannel0,vec2(mod(chs,16.)*.0465,.1)).x;
   height=smoothstep(.001,1.,height);
   ga=height;
-  pid=pMod(s.z,7.25);
-  o=pMod(q,7.25);
-  pid=mod(pid,2.);
-  iqd=o.x;
-  float zprs=mod(chs,tm<8.?
+  float ids=pMod(s.z,7.25);
+  vec3 qid=pMod(q,7.25);
+  ids=mod(ids,2.);
+  iqd=qid.x;
+  pid=mod(pid,tm<8.?
     tm<4.?
       tm<4.?
         2.:
         2.:
       5.:
-    floor(height*1.45)),d4a=length(r.xy-vec2(2.5,1.75))-.1,d4=length(r.xy-vec2(2.5,1.75))-.04+.027+.027*sin(r.z-time*4.5);
+    floor(height*1.45));
+  float d4a=length(o.xy-vec2(2.5,1.75))-.1,d4=length(o.xy-vec2(2.5,1.75))-.04+.027+.027*sin(o.z-time*4.5);
   if(d4<res.x)
     res=vec2(d4,12),g_hp=p;
-  tun=fragtail(q);
-  tun.x=max(tun.x,-d4a);
+  vec2 d1=fragtail(q);
+  d1.x=max(d1.x,-d4a);
   s.z=abs(s.z);
   d4a=sdCap(s-vec3(2.45,-.58,2.725));
-  if(pid<2.)
-    tun.x=min(d4a,tun.x);
-  if(tun.x<res.x)
-    res=tun.xy,g_hp=p;
-  float me=fBox(fs-vec3(0,0,center.y),vec3(.05,.15+height,.25)),next=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25)),dlt=min(me,next);
-  if(dlt<res.x)
-    res=vec2(dlt,4),g_hp=p;
+  if(ids<2.)
+    d1.x=min(d4a,d1.x);
+  if(d1.x<res.x)
+    res=d1.xy,g_hp=p;
+  height=fBox(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25));
+  height=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25));
+  height=min(me,next);
+  if(height<res.x)
+    res=vec2(height,4),g_hp=p;
   if(sg==1.)
     beams+=1e-4/(3e-6+d4*d4);
-  if(sg==1.&&pid<1.)
+  if(sg==1.&&ids<1.)
     flight+=.00025/(1e-7+d4a*d4a);
-  if(sg==1.&&zprs<.1)
-    glow+=.00015/(2e-6+dlt*dlt);
+  if(sg==1.&&pid<.1)
+    glow+=.00015/(2e-6+height*height);
   if(sg==1.&&tm<13.25)
     objglow+=5e-4/(5e-4+obj*obj);
   return res;

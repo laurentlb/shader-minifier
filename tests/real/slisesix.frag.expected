@@ -44,9 +44,9 @@ float columna(float x,float y,float z,float mindist,float offx)
   float di0=distToBox(p,vec3(.14,1,.14));
   if(di0>mindist*mindist)
     return mindist+1.;
-  di0=y-.4;
-  float y3=y-.35,di1=distToBox(p,vec3(.1,1,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071));
-  return min(min(min(min(di1,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8))),di9);
+  di0=distToBox(p,vec3(.1,1,.1));
+  float di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071));
+  return min(min(min(min(di0,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8))),di9);
 }
 float bicho(vec3 x,float mindist)
 {
@@ -59,19 +59,23 @@ float bicho(vec3 x,float mindist)
   fax=sqrt(r2);
   r2=1.-smoothstep(0.,.75,fax);
   r2*=.4;
-  float si1=sin(r2),co1=cos(r2);
-  x.xy=mat2(co1,si1,-si1,co1)*x.xy;
-  float mindist2=1e5,rr=.05+sqrt(dot(x.xz,x.xz)),ca=.46625-6.*rr*exp2(-10.*rr);
+  r2=sin(r2);
+  sa=cos(r2);
+  x.xy=mat2(sa,r2,-r2,sa)*x.xy;
+  r2=1e5;
+  sa=.05+sqrt(dot(x.xz,x.xz));
+  float ca=.46625-6.*rr*exp2(-10.*rr);
   for(int j=1;j<7;j++)
     {
-      float an=6.2831/7.*float(j),aa=an+.4*rr*noise3f(vec3(4.*rr,2.5,an))+.29,rc=cos(aa),rs=sin(aa);
+      float an=6.2831/7.*float(j),aa=an+.4*sa*noise3f(vec3(4.*sa,2.5,an))+.29,rc=cos(aa),rs=sin(aa);
       vec3 q=vec3(x.x*rc-x.z*rs,x.y+ca,x.x*rs+x.z*rc);
       float dd=dot(q.yz,q.yz);
-      if(q.x>0.&&q.x<1.5&&dd<mindist2)
-        mindist2=dd;
+      if(q.x>0.&&q.x<1.5&&dd<r2)
+        r2=dd;
     }
-  float c=sqrt(mindist2)-.045,a=clamp(fax*3.,0.,1.);
-  return c*a+(fax-.3)*(1.-a);
+  ca=sqrt(r2)-.045;
+  r2=clamp(fax*3.,0.,1.);
+  return ca*r2+(fax-.3)*(1.-r2);
 }
 float map(vec3 pos,out int sid,out int submat)
 {
@@ -90,16 +94,17 @@ float map(vec3 pos,out int sid,out int submat)
   sid=0;
   if(peld>1e-7)
     sid=2;
-  float fx=fract(pos.x+128.),fz=fract(pos.z+128.);
+  peld=fract(pos.x+128.);
+  float fz=fract(pos.z+128.);
   if(pos.y>1.)
     {
-      dis=max(techo(fx,pos.y),techo(fz,pos.y));
+      dis=max(techo(peld,pos.y),techo(fz,pos.y));
       if(dis<mindist)
         mindist=dis,sid=5;
     }
-  fx=fract(pos.x+128.+.5);
+  peld=fract(pos.x+128.+.5);
   fz=fract(pos.z+128.+.5);
-  dis=columna(fx-.5,pos.y,fz-.5,mindist,13.1*floor(pos.x)+17.7*floor(pos.z));
+  dis=columna(peld-.5,pos.y,fz-.5,mindist,13.1*floor(pos.x)+17.7*floor(pos.z));
   if(dis<mindist*mindist)
     mindist=sqrt(dis),sid=1;
   dis=bicho(pos,mindist);
