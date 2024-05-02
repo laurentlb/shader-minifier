@@ -27,7 +27,6 @@ float multidecl_var_decl_reuse(float x)
 {
   float a=1.+x;
   int b=3+int(x),b2=5+int(a);
-  a=a;
   float c2=9.+a;
   b=3+b+b2;
   b2=d+b2-b;

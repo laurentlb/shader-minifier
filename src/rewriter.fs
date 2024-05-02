@@ -209,6 +209,8 @@ module private RewriterImpl =
             let minusX = FunCall(Op "-", [x]) |> env.fExpr env
             FunCall(Op "/", [minusX; y]) |> env.fExpr env
 
+        // a=a;  ->  a
+        | FunCall(Op "=", [Var x; Var y]) when x.Name = y.Name -> Var y
         // Match:  x = x + ...
         | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
                 when x.Name = y.Name && augmentableOperators.Contains op ->
