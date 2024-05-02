@@ -463,9 +463,9 @@ module private RewriterImpl =
             //    match findAssignmentReplacementFor declElt2 with
             //    | Some stmts -> Some (stmts @ [Decl (ty2, others)]) // Keep the Decl, add an assignment before it.
             //    | None -> None
-            //| _, (declElt2 :: others) -> // float d1=f(); ...; float d3=h(),d2=g();  ->  ...; float d3=h(); d1=g();
+            //| _, (declElt2 :: reversedOthers) -> // float d1=f(); ...; float d3=h(),d2=g();  ->  ...; float d3=h(); d1=g();
             //    match findAssignmentReplacementFor declElt2 with
-            //    | Some stmts -> Some (Decl (ty2, others) :: stmts) // Keep the Decl, add an assignment after it.
+            //    | Some stmts -> Some (Decl (ty2, reversedOthers |> List.rev) :: stmts) // Keep the Decl, add an assignment after it.
             //    | None -> None
             // For a decl sandwiched between others, we could consider moving the assignment into a comma-expr of the init of the next decl, but this adds parentheses.
             | _ -> None
@@ -781,9 +781,9 @@ module private ArgumentInlining =
 
 let rec private iterateSimplifyAndInline passCount li =
     let li = if not options.noRemoveUnused then RewriterImpl.removeUnusedFunctions li else li
+    Analyzer.resolve li
+    Analyzer.markWrites li
     if not options.noInlining then
-        Analyzer.resolve li
-        Analyzer.markWrites li
         Analyzer.markInlinableFunctions li
         Analyzer.markInlinableVariables li
     let didInline = ref false
