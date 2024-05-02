@@ -255,7 +255,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   vec3 camTarget=vec3(Noise(gTime*1.9-30.)*.5-.25,Noise(gTime*2.)*.5-.3,0);
   camTarget=normalize(camTarget-cameraPos);
   camTarget=normalize(cross(camTarget,vec3(0,1,0)));
-  camTarget=normalize(uv.x*cu+uv.y*cross(cu,camTarget)+(1.-zoomTurn.y*.4)*camTarget);
+  camTarget=normalize(uv.x*camTarget+uv.y*cross(camTarget,camTarget)+(1.-zoomTurn.y*.4)*camTarget);
   animParts.x=Noise(gTime*2.)+1.;
   animParts.y=(NoiseSlope(gTime*1.2+sin(gTime*.3)*.7+.7,.05)-.5)*1.5;
   animParts.z=NoiseSlope(gTime*.4-33.,.05)*.5;

@@ -129,9 +129,9 @@ vec2 map(vec3 p,float sg)
   o=vec3(abs(o.x),abs(o.y),o.z);
   fs.z*=2.;
   tun=floor(fs.xz)+.5;
-  vec2 neighbour=center+edge(fs.xz-center);
+  vec2 neighbour=tun+edge(fs.xz-tun);
   pid=floor(tun.y);
-  float height=texture(iChannel0,vec2(mod(chs,16.)*.0465,.1)).x;
+  float height=texture(iChannel0,vec2(mod(pid,16.)*.0465,.1)).x;
   height=smoothstep(.001,1.,height);
   ga=height;
   float ids=pMod(s.z,7.25);
@@ -158,7 +158,7 @@ vec2 map(vec3 p,float sg)
     res=d1.xy,g_hp=p;
   height=fBox(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25));
   height=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25));
-  height=min(me,next);
+  height=min(height,height);
   if(height<res.x)
     res=vec2(height,4),g_hp=p;
   if(sg==1.)

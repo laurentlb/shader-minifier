@@ -29,13 +29,13 @@ float multidecl_var_decl_reuse(float x)
   int b=3+int(x),b2=5+int(a);
   float c2=9.+a;
   b=3+b+b2;
-  b2=d+b2-b;
+  b2=b+b2-b;
   c2=a*c2;
   a=4.-a-c2;
   b=3*b*b2;
   b2=4/b2-b;
   c2=c2-float(b)+a;
-  a=4.-g+a+c2;
+  a=4.-c2+a+c2;
   b=3*b-b2;
   b2=7*b2-b;
   return float(b*b2)*c2*a*x+a/float(b2-b);

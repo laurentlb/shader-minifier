@@ -1,20 +1,21 @@
 // Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 pub const VAR_MOUSE: &'static [u8] = b"f\0";
-pub const VAR_RESOLUTION: &'static [u8] = b"h\0";
+pub const VAR_RESOLUTION: &'static [u8] = b"y\0";
 pub const VAR_TIME: &'static [u8] = b"v\0";
 
 pub const HEART_FRAG: &'static [u8] = b"\
  uniform float v;\
- uniform vec2 h;\
+ uniform vec2 y;\
  uniform vec4 f;\
  void main()\
  {\
-   vec2 f=(2.*gl_FragCoord.xy-h)/h.y;\
-   float u=mod(v,2.)/2.,y=pow(u,.2)*.5+.5;\
-   y-=y*.2*sin(u*6.2831*5.)*exp(-u*6.);\
-   f*=vec2(.5,1.5)+y*vec2(.5,-.5);\
-   y=atan(f.x,f.y)/3.141593;\
+   vec2 f=(2.*gl_FragCoord.xy-y)/y.y;\
+   float u=mod(v,2.)/2.,a=pow(u,.2)*.5+.5;\
+   a-=a*.2*sin(u*6.2831*5.)*exp(-u*6.);\
+   f*=vec2(.5,1.5)+a*vec2(.5,-.5);\
+   a=atan(f.x,f.y)/3.141593;\
    u=length(f);\
-   y=(13.*h-22.*h*h+10.*h*h*h)/(6.-5.*h);\
-   gl_FragColor=vec4(step(u,y)*pow(1.-u/y,.25),0,0,1);\
+   a=abs(a);\
+   a=(13.*a-22.*a*a+10.*a*a*a)/(6.-5.*a);\
+   gl_FragColor=vec4(step(u,a)*pow(1.-u/a,.25),0,0,1);\
  }\0";
