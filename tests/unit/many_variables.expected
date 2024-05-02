@@ -11,13 +11,13 @@
  "{"
    "float M=L,f=K,N=J,O=I,P=H,Q=G;"
    "int R=1,S=2,T=3,U=4,V=5,W=6,X=7,Y=8;"
-   "float Z=F,_=E,a=D,b=C,c=B,d=A;"
-   "int e=1,g=2,h=3,i=4,j=5,k=6,l=7,m=8;"
-   "float n=0.;"
-   "int o=1,p=2,q=3,r=4,s=5,t=6,u=7,v=8;"
-   "float w=0.;"
-   "int x=1,y=2,z=3,at=4,aa=5,ab=6,ac=7,aA=8;"
-   "return Y+m+v+aA;"
+   "float i=F,Z=E,_=D,a=C,b=B,c=A;"
+   "int d=1,e=2,g=3,h=4,j=5,k=6,l=7,m=8;"
+   "i=0.;"
+   "int n=1,o=2,p=3,q=4,r=5,s=6,t=7,u=8;"
+   "i=0.;"
+   "int v=1,w=2,x=3,y=4,z=5,at=6,ai=7,aA=8;"
+   "return Y+m+u+aA;"
  "}",
 
 #endif

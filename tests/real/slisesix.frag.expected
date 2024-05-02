@@ -44,7 +44,8 @@ float columna(float x,float y,float z,float mindist,float offx)
   float di0=distToBox(p,vec3(.14,1,.14));
   if(di0>mindist*mindist)
     return mindist+1.;
-  float y2=y-.4,y3=y-.35,di1=distToBox(p,vec3(.1,1,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-y2)*.7071,(y2+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(y2+z)*.7071,(z-y2)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071));
+  di0=y-.4;
+  float y3=y-.35,di1=distToBox(p,vec3(.1,1,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071));
   return min(min(min(min(di1,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8))),di9);
 }
 float bicho(vec3 x,float mindist)
@@ -55,9 +56,10 @@ float bicho(vec3 x,float mindist)
   x.y*=.8+.2*sa;
   x.z*=fax;
   r2=dot(x,x);
-  float r=sqrt(r2),a1=1.-smoothstep(0.,.75,r);
-  a1*=.4;
-  float si1=sin(a1),co1=cos(a1);
+  fax=sqrt(r2);
+  r2=1.-smoothstep(0.,.75,fax);
+  r2*=.4;
+  float si1=sin(r2),co1=cos(r2);
   x.xy=mat2(co1,si1,-si1,co1)*x.xy;
   float mindist2=1e5,rr=.05+sqrt(dot(x.xz,x.xz)),ca=.46625-6.*rr*exp2(-10.*rr);
   for(int j=1;j<7;j++)
@@ -68,8 +70,8 @@ float bicho(vec3 x,float mindist)
       if(q.x>0.&&q.x<1.5&&dd<mindist2)
         mindist2=dd;
     }
-  float c=sqrt(mindist2)-.045,a=clamp(r*3.,0.,1.);
-  return c*a+(r-.3)*(1.-a);
+  float c=sqrt(mindist2)-.045,a=clamp(fax*3.,0.,1.);
+  return c*a+(fax-.3)*(1.-a);
 }
 float map(vec3 pos,out int sid,out int submat)
 {
@@ -79,8 +81,8 @@ float map(vec3 pos,out int sid,out int submat)
   vec2 axz=vec2(128)+6.*vec2(pos.x+pos.z,pos.x-pos.z);
   ivec2 ixz=ivec2(floor(axz));
   submat=icoolfFunc3d2(ixz.x+53*ixz.y);
-  vec2 peldxz=fract(axz);
-  float peld=smoothstep(.975,1.,max(peldxz.x,peldxz.y));
+  axz=fract(axz);
+  float peld=smoothstep(.975,1.,max(axz.x,axz.y));
   if((submat>>10&7)>6)
     peld=1.;
   dis+=.005*peld;

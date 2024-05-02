@@ -34,8 +34,8 @@ vec4 Noise(vec2 x)
 {
   vec2 f=fract(x.xy);
   f=f*f*(3.-2.*f);
-  vec2 uv=floor(x.xy).xy+f.xy;
-  return textureLod(iChannel0,(uv+.5)/256.,0.);
+  f=floor(x.xy).xy+f.xy;
+  return textureLod(iChannel0,(f+.5)/256.,0.);
 }
 vec4 Noise(ivec2 x)
 {
@@ -143,11 +143,12 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   albedo=mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),albedo,smoothstep(.2-aa*1.5,.2,abs(pos.y)));
   albedo=mix(vec3(.04),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.6)));
   albedo=mix(vec3(1,.8,.08),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
-  vec3 col=albedo*(smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1)),specular=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1),rr=reflect(ray,norm);
+  albedo*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
+  vec3 specular=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1),rr=reflect(ray,norm);
   specular+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
-  float fresnel=pow(1.-abs(dot(norm,ray)),5.);
-  fresnel=mix(.001,1.,fresnel);
-  return mix(col,specular,fresnel);
+  aa=pow(1.-abs(dot(norm,ray)),5.);
+  aa=mix(.001,1.,aa);
+  return mix(albedo,specular,aa);
 }
 float OceanDistanceField(vec3 pos)
 {
@@ -184,18 +185,19 @@ vec3 ShadeOcean(vec3 pos,vec3 ray,vec2 fragCoord)
 {
   vec3 norm=OceanNormal(pos);
   float ndotr=dot(ray,norm);
-  vec3 reflectedRay=ray-2.*norm*ndotr,refractedRay=ray+(-cos(1.33*acos(-ndotr))-ndotr)*norm;
-  refractedRay=normalize(refractedRay);
+  vec3 reflectedRay=ray-2.*norm*ndotr;
+  norm=ray+(-cos(1.33*acos(-ndotr))-ndotr)*norm;
+  norm=normalize(norm);
   vec3 reflection=Sky(reflectedRay);
   float t=TraceBoat(pos-0.*reflectedRay,reflectedRay);
   if(t>0.)
     reflection=ShadeBoat(pos+t*reflectedRay,reflectedRay);
-  t=TraceBoat(pos-0.*refractedRay,refractedRay);
-  vec3 col=vec3(0,.04,.04);
+  t=TraceBoat(pos-0.*norm,norm);
+  reflectedRay=vec3(0,.04,.04);
   if(t>0.)
-    col=mix(col,ShadeBoat(pos+t*refractedRay,refractedRay),exp(-t));
-  col=mix(col,reflection,pow(1.-abs(ndotr),5.));
-  return mix(col,vec3(1),WaveCrests(pos,fragCoord));
+    reflectedRay=mix(reflectedRay,ShadeBoat(pos+t*norm,norm),exp(-t));
+  reflectedRay=mix(reflectedRay,reflection,pow(1.-abs(ndotr),5.));
+  return mix(reflectedRay,vec3(1),WaveCrests(pos,fragCoord));
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)
 {
@@ -204,11 +206,11 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   vec3 pos,ray;
   CamPolar(pos,ray,camRot,fragCoord);
   float to=TraceOcean(pos,ray),tb=TraceBoat(pos,ray);
-  vec3 result=to>0.&&(to<tb||tb==0.)?
+  pos=to>0.&&(to<tb||tb==0.)?
     ShadeOcean(pos+ray*to,ray,fragCoord):
     tb>0.?
       ShadeBoat(pos+ray*tb,ray):
       Sky(ray);
-  result*=1.1*smoothstep(.35,1.,localRay.z);
-  fragColor=vec4(pow(result,vec3(1./GAMMA)),1);
+  pos*=1.1*smoothstep(.35,1.,localRay.z);
+  fragColor=vec4(pow(pos,vec3(1./GAMMA)),1);
 }
