@@ -37,7 +37,8 @@ float multidecl_var_decl_reuse(float x)
 }
 vec2 map (in vec3 p)
 {
-    vec2 tun = p.xy - path(p.z);
+    vec2 tun = p.xy;
+	tun.x++;
     vec3 q = vec3(tun,p.z);
     vec3 fs = p - vec3(2.85,0,0);
     vec2 center = floor(fs.xz) + .5;
