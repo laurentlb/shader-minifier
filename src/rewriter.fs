@@ -432,8 +432,8 @@ module private RewriterImpl =
             go f [] xs
         b |> tryReplaceWithPrecedingAndFollowing (function
         | (preceding2, Decl (ty2, declElts), following2) ->
-            let findAssignmentReplacementFor declElt2 restOfTheDecl =
-                let compatibleDeclElts = preceding2 |> List.collect (function
+            let findAssignmentReplacementFor declElt2 declBefore2 declAfter2 =
+                let compatibleDeclElts = (preceding2 @ declBefore2) |> List.collect (function
                     // The previous declaration must have the same type.
                     | Decl (ty1, declElts1) when ty2 = ty1 ->
                         let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
@@ -443,35 +443,37 @@ module private RewriterImpl =
                             // The previous declaration must have the same size and semantics
                             declElt1.size = declElt2.size &&
                             declElt1.semantics = declElt2.semantics &&
-                            firstIsNotUsedAfterSecondDeclared declElt1 following2
+                            firstIsNotUsedAfterSecondDeclared declElt1 (declAfter2 @ following2)
                         )
                     | _ -> [])
                 match compatibleDeclElts |> List.tryHead with
-                | Some (declElt1) ->
+                | None -> None
+                | Some declElt1 ->
                     debug $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
-                    for v in Analyzer.varUsesInStmt (Block (restOfTheDecl @ following2)) do // Rename all uses of var2 to use var1 instead.
+                    for v in Analyzer.varUsesInStmt (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
                         if v.Name = declElt2.name.Name then
                             v.Rename(declElt1.name.Name)
                     match declElt2.init with
                     | Some init -> Some [Expr (FunCall (Op "=", [Var declElt1.name; init]))]
                     | None -> Some []
-                | _ -> None
-            match declElts, (declElts |> List.rev) with
-            | [declElt2], _  -> // float d1=f(); ...; float d2=g();  ->  ...; d1=g();
-                match findAssignmentReplacementFor declElt2 [] with
+            // For a decl sandwiched between others, we could consider moving the assignment into a comma-expr of the init of the next decl, but this adds parentheses.
+            match declElts with
+            | [declElt2]  -> // float d1=f(); ...; float d2=g();  ->  ...; d1=g();
+                match findAssignmentReplacementFor declElt2 [] [] with
                 | Some stmts -> Some stmts // Replace the Decl with the assignment. Largest win
                 | None -> None
-            | (declElt2 :: others), _ -> // float d1=f(); ...; float d2=g(),d3=h();  ->  ...; d1=g(); float d3=h();
+            | declElt2 :: others -> // float d1=f(); ...; float d2=g(),d3=h();  ->  ...; d1=g(); float d3=h();
                 let restOfTheDecl = [Decl (ty2, others)]
-                match findAssignmentReplacementFor declElt2 restOfTheDecl with
+                match findAssignmentReplacementFor declElt2 [] restOfTheDecl with
                 | Some stmts -> Some (stmts @ restOfTheDecl) // Keep the Decl, add an assignment before it.
-                | None -> None
-            | _, (declElt2 :: reversedOthers) -> // float d1=f(); ...; float d3=h(),d2=g();  ->  ...; float d3=h(); d1=g();
-                let restOfTheDecl = [Decl (ty2, reversedOthers |> List.rev)]
-                match findAssignmentReplacementFor declElt2 restOfTheDecl with
-                | Some stmts -> Some (restOfTheDecl @ stmts) // Keep the Decl, add an assignment after it.
-                | None -> None
-            // For a decl sandwiched between others, we could consider moving the assignment into a comma-expr of the init of the next decl, but this adds parentheses.
+                | None ->
+                    match declElts |> List.rev with
+                    | declElt2 :: reversedOthers -> // float d1=f(); ...; float d3=h(),d2=g();  ->  ...; float d3=h(); d1=g();
+                        let restOfTheDecl = [Decl (ty2, reversedOthers |> List.rev)]
+                        match findAssignmentReplacementFor declElt2 restOfTheDecl [] with
+                        | Some stmts -> Some (restOfTheDecl @ stmts) // Keep the Decl, add an assignment after it.
+                        | None -> None
+                    | _ -> None
             | _ -> None
         | _ -> None)
 

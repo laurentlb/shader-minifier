@@ -44,9 +44,10 @@ float columna(float x,float y,float z,float mindist,float offx)
   float di0=distToBox(p,vec3(.14,1,.14));
   if(di0>mindist*mindist)
     return mindist+1.;
-  di0=distToBox(p,vec3(.1,1,.1));
-  float di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.14)),di8=distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.14,.07071,.07071));
-  return min(min(min(min(di0,di2),min(di3,di4)),min(min(di5,di6),min(di7,di8))),di9);
+  di0=y-.4;
+  float y3=y-.35,di1=distToBox(p,vec3(.1,1,.1)),di2=distToBox(p,vec3(.12,.4,.12)),di3=distToBox(p,vec3(.05,.35,.14)),di4=distToBox(p,vec3(.14,.35,.05)),di9=distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)),di5=distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),di6=distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071)),di7=distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14));
+  di0=distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071));
+  return min(min(min(min(di1,di2),min(di3,di4)),min(min(di5,di6),min(di7,di0))),di9);
 }
 float bicho(vec3 x,float mindist)
 {
@@ -59,9 +60,9 @@ float bicho(vec3 x,float mindist)
   fax=sqrt(r2);
   r2=1.-smoothstep(0.,.75,fax);
   r2*=.4;
-  r2=sin(r2);
-  sa=cos(r2);
-  x.xy=mat2(sa,r2,-r2,sa)*x.xy;
+  sa=sin(r2);
+  r2=cos(r2);
+  x.xy=mat2(r2,sa,-sa,r2)*x.xy;
   r2=1e5;
   sa=.05+sqrt(dot(x.xz,x.xz));
   float ca=.46625-6.*sa*exp2(-10.*sa);

@@ -38,12 +38,14 @@ float sdTriPrism(vec3 p)
 float sdCappedCone(vec3 p)
 {
   vec3 b=vec3(0,0,-.1),a=vec3(0);
-  float baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
+  float rba=.1,baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
     .25:
-    .35)),cay=abs(paba-.5)-.5,f=clamp((.1*(x-.25)+paba*baba)/(.01+baba),0.,1.),cbx=x-.25-f*.1,cby=paba-f;
-  return(cbx<0.&&cay<0.?
+    .35)),cay=abs(paba-.5)-.5,f=clamp((rba*(x-.25)+paba*baba)/(rba*rba+baba),0.,1.);
+  x=x-.25-f*rba;
+  rba=paba-f;
+  return(x<0.&&cay<0.?
     -1.:
-    1.)*sqrt(min(cax*cax+cay*cay*baba,cbx*cbx+cby*cby*baba));
+    1.)*sqrt(min(cax*cax+cay*cay*baba,x*x+rba*rba*baba));
 }
 float sdCappedCylinder(vec3 p,float h,float r)
 {
@@ -138,20 +140,21 @@ MarchData gunPod(vec3 p)
   pp=p;
   pp.x=abs(p.x);
   pp.xy*=rot(.78525);
-  float bump=sign(sin(pp.z*33.3))*.003,d=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02;
+  float bump=sign(sin(pp.z*33.3))*.003;
+  bump=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02;
   pp=p-vec3(0,0,-.6);
   pp.x=abs(pp.x)-.1;
-  d=min(d,sdCappedCylinder(pp,.06,.15));
-  d=min(d,sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05));
-  d=min(d,sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
-  if(d<r.d)
-    d=max(d,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=d,r.mat=vec3(.02);
-  bump=fireShock();
-  if(bump>.5)
+  bump=min(bump,sdCappedCylinder(pp,.06,.15));
+  bump=min(bump,sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05));
+  bump=min(bump,sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
+  if(bump<r.d)
+    bump=max(bump,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=bump,r.mat=vec3(.02);
+  float fs=fireShock();
+  if(fs>.5)
     {
-      d=sdCappedCylinder(pp,.01+pp.z*.05,fract(bump*3322.423)*.5+.9);
-      if(d<r.d)
-        r.d=d,r.mat=vec3(1),glow+=.1/(.01+d*d*4e2);
+      bump=sdCappedCylinder(pp,.01+pp.z*.05,fract(fs*3322.423)*.5+.9);
+      if(bump<r.d)
+        r.d=bump,r.mat=vec3(1),glow+=.1/(.01+bump*bump*4e2);
     }
   return r;
 }

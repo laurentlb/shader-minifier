@@ -156,9 +156,8 @@ vec2 map(vec3 p,float sg)
     d1.x=min(d4a,d1.x);
   if(d1.x<res.x)
     res=d1.xy,g_hp=p;
-  height=fBox(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25));
-  height=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25));
-  height=min(height,height);
+  float me=fBox(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25)),next=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25));
+  height=min(me,next);
   if(height<res.x)
     res=vec2(height,4),g_hp=p;
   if(sg==1.)

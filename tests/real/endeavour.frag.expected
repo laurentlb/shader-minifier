@@ -43,10 +43,11 @@ void dhexagonpattern(vec2 p,out float d,out vec2 ind)
 {
   vec2 q=vec2(p.x*1.2,p.y+p.x*.6),pi=floor(q);
   q=fract(q);
-  float v=mod(pi.x+pi.y,3.),ca=step(1.,v),cb=step(2.,v);
+  float v=mod(pi.x+pi.y,3.),ca=step(1.,v);
+  v=step(2.,v);
   vec2 ma=step(q.xy,q.yx);
-  d=dot(ma,1.-q.yx+ca*(q.x+q.y-1.)+cb*(q.yx-2.*q.xy));
-  ind=pi+ca-cb*ma;
+  d=dot(ma,1.-q.yx+ca*(q.x+q.y-1.)+v*(q.yx-2.*q.xy));
+  ind=pi+ca-v*ma;
   ind=vec2(ind.x/1.2,ind.y);
   ind=vec2(ind.x,ind.y-ind.x*.6);
 }
@@ -104,36 +105,36 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
 {
   a=iResolution.x/iResolution.y;
   vec2 uv=fragCoord/iResolution.yy-.5*vec2(a,1),s;
-  vec3 col=c.yyy,o=.5*c.yyx+.3*iTime*c.yxy,t=vec3(uv,0)+.3*iTime*c.yxy+c.yxy,dir=normalize(t-o),x;
+  vec3 col=c.yyy,o=.5*c.yyx+.3*iTime*c.yxy,t=vec3(uv,0)+.3*iTime*c.yxy+c.yxy,dir=normalize(t-o);
   float d=(.04-o.z)/dir.z;
   int i;
   for(i=0;i<450;++i)
     {
-      x=o+d*dir;
-      scene(x,s);
+      t=o+d*dir;
+      scene(t,s);
       if(s.x<1e-4)
         break;
       d+=s.x;
     }
   if(i<450)
     {
-      vec3 n,l=normalize(x+c.yyx);
-      normal(x,n);
+      vec3 n,l=normalize(t+c.yyx);
+      normal(t,n);
       vec3 c1=vec3(.99,.64,.02);
       if(s.y==1.)
         {
-          planet_texture(x.xy,c1);
+          planet_texture(t.xy,c1);
           col=.3*c1+.3*c1*abs(dot(l,n))+(1.3*c1+.1*c.xyy)*pow(abs(dot(reflect(-l,n),dir)),3.);
-          if(x.z<0.)
+          if(t.z<0.)
             {
               float dis;
-              lfnoise(.5*x.y*c.xx,dis);
-              float ya=abs(x.x-.4*dis)-.15;
+              lfnoise(.5*t.y*c.xx,dis);
+              float ya=abs(t.x-.4*dis)-.15;
               col=mix(col,.3*col,smoothstep(-.01,.01,-ya));
             }
         }
       else if(s.y==2.)
-        planet_texture(x.xy,c1),col=.3*c1+.3*c1*abs(dot(l,n))+(1.3*c1+.1*c.xyy)*pow(abs(dot(reflect(-l,n),dir)),3.),col=mix(col,.4*length(col)*c.xyy,.7);
+        planet_texture(t.xy,c1),col=.3*c1+.3*c1*abs(dot(l,n))+(1.3*c1+.1*c.xyy)*pow(abs(dot(reflect(-l,n),dir)),3.),col=mix(col,.4*length(col)*c.xyy,.7);
     }
   col=clamp(col,0.,1.);
   fragColor=vec4(col,1);
