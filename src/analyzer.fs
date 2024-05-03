@@ -150,7 +150,7 @@ module private VariableInlining =
 
 let markInlinableVariables = VariableInlining.markInlinableVariables
 
-let markWrites topLevel =
+let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inlining
     let findWrites (env: MapEnv) = function
         | Var v as e when env.isInWritePosition && v.VarDecl <> None ->
             v.VarDecl.Value.isEverWrittenAfterDecl <- true

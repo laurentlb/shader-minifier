@@ -17,20 +17,39 @@ float simple_var_decl_reuse(float x)
   sep+=vec3(0);
   d=4/b2-d;
   a=e-float(b)+c;
-  int g2=int(4.-a+c+e),h=3*b-d;
+  b2=int(4.-a+c+e);
+  int h=3*b-d;
   sep+=vec3(0);
   d=7*d-b;
-  return length(sep)+float(h*d)*a*float(g2)*x+float(g2/d-h);
+  return length(sep)+float(h*d)*a*float(b2)*x+float(b2/d-h);
 }
 float multidecl_var_decl_reuse(float x)
 {
   float a=1.+x;
   int b=3+int(x),b2=5+int(a);
-  float c=a,c2=9.+a;
-  int d=3+b+b2,d2=d+b2-b;
-  float e=c*c2,e2=4.-c-c2;
-  int f=3*d*d2,f2=4/d2-d;
-  float g=e-float(f)+e2,g2=4.-g+e2+e;
-  int h=3*f-f2,h2=7*f2-f;
-  return float(h*h2)*g*g2*x+g2/float(h2-h);
+  float c=a;
+  a=9.+a;
+  int d=3+b+b2;
+  b=d+b2-b;
+  float e=c*a;
+  c=4.-c-a;
+  b2=3*d*b;
+  d=4/b-d;
+  a=e-float(b2)+c;
+  e=4.-a+c+e;
+  b=3*b2-d;
+  d=7*d-b2;
+  return float(b*d)*a*e*x+e/float(d-b);
+}
+vec2 map(vec3 p)
+{
+  vec2 tun=p.xy;
+  tun.x++;
+  vec3 fs=p-vec3(2.85,0,0);
+  tun=floor(fs.xz)+.5;
+  float height=.0465;
+  height=smoothstep(.001,1.,height);
+  float me=dot(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25)),next=dot(fs-vec3(0,0,tun.y),vec3(.05,.001+height,.25));
+  height=min(me,next);
+  return vec2(height*height);
 }

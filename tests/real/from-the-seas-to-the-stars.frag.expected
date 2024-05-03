@@ -125,7 +125,8 @@ void ammonite()
 bool jellyfish()
 {
   col=vec3(.2,.4,1)/3+pow(w.w,8);
-  float to=(of.x+of.y*8)*.3,time2=time/2+to;
+  float to=(of.x+of.y*8)*.3;
+  to=time/2+to;
   w.x=R();
   w.y=R();
   w.z=R();
@@ -145,15 +146,15 @@ bool jellyfish()
       p.y=sqrt(max(0.,1.-dot(p.xz,p.xz)));
       if(w.z<.25)
         p.y+=-.2;
-      float t=pow(fract(time2/2),2);
+      float t=pow(fract(to/2),2);
       p.xz*=mix(mix(.8,1.,cos(min(t*2,2.-t*2)*3.14159)*.5+.5),1.,p.y);
       p.xz*=1.5;
-      p.y+=(1-p.y)*cos(fract(time2/2.)*3.14159*2)*.1;
+      p.y+=(1-p.y)*cos(fract(to/2.)*3.14159*2)*.1;
       p.xyz+=of;
-      p.y+=(fbm(p.xz/5+time2/2.)-1)*.1;
+      p.y+=(fbm(p.xz/5+to/2.)-1)*.1;
     }
   else
-     w.xy*=5.,w.z=pow(w.z,5.),p.xz=(disc(fract(w.xy))*.01/(1.01-w.z)+floor(w.xy)/2.-1.)*.25,p.y=w.z*2.-1.5+(3.-length(fract(w.xy)-.5))*.3-.8-(.5+.5*cos(floor(w.xy).x))*.2,p.y*=2,p.xz*=1.5,p.xyz+=of,p.x+=(fbm(p.yz/4.*vec2(1,6)-time2/10)-1.2)*pow(1.-w.z,.75),p.z+=(fbm(p.yx/4.*vec2(1,6)+time2/10)-1.2)*pow(1.-w.z,.75);
+     w.xy*=5.,w.z=pow(w.z,5.),p.xz=(disc(fract(w.xy))*.01/(1.01-w.z)+floor(w.xy)/2.-1.)*.25,p.y=w.z*2.-1.5+(3.-length(fract(w.xy)-.5))*.3-.8-(.5+.5*cos(floor(w.xy).x))*.2,p.y*=2,p.xz*=1.5,p.xyz+=of,p.x+=(fbm(p.yz/4.*vec2(1,6)-to/10)-1.2)*pow(1.-w.z,.75),p.z+=(fbm(p.yx/4.*vec2(1,6)+to/10)-1.2)*pow(1.-w.z,.75);
   p-=of;
   p.yz*=rotmat(cos(of.x+p.y/2)*.2);
   p+=of;

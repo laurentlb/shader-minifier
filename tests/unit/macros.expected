@@ -21,8 +21,10 @@ const char *macros_frag =
  "#define p$\n"
  "int E()"
  "{"
-   "int E=1,D=2,C=3,B=4,A=5,F=6,G=7,H=8,I=9,J=10,K=11,L=12;"
-   "return E+A+L;"
+   "int E=1,r=2,C=3,B=4;"
+   "C=5;"
+   "r=12;"
+   "return E+C+r;"
  "}";
 
 #endif // MACROS_EXPECTED_

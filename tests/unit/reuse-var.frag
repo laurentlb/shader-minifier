@@ -35,3 +35,17 @@ float multidecl_var_decl_reuse(float x)
 	int h = 3*f-f2, h2 = 7*f2-f;
 	return float(h*h2)*g*g2*x + g2/float(h2-h);
 }
+vec2 map (in vec3 p)
+{
+    vec2 tun = p.xy;
+	tun.x++;
+    vec3 q = vec3(tun,p.z);
+    vec3 fs = p - vec3(2.85,0,0);
+    vec2 center = floor(fs.xz) + .5;
+    float height = .0465;
+    height = smoothstep(.001,1.,height);
+    float me =   dot(fs-vec3(0,0,center.y), vec3(.05,.150+height,.25));
+    float next = dot(fs-vec3(0,0,center.y), vec3(.05,.001+height,.25));
+    float dlt = min(me, next);
+    return vec2(dlt*dlt);
+}

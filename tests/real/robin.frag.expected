@@ -254,7 +254,8 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   cameraPos.z+=zoomTurn.y*8.;
   vec3 camTarget=vec3(Noise(gTime*1.9-30.)*.5-.25,Noise(gTime*2.)*.5-.3,0);
   camTarget=normalize(camTarget-cameraPos);
-  vec3 cu=normalize(cross(camTarget,vec3(0,1,0))),dir=normalize(uv.x*cu+uv.y*cross(cu,camTarget)+(1.-zoomTurn.y*.4)*camTarget);
+  vec3 cu=normalize(cross(camTarget,vec3(0,1,0)));
+  camTarget=normalize(uv.x*cu+uv.y*cross(cu,camTarget)+(1.-zoomTurn.y*.4)*camTarget);
   animParts.x=Noise(gTime*2.)+1.;
   animParts.y=(NoiseSlope(gTime*1.2+sin(gTime*.3)*.7+.7,.05)-.5)*1.5;
   animParts.z=NoiseSlope(gTime*.4-33.,.05)*.5;
@@ -274,19 +275,19 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   cu=vec3(0);
   for(int i=0;i<2;i++)
     dStack[i]=vec4(-20),aStack[i]=vec4(0);
-  jump=Scene(cameraPos,dir,fragCoord);
+  jump=Scene(cameraPos,camTarget,fragCoord);
   for(int s=0;s<2;s++)
     for(int i=0;i<4;i++)
       {
         float specular=0.,d=dStack[s][i];
         if(d<0.)
           continue;
-        vec3 pos=cameraPos+dir*d,normal=GetNormal(pos,SphereRadius(d)),alb=Colour(pos,normal,specular);
-        cu+=DoLighting(alb,pos,normal,dir,d,specular)*aStack[s][i];
+        vec3 pos=cameraPos+camTarget*d,normal=GetNormal(pos,SphereRadius(d)),alb=Colour(pos,normal,specular);
+        cu+=DoLighting(alb,pos,normal,camTarget,d,specular)*aStack[s][i];
       }
   t=smoothstep(1.9,0.,zoomTurn.y);
-  dir=mix(CubeMap(iChannel2,dir,128.),CubeMap(iChannel3,dir,64.)*.7,t);
-  cu+=dir*dir*SUN_COLOUR*(1.-jump);
+  camTarget=mix(CubeMap(iChannel2,camTarget,128.),CubeMap(iChannel3,camTarget,64.)*.7,t);
+  cu+=camTarget*camTarget*SUN_COLOUR*(1.-jump);
   cu=PostEffects(cu,xy)*smoothstep(0.,2.,iTime);
   fragColor=vec4(cu,1);
 }

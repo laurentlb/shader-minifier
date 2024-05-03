@@ -28,8 +28,10 @@ int unusedVars()
 }
 int unusedVars2()
 {
-  int var1=1,var2=2,var3=3,var4=4,var5=5,var6=6,var7=7,var8=8,var9=9,var10=10,var11=11,var12=12;
-  return var1+var5+var12;
+  int var1=1,var2=2,var3=3,var4=4;
+  var3=5;
+  var2=12;
+  return var1+var3+var2;
 }
 int multiPass()
 {
