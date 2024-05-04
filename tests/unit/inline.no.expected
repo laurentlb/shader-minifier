@@ -4,7 +4,7 @@ float result;
 void main()
 {
   float x=.5;
-  x=.6*x*x;
+  x*=.6*x;
   result=x;
 }
 int arithmetic()
@@ -18,7 +18,7 @@ int vars(int arg,int arg2)
 int arithmetic2()
 {
   int a=2,b=3;
-  b=a+b;
+  b+=a;
   return 4*a*b;
 }
 int unusedVars()
