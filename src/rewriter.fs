@@ -215,6 +215,13 @@ module private RewriterImpl =
         | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
                 when x.Name = y.Name && augmentableOperators.Contains op ->
             FunCall(Op (op + "="), [Var x; e])
+
+        // Match:  x = ... + x
+        // works only if the operator is commutative
+        | FunCall(Op "=", [Var x; FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
+                when x.Name = y.Name ->
+            FunCall(Op (op + "="), [Var x; e])
+
         // Unsafe when x contains NaN or Inf values.
         //| FunCall(Op "=", [Var x; FunCall(Var fctName, [Int (0, _)])])
         //    when List.contains fctName.Name ["vec2"; "vec3"; "vec4"; "ivec2"; "ivec3"; "ivec4"] ->

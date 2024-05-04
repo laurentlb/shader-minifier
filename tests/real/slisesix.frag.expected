@@ -5,7 +5,7 @@ uniform float time;
 uniform sampler2D tex0;
 int icoolfFunc3d2(int n)
 {
-  n=n<<13^n;
+  n^=n<<13;
   return n*(n*n*15731+789221)+1376312589&2147483647;
 }
 float coolfFunc3d2(int n)

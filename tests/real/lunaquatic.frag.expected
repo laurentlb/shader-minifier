@@ -25,7 +25,7 @@ vec3 rotateX(vec3 v,float x)
 float rnd(vec2 x)
 {
   int n=int(x.x*40.+x.y*6400.);
-  n=n<<13^n;
+  n^=n<<13;
   return 1.-float(n*(n*n*15731+789221)+1376312589&2147483647)/1073741824.;
 }
 float norm(float x)
