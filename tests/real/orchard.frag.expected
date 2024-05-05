@@ -279,7 +279,7 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
 #endif
 
   vec3 seedDir=normalize(vec3(0,0,1));
-  seedDir*=viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5);
+  seedDir=viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*seedDir;
   vec3 rd=seedDir,col=vec3(0),sky=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs(rd.y));
   float alpha=marchScene(camera,rd,fragCoord);
   vec4 mat;

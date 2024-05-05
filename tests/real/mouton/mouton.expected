@@ -767,7 +767,7 @@ const char *mouton_frag =
        "b=mix(b,mix(mix(vec3(1,.5,0),vec3(.8,.5,1),(cos(Y*5.+t*5.)*.5+.5)*a.y),vec3(1),smoothstep(-Y,Y,q)),a.x);"
      "}"
    "l=vec2(abs(f.x*5.-.35)-1.8,f.y*5.-1.4);"
-   "l*=E(t*5.);"
+   "l=E(t*5.)*l;"
    "G=(1.4+.2*sin(t*20.))*smoothstep(.5,1.,a.x);"
    "O=J(l,G);"
    "P=mix(vec3(1,.6,0),vec3(1,.2,0),smoothstep(-.1,.6,J(l,G*.5)))*1.3;"
