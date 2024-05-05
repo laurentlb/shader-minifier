@@ -375,6 +375,9 @@ module private RewriterImpl =
         | []-> []
         | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
+        // int a=2; for (int b=3; ...) -> int a=2, b=3; for (; ...)
+        | Decl(ty1, li1) :: ForD((ty2, li2), cond, inc, body) :: l when ty1 = ty2 ->
+            squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: ForE(None, cond, inc, body) :: l)
         | e::l -> e :: squeezeConsecutiveDeclarations l
 
     // Squeeze top-level declarations, e.g. uniforms
