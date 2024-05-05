@@ -195,8 +195,8 @@ float Scene(vec3 rO,vec3 rD,vec2 fragCoord)
 {
   float t=2.+.1*Hash(fragCoord.xy*fract(iTime)),alphaAcc=0.;
   vec3 p=vec3(0);
-  int hits=0;
-  for(int j=0;j<40;j++)
+  int hits=0,j=0;
+  for(;j<40;j++)
     {
       if(hits==8||alphaAcc>=1.||t>45.)
         break;

@@ -22,8 +22,8 @@ void lfnoise(vec2 t,out float num)
 void mfnoise(vec2 x,float fmin,float fmax,float alpha,out float num)
 {
   num=0.;
-  float a=1.,nf=0.,buf;
-  for(float f=fmin;f<fmax;f*=2.)
+  float a=1.,nf=0.,buf,f=fmin;
+  for(;f<fmax;f*=2.)
     lfnoise(f*x,buf),num+=a*buf,a*=alpha,nf+=1.;
   num*=(1.-alpha)/(1.-pow(alpha,nf));
 }

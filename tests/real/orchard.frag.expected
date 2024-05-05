@@ -198,8 +198,8 @@ float shadow(vec3 ro,vec3 rd,float dis)
 }
 float calcOcc(vec3 pos,vec3 nor,float d)
 {
-  float occ=0.,sca=1.;
-  for(float h=.05;h<.3;h+=.07)
+  float occ=0.,sca=1.,h=.05;
+  for(;h<.3;h+=.07)
     {
       vec3 opos=pos+h*nor;
       float d=map(opos,d).x;

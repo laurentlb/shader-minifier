@@ -310,8 +310,8 @@ MarchData map(vec3 p)
 float calcShadow(vec3 p,vec3 lightPos)
 {
   lightPos=normalize(lightPos-p);
-  float res=1.,t=.1;
-  for(float i=0.;i<SHADOW_STEPS;i++)
+  float res=1.,t=.1,i=0.;
+  for(;i<SHADOW_STEPS;i++)
     {
       float h=map(p+lightPos*t).d;
       res=min(res,12.*h/t);
