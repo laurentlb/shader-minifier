@@ -760,7 +760,7 @@ void main()
       p.y+=.5;
       vec3 r=normalize(camtarget-campos),s=normalize(cross(vec3(0,1,0),r)),t=cross(s,r);
       p-=campos;
-      p*=transpose(mat3(s,-t,r));
+      p=transpose(mat3(s,-t,r))*p;
       p.xy*=rotmat(sin(time/2)*.05*cameraroll+cameraroll2);
       p.y+=(fbm(vec2(time/16))-.5)*.1*cameraroll;
       p.x+=(fbm(vec2(time/14+10))-.5)*.1*cameraroll;

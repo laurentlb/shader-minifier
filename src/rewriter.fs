@@ -216,9 +216,9 @@ module private RewriterImpl =
                 when x.Name = y.Name && augmentableOperators.Contains op ->
             FunCall(Op (op + "="), [Var x; e])
 
-        // Match:  x = ... + x
-        // works only if the operator is commutative
-        | FunCall(Op "=", [Var x; FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
+        // x = ...+x ->  x += ...
+        // Works only if the operator is commutative. * is not commutative with vectors and matrices.
+        | FunCall(Op "=", [Var x; FunCall(Op ("+"|"&"|"^"|"|" as op), [e; Var y])])
                 when x.Name = y.Name ->
             FunCall(Op (op + "="), [Var x; e])
 

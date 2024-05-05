@@ -58,7 +58,7 @@ void main()
       if(ti==10)
         ro.y+=2;
       vec3 w=normalize(vec3(0,1.3,0)-ro),u=normalize(cross(w,vec3(0,1,0)));
-      rd*=mat3(u,normalize(cross(w,-u)),w);
+      rd=mat3(u,normalize(cross(w,-u)),w)*rd;
       gl_FragColor.xyz=vec3(.8,.8,1)/6;
       float t=0.,d=0.;
       for(int i=0;i<100;++i)
