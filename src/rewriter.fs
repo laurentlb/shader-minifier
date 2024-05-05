@@ -211,12 +211,12 @@ module private RewriterImpl =
 
         // a=a;  ->  a
         | FunCall(Op "=", [Var x; Var y]) when x.Name = y.Name -> Var y
-        // Match:  x = x + ...
+        // x=x+...  ->  x+=...
         | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
                 when x.Name = y.Name && augmentableOperators.Contains op ->
             FunCall(Op (op + "="), [Var x; e])
 
-        // x = ...+x ->  x += ...
+        // x=...+x  ->  x+=...
         // Works only if the operator is commutative. * is not commutative with vectors and matrices.
         | FunCall(Op "=", [Var x; FunCall(Op ("+"|"&"|"^"|"|" as op), [e; Var y])])
                 when x.Name = y.Name ->
@@ -370,12 +370,12 @@ module private RewriterImpl =
 
         List.collect replacements stmts
 
-    // Squeeze declarations: "float a=2.; float b;" => "float a=2.,b;"
+    // Squeeze declarations: "float a=2.; float b;"  ->  "float a=2.,b;"
     let rec squeezeConsecutiveDeclarations = function
         | []-> []
         | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
-        // int a=2; for (int b=3; ...) -> int a=2, b=3; for (; ...)
+        // int a=2; for (int b=3; ...)  ->  int a=2, b=3; for (; ...)
         | Decl(ty1, li1) :: ForD((ty2, li2), cond, inc, body) :: l when ty1 = ty2 ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: ForE(None, cond, inc, body) :: l)
         | e::l -> e :: squeezeConsecutiveDeclarations l
