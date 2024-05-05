@@ -440,41 +440,22 @@ module private RewriterImpl =
         b |> tryReplaceWithPrecedingAndFollowing (function
         | (preceding2, Decl (ty2, declElts), following2) ->
             let findAssignmentReplacementFor declElt2 declBefore2 declAfter2 =
-                let compatibleDeclElts = (preceding2 @ declBefore2) |> List.collect (function
-                    // The previous declaration must have the same type.
-                    | Decl (ty1, declElts1) when ty2 = ty1 ->
-                        let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
-                            // The first variable must not be used after the second is declared.
-                            Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
-                        declElts1 |> List.filter (fun declElt1 ->
-                            // The previous declaration must have the same size and semantics
-                            declElt1.size = declElt2.size &&
-                            declElt1.semantics = declElt2.semantics &&
-                            firstIsNotUsedAfterSecondDeclared declElt1 (declAfter2 @ following2)
-                        )
-                    | _ -> [])
+                // Collect previous declarations of the same type.
+                let localDecls = (preceding2 @ declBefore2) |> List.collect (function Decl (ty1, declElts1) when ty2 = ty1 -> declElts1 | _ -> [])
+                let args =
+                    match blockLevel with
+                    | BlockLevel.FunctionRoot fct ->
+                        fct.parameters |> List.choose (function ty, decl -> if not ty.isOutOrInout && ty = ty2 then Some decl else None)
+                    | _ -> []
 
-                let args = (match blockLevel with // todo: refactor
-                            | BlockLevel.FunctionRoot fct ->
-                                    //[
-                                    // for ty1, decl in fct.parameters do if ty1 = ty2 then
-                                    //    let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
-                                    //        // The first variable must not be used after the second is declared.
-                                    //        Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
-                                    let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
-                                        // The first variable must not be used after the second is declared.
-                                        Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                let compatibleDeclElt = (localDecls @ args) |> List.tryFind (fun declElt1 ->
+                    declElt1.size = declElt2.size &&
+                    declElt1.semantics = declElt2.semantics &&
+                    // The first variable must not be used after the second is declared.
+                    Analyzer.varUsesInStmt (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                )
 
-                                    fct.parameters
-                                        |> List.choose (function ty, decl -> if not ty.isOutOrInout && ty = ty2 then Some decl else None)
-                                        |> List.filter (fun declElt1 ->
-                                            // The previous declaration must have the same size and semantics
-                                            declElt1.size = declElt2.size &&
-                                            declElt1.semantics = declElt2.semantics &&
-                                            firstIsNotUsedAfterSecondDeclared declElt1 (declAfter2 @ following2))
-                            | _ -> [])
-                let compatibleDeclElts = compatibleDeclElts @ args
-                match compatibleDeclElts |> List.tryHead with
+                match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
                     debug $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
