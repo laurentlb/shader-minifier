@@ -170,7 +170,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
     mapTopLevel (mapEnvExpr findWrites) topLevel |> ignore<TopLevel list>
 
     let findExternallyVisibleSideEffect tl =
-        let mutable hasExternallyVisibleSideEffect = false
+        let sideEffectIdents = HashSet<Ident>()
         let findSideEffects _ = function
             | Var v as e ->
                 let hasSideEffect =
@@ -183,11 +183,16 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
                     // functions are processed in order, so this is initialized before use
                     | Declaration.Func f -> f.hasExternallyVisibleSideEffects
                     | _ -> true
-                hasExternallyVisibleSideEffect <- hasExternallyVisibleSideEffect || hasSideEffect
+                if hasSideEffect then sideEffectIdents.Add(v) |> ignore<bool>
+                e
+            | FunCall(Var v, _) as e ->
+                if Builtin.pureBuiltinFunctions.Contains(v.Name) then
+                    // Visiting the Var previously found this ident to be a side effect, but now we know it's not.
+                    sideEffectIdents.Remove(v) |> ignore<bool>
                 e
             | e -> e
         mapTopLevel (mapEnvExpr findSideEffects) [tl] |> ignore<TopLevel list>
-        hasExternallyVisibleSideEffect
+        sideEffectIdents.Count > 0
 
     for tl in topLevel do
         match tl with
