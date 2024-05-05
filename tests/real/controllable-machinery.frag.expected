@@ -40,8 +40,8 @@ vec4 BPos(float t)
 }
 float PrBoxDf(vec3 p,vec3 b)
 {
-  vec3 d=abs(p)-b;
-  return min(max(d.x,max(d.y,d.z)),0.)+length(max(d,0.));
+  p=abs(p)-b;
+  return min(max(p.x,max(p.y,p.z)),0.)+length(max(p,0.));
 }
 float PrRoundBoxDf(vec3 p,vec3 b)
 {

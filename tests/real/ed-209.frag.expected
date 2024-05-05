@@ -10,8 +10,9 @@ float stretch,gunsUp,gunsForward,edWalk,edTwist,edDown,edShoot,doorOpen,glow;
 struct MarchData{float d;vec3 mat;float specPower;};
 mat2 rot(float a)
 {
-  float c=cos(a),s=sin(a);
-  return mat2(c,s,-s,c);
+  float c=cos(a);
+  a=sin(a);
+  return mat2(c,a,-a,c);
 }
 float remap(float f,float in1,float in2,float out1,float out2)
 {
@@ -19,8 +20,8 @@ float remap(float f,float in1,float in2,float out1,float out2)
 }
 float sdBox(vec3 p,vec3 b)
 {
-  vec3 q=abs(p)-b;
-  return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
+  p=abs(p)-b;
+  return length(max(p,0.))+min(max(p.x,max(p.y,p.z)),0.);
 }
 float sdChamferedCube(vec3 p,vec3 r)
 {
@@ -54,8 +55,9 @@ float sdCappedCylinder(vec3 p,float h,float r)
 }
 float sdCapsule(vec3 p,vec3 a,vec3 b)
 {
-  vec3 pa=p-a,ba=b-a;
-  return length(pa-ba*clamp(dot(pa,ba)/dot(ba,ba),0.,1.))-.2;
+  p-=a;
+  a=b-a;
+  return length(p-a*clamp(dot(p,a)/dot(a,a),0.,1.))-.2;
 }
 float sdOctogon(vec2 p,float r)
 {
@@ -68,8 +70,9 @@ float sdOctogon(vec2 p,float r)
 }
 vec3 getRayDir(vec3 ro,vec3 lookAt,vec2 uv)
 {
-  vec3 forward=normalize(lookAt-ro),right=normalize(cross(vec3(0,1,0),forward));
-  return normalize(forward+right*uv.x+cross(forward,right)*uv.y);
+  ro=normalize(lookAt-ro);
+  lookAt=normalize(cross(vec3(0,1,0),ro));
+  return normalize(ro+lookAt*uv.x+cross(ro,lookAt)*uv.y);
 }
 MarchData minResult(MarchData a,MarchData b)
 {
@@ -306,11 +309,11 @@ MarchData map(vec3 p)
 }
 float calcShadow(vec3 p,vec3 lightPos)
 {
-  vec3 rd=normalize(lightPos-p);
+  lightPos=normalize(lightPos-p);
   float res=1.,t=.1;
   for(float i=0.;i<SHADOW_STEPS;i++)
     {
-      float h=map(p+rd*t).d;
+      float h=map(p+lightPos*t).d;
       res=min(res,12.*h/t);
       t+=h;
       if(res<.001||t>25.)
@@ -325,17 +328,17 @@ vec3 calcNormal(vec3 p,float t)
 }
 vec3 vignette(vec3 col,vec2 fragCoord)
 {
-  vec2 q=fragCoord.xy/iResolution.xy;
-  col*=.5+.5*pow(16.*q.x*q.y*(1.-q.x)*(1.-q.y),.4);
+  fragCoord=fragCoord.xy/iResolution.xy;
+  col*=.5+.5*pow(16.*fragCoord.x*fragCoord.y*(1.-fragCoord.x)*(1.-fragCoord.y),.4);
   return col;
 }
 vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
 {
   const vec3 sunPos=vec3(10,10,-10);
   vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
-  float primary=max(0.,dot(sunDir,n));
-  primary*=mix(.2,1.,calcShadow(p,sunPos));
-  sunDir=((primary+max(0.,dot(-sunDir,n))*.2)*(map(p+.33*n).d/.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
+  d=max(0.,dot(sunDir,n));
+  d*=mix(.2,1.,calcShadow(p,sunPos));
+  sunDir=((d+max(0.,dot(-sunDir,n))*.2)*(map(p+.33*n).d/.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
   return mix(data.mat*sunDir,vec3(.01),smoothstep(.7,1.,1.+dot(rd,n)))*exp(-length(p)*.05);
 }
 vec3 getSceneColor(vec3 ro,vec3 rd)

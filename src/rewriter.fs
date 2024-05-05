@@ -428,7 +428,7 @@ module private RewriterImpl =
     // Reuse an existing local variable declaration that won't be used anymore, instead of introducing a new one.
     // The reused identifier gets compressed better, and the declaration is sometimes removed.
     // float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
-    let reuseExistingVarDecl b =
+    let reuseExistingVarDecl blockLevel b =
         let tryReplaceWithPrecedingAndFollowing f (xs : Stmt list) =
             let rec go f preceding = function
                 | head :: tail ->
@@ -440,20 +440,22 @@ module private RewriterImpl =
         b |> tryReplaceWithPrecedingAndFollowing (function
         | (preceding2, Decl (ty2, declElts), following2) ->
             let findAssignmentReplacementFor declElt2 declBefore2 declAfter2 =
-                let compatibleDeclElts = (preceding2 @ declBefore2) |> List.collect (function
-                    // The previous declaration must have the same type.
-                    | Decl (ty1, declElts1) when ty2 = ty1 ->
-                        let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
-                            // The first variable must not be used after the second is declared.
-                            Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
-                        declElts1 |> List.filter (fun declElt1 ->
-                            // The previous declaration must have the same size and semantics
-                            declElt1.size = declElt2.size &&
-                            declElt1.semantics = declElt2.semantics &&
-                            firstIsNotUsedAfterSecondDeclared declElt1 (declAfter2 @ following2)
-                        )
-                    | _ -> [])
-                match compatibleDeclElts |> List.tryHead with
+                // Collect previous declarations of the same type.
+                let localDecls = (preceding2 @ declBefore2) |> List.collect (function Decl (ty1, declElts1) when ty2 = ty1 -> declElts1 | _ -> [])
+                let args =
+                    match blockLevel with
+                    | BlockLevel.FunctionRoot fct ->
+                        fct.parameters |> List.choose (function ty, decl -> if not ty.isOutOrInout && ty = ty2 then Some decl else None)
+                    | _ -> []
+
+                let compatibleDeclElt = (localDecls @ args) |> List.tryFind (fun declElt1 ->
+                    declElt1.size = declElt2.size &&
+                    declElt1.semantics = declElt2.semantics &&
+                    // The first variable must not be used after the second is declared.
+                    Analyzer.varUsesInStmt (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                )
+
+                match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
                     debug $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
@@ -592,9 +594,9 @@ module private RewriterImpl =
 
         let b =
             // We ensure control flow analysis is trivial by only doing this at the root block level.
-            if blockLevel <> BlockLevel.FunctionRoot || hasPreprocessor
+            if (match blockLevel with BlockLevel.FunctionRoot _ -> false | _ -> true) || hasPreprocessor
             then b
-            else reuseExistingVarDecl b
+            else reuseExistingVarDecl blockLevel b
 
         // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
         let b = squeezeConsecutiveDeclarations b
@@ -772,7 +774,7 @@ module private ArgumentInlining =
         let applyTopLevel = function
             | Function(fct, body) as f ->
                 // Handle argument inlining for other functions called by f.
-                let _, body = mapStmt BlockLevel.FunctionRoot (mapEnvExpr applyExpr) body
+                let _, body = mapStmt (BlockLevel.FunctionRoot fct) (mapEnvExpr applyExpr) body
                 // Handle argument inlining for f. Remove the parameter from the declaration.
                 let fct = {fct with args = removeInlined f fct.args}
                 // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.

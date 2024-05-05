@@ -51,13 +51,13 @@ float vmax(vec3 v)
 }
 float fBox(vec3 p,vec3 b)
 {
-  vec3 d=abs(p)-b;
-  return length(max(d,vec3(0)))+vmax(min(d,vec3(0)));
+  p=abs(p)-b;
+  return length(max(p,vec3(0)))+vmax(min(p,vec3(0)));
 }
 float fBox2(vec2 p,vec2 b)
 {
-  vec2 d=abs(p)-b;
-  return length(max(d,vec2(0)))+vmax(min(d,vec2(0)));
+  p=abs(p)-b;
+  return length(max(p,vec2(0)))+vmax(min(p,vec2(0)));
 }
 float sdCap(vec3 p)
 {
@@ -188,9 +188,9 @@ vec2 marcher(vec3 ro,vec3 rd)
 }
 vec3 normal(vec3 p,float t)
 {
-  float e=MINDIST*t;
+  t*=MINDIST;
   vec2 h=vec2(1,-1)*.5773;
-  return normalize(h.xyy*map(p+h.xyy*e,0.).x+h.yyx*map(p+h.yyx*e,0.).x+h.yxy*map(p+h.yxy*e,0.).x+h.xxx*map(p+h.xxx*e,0.).x);
+  return normalize(h.xyy*map(p+h.xyy*t,0.).x+h.yyx*map(p+h.yyx*t,0.).x+h.yxy*map(p+h.yxy*t,0.).x+h.xxx*map(p+h.xxx*t,0.).x);
 }
 vec3 hsv2rgb(vec3 c)
 {

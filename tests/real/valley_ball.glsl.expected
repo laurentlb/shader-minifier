@@ -26,8 +26,8 @@ float norm(float x)
 }
 float caustic(float u,float v,float t)
 {
-  float a=(norm(sin(pi*2.*(u+v+Y.y*t)))+norm(sin(pi*(v-u-Y.y*t)))+norm(sin(pi*(v+Y.y*t)))+norm(sin(pi*3.*(u-Y.y*t))))*.3;
-  return pow(a,2.);
+  u=(norm(sin(pi*2.*(u+v+Y.y*t)))+norm(sin(pi*(v-u-Y.y*t)))+norm(sin(pi*(v+Y.y*t)))+norm(sin(pi*3.*(u-Y.y*t))))*.3;
+  return pow(u,2.);
 }
 vec3 pp(vec3 color)
 {
@@ -64,10 +64,11 @@ vec3 getWaterNormal(vec3 p)
 }
 vec3 shadeTerrain(vec3 p,vec3 rd)
 {
-  vec3 n=getTerrainNormal(p),color=mix(vec3(.66,.55,.4)-.2*smoothrnd(abs(p.xz*150.))-.2*smoothrnd(abs(p.yy+.002*smoothrnd(abs(p.xz*150.)))*3e3),vec3(.1,.3,0)*(smoothrnd(p.xz*7e3)*.4+.5),clamp(n.y*(caustic(p.x*111.,p.z*111.,0.)*.5-p.y*40.),0.,1.));
+  rd=getTerrainNormal(p);
+  vec3 color=mix(vec3(.66,.55,.4)-.2*smoothrnd(abs(p.xz*150.))-.2*smoothrnd(abs(p.yy+.002*smoothrnd(abs(p.xz*150.)))*3e3),vec3(.1,.3,0)*(smoothrnd(p.xz*7e3)*.4+.5),clamp(rd.y*(caustic(p.x*111.,p.z*111.,0.)*.5-p.y*40.),0.,1.));
   if(p.y<=0.)
     color+=5.*getWaterNormal(.8*p).x*min(.3,-p.y*8.);
-  return diffuseLight(color,n);
+  return diffuseLight(color,rd);
 }
 vec3 shadeSky(vec3 ro,vec3 rd)
 {
@@ -88,12 +89,11 @@ float traceTerrain(vec3 ro,vec3 rd,float maxt)
 {
   float delt,lh,ly,samplePosY;
   delt=0.;
-  vec3 samplePos=ro;
   for(float t=0.;t<maxt;t+=delt)
     {
-      samplePos+=rd*delt;
-      samplePosY=samplePos.y;
-      float h=height(samplePos.xz);
+      ro+=rd*delt;
+      samplePosY=ro.y;
+      float h=height(ro.xz);
       if(samplePosY<=h)
         return t-delt+delt*(lh-ly)/(samplePosY-h+lh-ly);
       lh=h;
@@ -104,12 +104,12 @@ float traceTerrain(vec3 ro,vec3 rd,float maxt)
 }
 float traceAttractor(vec3 ro,vec3 rd)
 {
-  vec3 dst=ro-spherePos;
+  ro-=spherePos;
   float B,D;
-  B=dot(dst,rd);
+  B=dot(ro,rd);
   if(B>0.)
     return 9.;
-  D=B*B-dot(dst,dst)+sphereRadius*sphereRadius;
+  D=B*B-dot(ro,ro)+sphereRadius*sphereRadius;
   return D>0.?
     -B-sqrt(D):
     9.;
@@ -137,13 +137,13 @@ vec4 traceRay(vec3 ro,vec3 rd,int ignore)
   minDist=min(terrain,min(water,min(attractor,9.)));
   if(minDist==9.)
     return vec4(0);
-  vec3 hitPos=ro+rd*minDist;
+  ro+=rd*minDist;
   if(minDist==terrain)
-    return vec4(hitPos,1);
+    return vec4(ro,1);
   if(minDist==water)
-    return vec4(hitPos,2);
+    return vec4(ro,2);
   if(minDist==attractor)
-    return vec4(hitPos,3);
+    return vec4(ro,3);
 }
 vec3 shade(vec4 hitPoint,vec3 newRo,vec3 rd)
 {

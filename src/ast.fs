@@ -191,7 +191,7 @@ type Shader = {
 // while also collecting visible variable and function declarations along the way.
 
 [<NoComparison>] [<RequireQualifiedAccess>]
-type BlockLevel = FunctionRoot | Nested | Unknown
+type BlockLevel = FunctionRoot of FunctionType | Nested | Unknown
 
 [<NoComparison; NoEquality>]
 type MapEnv = {
@@ -315,7 +315,7 @@ let mapTopLevel env li =
             let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
 
             // Transform the body. The env modifications (local variables) are discarded.
-            let _, body = mapStmt BlockLevel.FunctionRoot env body
+            let _, body = mapStmt (BlockLevel.FunctionRoot fct) env body
             // Update env.fns with the transformed body.
             let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
 

@@ -130,8 +130,9 @@ float isoSurface(vec3 p)
 }
 float traceIso(vec3 ro,vec3 rd,float mint,float maxt)
 {
-  float lt,liso,exact,delt=(maxt-mint)/99.;
-  for(float t=mint;t<maxt;t+=delt)
+  float s=99.,lt,liso,exact;
+  s=(maxt-mint)/s;
+  for(float t=mint;t<maxt;t+=s)
     {
       vec3 p=ro+t*rd;
       float iso=isoSurface(p);

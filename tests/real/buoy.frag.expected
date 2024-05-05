@@ -77,17 +77,16 @@ float WavesSmooth(vec3 pos)
 }
 float WaveCrests(vec3 ipos,vec2 fragCoord)
 {
-  vec3 pos=ipos;
-  pos*=.2*vec3(1);
+  ipos*=.2*vec3(1);
   float f=0.;
-  pos+=iTime*vec3(0,.1,.1);
-  vec3 pos2=pos;
+  ipos+=iTime*vec3(0,.1,.1);
+  vec3 pos2=ipos;
   for(int i=0;i<6;i++)
-    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+abs(Noise(pos).x-.5)*2.,pos*=2.;
-  pos=pos2*exp2(float(6));
-  pos.y=-.05*iTime;
+    ipos=(ipos.yzx+ipos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+abs(Noise(ipos).x-.5)*2.,ipos*=2.;
+  ipos=pos2*exp2(float(6));
+  ipos.y=-.05*iTime;
   for(int i=6;i<16;i++)
-    pos=(pos.yzx+pos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+pow(abs(Noise(pos).x-.5)*2.,1.),pos*=2.;
+    ipos=(ipos.yzx+ipos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+pow(abs(Noise(ipos).x-.5)*2.,1.),ipos*=2.;
   f/=1500.;
   f-=Noise(ivec2(fragCoord.xy)).x*.01;
   return pow(smoothstep(.4,-.1,f),6.);
@@ -145,8 +144,8 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   albedo=mix(vec3(1,.8,.08),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
   albedo*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
   lightDir=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1);
-  vec3 rr=reflect(ray,norm);
-  lightDir+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
+  pos=reflect(ray,norm);
+  lightDir+=mix(vec3(0,.04,.04),Sky(pos),smoothstep(-.1,.1,pos.y));
   aa=pow(1.-abs(dot(norm,ray)),5.);
   aa=mix(.001,1.,aa);
   return mix(albedo,lightDir,aa);
@@ -189,15 +188,15 @@ vec3 ShadeOcean(vec3 pos,vec3 ray,vec2 fragCoord)
   vec3 reflectedRay=ray-2.*norm*ndotr;
   norm=ray+(-cos(1.33*acos(-ndotr))-ndotr)*norm;
   norm=normalize(norm);
-  vec3 reflection=Sky(reflectedRay);
+  ray=Sky(reflectedRay);
   float t=TraceBoat(pos-0.*reflectedRay,reflectedRay);
   if(t>0.)
-    reflection=ShadeBoat(pos+t*reflectedRay,reflectedRay);
+    ray=ShadeBoat(pos+t*reflectedRay,reflectedRay);
   t=TraceBoat(pos-0.*norm,norm);
   reflectedRay=vec3(0,.04,.04);
   if(t>0.)
     reflectedRay=mix(reflectedRay,ShadeBoat(pos+t*norm,norm),exp(-t));
-  reflectedRay=mix(reflectedRay,reflection,pow(1.-abs(ndotr),5.));
+  reflectedRay=mix(reflectedRay,ray,pow(1.-abs(ndotr),5.));
   return mix(reflectedRay,vec3(1),WaveCrests(pos,fragCoord));
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)
