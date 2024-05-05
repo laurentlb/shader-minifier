@@ -58,12 +58,12 @@ vec3 texCube(sampler2D sam,vec3 p,vec3 n)
 vec4 grassTexture(vec3 pos,vec3 nor)
 {
   float g=texture(iChannel1,pos.xz*.5).x,s=texture(iChannel1,pos.xz*.015).x*.2;
-  vec3 flower=texture(iChannel2,pos.xz*.15).xyz;
+  nor=texture(iChannel2,pos.xz*.15).xyz;
   float rand=texture(iChannel1,pos.xz*.003).x;
   rand*=rand*rand;
-  flower=pow(flower,vec3(8,15,5))*10.*rand;
+  nor=pow(nor,vec3(8,15,5))*10.*rand;
   vec4 mat=vec4(g*.05+s,g*.65,0,g*.1);
-  mat.xyz+=flower;
+  mat.xyz+=nor;
   pos=fract(pos);
   mat=mix(mat,vec4(.2,0,0,0),smoothstep(.05,0.,min(pos.x,pos.z))+smoothstep(.95,1.,max(pos.x,pos.z)));
   return min(mat,1.);
@@ -77,15 +77,15 @@ vec4 barkTexture(vec3 p,vec3 nor)
 }
 vec4 leavesTexture(vec3 p,vec3 nor)
 {
-  vec3 rand=texCube(iChannel2,p*.15,nor);
-  return vec4(vec3(.4,1.2,0)*rand,0);
+  p=texCube(iChannel2,p*.15,nor);
+  return vec4(vec3(.4,1.2,0)*p,0);
 }
 vec4 fruitTexture(vec3 p,vec3 nor,float i)
 {
   float rand=texCube(iChannel2,p*.1,nor).x;
-  vec3 mat=vec3(1,abs(dot(nor,normalize(vec3(.8,.1,.1))))*rand,0);
-  mat=mix(vec3(0,1,0),mat,i/10.);
-  return vec4(mat,.5);
+  p=vec3(1,abs(dot(nor,normalize(vec3(.8,.1,.1))))*rand,0);
+  p=mix(vec3(0,1,0),p,i/10.);
+  return vec4(p,.5);
 }
 float distanceRayPoint(vec3 ro,vec3 rd,vec3 p,out float h)
 {
@@ -130,8 +130,8 @@ vec4 getClouds(vec3 pos,vec3 dir)
   vec2 p=pos.xz+dir.xz*(4e3/dir.y);
   float r=findClouds2D(p),t=findClouds2D(p+normalize(sunLight.xz)*30.);
   t=sqrt(max((r-t)*20.,.2))*2.;
-  vec3 col=vec3(t)*SUN_COLOUR;
-  return vec4(col,r);
+  pos=vec3(t)*SUN_COLOUR;
+  return vec4(pos,r);
 }
 vec2 map(vec3 p,float t)
 {
@@ -146,18 +146,18 @@ vec2 map(vec3 p,float t)
   p/=3.5;
   vec3 q=p;
   int it=10-int(min(t*.03,9.));
-  float h=hash11(num*7.)*.3+.3;
+  t=hash11(num*7.)*.3+.3;
   vec3 uwc=normalize(cross(u,w));
   int dontFold=int(hash11(num*23.)*9.)+3;
-  float thick=.2/(h-.24);
+  float thick=.2/(t-.24);
   for(int i=0;i<it;i++)
     {
-      f=3.5*max(p.y-h,max(-p.y,length(p.xz)-.06/(p.y+thick)))/s;
+      f=3.5*max(p.y-t,max(-p.y,length(p.xz)-.06/(p.y+thick)))/s;
       if(f<=d)
         d=f,matID=1.;
       if(i!=dontFold)
         p.xz=abs(p.xz);
-      p.y-=h;
+      p.y-=t;
       p*=mat3(u,uwc,w);
       p*=1.6;
       s*=1.6;
@@ -165,11 +165,11 @@ vec2 map(vec3 p,float t)
   f=(length(p)-.2)/s;
   if(f<=d)
     d=f,matID=2.;
-  q.y-=h*1.84;
-  h*=1.1;
+  q.y-=t*1.84;
+  t*=1.1;
   for(int i=0;i<it;i++)
     {
-      p=normalize(hash31(num+float(i+19))-.5)*vec3(h,.1,h);
+      p=normalize(hash31(num+float(i+19))-.5)*vec3(t,.1,t);
       p+=q;
       float ds=length(p)-.015;
       if(ds<=d)

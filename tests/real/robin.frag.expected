@@ -5,13 +5,14 @@ vec2 zoomTurn;
 vec4 aStack[2],dStack[2];
 vec3 CubeMap(samplerCube sam,vec3 v,float size)
 {
-  float M=max(max(abs(v.x),abs(v.y)),abs(v.z)),scale=(float(size)-1.)/float(size);
+  float M=max(max(abs(v.x),abs(v.y)),abs(v.z));
+  size=(float(size)-1.)/float(size);
   if(abs(v.x)!=M)
-    v.x*=scale;
+    v.x*=size;
   if(abs(v.y)!=M)
-    v.y*=scale;
+    v.y*=size;
   if(abs(v.z)!=M)
-    v.z*=scale;
+    v.z*=size;
   return texture(sam,v).xyz;
 }
 float Hash(float p)
@@ -46,8 +47,9 @@ float fbm(vec3 p)
 }
 vec2 Rot2(vec2 p,float a)
 {
-  float si=sin(a),co=cos(a);
-  return mat2(co,si,-si,co)*p;
+  float si=sin(a);
+  a=cos(a);
+  return mat2(a,si,-si,a)*p;
 }
 float Noise(float n)
 {
@@ -74,14 +76,15 @@ vec3 TexCube(vec3 p,vec3 n)
 }
 float Cylinder(vec3 p,vec2 h)
 {
-  vec2 d=abs(vec2(length(p.xz),p.y))-h;
-  return min(max(d.x,d.y),0.)+length(max(d,0.));
+  h=abs(vec2(length(p.xz),p.y))-h;
+  return min(max(h.x,h.y),0.)+length(max(h,0.));
 }
 float Segment(vec3 p,vec3 a,vec3 b,float r1,float r2)
 {
-  vec3 pa=p-a,ba=b-a;
-  float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
-  return length(pa-ba*h)-r1+r2*h;
+  p-=a;
+  a=b-a;
+  float h=clamp(dot(p,a)/dot(a,a),0.,1.);
+  return length(p-a*h)-r1+r2*h;
 }
 float RoundBox(vec3 p,vec3 b)
 {

@@ -428,7 +428,7 @@ module private RewriterImpl =
     // Reuse an existing local variable declaration that won't be used anymore, instead of introducing a new one.
     // The reused identifier gets compressed better, and the declaration is sometimes removed.
     // float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
-    let reuseExistingVarDecl b =
+    let reuseExistingVarDecl blockLevel b =
         let tryReplaceWithPrecedingAndFollowing f (xs : Stmt list) =
             let rec go f preceding = function
                 | head :: tail ->
@@ -453,6 +453,27 @@ module private RewriterImpl =
                             firstIsNotUsedAfterSecondDeclared declElt1 (declAfter2 @ following2)
                         )
                     | _ -> [])
+
+                let args = (match blockLevel with // todo: refactor
+                            | BlockLevel.FunctionRoot fct ->
+                                    //[
+                                    // for ty1, decl in fct.parameters do if ty1 = ty2 then
+                                    //    let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
+                                    //        // The first variable must not be used after the second is declared.
+                                    //        Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                                    let firstIsNotUsedAfterSecondDeclared (declElt1 : DeclElt) followingDecl2 =
+                                        // The first variable must not be used after the second is declared.
+                                        Analyzer.varUsesInStmt (Block followingDecl2) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+
+                                    fct.parameters
+                                        |> List.choose (function ty, decl -> if not ty.isOutOrInout && ty = ty2 then Some decl else None)
+                                        |> List.filter (fun declElt1 ->
+                                            // The previous declaration must have the same size and semantics
+                                            declElt1.size = declElt2.size &&
+                                            declElt1.semantics = declElt2.semantics &&
+                                            firstIsNotUsedAfterSecondDeclared declElt1 (declAfter2 @ following2))
+                            | _ -> [])
+                let compatibleDeclElts = compatibleDeclElts @ args
                 match compatibleDeclElts |> List.tryHead with
                 | None -> None
                 | Some declElt1 ->
@@ -592,9 +613,9 @@ module private RewriterImpl =
 
         let b =
             // We ensure control flow analysis is trivial by only doing this at the root block level.
-            if blockLevel <> BlockLevel.FunctionRoot || hasPreprocessor
+            if (match blockLevel with BlockLevel.FunctionRoot _ -> false | _ -> true) || hasPreprocessor
             then b
-            else reuseExistingVarDecl b
+            else reuseExistingVarDecl blockLevel b
 
         // Consecutive declarations of the same type become one.  float a;float b;  ->  float a,b;
         let b = squeezeConsecutiveDeclarations b
@@ -772,7 +793,7 @@ module private ArgumentInlining =
         let applyTopLevel = function
             | Function(fct, body) as f ->
                 // Handle argument inlining for other functions called by f.
-                let _, body = mapStmt BlockLevel.FunctionRoot (mapEnvExpr applyExpr) body
+                let _, body = mapStmt (BlockLevel.FunctionRoot fct) (mapEnvExpr applyExpr) body
                 // Handle argument inlining for f. Remove the parameter from the declaration.
                 let fct = {fct with args = removeInlined f fct.args}
                 // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
