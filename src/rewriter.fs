@@ -770,7 +770,7 @@ module private ArgumentInlining =
             | FunCall (Var v, argExprs) as f ->
                 // Remove the argument expression from the call site.
                 match v.Declaration with
-                | Declaration.Func fd -> FunCall (Var v, removeInlined fd.func argExprs)
+                | Declaration.UserFunction fd -> FunCall (Var v, removeInlined fd.func argExprs)
                 | _ -> f
             | x -> x
 
