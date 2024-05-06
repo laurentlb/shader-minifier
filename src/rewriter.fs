@@ -218,8 +218,13 @@ module private RewriterImpl =
 
         // x=...+x  ->  x+=...
         // Works only if the operator is commutative. * is not commutative with vectors and matrices.
-        | FunCall(Op "=", [Var x; FunCall(Op ("+"|"&"|"^"|"|" as op), [e; Var y])])
-                when x.Name = y.Name ->
+        | FunCall(Op "=", [Var x; FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
+                when x.Name = y.Name
+                && match x.VarDecl with
+                    // * is commutative when at least one operand is scalar
+                    | Some d -> op <> "*" || d.ty.isScalar
+                    | _ -> false
+                ->
             FunCall(Op (op + "="), [Var x; e])
 
         // Unsafe when x contains NaN or Inf values.
