@@ -10,18 +10,24 @@ let keywords = System.Collections.Generic.HashSet<_>([
   "const"; "uniform"; "buffer"; "shared"; "attribute"; "varying"
 ])
 
-let builtinTypes = set([
-    yield! [ "void"; "bool"; "int"; "uint"; "float"; "double" ]
+let builtinScalarTypes = set [
+    "bool"; "int"; "uint"; "float"; "double"
+]
+let builtinVectorTypes = set([
     for p in [""; "d"; "b"; "i"; "u"] do
         for n in ["2"; "3"; "4"] do
             yield p+"vec"+n
+])
+let builtinMatrixTypes = set([
     for p in [""; "d"] do
         for n in ["2"; "3"; "4"] do
             yield p+"mat"+n
         for c in ["2"; "3"; "4"] do
             for r in ["2"; "3"; "4"] do
                 yield p+"mat"+c+"x"+r
-    ])
+])
+
+let builtinTypes = set [ "void" ] + builtinScalarTypes + builtinVectorTypes + builtinMatrixTypes;
 
 let implicitConversions = // (from, to)
     [

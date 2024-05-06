@@ -93,6 +93,10 @@ and Type = {
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
+    member this.isScalar =
+        match this.name with
+            | TypeName n -> Builtin.builtinScalarTypes.Contains n
+            | _ -> false
     override t.ToString() =
         let name = match t.name with
                    | TypeName n -> n

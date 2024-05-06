@@ -188,7 +188,7 @@ vec2 marcher(vec3 ro,vec3 rd)
 }
 vec3 normal(vec3 p,float t)
 {
-  t=MINDIST*t;
+  t*=MINDIST;
   vec2 h=vec2(1,-1)*.5773;
   return normalize(h.xyy*map(p+h.xyy*t,0.).x+h.yyx*map(p+h.yyx*t,0.).x+h.yxy*map(p+h.yxy*t,0.).x+h.xxx*map(p+h.xxx*t,0.).x);
 }
