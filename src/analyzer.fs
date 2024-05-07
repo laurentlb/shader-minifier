@@ -208,7 +208,7 @@ let resolve topLevel =
             v.Declaration <-
                 match env.fns.TryFind (v.Name, args.Length) with
                 | Some [(ft, _)] -> ft.fName.Declaration
-                | None -> Declaration.BuiltinFunction // TODO: resolve builtin functions
+                | None when Builtin.builtinFunctions.Contains v.Name -> Declaration.BuiltinFunction
                 | _ -> Declaration.UnknownFunction // TODO: support type-based disambiguation of user-defined function overloading
             e
         | Var v as e ->

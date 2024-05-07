@@ -43,6 +43,13 @@ float multiPass2()
 {
   return 9.;
 }
+atomic_uint hydrogen;
+uint builtin_with_or_without_side_effects(uint x)
+{
+  uint not_inlined=atomicCounterIncrement(hydrogen),inlined=max(x*x,x+1);
+  atomicCounterIncrement(hydrogen);
+  return x+inlined+not_inlined;
+}
 int dont_inline_lvalue()
 {
   int a=2;

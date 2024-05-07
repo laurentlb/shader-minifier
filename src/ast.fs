@@ -50,7 +50,7 @@ and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | Variable of VarDecl
     | UserFunction of FunDecl
     | BuiltinFunction
-    | UnknownFunction // ambiguous overloading, or builtin redefinition, or macro...
+    | UnknownFunction // ambiguous (type-based) overloading, builtin unknown to minifier, or builtin redefinition
 and VarDecl(ty, decl, scope) =
     member val ty: Type = ty with get
     member val decl = decl: DeclElt with get
