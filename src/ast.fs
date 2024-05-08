@@ -48,7 +48,9 @@ type Ident(name: string) =
 and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | Unknown
     | Variable of VarDecl
-    | Func of FunDecl
+    | UserFunction of FunDecl
+    | BuiltinFunction
+    | UnknownFunction // ambiguous (type-based) overloading, builtin unknown to minifier, or builtin redefinition
 and VarDecl(ty, decl, scope) =
     member val ty: Type = ty with get
     member val decl = decl: DeclElt with get

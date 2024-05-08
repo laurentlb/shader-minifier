@@ -35,9 +35,10 @@ module private VariableInlining =
         | Declaration.Variable varDecl ->
             // A variable not reassigned is effectively constant.
             not varDecl.isEverWrittenAfterDecl
-        | Declaration.Func funDecl ->
+        | Declaration.UserFunction funDecl ->
             not funDecl.hasExternallyVisibleSideEffects
-        | Declaration.Unknown -> Builtin.pureBuiltinFunctions.Contains ident.Name
+        | Declaration.BuiltinFunction -> Builtin.pureBuiltinFunctions.Contains ident.Name
+        | _ -> false
 
     // Mark variables as inlinable when possible.
     // Variables are always safe to inline when all of:
@@ -158,7 +159,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
             e
         | FunCall(Var v, args) as e ->
             match v.Declaration with
-            | Declaration.Func funcDecl when funcDecl.funcType.hasOutOrInoutParams ->
+            | Declaration.UserFunction funcDecl when funcDecl.funcType.hasOutOrInoutParams ->
                 // Writes through assignOps are already handled by mapEnv,
                 // but we also need to handle variable writes through "out" or "inout" parameters.
                 for arg, (ty, _) in List.zip args funcDecl.funcType.args do
@@ -181,7 +182,8 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
                         | VarScope.Parameter -> d.ty.isOutOrInout
                         | VarScope.Local -> false
                     // functions are processed in order, so this is initialized before use
-                    | Declaration.Func f -> f.hasExternallyVisibleSideEffects
+                    | Declaration.UserFunction f -> f.hasExternallyVisibleSideEffects
+                    | Declaration.BuiltinFunction -> not(Builtin.pureBuiltinFunctions.Contains(v.Name))
                     | _ -> true
                 hasExternallyVisibleSideEffect <- hasExternallyVisibleSideEffect || hasSideEffect
                 e
@@ -193,7 +195,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
         match tl with
         | Function (ft, _) ->
             match ft.fName.Declaration with
-            | Declaration.Func f ->
+            | Declaration.UserFunction f ->
                 f.hasExternallyVisibleSideEffects <- findExternallyVisibleSideEffect tl
             | _ -> ()
         | _ -> ()
@@ -203,10 +205,11 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
 let resolve topLevel =
     let resolveExpr (env: MapEnv) = function
         | FunCall (Var v, args) as e ->
-            match env.fns.TryFind (v.Name, args.Length) with
-            | Some [(ft, _)] -> v.Declaration <- ft.fName.Declaration
-            | None -> () // TODO: resolve builtin functions
-            | _ -> () // TODO: support type-based disambiguation of user-defined function overloading
+            v.Declaration <-
+                match env.fns.TryFind (v.Name, args.Length) with
+                | Some [(ft, _)] -> ft.fName.Declaration
+                | None when Builtin.builtinFunctions.Contains v.Name -> Declaration.BuiltinFunction
+                | _ -> Declaration.UnknownFunction // TODO: support type-based disambiguation of user-defined function overloading
             e
         | Var v as e ->
             match env.vars.TryFind v.Name with
@@ -229,7 +232,7 @@ let resolve topLevel =
         | TLDecl decl -> resolveDecl VarScope.Global decl
         | Function (funcType, _) as tl ->
             for decl in funcType.args do resolveDecl VarScope.Parameter decl
-            funcType.fName.Declaration <- Declaration.Func (new FunDecl(tl, funcType))
+            funcType.fName.Declaration <- Declaration.UserFunction (new FunDecl(tl, funcType))
         | _ -> ()
 
     // First visit all declarations, creating them.

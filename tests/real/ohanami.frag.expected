@@ -132,8 +132,8 @@ void main()
               }
         }
       vec2 e=vec2(.001,0),p2=p+(valnoise(p*18)-.5)*.01;
-      float c0=dot(vec3(1./3.),samp(p2).xyz),c1=dot(vec3(1./3.),samp(p2+e.xy).xyz),c2=dot(vec3(1./3.),samp(p2+e.yx*1.8).xyz);
-      c*=vec3(mix(.1,1,1.-clamp(max(abs(c2-c0),abs(c1-c0))*4,0,.13)));
+      float c0=dot(vec3(1./3.),samp(p2).xyz);
+      c*=vec3(mix(.1,1,1.-clamp(max(abs(dot(vec3(1./3.),samp(p2+e.yx*1.8).xyz)-c0),abs(dot(vec3(1./3.),samp(p2+e.xy).xyz)-c0))*4,0,.13)));
       c=(c-.5)*1.1+.5;
       c*=1.-smoothstep(91,97,time);
       gl_FragColor.xyz=sqrt(c*mix(.9,1,valnoise(t.xy*400)))*1.28;

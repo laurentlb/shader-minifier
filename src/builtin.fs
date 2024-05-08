@@ -90,6 +90,10 @@ let pureBuiltinFunctions =
     castFunctions +
     textureFunctions
 
+let impureBuiltinFunctions = set ["atomicCounterIncrement"]
+
+let builtinFunctions = pureBuiltinFunctions + impureBuiltinFunctions
+
 // Type qualifiers telling that a global variables is an 'external' name
 // (it may be referenced from other files).
 let externalQualifiers = set ["in"; "out"; "attribute"; "varying"; "uniform"]

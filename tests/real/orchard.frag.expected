@@ -249,9 +249,8 @@ vec3 lighting(vec4 mat,vec3 pos,vec3 normal,vec3 eyeDir,float d)
 }
 vec3 getNormal(vec3 pos,float ds)
 {
-  float c=map(pos,0.).x;
   vec2 eps_zero=vec2(ds,0);
-  return normalize(vec3(map(pos+eps_zero.xyy,0.).x,map(pos+eps_zero.yxy,0.).x,map(pos+eps_zero.yyx,0.))-c);
+  return normalize(vec3(map(pos+eps_zero.xyy,0.).x,map(pos+eps_zero.yxy,0.).x,map(pos+eps_zero.yyx,0.))-map(pos,0.).x);
 }
 mat3 viewMat(float ay,float az)
 {
