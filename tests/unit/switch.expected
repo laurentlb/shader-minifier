@@ -43,27 +43,24 @@ float D()
       return 0.;
   }
 }
-void c()
+void b()
 {}
 int D(int G)
 {
   switch(G){
     case 1:
-      c();
+      b();
     case 2:
-      c();
+      b();
     case 3:
-      {
-        c();
-        break;
-      }
+      break;
     case 4:
-      c();
-      c();
+      b();
+      b();
       break;
     case 5:
-      c();
-      c();
+      b();
+      b();
       return 18;
   }
   return 1;

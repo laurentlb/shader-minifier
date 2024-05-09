@@ -18,11 +18,12 @@ const char *array_frag =
      "b;"
    "return res;"
  "}"
- "void main()"
+ "float f(float x)"
  "{"
    "float[2] test=float[](5.,7.);"
-   "func_bank(test);"
-   "func_bank(test);"
+   "return func_bank(test)[0]==5&&func_bank(test)[1]==7?"
+     "x:"
+     "x*x;"
  "}";
 
 #endif // ARRAY_FRAG_EXPECTED_

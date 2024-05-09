@@ -58,7 +58,9 @@ float m5(float k)
 	}
 	return k + 2. * m;
 }
+
+float glo;
 void m6()
 {
-	m5(55.);
+	glo += m5(55.);
 }

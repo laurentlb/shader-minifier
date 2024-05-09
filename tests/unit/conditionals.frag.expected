@@ -41,16 +41,25 @@ bool and3()
 {
   return success();
 }
+int foo()
+{
+  return 1;
+}
+int glo;
+int sideEffect(int n)
+{
+  return glo+=n;
+}
 float ifStmtToExpr(float f)
 {
-  float r3;
+  float r=f>0.?
+    sideEffect(1):
+    sideEffect(2),r2=f>1.?
+    sideEffect(1):
+    (sideEffect(99),sideEffect(2)),r3;
   if(f>1.)
-    r3=1.;
+    r3=sideEffect(1);
   else
-     r3=2.,1;
-  return(f>0.?
-    1.:
-    2.)+(f>1.?
-    1.:
-    (1,2.))+r3;
+     r3=sideEffect(2),sideEffect(99);
+  return r+r2+r3;
 }

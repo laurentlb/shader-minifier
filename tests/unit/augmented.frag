@@ -10,6 +10,8 @@ int foo(int x, int y) {
     return a;
 }
 
+int output;
+
 void main() {
-    foo(0, 0);
+    output = foo(0, 0);
 }

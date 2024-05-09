@@ -30,7 +30,8 @@ int m4(int k)
 {
   return k;
 }
+float glo;
 void m6()
 {
-  171.;
+  glo+=171.;
 }
