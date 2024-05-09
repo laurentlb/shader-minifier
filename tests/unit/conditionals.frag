@@ -48,25 +48,32 @@ int foo() {
   return a;
 }
 
+int glo;
+int sideEffect(int n)
+{
+	return glo += n;
+}
+
+// test of "turn if-else into ternary"
 float ifStmtToExpr(float f) {
 	float r;
 	if (f > 0.0)
-		r = 1.0;
+		r = sideEffect(1);
 	else
-		r = 2.0;
+		r = sideEffect(2);
 	float r2;
 	if (f > 1.0) {
-		r2 = 1.0;
+		r2 = sideEffect(1);
     } else {
-		foo();
-		r2 = 2.0;
+		sideEffect(99);
+		r2 = sideEffect(2);
 	}
 	float r3;
 	if (f > 1.0) {
-		r3 = 1.0;
+		r3 = sideEffect(1);
     } else {
-		r3 = 2.0;
-		foo();
+		r3 = sideEffect(2);
+		sideEffect(99);
 	}
 	return r+r2+r3;
 }

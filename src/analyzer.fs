@@ -172,7 +172,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
 
     let findExternallyVisibleSideEffect tl =
         let mutable hasExternallyVisibleSideEffect = false
-        let findSideEffects _ = function
+        let findExprSideEffects _ = function
             | Var v as e ->
                 let hasSideEffect =
                     match v.Declaration with
@@ -188,7 +188,11 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
                 hasExternallyVisibleSideEffect <- hasExternallyVisibleSideEffect || hasSideEffect
                 e
             | e -> e
-        mapTopLevel (mapEnvExpr findSideEffects) [tl] |> ignore<TopLevel list>
+        let findStmtSideEffects _ = function
+            // Side effects can hide in macros.
+            | Verbatim _ as s -> hasExternallyVisibleSideEffect <- true; s
+            | s -> s
+        mapTopLevel (mapEnv findExprSideEffects findStmtSideEffects) [tl] |> ignore<TopLevel list>
         hasExternallyVisibleSideEffect
 
     for tl in topLevel do

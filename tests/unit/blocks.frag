@@ -68,9 +68,9 @@ void main()
 {
   float a = test_if();
   float b = test_for();
-  removeUselessElseAfterReturn1(0.);
-  removeUselessElseAfterReturn2(0.);
-  replaceIfReturnsByReturnTernary1(0.);
+  a += removeUselessElseAfterReturn1(0.);
+  b += removeUselessElseAfterReturn2(0.);
+  a += replaceIfReturnsByReturnTernary1(0.);
   gl_FragColor=vec4(.2,a,b,0.);
   if (a<b) { }
   if (a<b) { } else { }

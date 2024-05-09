@@ -25,10 +25,9 @@ float[2]func_bank(in float[2]res)
     return res;
 }
 
-void main()
+float f(float x)
 {
     float[2] test = float[](5., 7.);
-
-    func_bank(test)[0]; // 5
-    func_bank(test)[1]; // 7
+    return func_bank(test)[0] == 5 && func_bank(test)[1] == 7
+		? x : x*x;
 }

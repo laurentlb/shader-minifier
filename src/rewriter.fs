@@ -20,6 +20,10 @@ let rec private sideEffects = function
     | Dot(v, _)  -> sideEffects v
     | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
     | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
+    | FunCall(Var fct, args) as e ->
+        match fct.Declaration with
+        | Declaration.UserFunction fd when not fd.hasExternallyVisibleSideEffects -> args |> List.collect sideEffects
+        | _ -> [e]
     | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
     | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
     | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
