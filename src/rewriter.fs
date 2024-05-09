@@ -514,13 +514,19 @@ module private RewriterImpl =
             | Decl (_, []) -> false
             | _ -> true)
 
-        let exprUsesIdentName expr identName =
+        let countUsesOfIdentName expr identName =
             let mutable idents = []
             let collectLocalUses _ = function
                 | Var v as e -> idents <- v :: idents; e
                 | e -> e
             mapExpr (mapEnvExpr collectLocalUses) expr |> ignore<Expr>
-            idents |> List.exists (fun i -> i.Name = identName)
+            idents |> List.filter (fun i -> i.Name = identName) |> List.length
+
+        let replaceUsesOfIdentByExpr expr identName replacement =
+            let visitAndReplace _ = function
+                | Var v when v.Name = identName -> replacement
+                | e -> e
+            mapExpr (mapEnvExpr visitAndReplace) expr
 
         // Merge two consecutive items into one, everywhere possible in a list.
         let rec squeeze (f : 'a * 'a -> 'a list option) = function
@@ -548,22 +554,43 @@ module private RewriterImpl =
                         else
                             None
                     | _ -> None
-            // Remove unused assignment immediately followed by re-assignment:  m=14.;m=58.;  ->  14.;m=58.;
+            // assignment to a local immediately followed by re-assignment
             | Expr (FunCall (Op "=", [Var name; init1])), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
-                when name.Name = name2.Name && not (exprUsesIdentName init2 name.Name) ->
+                when name.Name = name2.Name ->
                 match name.Declaration with
                 | Declaration.Variable decl when decl.scope = VarScope.Global ->
                     // The assignment should not be removed if init2 calls a function that reads the global variable.
                     None // Safely assume it could happen.
-                | Declaration.Variable _ -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
+                | Declaration.Variable _ ->
+                    match countUsesOfIdentName init2 name.Name with
+                    // Remove unused assignment immediately followed by re-assignment:  m=14.;m=58.;  ->  14.;m=58.;
+                    | 0 -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
+                    // Inline this single use of a used-once assignment into the immediately following re-assignment:  m=14.;m=58.-m;  ->  m=58.-14.;
+                    | 1 when isPure init1 && isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
+                        let newInit2 = replaceUsesOfIdentByExpr init2 name.Name init1
+                        debug $"{name.Loc}: merge consecutive pure assignments to the same local '{name}'"
+                        Some [Expr (FunCall (Op "=", [Var name2; newInit2]))]
+                    | _ -> None
                 | _ -> None
-            // Compact a pure declaration immediately followed by re-assignment:  float m=14.;m=58.;  ->  float m=58.;
+            // declaration immediately followed by re-assignment
             | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])))
-                when declElt.name.Name = name2.Name
-                    && not (exprUsesIdentName init2 declElt.name.Name) ->
-                    match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
-                    | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
-                    | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
+                when declElt.name.Name = name2.Name ->
+                    match countUsesOfIdentName init2 declElt.name.Name with
+                    | 0 ->
+                        match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
+                        // float m=14;m=58.;  ->  float m=58.;
+                        | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
+                        // float m=f();m=58.;  ->  float m=(f(),58.);
+                        | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
+                    | 1 when Option.forall isPure declElt.init && isPure init2 ->
+                        let newInit =
+                            match declElt.init with
+                            | None -> init2 // float m; m=1.;  ->  float m=1.;
+                            | Some init1 -> // float m=14.;m=58.-m;  ->  float m=58.-14.;
+                                debug $"{declElt.name.Loc}: merge assignment with preceding local declaration '{Printer.debugDecl declElt}'"
+                                replaceUsesOfIdentByExpr init2 declElt.name.Name init1
+                        Some [Decl (ty, [{declElt with init = Some newInit}])]
+                    | _ -> None
             | _ -> None)
 
         // Reduces impure expression statements to their side effects.

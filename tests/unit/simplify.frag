@@ -18,7 +18,6 @@ float bar(float x)
 	
 	float m = 14.+length(vec3(sin(a *= 10), sin(a *= 20), sin(a *= 30)))+b++;
 	m = arr[1] + arr[i++];
-	m = 58.;
 		
 	return a + b + m;
 }

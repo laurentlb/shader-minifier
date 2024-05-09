@@ -9,9 +9,8 @@ float bar(float x)
   b+=x;
   b=34.;
   b+=x;
-  float arr[2]=float[2](7.,8.);
-  arr=float[2](5.,float(arr.length()));
-  x=(a*=10,a*=20,a*=30,b++,i++,58.);
+  float arr[2]=float[2](5.,float(float[2](7.,8.).length()));
+  x=(a*=10,a*=20,a*=30,b++,arr[1]+arr[i++]);
   return a+b+x;
 }
 float baz(float a)

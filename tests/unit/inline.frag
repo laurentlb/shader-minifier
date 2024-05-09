@@ -71,6 +71,22 @@ uint builtin_with_or_without_side_effects(uint x)
 	return x + inlined + not_inlined;
 }
 
+float dmin(float a, float b)
+{
+    return a+b+a*b;
+}
+float reduce_consecutive_assignments(float x)
+{
+    float dmat=34.+x;
+    dmat=dmin(dmat,.2);
+    dmat=dmin(dmat,.2);
+    dmat=dmin(dmat,.3);
+    dmat=dmin(dmat,.4);
+    dmat=dmin(dmat,.2);
+    dmat=dmat*dmat+dmat;
+    return dmat+x;
+}
+
 // repro for #176
 int dont_inline_lvalue() {
   int a = 1;
