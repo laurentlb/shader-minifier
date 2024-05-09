@@ -751,8 +751,7 @@ void main()
           zoom=.3;
           w.x=R();
           camtarget=vec3(0,.5,0);
-          campos=mix(vec3(0,2.5,-1.54),vec3(1,-1,1),step(w.x,smoothstep(13.,22.,time)));
-          campos=mix(campos,vec3(0,5,.1),step(w.x,smoothstep(27.,37.,time)));
+          campos=mix(mix(vec3(0,2.5,-1.54),vec3(1,-1,1),step(w.x,smoothstep(13.,22.,time))),vec3(0,5,.1),step(w.x,smoothstep(27.,37.,time)));
           col*=1.5;
           float a=time/4*.1;
           campos.xz=vec2(cos(a),sin(a))*-5.2*.7;

@@ -33,8 +33,7 @@ vec2 NoisePrecise(vec3 x)
 vec4 Noise(vec2 x)
 {
   vec2 f=fract(x.xy);
-  f=f*f*(3.-2.*f);
-  f=floor(x.xy).xy+f.xy;
+  f=floor(x.xy).xy+(f*f*(3.-2.*f)).xy;
   return textureLod(iChannel0,(f+.5)/256.,0.);
 }
 vec4 Noise(ivec2 x)
@@ -138,16 +137,12 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   vec3 lightDir=normalize(vec3(-2,3,1));
   float aa=4./iResolution.x;
   vec3 albedo=vec3(1,.01,0);
-  albedo=mix(vec3(.04),albedo,smoothstep(.25-aa,.25,abs(pos.y)));
-  albedo=mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),albedo,smoothstep(.2-aa*1.5,.2,abs(pos.y)));
-  albedo=mix(vec3(.04),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.6)));
-  albedo=mix(vec3(1,.8,.08),albedo,smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
+  albedo=mix(vec3(1,.8,.08),mix(vec3(.04),mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),mix(vec3(.04),albedo,smoothstep(.25-aa,.25,abs(pos.y))),smoothstep(.2-aa*1.5,.2,abs(pos.y))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.6))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
   albedo*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
   lightDir=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1);
   pos=reflect(ray,norm);
   lightDir+=mix(vec3(0,.04,.04),Sky(pos),smoothstep(-.1,.1,pos.y));
-  aa=pow(1.-abs(dot(norm,ray)),5.);
-  aa=mix(.001,1.,aa);
+  aa=mix(.001,1.,pow(1.-abs(dot(norm,ray)),5.));
   return mix(albedo,lightDir,aa);
 }
 float OceanDistanceField(vec3 pos)
@@ -186,8 +181,7 @@ vec3 ShadeOcean(vec3 pos,vec3 ray,vec2 fragCoord)
   vec3 norm=OceanNormal(pos);
   float ndotr=dot(ray,norm);
   vec3 reflectedRay=ray-2.*norm*ndotr;
-  norm=ray+(-cos(1.33*acos(-ndotr))-ndotr)*norm;
-  norm=normalize(norm);
+  norm=normalize(ray+(-cos(1.33*acos(-ndotr))-ndotr)*norm);
   ray=Sky(reflectedRay);
   float t=TraceBoat(pos-0.*reflectedRay,reflectedRay);
   if(t>0.)

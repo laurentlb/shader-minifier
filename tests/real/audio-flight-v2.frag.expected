@@ -262,7 +262,6 @@ void mainImage(out vec4 O,vec2 F)
   C=mix(C,vec3(.757,.686,.341),d1);
   d1=fBox2(uv+vec2(-.445,.2675),vec2(.005))-.002;
   d1=smoothstep(crop,-crop,d1);
-  C=mix(C,vec3(.882,.459,.867),d1);
-  C=pow(C,vec3(.4545));
+  C=pow(mix(C,vec3(.882,.459,.867),d1),vec3(.4545));
   O=vec4(C,1);
 }

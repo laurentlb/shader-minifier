@@ -40,6 +40,17 @@ uint builtin_with_or_without_side_effects(uint x)
   atomicCounterIncrement(hydrogen);
   return x+max(x*x,x+1)+not_inlined;
 }
+float dmin(float a,float b)
+{
+  return a+b+a*b;
+}
+float reduce_consecutive_assignments(float x)
+{
+  float dmat=34.+x;
+  dmat=dmin(dmin(dmin(dmin(dmin(dmat,.2),.2),.3),.4),.2);
+  dmat+=dmat*dmat;
+  return dmat+x;
+}
 int dont_inline_lvalue()
 {
   return 3;

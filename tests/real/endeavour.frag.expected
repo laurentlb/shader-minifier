@@ -9,8 +9,7 @@ void rand(vec2 x,out float num)
 void lfnoise(vec2 t,out float num)
 {
   vec2 i=floor(t);
-  t=fract(t);
-  t=smoothstep(c.yy,c.xx,t);
+  t=smoothstep(c.yy,c.xx,fract(t));
   vec2 v1,v2;
   rand(i,v1.x);
   rand(i+c.xy,v1.y);
@@ -76,8 +75,7 @@ void scene(vec3 x,out vec2 sdf)
   stroke(sdb.x,.003*step(dis,0.),sdb.x);
   sdf.x=max(sdf.x,-R);
   add(sdf,sdb,sdf);
-  R=-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.));
-  R=abs(R)+.01;
+  R=abs(-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.)))+.01;
   sdf.x=min(sdf.x,R);
 }
 void normal(vec3 x,out vec3 n)
@@ -98,8 +96,7 @@ void planet_texture(vec2 x,out vec3 col)
   mfnoise(x,1.,4e2,.65,d);
   col=mix(vec3(.19,.02,0),vec3(.91,.45,.02),.5+.5*d);
   stroke(d,.01,d);
-  col=mix(mix(.8*vec3(.99,.49,.02),c.yyy,d*clamp(.2-.5*x.y/12.,0.,1.)),col,smoothstep(-.05,.05,d));
-  col=mix(col,vec3(.15,.05,0),clamp(.2-.5*x.y/12.,0.,1.));
+  col=mix(mix(mix(.8*vec3(.99,.49,.02),c.yyy,d*clamp(.2-.5*x.y/12.,0.,1.)),col,smoothstep(-.05,.05,d)),vec3(.15,.05,0),clamp(.2-.5*x.y/12.,0.,1.));
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)
 {

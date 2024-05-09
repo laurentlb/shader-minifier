@@ -123,8 +123,7 @@ MarchData headLower(vec3 p)
   p=op;
   p.y=abs(p.y+.16)-.06;
   p.z-=-1.1;
-  roof=max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.));
-  roof=max(roof,p.z+.2);
+  roof=max(max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.)),p.z+.2);
   r.d=max(r.d,-roof);
   setBodyMaterial(r);
   return r;
@@ -147,9 +146,7 @@ MarchData gunPod(vec3 p)
   bump=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02;
   pp=p-vec3(0,0,-.6);
   pp.x=abs(pp.x)-.1;
-  bump=min(bump,sdCappedCylinder(pp,.06,.15));
-  bump=min(bump,sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05));
-  bump=min(bump,sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
+  bump=min(min(min(bump,sdCappedCylinder(pp,.06,.15)),sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05)),sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
   if(bump<r.d)
     bump=max(bump,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=bump,r.mat=vec3(.02);
   float fs=fireShock();
@@ -281,8 +278,7 @@ MarchData room(vec3 p)
   if(r.d==backWall)
     {
       float ocp=min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9)));
-      ocp=max(ocp,min(.7-abs(xy.x+1.2),-xy.y));
-      ocp=min(ocp,max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))));
+      ocp=min(max(ocp,min(.7-abs(xy.x+1.2),-xy.y)),max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))));
       if(ocp<.3)
         r.mat=vec3(.39,.57,.71);
     }
@@ -293,8 +289,7 @@ MarchData room(vec3 p)
   p.x+=backWall;
   float door=sdBox(p,vec3(backWall,frameInner.yz));
   p=abs(p)-vec3(backWall*.5,1.1,.14);
-  door=max(door,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1))));
-  door=min(doorHole,door);
+  door=min(doorHole,max(door,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1)))));
   if(door<r.d)
     r.d=door,r.mat=vec3(.02,.02,.024),r.specPower=10.;
   return r;

@@ -179,10 +179,9 @@ void main()
       float llig=dot(lig,lig);
       lig*=inversesqrt(llig);
       float dif=dot(nor,lig);
-      dif=matID==4?
+      dif=clamp(matID==4?
         .5+.5*dif:
-        .1+.9*dif;
-      dif=clamp(dif,0.,1.);
+        .1+.9*dif,0.,1.);
       dif*=2.5*exp2(-1.75*llig);
       float dif2=(nor[0]+nor[1])*.075;
       if(matID==0)
@@ -215,8 +214,7 @@ void main()
           rgb*=fs;
           float fre=max(-dot(nor,rd),0.);
           rgb-=vec3(fre*fre*.45);
-          spe=clamp((nor.y-nor.z)*.707,0.,1.);
-          spe=.2*pow(spe,32.);
+          spe=.2*pow(clamp((nor.y-nor.z)*.707,0.,1.),32.);
         }
       else
         {
