@@ -75,8 +75,7 @@ void scene(vec3 x,out vec2 sdf)
   stroke(sdb.x,.003*step(dis,0.),sdb.x);
   sdf.x=max(sdf.x,-R);
   add(sdf,sdb,sdf);
-  R=abs(-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.)))+.01;
-  sdf.x=min(sdf.x,R);
+  sdf.x=min(sdf.x,abs(-length(max(abs(mod(x,.1)-.05)-vec3(.05*c.xx,.6),0.)))+.01);
 }
 void normal(vec3 x,out vec3 n)
 {

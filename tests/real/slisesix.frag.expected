@@ -46,8 +46,7 @@ float columna(float x,float y,float z,float mindist,float offx)
     return mindist+1.;
   di0=y-.4;
   float y3=y-.35;
-  di0=min(min(min(distToBox(p,vec3(.1,1,.1)),distToBox(p,vec3(.12,.4,.12))),min(distToBox(p,vec3(.05,.35,.14)),distToBox(p,vec3(.14,.35,.05)))),min(min(distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071))),min(distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071)))));
-  return min(di0,distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)));
+  return min(min(min(min(distToBox(p,vec3(.1,1,.1)),distToBox(p,vec3(.12,.4,.12))),min(distToBox(p,vec3(.05,.35,.14)),distToBox(p,vec3(.14,.35,.05)))),min(min(distToBox(vec3((x-di0)*.7071,(di0+x)*.7071,z),vec3(.07071,.07071,.12)),distToBox(vec3(x,(di0+z)*.7071,(z-di0)*.7071),vec3(.12,.07071,.07071))),min(distToBox(vec3((x-y3)*.7071,(y3+x)*.7071,z),vec3(.07071,.07071,.14)),distToBox(vec3(x,(y3+z)*.7071,(z-y3)*.7071),vec3(.14,.07071,.07071))))),distToBox(vec3(x,y-1.,z),vec3(.14,.02,.14)));
 }
 float bicho(vec3 x,float mindist)
 {
@@ -188,8 +187,7 @@ void main()
         {
           float xoff=13.1*float(subMatID&255),fb=fbm(16.*vec3(pos.x+xoff,pos.yz));
           rgb=vec3(.7)+fb*vec3(.2,.22,.25);
-          float baldscale=float(subMatID>>9&15)/14.;
-          baldscale=.51+.34*baldscale;
+          float baldscale=.51+.34*(float(subMatID>>9&15)/14.);
           rgb*=baldscale;
           float fx=1.;
           if((subMatID&256)!=0)

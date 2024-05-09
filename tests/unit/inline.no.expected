@@ -56,8 +56,7 @@ float dmin(float a,float b)
 }
 float reduce_consecutive_assignments(float x)
 {
-  float dmat=34.+x;
-  dmat=dmin(dmin(dmin(dmin(dmin(dmat,.2),.2),.3),.4),.2);
+  float dmat=dmin(dmin(dmin(dmin(dmin(34.+x,.2),.2),.3),.4),.2);
   dmat+=dmat*dmat;
   return dmat+x;
 }

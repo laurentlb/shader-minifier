@@ -136,14 +136,12 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   pos=WorldToBoat(pos);
   vec3 lightDir=normalize(vec3(-2,3,1));
   float aa=4./iResolution.x;
-  vec3 albedo=vec3(1,.01,0);
-  albedo=mix(vec3(1,.8,.08),mix(vec3(.04),mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),mix(vec3(.04),albedo,smoothstep(.25-aa,.25,abs(pos.y))),smoothstep(.2-aa*1.5,.2,abs(pos.y))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.6))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
-  albedo*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
+  pos=mix(vec3(1,.8,.08),mix(vec3(.04),mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),mix(vec3(.04),vec3(1,.01,0),smoothstep(.25-aa,.25,abs(pos.y))),smoothstep(.2-aa*1.5,.2,abs(pos.y))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.6))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
+  pos*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
   lightDir=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1);
-  pos=reflect(ray,norm);
-  lightDir+=mix(vec3(0,.04,.04),Sky(pos),smoothstep(-.1,.1,pos.y));
-  aa=mix(.001,1.,pow(1.-abs(dot(norm,ray)),5.));
-  return mix(albedo,lightDir,aa);
+  vec3 rr=reflect(ray,norm);
+  lightDir+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));
+  return mix(pos,lightDir,mix(.001,1.,pow(1.-abs(dot(norm,ray)),5.)));
 }
 float OceanDistanceField(vec3 pos)
 {

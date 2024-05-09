@@ -276,10 +276,8 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
   
 #endif
 
-  vec3 seedDir=normalize(vec3(0,0,1));
-  seedDir=viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*seedDir;
-  vec3 rd=seedDir,col=vec3(0),sky=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs(rd.y));
-  float alpha=marchScene(camera,rd,fragCoord);
+  vec3 col=vec3(0),sky=mix(vec3(FOG_COLOUR),vec3(0,.4,.6),abs((viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))).y));
+  float alpha=marchScene(camera,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1)),fragCoord);
   vec4 mat;
   if(alpha>0.)
     for(int i=0;i<spointer;i++)
@@ -296,19 +294,19 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
               leavesTexture(pos,nor):
               fruitTexture(pos,nor,float(matID-3));
         mat*=randomTint(pos);
-        vec3 temp=lighting(mat,pos,nor,rd,d);
+        vec3 temp=lighting(mat,pos,nor,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1)),d);
         if(matID==3)
           temp=temp*.4+vec3(.15,.01,0);
         temp=mix(sky,temp,exp(-d*.01));
         col+=temp*stack[i].alpha;
       }
-  vec4 cc=getClouds(camera,rd);
-  sky+=pow(max(dot(sunLight,rd),0.),20.)*SUN_COLOUR*.03;
+  vec4 cc=getClouds(camera,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1)));
+  sky+=pow(max(dot(sunLight,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))),0.),20.)*SUN_COLOUR*.03;
   sky=mix(sky,cc.xyz,cc.w);
   col+=sky*(1.-alpha);
   float d=stack[0].dist;
-  col+=floatingSeeds(camera,rd,d);
-  col+=pow(max(dot(sunLight,rd),0.),6.)*SUN_COLOUR*.2;
+  col+=floatingSeeds(camera,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1)),d);
+  col+=pow(max(dot(sunLight,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))),0.),6.)*SUN_COLOUR*.2;
   col=clamp(col,0.,1.);
   col=col*col*(3.-2.*col);
   vec2 q=fragCoord/iResolution.xy;

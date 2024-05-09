@@ -115,8 +115,7 @@ vec2 map(vec3 p,float sg)
   float obj=fBox(o,vec3(.15*offWobble))-.015;
   if(obj<res.x)
     res=vec2(obj,11),g_hp=o;
-  float pid=floor((q.z+3.625)/7.25);
-  pid=mod(pid,18.);
+  float pid=mod(floor((q.z+3.625)/7.25),18.);
   pid=pid<12.?
     pid<6.?
       4.:
@@ -131,8 +130,7 @@ vec2 map(vec3 p,float sg)
   tun=floor(fs.xz)+.5;
   vec2 neighbour=tun+edge(fs.xz-tun);
   pid=floor(tun.y);
-  float height=texture(iChannel0,vec2(mod(pid,16.)*.0465,.1)).x;
-  height=smoothstep(.001,1.,height);
+  float height=smoothstep(.001,1.,texture(iChannel0,vec2(mod(pid,16.)*.0465,.1)).x);
   ga=height;
   float ids=pMod(s.z,7.25);
   vec3 qid=pMod(q,7.25);

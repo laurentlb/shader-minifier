@@ -582,14 +582,14 @@ module private RewriterImpl =
                         | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
                         // float m=f();m=58.;  ->  float m=(f(),58.);
                         | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
-                    //| 1 when Option.forall isPure declElt.init && isPure init2 ->
-                    //    let newInit =
-                    //        match declElt.init with
-                    //        | None -> init2 // float m; m=1.;  ->  float m=1.;
-                    //        | Some init1 -> // float m=14.;m=58.-m;  ->  float m=58.-14.;
-                    //            debug $"{declElt.name.Loc}: merge assignment with preceding local declaration '{Printer.debugDecl declElt}'"
-                    //            replaceUsesOfIdentByExpr init2 declElt.name.Name init1
-                    //    Some [Decl (ty, [{declElt with init = Some newInit}])]
+                    | 1 when Option.forall isPure declElt.init && isPure init2 ->
+                        let newInit =
+                            match declElt.init with
+                            | None -> init2 // float m; m=1.;  ->  float m=1.;
+                            | Some init1 -> // float m=14.;m=58.-m;  ->  float m=58.-14.;
+                                debug $"{declElt.name.Loc}: merge assignment with preceding local declaration '{Printer.debugDecl declElt}'"
+                                replaceUsesOfIdentByExpr init2 declElt.name.Name init1
+                        Some [Decl (ty, [{declElt with init = Some newInit}])]
                     | _ -> None
             | _ -> None)
 

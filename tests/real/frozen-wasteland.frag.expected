@@ -151,8 +151,7 @@ float Noise3d(vec3 p)
 float map(vec3 p)
 {
   p.y+=height(p.zx);
-  float d=p.y+.5;
-  d=smin(smin(d,vine(p+vec3(.8,0,0),30.,3.3)),vine(p.zyx+vec3(0,0,17),33.,1.4));
+  float d=smin(smin(p.y+.5,vine(p+vec3(.8,0,0),30.,3.3)),vine(p.zyx+vec3(0,0,17),33.,1.4));
   d+=p.y*1.2*Noise3d(p*.05);
   p.xz*=.3;
   d+=Noise3d(p*.3);
