@@ -10,13 +10,13 @@ float f1()
   return a=2.;
 }
 out vec4 O;
-uniform int k;
+int k;
 void main()
 {
   int d=0,e=0;
   k==0?
-    (d=1):
-    (e=2);
+    (sin(O.x),d=1):
+    (cos(O.x),e=2);
   O.x=d;
   O.y=e;
 }

@@ -16,7 +16,7 @@ float f1() {
 // Fix for #385
 
 out vec4 O;
-uniform int k;
+int k;
 void main() {
   int d=0,e=0;
   k==0 ? (sin(O.x),d=1) : (cos(O.x),e=2) ;
