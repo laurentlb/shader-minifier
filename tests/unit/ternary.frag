@@ -20,8 +20,8 @@ int k;
 void main() {
   int d=0,e=0;
   k==0 ? (sin(O.x),d=1) : (cos(O.x),e=2) ;
-  O.x=d;
-  O.y=e;
+  O.x=float(d);
+  O.y=float(e);
 }
 int f2() {
   k++ == 0 ? 1 : 2 ;
