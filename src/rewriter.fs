@@ -24,6 +24,13 @@ let rec private sideEffects = function
         match fct.Declaration with
         | Declaration.UserFunction fd when not fd.hasExternallyVisibleSideEffects -> args |> List.collect sideEffects
         | _ -> [e]
+    | FunCall(Op "?:", [condExpr; thenExpr; elseExpr]) ->
+        let condEffects = sideEffects condExpr
+        let thenEffects = sideEffects thenExpr
+        let elseEffects = sideEffects elseExpr
+        if thenEffects = [] && elseEffects = []
+        then condEffects
+        else [FunCall(Op "?:", [condExpr; commaSeparatedExprs thenEffects; commaSeparatedExprs elseEffects])]
     | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
     | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
     | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects

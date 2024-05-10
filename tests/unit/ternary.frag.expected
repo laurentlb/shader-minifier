@@ -9,3 +9,19 @@ float f1()
   float a=1.;
   return a=2.;
 }
+out vec4 O;
+uniform int k;
+void main()
+{
+  int d=0,e=0;
+  k==0?
+    (d=1):
+    (e=2);
+  O.x=d;
+  O.y=e;
+}
+int f2()
+{
+  k++;
+  return k;
+}
