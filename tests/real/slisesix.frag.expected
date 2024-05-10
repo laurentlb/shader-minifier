@@ -57,8 +57,7 @@ float bicho(vec3 x,float mindist)
   x.z*=fax;
   r2=dot(x,x);
   fax=sqrt(r2);
-  r2=1.-smoothstep(0.,.75,fax);
-  r2*=.4;
+  r2=(1.-smoothstep(0.,.75,fax))*.4;
   sa=sin(r2);
   r2=cos(r2);
   x.xy=mat2(r2,sa,-sa,r2)*x.xy;
@@ -178,10 +177,9 @@ void main()
       float llig=dot(lig,lig);
       lig*=inversesqrt(llig);
       float dif=dot(nor,lig);
-      dif=clamp(matID==4?
+      dif=2.5*exp2(-1.75*llig)*clamp(matID==4?
         .5+.5*dif:
         .1+.9*dif,0.,1.);
-      dif*=2.5*exp2(-1.75*llig);
       float dif2=(nor[0]+nor[1])*.075;
       if(matID==0)
         {
@@ -241,10 +239,8 @@ void main()
           so+=(1.-h)*dd*2.*(10./6.);
         }
       dif*=clamp((so-.4)*1.5,0.,1.);
-      rgb=vec3(spe)+rgb*(ao*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05));
-      rgb*=exp2(-.4*t);
+      rgb=(vec3(spe)+rgb*(ao*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05)))*exp2(-.4*t);
     }
-  rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1,.83)*1.2;
-  rgb*=.25+.75*clamp(.6*abs(pixel.x-1.)*abs(pixel.x+1.),0.,1.);
+  rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1,.83)*1.2*(.25+.75*clamp(.6*abs(pixel.x-1.)*abs(pixel.x+1.),0.,1.));
   gl_FragColor=vec4(rgb,1);
 }

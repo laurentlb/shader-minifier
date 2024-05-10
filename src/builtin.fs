@@ -68,6 +68,7 @@ let nonAssignOps = set [
     "&"; "^"; "|"
     "&&"; "^^"; "||"
 ]
+let augmentableOperators = set ["+"; "-"; "*"; "/"; "%"; "<<"; ">>"; "&"; "^"; "|"]
 
 let castFunctions = builtinTypes - set ["void"]
 let trigonometryFunctions = set([

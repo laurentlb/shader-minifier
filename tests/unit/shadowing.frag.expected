@@ -1,15 +1,13 @@
 float f(float g)
 {
   g=0.;
-  g+=g+++++g;
-  return g;
+  return g+++++g+g;
 }
 float g(float f)
 {
   {
     f++;
-    float f=f+1.;
-    f+=9.;
+    float f=f+1.+9.;
   }
   return f;
 }

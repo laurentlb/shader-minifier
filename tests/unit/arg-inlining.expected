@@ -60,24 +60,14 @@ float noinline_cannotInlineWhenArgIsNotInlinable(float a)
 }
 float f()
 {
-  float s=0.;
-  s+=noinline_canInlineWhenResolvable();
+  float s=noinline_canInlineWhenResolvable();
   s+=noinline_cannotInlineWhenNotResolvable(1.);
   s+=noinline_canInlineWhenInParameter();
   s+=noinline_cannotInlineWhenOutParameter(s);
   s+=noinline_cannotInlineWhenInOutParameter(s);
-  s+=noinline_canInlineWhenArgIsAlwaysTheSame();
-  s+=noinline_cannotInlineWhenArgsAreDifferent(1.);
-  s+=noinline_cannotInlineWhenArgsAreDifferent(2.);
-  s+=noinline_canInlineWhenArgIsInlinable1();
-  s+=noinline_canInlineWhenArgIsInlinable2();
-  s+=noinline_canInlineWhenArgIsInlinable3();
-  s+=noinline_canInlineWhenArgIsInlinable4();
-  s+=noinline_canInlineWhenArgIsInlinable5();
-  s+=noinline_canInlineWhenArgIsInlinable6();
+  s=s+noinline_canInlineWhenArgIsAlwaysTheSame()+noinline_cannotInlineWhenArgsAreDifferent(1.)+noinline_cannotInlineWhenArgsAreDifferent(2.)+noinline_canInlineWhenArgIsInlinable1()+noinline_canInlineWhenArgIsInlinable2()+noinline_canInlineWhenArgIsInlinable3()+noinline_canInlineWhenArgIsInlinable4()+noinline_canInlineWhenArgIsInlinable5()+noinline_canInlineWhenArgIsInlinable6();
   s+=noinline_cannotInlineWhenArgIsNotInlinable(s);
-  s+=noinline_cannotInlineWhenArgIsNotInlinable(acos(s));
-  return s;
+  return s+noinline_cannotInlineWhenArgIsNotInlinable(acos(s));
 }
 void main()
 {

@@ -76,7 +76,7 @@ float WavesSmooth(vec3 pos)
 }
 float WaveCrests(vec3 ipos,vec2 fragCoord)
 {
-  ipos*=.2*vec3(1);
+  ipos=.2*vec3(1)*ipos;
   float f=0.;
   ipos+=iTime*vec3(0,.1,.1);
   vec3 pos2=ipos;
@@ -122,9 +122,8 @@ vec3 WorldToBoat(vec3 dir)
 }
 float TraceBoat(vec3 pos,vec3 ray)
 {
-  vec3 c=boatPosition;
-  c-=pos;
-  float t=dot(c,ray),p=length(c-t*ray);
+  pos=boatPosition-pos;
+  float t=dot(pos,ray),p=length(pos-t*ray);
   return p>1.?
     0.:
     t-sqrt(1.-p*p);
@@ -136,8 +135,7 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
   pos=WorldToBoat(pos);
   vec3 lightDir=normalize(vec3(-2,3,1));
   float aa=4./iResolution.x;
-  pos=mix(vec3(1,.8,.08),mix(vec3(.04),mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),mix(vec3(.04),vec3(1,.01,0),smoothstep(.25-aa,.25,abs(pos.y))),smoothstep(.2-aa*1.5,.2,abs(pos.y))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.6))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)));
-  pos*=smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1);
+  pos=mix(vec3(1,.8,.08),mix(vec3(.04),mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),mix(vec3(.04),vec3(1,.01,0),smoothstep(.25-aa,.25,abs(pos.y))),smoothstep(.2-aa*1.5,.2,abs(pos.y))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.6))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)))*(smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1));
   lightDir=pow(max(0.,dot(norm,normalize(lightDir-ray))),1e2)*1e2/32.*vec3(1);
   vec3 rr=reflect(ray,norm);
   lightDir+=mix(vec3(0,.04,.04),Sky(rr),smoothstep(-.1,.1,rr.y));

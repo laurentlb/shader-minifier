@@ -157,8 +157,7 @@ vec2 map(vec3 p,float t)
       if(i!=dontFold)
         p.xz=abs(p.xz);
       p.y-=t;
-      p*=mat3(u,uwc,w);
-      p*=1.6;
+      p=p*mat3(u,uwc,w)*1.6;
       s*=1.6;
     }
   f=(length(p)-.2)/s;
@@ -168,8 +167,7 @@ vec2 map(vec3 p,float t)
   t*=1.1;
   for(int i=0;i<it;i++)
     {
-      p=normalize(hash31(num+float(i+19))-.5)*vec3(t,.1,t);
-      p+=q;
+      p=normalize(hash31(num+float(i+19))-.5)*vec3(t,.1,t)+q;
       float ds=length(p)-.015;
       if(ds<=d)
         matID=3.+float(i),d=ds;
@@ -178,8 +176,7 @@ vec2 map(vec3 p,float t)
 }
 float sphereRadius(float t)
 {
-  t=abs(t);
-  t*=.003;
+  t=abs(t)*.003;
   return clamp(t,1./iResolution.y,3e3/iResolution.y);
 }
 float shadow(vec3 ro,vec3 rd,float dis)
@@ -240,10 +237,7 @@ vec3 lighting(vec4 mat,vec3 pos,vec3 normal,vec3 eyeDir,float d)
   vec3 col=mat.xyz*SUN_COLOUR*max(dot(sunLight,normal)*.5+.2,0.)*sh;
   float fre=clamp(1.+dot(normal,eyeDir),0.,1.)*.3,bac=clamp(.8*dot(normal,normalize(vec3(-sunLight.x,0,-sunLight.z))),0.,1.);
   normal=reflect(eyeDir,normal);
-  col+=pow(max(dot(sunLight,normal),0.),16.)*SUN_COLOUR*sh*mat.w*occ;
-  col+=bac*mat.xyz*occ;
-  col+=mat.xyz*abs(normal.y)*.3*occ;
-  col+=SUN_COLOUR*fre*.2*occ;
+  col=col+pow(max(dot(sunLight,normal),0.),16.)*SUN_COLOUR*sh*mat.w*occ+bac*mat.xyz*occ+mat.xyz*abs(normal.y)*.3*occ+SUN_COLOUR*fre*.2*occ;
   return min(col,1.);
 }
 vec3 getNormal(vec3 pos,float ds)
@@ -267,12 +261,11 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
   
 #ifdef MOVE_CAMERA
 
-  vec3 camera=getCamPos(time*.2),lookat=getCamPos(time*.2+10.);
+  vec3 camera=getCamPos(time*.2);
   
 #else
 
-  vec3 camera=getCamPos(0.),lookat=getCamPos(0.);
-  lookat+=vec3(40.*sin(time*5.28),0,40.*cos(time*.28));
+  vec3 camera=getCamPos(0.);
   
 #endif
 
@@ -301,16 +294,13 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
         col+=temp*stack[i].alpha;
       }
   vec4 cc=getClouds(camera,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1)));
-  sky+=pow(max(dot(sunLight,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))),0.),20.)*SUN_COLOUR*.03;
-  sky=mix(sky,cc.xyz,cc.w);
+  sky=mix(sky+pow(max(dot(sunLight,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))),0.),20.)*SUN_COLOUR*.03,cc.xyz,cc.w);
   col+=sky*(1.-alpha);
   float d=stack[0].dist;
   col+=floatingSeeds(camera,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1)),d);
-  col+=pow(max(dot(sunLight,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))),0.),6.)*SUN_COLOUR*.2;
-  col=clamp(col,0.,1.);
+  col=clamp(col+pow(max(dot(sunLight,viewMat(uv.y+sin(time*.5)*.4,uv.x+time*.5)*normalize(vec3(0,0,1))),0.),6.)*SUN_COLOUR*.2,0.,1.);
   col=col*col*(3.-2.*col);
   vec2 q=fragCoord/iResolution.xy;
-  col*=.3+.7*pow(90.*q.x*q.y*(1.-q.x)*(1.-q.y),.5);
-  col*=smoothstep(0.,5.,time);
+  col=col*(.3+.7*pow(90.*q.x*q.y*(1.-q.x)*(1.-q.y),.5))*smoothstep(0.,5.,time);
   fragColour=vec4(sqrt(col),1);
 }

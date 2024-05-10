@@ -116,16 +116,14 @@ vec3 calculateSky(vec3 ro,vec3 rd,int addPlanet)
       color+=theta*saturate(1.-p.w)+p.xyz;
     }
   rd.xy+=ro.xy*1e-4;
-  color+=(calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.1)*3.)+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.2)*5.)*.1+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.4)*7.)*.1-calculateSkySub(normalize(rd+vec3(sin(Y.z*.2),0,0)*.5))*1.5)*saturate(rd.y+.5);
-  return color;
+  return color+(calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.1)*3.)+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.2)*5.)*.1+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.4)*7.)*.1-calculateSkySub(normalize(rd+vec3(sin(Y.z*.2),0,0)*.5))*1.5)*saturate(rd.y+.5);
 }
 float isoSurface(vec3 p)
 {
   float b=Y.z>80.&&Y.z<112.?
     1.:
     0.;
-  p=rotateX(rotateY(rotateX(rotateY(p-artifactPos.xyz,3.*Y.z),3.*Y.z),b*sin(3.*Y.z+3.*p.y)),b*sin(3.*Y.z+3.*p.x));
-  p*=4.+10.*max(0.,Y.z-EXPLOSIONTIME);
+  p=rotateX(rotateY(rotateX(rotateY(p-artifactPos.xyz,3.*Y.z),3.*Y.z),b*sin(3.*Y.z+3.*p.y)),b*sin(3.*Y.z+3.*p.x))*(4.+10.*max(0.,Y.z-EXPLOSIONTIME));
   return-.4+p.x*p.x*p.x*p.x*p.x*p.x*p.x*p.x+p.y*p.y*p.y*p.y*p.y*p.y*p.y*p.y+p.z*p.z*p.z*p.z*p.z*p.z*p.z*p.z;
 }
 float traceIso(vec3 ro,vec3 rd,float mint,float maxt)
@@ -162,8 +160,7 @@ void calcBurn(vec2 x,vec3 normal,inout vec3 color)
       if(gd<maxV-maxV+minV)
         {
           float strength=saturate((gd-minV)/(maxV-(maxV-minV)*2.-minV));
-          color*=1.-strength*1.5;
-          color+=(1.-strength*.8)*pow(norm(normal.x)+norm(normal.y),2.*norm(smoothrnd(.4*Y.z+x*20.))*norm(smoothrnd(10.+x*5.))+1.)*vec3(1.5,.75,.5);
+          color=color*(1.-strength*1.5)+(1.-strength*.8)*pow(norm(normal.x)+norm(normal.y),2.*norm(smoothrnd(.4*Y.z+x*20.))*norm(smoothrnd(10.+x*5.))+1.)*vec3(1.5,.75,.5);
         }
       if(gd>maxV-(maxV-minV)*2.)
         color+=cos((gd-minV)/(maxV-minV)*pi*.5)*vec3(1.5,.75,.5);
