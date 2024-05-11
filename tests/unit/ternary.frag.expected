@@ -9,3 +9,19 @@ float f1()
   float a=1.;
   return a=2.;
 }
+out vec4 O;
+int k;
+void main()
+{
+  int d=0,e=0;
+  k==0?
+    (sin(O.x),d=1):
+    (cos(O.x),e=2);
+  O.x=float(d);
+  O.y=float(e);
+}
+int f2()
+{
+  k++;
+  return k;
+}
