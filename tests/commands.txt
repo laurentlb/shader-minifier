@@ -78,6 +78,7 @@
 --no-remove-unused --no-inlining -o tests/unit/function_overload.expected tests/unit/function_overload.frag
 --no-remove-unused -o tests/unit/function_overload2.expected tests/unit/function_overload.frag
 -o tests/unit/overload.expected tests/unit/overload.frag
+-o tests/unit/overload-shadow.expected tests/unit/overload-shadow.frag
 --no-remove-unused -o tests/unit/externals.expected tests/unit/externals.frag
 --no-remove-unused -o tests/unit/qualifiers.expected tests/unit/qualifiers.frag
 --no-remove-unused -o tests/unit/macros.expected --no-inlining tests/unit/macros.frag

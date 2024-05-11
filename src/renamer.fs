@@ -267,7 +267,7 @@ module private RenamerImpl =
         // Find all the variables known in varRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let stillUsedSet =
-            seq { for ident in Analyzer.varUsesInStmt block -> ident.Name }
+            [for ident in Analyzer.varUsesInStmt block -> ident.Name]
                 |> Seq.choose env.varRenames.TryFind |> set
 
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
@@ -286,31 +286,34 @@ module private RenamerImpl =
             renList env renStmt b |> ignore<Env>
             env
         | If(cond, th, el) ->
-            let envTh = env // env.onEnterFunction env th
-            renStmt envTh th |> ignore<Env>
-            Option.iter (fun el -> el |> renStmt (env (*.onEnterFunction env el*)) |> ignore<Env>) el
+            renStmt (env.onEnterFunction env th) th |> ignore<Env>
+            Option.iter (fun el -> renStmt (env.onEnterFunction env el) el |> ignore<Env>) el
             renExpr env cond
             env
-        | ForD(init, cond, inc, body) ->
-            let newEnv = renDecl false env init
+        | ForD(init, cond, inc, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
+            let newEnv = renDecl false newEnv init
             renStmt newEnv body |> ignore<Env>
             Option.iter (renExpr newEnv) cond
             Option.iter (renExpr newEnv) inc
             if options.hlsl then newEnv
             else env
-        | ForE(init, cond, inc, body) ->
+        | ForE(init, cond, inc, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
             renOpt init
             renOpt cond
             renOpt inc
-            renStmt env body |> ignore<Env>
+            renStmt newEnv body |> ignore<Env>
             env
-        | While(cond, body) ->
-            renExpr env cond
-            renStmt env body |> ignore<Env>
+        | While(cond, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
+            renExpr newEnv cond
+            renStmt newEnv body |> ignore<Env>
             env
-        | DoWhile(cond, body) ->
-            renExpr env cond
-            renStmt env body |> ignore<Env>
+        | DoWhile(cond, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
+            renExpr newEnv cond
+            renStmt newEnv body |> ignore<Env>
             env
         | Jump(_, e) -> renOpt e; env
         | Verbatim _ -> env
