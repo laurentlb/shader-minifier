@@ -3,22 +3,15 @@
 int i;
 float bar(float x)
 {
-  float a=6.;
-  a+=x;
-  float b=x;
-  b+=x;
-  b=34.;
-  b+=x;
-  float arr[2]=float[2](5.,float(float[2](7.,8.).length()));
-  x=(a*=10,a*=20,a*=30,b++,arr[1]+arr[i++]);
-  return a+b+x;
+  float a=6.+x;
+  x+=34.;
+  float arr[2]=float[2](5.,float(float[2](7.,8.).length())),m=(a*=10,a*=20,a*=30,x++,arr[1]+arr[i++]);
+  return a+x+m;
 }
 float baz(float a)
 {
-  float b=a+4.;
-  b+=sin(a);
-  a=b+5.;
-  a+=sin(b);
+  a=a+4.+sin(a);
+  a=a+5.+sin(a);
   return-a-a+a;
 }
 out vec3 output;

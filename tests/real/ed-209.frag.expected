@@ -323,8 +323,7 @@ vec3 calcNormal(vec3 p,float t)
 vec3 vignette(vec3 col,vec2 fragCoord)
 {
   fragCoord=fragCoord.xy/iResolution.xy;
-  col*=.5+.5*pow(16.*fragCoord.x*fragCoord.y*(1.-fragCoord.x)*(1.-fragCoord.y),.4);
-  return col;
+  return col*(.5+.5*pow(16.*fragCoord.x*fragCoord.y*(1.-fragCoord.x)*(1.-fragCoord.y),.4));
 }
 vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
 {

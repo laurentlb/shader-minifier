@@ -167,11 +167,9 @@ vec3 DoLighting(vec3 mat,vec3 pos,vec3 normal,vec3 eyeDir,float d,float specular
 {
   vec3 sunLight=normalize(vec3(-.1,.4,.3));
   float sh=Shadow(pos,sunLight);
-  vec3 col=mat*SUN_COLOUR*max(dot(sunLight,normal),0.)*sh;
-  col+=mat*CubeMap(iChannel3,normal,64.)*.5;
+  vec3 col=mat*SUN_COLOUR*max(dot(sunLight,normal),0.)*sh+mat*CubeMap(iChannel3,normal,64.)*.5;
   normal=reflect(eyeDir,normal);
-  col+=pow(max(dot(sunLight,normal),0.),1.)*SUN_COLOUR*texture(iChannel3,normal).xyz*specular*sh;
-  return col;
+  return col+pow(max(dot(sunLight,normal),0.),1.)*SUN_COLOUR*texture(iChannel3,normal).xyz*specular*sh;
 }
 vec3 GetNormal(vec3 p,float sphereR)
 {
@@ -222,8 +220,7 @@ vec3 PostEffects(vec3 rgb,vec2 xy)
   
 #define BRIGHTNESS 1.15
 
-  rgb=mix(vec3(.5),mix(vec3(dot(vec3(.2125,.7154,.0721),rgb*BRIGHTNESS)),rgb*BRIGHTNESS,SATURATION),CONTRAST);
-  rgb*=.5+.5*pow(1e2*xy.x*xy.y*(1.-xy.x)*(1.-xy.y),.4);
+  rgb=mix(vec3(.5),mix(vec3(dot(vec3(.2125,.7154,.0721),rgb*BRIGHTNESS)),rgb*BRIGHTNESS,SATURATION),CONTRAST)*(.5+.5*pow(1e2*xy.x*xy.y*(1.-xy.x)*(1.-xy.y),.4));
   return clamp(rgb,0.,1.);
 }
 vec3 CameraPath(float t)
@@ -234,8 +231,7 @@ vec3 CameraPath(float t)
 float TweetVolume(float t)
 {
   float n=NoiseSlope(t*11.,.1)*abs(sin(t*14.))*.5;
-  n*=smoothstep(.4,.9,NoiseSlope(t*.5+4.,.1));
-  return n;
+  return n*smoothstep(.4,.9,NoiseSlope(t*.5+4.,.1));
 }
 void mainImage(out vec4 fragColor,vec2 fragCoord)
 {

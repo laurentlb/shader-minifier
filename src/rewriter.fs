@@ -35,6 +35,16 @@ let rec private sideEffects = function
 
 let rec private isPure e = sideEffects e = []
 
+let private desugarCompoundAssignOp = function
+    | Expr (FunCall (Op op, [Var name; init])) as s
+        when Builtin.assignOps.Contains op ->
+        let baseOp = op.TrimEnd('=')
+        if not (Builtin.augmentableOperators.Contains baseOp)
+        then s
+        else let init2 = FunCall (Op baseOp, [Var name; init])
+             Expr (FunCall (Op "=", [Var name; init2]))
+    | s -> s
+
 module private RewriterImpl =
 
     // Remove useless spaces in macros
@@ -114,9 +124,7 @@ module private RewriterImpl =
         | Float (f, _) -> Some f
         | _ -> None
 
-    let augmentableOperators = set ["+"; "-"; "*"; "/"; "%"; "<<"; ">>"; "&"; "^"; "|"]
-
-
+    
     let simplifyOperator env = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
@@ -221,7 +229,7 @@ module private RewriterImpl =
         | FunCall(Op "=", [Var x; Var y]) when x.Name = y.Name -> Var y
         // x=x+...  ->  x+=...
         | FunCall(Op "=", [Var x; FunCall(Op op, [Var y; e])])
-                when x.Name = y.Name && augmentableOperators.Contains op ->
+                when x.Name = y.Name && Builtin.augmentableOperators.Contains op ->
             FunCall(Op (op + "="), [Var x; e])
 
         // x=...+x  ->  x+=...
@@ -533,9 +541,9 @@ module private RewriterImpl =
             mapExpr (mapEnvExpr visitAndReplace) expr
 
         // Merge two consecutive items into one, everywhere possible in a list.
-        let rec squeeze (f : 'a * 'a -> 'a list option) = function
+        let rec squeeze (f : Stmt * Stmt -> Stmt list option) = function
             | h1 :: h2 :: t ->
-                match f (h1, h2) with
+                match f (desugarCompoundAssignOp h1, desugarCompoundAssignOp h2) with
                     | Some xs -> squeeze f (xs @ t)
                     | None -> h1 :: (squeeze f (h2 :: t))
             | h :: t -> h :: t

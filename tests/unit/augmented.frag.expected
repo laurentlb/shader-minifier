@@ -2,13 +2,7 @@
 
 int foo(int x,int y)
 {
-  int a=x;
-  a+=x;
-  a*=y;
-  a>>=x;
-  a^=y;
-  a|=y;
-  return a;
+  return(x+x)*y>>x^y|y;
 }
 int output;
 void main()

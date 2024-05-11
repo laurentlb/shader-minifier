@@ -35,8 +35,7 @@ int unusedVars2()
 }
 int multiPass()
 {
-  int one=1;
-  one*=2;
+  int one=2;
   return one+1;
 }
 float multiPass2()
@@ -87,8 +86,7 @@ uniform int time;
 in int sync;
 int dependOnConst()
 {
-  int x=time+sync;
-  x*=2;
+  int x=(time+sync)*2;
   return x*3;
 }
 float noinl179(float x)

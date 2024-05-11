@@ -105,16 +105,13 @@ const char *mandelbulb_frag =
        "if(n>.001)"
          "if(f(x,y,r,p,g))"
            "n=.1;"
-       "z=mix(mix(mix(vec3(1),vec3(.8,.6,.2),sqrt(d.x)*1.25),vec3(.8,.3,.3),sqrt(d.y)*1.25),vec3(.7,.4,.3),sqrt(d.z)*1.25);"
-       "z*=(.5+.5*s.y)*vec3(.14,.15,.16)*.8+n*vec3(1,.85,.4)+.5*t*vec3(.08,.1,.14);"
-       "z*=vec3(pow(w,.8),pow(w,1.),pow(w,1.1));"
+       "z=mix(mix(mix(vec3(1),vec3(.8,.6,.2),sqrt(d.x)*1.25),vec3(.8,.3,.3),sqrt(d.y)*1.25),vec3(.7,.4,.3),sqrt(d.z)*1.25)*((.5+.5*s.y)*vec3(.14,.15,.16)*.8+n*vec3(1,.85,.4)+.5*t*vec3(.08,.1,.14))*vec3(pow(w,.8),pow(w,1.),pow(w,1.1));"
        "z=1.5*(z*.15+.85*sqrt(z));"
      "}"
    "else"
      " z=1.3*vec3(1,.98,.9)*(.7+.3*e.y);"
    "v=v*.5+.5;"
-   "z*=.7+4.8*v.x*v.y*(1.-v.x)*(1.-v.y);"
-   "z=clamp(z,0.,1.);"
+   "z=clamp(z*(.7+4.8*v.x*v.y*(1.-v.x)*(1.-v.y)),0.,1.);"
    "gl_FragColor=vec4(z,1);"
  "}";
 

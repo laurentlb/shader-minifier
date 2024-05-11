@@ -225,8 +225,7 @@ void mainImage(out vec4 O,vec2 F)
       s_hp=g_hp;
       if(d<MAXDIST)
         {
-          vec3 p=ro+rd*d,n=normal(p,d),lpos=vec3(0,0,.25)-p;
-          lpos+=lp;
+          vec3 p=ro+rd*d,n=normal(p,d),lpos=vec3(0,0,.25)-p+lp;
           lpos.xy+=path(lpos.z);
           vec3 l=normalize(lpos);
           float diff=clamp(dot(n,l),.01,1.),spec=pow(max(dot(reflect(l,n),rd),.01),24.);
@@ -246,10 +245,8 @@ void mainImage(out vec4 O,vec2 F)
             FC=vec3(.8);
         }
       else
-         C+=abs(glow*.7)*hsv2rgb(vec3(s_hp.z*.01,.8,.6)),C+=abs(objglow*.65)*vec3(1);
-      C=mix(C,FC,1.-exp(-7.5e-5*t.x*t.x*t.x));
-      C+=abs(beams*.65)*hsv2rgb(vec3(s_hp.z*.025,.8,.6));
-      C+=abs(flight*.75)*vec3(.5,1,.2);
+         C=C+abs(glow*.7)*hsv2rgb(vec3(s_hp.z*.01,.8,.6))+abs(objglow*.65)*vec3(1);
+      C=mix(C,FC,1.-exp(-7.5e-5*t.x*t.x*t.x))+abs(beams*.65)*hsv2rgb(vec3(s_hp.z*.025,.8,.6))+abs(flight*.75)*vec3(.5,1,.2);
     }
   crop=1./R.x;
   float d1=fBox2(uv+vec2(-.485,.2675),vec2(.005))-.002;

@@ -7,7 +7,5 @@ float a(float s)
 }
 float b()
 {
-  float t=3.;
-  t-=1.;
   return a(1.)+a(5.);
 }
