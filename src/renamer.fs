@@ -273,7 +273,7 @@ module private RenamerImpl =
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
         let reusable = [for i in reusable -> i.Value]
                         |> List.filter (fun x -> not (List.contains x options.noRenamingList))
-        let allAvailable = reusable @ env.availableNames |> Seq.distinct |> Seq.toList
+        let allAvailable = reusable @ env.availableNames |> List.distinct
         env.Update(varRenames, env.funRenames, allAvailable)
 
     let rec renStmt env =
