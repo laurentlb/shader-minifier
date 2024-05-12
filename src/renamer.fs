@@ -264,22 +264,16 @@ module private RenamerImpl =
     // so that we can reuse them. In other words, this function allows us
     // to shadow global variables in a function.
     let shadowVariables (env: Env) block =
-        let d = HashSet()
-        let collect mEnv = function
-            | Var id as e ->
-                if not (mEnv.vars.ContainsKey(id.Name)) then d.Add id.Name |> ignore<bool>
-                e
-            | FunCall(Var id, li) as e ->
-                match env.funRenames.TryFind id.Name with
-                | Some m -> if not (m.ContainsKey li.Length) then d.Add id.Name |> ignore<bool>
-                | None -> d.Add id.Name |> ignore<bool>
-                e
-            | e -> e
-        mapStmt BlockLevel.Unknown (mapEnvExpr collect) block |> ignore<MapEnv * Stmt>
-        let set = HashSet(Seq.choose env.varRenames.TryFind d)
-        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> id.Length > 2 || set.Contains id)
-        let reusable = reusable |> Seq.filter (fun x -> not (List.contains x.Value options.noRenamingList))
-        let allAvailable = [for i in reusable -> i.Value] @ env.availableNames |> Seq.distinct |> Seq.toList
+        // Find all the variables known in varRenames that are used in the block.
+        // They should be preserved in the renaming environment.
+        let stillUsedSet =
+            [for ident in Analyzer.varUsesInStmt block -> ident.Name]
+                |> Seq.choose env.varRenames.TryFind |> set
+
+        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
+        let reusable = [for i in reusable -> i.Value]
+                        |> List.filter (fun x -> not (List.contains x options.noRenamingList))
+        let allAvailable = reusable @ env.availableNames |> List.distinct
         env.Update(varRenames, env.funRenames, allAvailable)
 
     let rec renStmt env =
@@ -292,30 +286,34 @@ module private RenamerImpl =
             renList env renStmt b |> ignore<Env>
             env
         | If(cond, th, el) ->
-            renStmt env th |> ignore<Env>
-            Option.iter (renStmt env >> ignore<Env>) el
+            renStmt (env.onEnterFunction env th) th |> ignore<Env>
+            Option.iter (fun el -> renStmt (env.onEnterFunction env el) el |> ignore<Env>) el
             renExpr env cond
             env
-        | ForD(init, cond, inc, body) ->
-            let newEnv = renDecl false env init
+        | ForD(init, cond, inc, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
+            let newEnv = renDecl false newEnv init
             renStmt newEnv body |> ignore<Env>
             Option.iter (renExpr newEnv) cond
             Option.iter (renExpr newEnv) inc
             if options.hlsl then newEnv
             else env
-        | ForE(init, cond, inc, body) ->
+        | ForE(init, cond, inc, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
             renOpt init
             renOpt cond
             renOpt inc
-            renStmt env body |> ignore<Env>
+            renStmt newEnv body |> ignore<Env>
             env
-        | While(cond, body) ->
-            renExpr env cond
-            renStmt env body |> ignore<Env>
+        | While(cond, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
+            renExpr newEnv cond
+            renStmt newEnv body |> ignore<Env>
             env
-        | DoWhile(cond, body) ->
-            renExpr env cond
-            renStmt env body |> ignore<Env>
+        | DoWhile(cond, body) as stmt ->
+            let newEnv = env.onEnterFunction env stmt
+            renExpr newEnv cond
+            renStmt newEnv body |> ignore<Env>
             env
         | Jump(_, e) -> renOpt e; env
         | Verbatim _ -> env
