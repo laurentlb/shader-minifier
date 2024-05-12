@@ -468,17 +468,6 @@ default, this is the case for `main` and `mainImage`.
 **Note**: Use `--no-remove-unused` to disable this transformation.
 
 
-## Smoothstep transformation
-
-`smoothstep(a,b,x)` calls can be replaced with
-`smoothstep(0.0,1.0,(x-a)/(b-a))`. When `a` and `b` are constant, the expression
-will be simplified. In some cases, this might make the code more compressible,
-and this technique was [used in
-Elevated](https://www.pouet.net/topic.php?which=6751&page=1#c295695).
-
-However, in many cases this trick doesn't give good results. As a result, this
-is not enabled by default; use `--smoothstep` if you want to try it.
-
 ## Renaming
 
 There are two renaming strategies:

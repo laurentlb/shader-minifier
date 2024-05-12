@@ -1,6 +1,6 @@
 # Shader Minifier
 
-[![Build status](https://ci.appveyor.com/api/projects/status/chwlpnssgd5kdl4x/branch/master?svg=true)](https://ci.appveyor.com/project/laurentlb/shader-minifier/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/9sekrxuiway58su3?svg=true)](https://ci.appveyor.com/project/laurentlb/shader-minifier-r5gmt)
 
 Shader Minifier is a tool that minifies and obfuscates shader code (GLSL and
 HLSL) without affecting its behaviour. It is also suitable for reducing the size
@@ -100,7 +100,7 @@ USAGE: Shader Minifier [--help] [-o <string>] [-v] [--hlsl]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
-                       [--smoothstep] [--no-remove-unused]
+                       [--no-remove-unused]
                        [--move-declarations] [<filename>...]
 
 FILENAMES:
@@ -134,7 +134,6 @@ OPTIONS:
     --no-renaming-list <string>
                           Comma-separated list of functions to preserve
     --no-sequence         Do not use the comma operator trick
-    --smoothstep          Use IQ's smoothstep trick
     --no-remove-unused    Do not remove unused code
     --move-declarations   Move declarations to group them
     --preprocess          Evaluate some of the file preprocessor directives
@@ -318,7 +317,6 @@ them all at the same time by listing them all on the command-line.
 - [Unused local variables](TRANSFORMATIONS.md#Unused-local-variables)
 - [Dead code removal](TRANSFORMATIONS.md#Dead-code-removal)
 - [Unused function removal](TRANSFORMATIONS.md#Unused-function-removal)
-- [Smoothstep transformation](TRANSFORMATIONS.md#Smoothstep-transformation)
 - [Renaming](TRANSFORMATIONS.md#Renaming)
 
 
