@@ -348,6 +348,8 @@ module private RewriterImpl =
                 init |> mapExpr env
             | _ -> e
 
+        | FunCall(Var var, [e; Float (1.M, _)]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x
+
         // pi is acos(-1), pi/2 is acos(0)
         | Float(f, _) when Decimal.Round(f, 8) = 3.14159265M -> FunCall(Var (Ident "acos"), [Float (-1.M, "")])
         | Float(f, _) when Decimal.Round(f, 8) = 6.28318531M -> FunCall(Op "*", [Float (2.M, ""); FunCall(Var (Ident "acos"), [Float (-1.M, "")])])
