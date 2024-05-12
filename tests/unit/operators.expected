@@ -31,6 +31,14 @@
  "{"
    "x=(x+=1.,length(vec3(x)));"
    "return x*x*sin((x*=x,x));"
+ "}"
+ "float desugar_compound_assignment_for_ternary(float x)"
+ "{"
+   "x+=x*x;"
+   "x=x==sqrt(x)?"
+     "x+cos(x):"
+     "x*sin(x);"
+   "return x*x;"
  "}",
 
 #endif

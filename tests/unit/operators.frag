@@ -40,3 +40,13 @@ float f(float x)
 	float a = (x += 1.0, length(vec3(x)));
 	return a*a*sin((a*=a, a));
 }
+
+float desugar_compound_assignment_for_ternary(float x)
+{
+	x += x * x;
+	if (x == sqrt(x))
+		x += cos(x);
+	else
+		x *= sin(x);
+	return x * x;
+}

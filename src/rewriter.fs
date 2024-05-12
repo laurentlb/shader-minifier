@@ -35,16 +35,6 @@ let rec private sideEffects = function
 
 let rec private isPure e = sideEffects e = []
 
-let private desugarCompoundAssignOp = function
-    | Expr (FunCall (Op op, [Var name; init])) as s
-        when Builtin.assignOps.Contains op ->
-        let baseOp = op.TrimEnd('=')
-        if not (Builtin.augmentableOperators.Contains baseOp)
-        then s
-        else let init2 = FunCall (Op baseOp, [Var name; init])
-             Expr (FunCall (Op "=", [Var name; init2]))
-    | s -> s
-
 module private RewriterImpl =
 
     // Remove useless spaces in macros
@@ -104,12 +94,12 @@ module private RewriterImpl =
             | ie -> ie
         mapExpr (mapEnvExpr mapInline) bodyExpr
 
-    /// Expression that doesn't need parentheses around it.
+    // Expression that doesn't need parentheses around it.
     let (|NoParen|_|) = function
         | Int _ | Float _ | Dot _ | Var _ | FunCall (Var _, _) | Subscript _ as x -> Some x
         | _ -> None
 
-    /// Expression that statically evaluates to boolean value.
+    // Expression that statically evaluates to a boolean value.
     let (|True|False|NotABool|) = function
         | Int (i, _) when i <> 0 -> True
         | Int (i, _) when i = 0 -> False
@@ -119,12 +109,24 @@ module private RewriterImpl =
         | Var var when var.Name = "false" -> False
         | _ -> NotABool
 
+    // Expression that statically evaluates to a numeric value.
     let (|Number|_|) = function
         | Int (i, _) -> Some (decimal i)
         | Float (f, _) -> Some f
         | _ -> None
-
     
+    // Expression that is equivalent to an assignment.
+    let (|Assignment|_|) = function
+        | (FunCall (Op "=", [Var v; e])) -> Some (v, e)
+        | (FunCall (Op op, [Var name; e])) when Builtin.assignOps.Contains op ->
+            let baseOp = op.TrimEnd('=')
+            if not (Builtin.augmentableOperators.Contains baseOp)
+            then None
+            else let augmentedE = FunCall (Op baseOp, [Var name; e])
+                 Some (name, augmentedE)
+        | _ -> None
+
+
     let simplifyOperator env = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
@@ -527,12 +529,7 @@ module private RewriterImpl =
             | _ -> true)
 
         let countUsesOfIdentName expr identName =
-            let mutable idents = []
-            let collectLocalUses _ = function
-                | Var v as e -> idents <- v :: idents; e
-                | e -> e
-            mapExpr (mapEnvExpr collectLocalUses) expr |> ignore<Expr>
-            idents |> List.filter (fun i -> i.Name = identName) |> List.length
+            Analyzer.varUsesInStmt (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
 
         let replaceUsesOfIdentByExpr expr identName replacement =
             let visitAndReplace _ = function
@@ -541,9 +538,9 @@ module private RewriterImpl =
             mapExpr (mapEnvExpr visitAndReplace) expr
 
         // Merge two consecutive items into one, everywhere possible in a list.
-        let rec squeeze (f : Stmt * Stmt -> Stmt list option) = function
+        let rec squeeze (f : 'a * 'a -> 'a list option) = function
             | h1 :: h2 :: t ->
-                match f (desugarCompoundAssignOp h1, desugarCompoundAssignOp h2) with
+                match f (h1, h2) with
                     | Some xs -> squeeze f (xs @ t)
                     | None -> h1 :: (squeeze f (h2 :: t))
             | h :: t -> h :: t
@@ -557,7 +554,7 @@ module private RewriterImpl =
             | Decl (_, [declElt]), Jump(JumpKeyword.Return, Some (Var v)) // int x=f();return x;  ->  return f();
                 when v.Name = declElt.name.Name && declElt.init.IsSome ->
                     Some [Jump(JumpKeyword.Return, declElt.init)]
-            | Expr (FunCall(Op "=", [Var v1; e])), Jump(JumpKeyword.Return, Some (Var v2)) // x=f();return x;  ->  return f();
+            | Expr (Assignment (v1, e)), Jump(JumpKeyword.Return, Some (Var v2)) // x=f();return x;  ->  return f();
                 when v1.Name = v2.Name ->
                     match v1.VarDecl with
                     | Some d ->
@@ -567,7 +564,7 @@ module private RewriterImpl =
                             None
                     | _ -> None
             // assignment to a local immediately followed by re-assignment
-            | Expr (FunCall (Op "=", [Var name; init1])), (Expr (FunCall (Op "=", [Var name2; init2])) as assign2)
+            | Expr (Assignment (name, init1)), (Expr (Assignment (name2, init2)) as assign2)
                 when name.Name = name2.Name ->
                 match name.Declaration with
                 | Declaration.Variable decl when decl.scope = VarScope.Global ->
@@ -585,7 +582,7 @@ module private RewriterImpl =
                     | _ -> None
                 | _ -> None
             // declaration immediately followed by re-assignment
-            | Decl (ty, [declElt]), (Expr (FunCall (Op "=", [Var name2; init2])))
+            | Decl (ty, [declElt]), Expr (Assignment (name2, init2))
                 when declElt.name.Name = name2.Name ->
                     match countUsesOfIdentName init2 declElt.name.Name with
                     | 0 ->
@@ -697,7 +694,7 @@ module private RewriterImpl =
             match (body1, body2) with
                 | (Expr eT, Some (Expr eF)) ->
                     let tryCollapseToAssignment : Expr -> (Ident * Expr) option = function
-                        | FunCall (Op "=", [Var name; init]) -> Some (name, init)
+                        | Assignment (name, init) -> Some (name, init)
                         | FunCall (Op ",", list) -> // f(),c=d  ->  c=f(),d
                             match List.last list with
                             | FunCall (Op "=", [Var name; init]) ->

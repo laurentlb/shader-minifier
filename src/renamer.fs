@@ -235,13 +235,13 @@ module private RenamerImpl =
             | e -> e
         mapExpr (mapEnvExpr mapper) expr |> ignore<Expr>
 
-    let renDecl isTopLevel env (ty:Type, vars) =
+    let renDecl level env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
             Option.iter (renExpr env) decl.init
             Option.iter (renExpr env) decl.size
-            let isExternal = isTopLevel && (ty.IsExternal || options.hlsl)
+            let isExternal = level = Level.TopLevel && (ty.IsExternal || options.hlsl)
 
-            if (isTopLevel && options.preserveAllGlobals) ||
+            if (level = Level.TopLevel && options.preserveAllGlobals) ||
                     List.contains decl.name.Name options.noRenamingList then
                 dontRename env decl.name
             elif not isExternal then
@@ -281,7 +281,7 @@ module private RenamerImpl =
         function
         | Expr e -> renExpr env e; env
         | Decl d ->
-            renDecl false env d
+            renDecl Level.InFunc env d
         | Block b ->
             renList env renStmt b |> ignore<Env>
             env
@@ -292,7 +292,7 @@ module private RenamerImpl =
             env
         | ForD(init, cond, inc, body) as stmt ->
             let newEnv = env.onEnterFunction env stmt
-            let newEnv = renDecl false newEnv init
+            let newEnv = renDecl Level.InFunc newEnv init
             renStmt newEnv body |> ignore<Env>
             Option.iter (renExpr newEnv) cond
             Option.iter (renExpr newEnv) inc
@@ -334,11 +334,11 @@ module private RenamerImpl =
         | TypeBlock("struct", _, _) -> env
         | TypeBlock(_, _, fields) ->
             // treat the fields as if they were global variables
-            renList env (renDecl true) fields
+            renList env (renDecl Level.TopLevel) fields
         | _ -> env
 
     let rec renTopLevelName env = function
-        | TLDecl d -> renDecl true env d
+        | TLDecl d -> renDecl Level.TopLevel env d
         | TypeDecl tyDecl -> renTyBlock env tyDecl
         | Function(fct, _) -> renFctName env fct
         | _ -> env
@@ -346,7 +346,7 @@ module private RenamerImpl =
     let rec renTopLevelBody (env: Env) = function
         | Function(fct, body) ->
             let env = env.onEnterFunction env body
-            let env = renList env (renDecl false) fct.args
+            let env = renList env (renDecl Level.InFunc) fct.args
             renStmt env body |> ignore<Env>
         | _ -> ()
 
