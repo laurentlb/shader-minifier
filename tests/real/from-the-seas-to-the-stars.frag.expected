@@ -636,7 +636,7 @@ void main()
                     col=vec3(.3,1,.3)/7.*clamp(p.y+1.,0,1);
                     col=mix(col,vec3(1),length(op.xz)-.12)/4;
                     p.y-=.8;
-                    p.xz+=normalize(p.xz-fp.xz)*(1.-smoothstep(0.,4.,distance(p.xz,fp.xz)))*pow(max(0.,p.y+.5),2.)*.3;
+                    p.xz+=normalize(p.xz-fp.xz)*(1.-smoothstep(0.,4.,length(p.xz-fp.xz)))*pow(max(0.,p.y+.5),2.)*.3;
                     w.x=R();
                     col+=pow(w.x,32.)*vec3(1,1,.5)/3.;
                     if(p.y<-1)
@@ -819,7 +819,7 @@ void main()
           vec3 bg=vec3(.02)*vec3(.7,.9,1)*.6;
           if(time>=200)
             bg*=max(0.,1.-(time-200)/7.);
-          c.xyz=mix(bg,c.xyz,c.w)*3*(1.-smoothstep(.2,1.,distance(vec2(coord),vec2(640,360))/880.));
+          c.xyz=mix(bg,c.xyz,c.w)*3*(1.-smoothstep(.2,1.,length(vec2(coord)-vec2(640,360))/880.));
           c*=min(1.,time/20.)*smoothstep(0.,3.,abs(time-60-18.5))*smoothstep(0.,1.,abs(time-61))*smoothstep(0.,1.,abs(time-148))*smoothstep(0.,1.,abs(time-165));
           if(time<43)
             c*=1.-smoothstep(42,43,time);

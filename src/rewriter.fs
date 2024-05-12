@@ -328,6 +328,11 @@ module private RewriterImpl =
             | _ -> failwithf "Cannot inline function %s because type-based disambiguation of user-defined function overloading is not supported" v.Name
 
         | FunCall(Op _, _) as op -> simplifyOperator env op
+
+        | FunCall(Var dist, [arg1; arg2]) when dist.Name = "distance" ->
+            let len = Ident("length", dist.Loc.line, dist.Loc.col)
+            FunCall(Var len, [FunCall (Op "-", [arg1; arg2])])
+
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
