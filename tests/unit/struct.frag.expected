@@ -1,0 +1,9 @@
+struct Foo{int field1;int field2;int wz;int xy;};
+void main()
+{
+  Foo i;
+  i.field1=1;
+  i.field2=2;
+  i.wz=3;
+  i.xy=4;
+}

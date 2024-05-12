@@ -4,6 +4,11 @@ open System.Collections.Generic
 open Ast
 open Options.Globals
 
+let renameField field =
+    if Builtin.isFieldSwizzle field then
+        field |> String.map (fun c -> options.canonicalFieldNames.[Builtin.swizzleIndex c])
+    else field
+
 module private RenamerImpl =
 
     // Environment for renamer
@@ -328,10 +333,24 @@ module private RenamerImpl =
             renList env renCase cl |> ignore<Env>
             env
 
+    let renStructElts (decls: Decl list) =
+        let allFields = Dictionary<string, string>()
+        for _, elts in decls do
+            for elt in elts do
+                let newName = renameField elt.name.Name
+                match allFields.TryGetValue(newName) with
+                | true, conflict ->
+                    failwithf "Field '%s' will conflict with field '%s' after renaming: both will be named '%s'" elt.name.Name conflict newName
+                | _ ->
+                    allFields.[newName] <- elt.name.Name
+                    elt.name.Rename(newName)
+
     // e.g. struct foo { int a; float b; }
     //   or uniform foo { int a; float b; }
     let renTyBlock (env: Env) = function
-        | TypeBlock("struct", _, _) -> env
+        | TypeBlock("struct", _, fields) ->
+            renStructElts fields
+            env
         | TypeBlock(_, _, fields) ->
             // treat the fields as if they were global variables
             renList env (renDecl Level.TopLevel) fields

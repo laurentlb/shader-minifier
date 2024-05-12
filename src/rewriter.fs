@@ -6,11 +6,6 @@ open Builtin
 open Ast
 open Options.Globals
 
-let renameField field =
-    if isFieldSwizzle field then
-        field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
-    else field
-
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
 let rec private sideEffects = function

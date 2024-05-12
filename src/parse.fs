@@ -159,15 +159,7 @@ type private ParseImpl() =
 
     // A type block, like struct or interface blocks
     let blockSpecifier prefix =
-
-        // Restriction on field names
-        let check ((_,l) as arg : Ast.Decl) =
-            for decl in l do
-                if decl.name.Name <> Rewriter.renameField decl.name.Name then
-                    failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name.Name
-            arg
-
-        let decls = many (declaration .>> ch ';' |>> check)
+        let decls = many (declaration .>> ch ';')
         let name = opt ident
         pipe2 name (between (ch '{') (ch '}') decls)
             (fun n d ->
