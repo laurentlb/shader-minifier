@@ -35,7 +35,6 @@ type CliArguments =
     | [<CustomCommandLine("--no-renaming")>] NoRenaming
     | [<CustomCommandLine("--no-renaming-list")>] NoRenamingList of string
     | [<CustomCommandLine("--no-sequence")>] NoSequence
-    | [<CustomCommandLine("--smoothstep")>] Smoothstep
     | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
     | [<CustomCommandLine("--preprocess")>] Preprocess
@@ -58,7 +57,6 @@ type CliArguments =
             | NoRenaming -> "Do not rename anything"
             | NoRenamingList _ -> "Comma-separated list of functions to preserve"
             | NoSequence -> "Do not use the comma operator trick"
-            | Smoothstep -> "Use IQ's smoothstep trick"
             | NoRemoveUnused -> "Do not remove unused code"
             | MoveDeclarations -> "Move declarations to group them"
             | Preprocess -> "Evaluate some of the file preprocessor directives"
@@ -70,7 +68,6 @@ type Options() =
     member val outputFormat = CVariables with get, set
     member val verbose = false with get, set
     member val debug = false with get, set
-    member val smoothstepTrick = false with get, set
     member val canonicalFieldNames = "xyzw" with get, set
     member val preserveExternals = false with get, set
     member val preserveAllGlobals = false with get, set
@@ -119,7 +116,6 @@ let private initPrivate argv needFiles =
         options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
         options.verbose <- args.Contains(Verbose)
         options.debug <- args.Contains(Debug)
-        options.smoothstepTrick <- args.Contains(Smoothstep)
         options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
         options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)

@@ -117,8 +117,8 @@ module private RewriterImpl =
     
     // Expression that is equivalent to an assignment.
     let (|Assignment|_|) = function
-        | (FunCall (Op "=", [Var v; e])) -> Some (v, e)
-        | (FunCall (Op op, [Var name; e])) when Builtin.assignOps.Contains op ->
+        | FunCall (Op "=", [Var v; e]) -> Some (v, e)
+        | FunCall (Op op, [Var name; e]) when Builtin.assignOps.Contains op ->
             let baseOp = op.TrimEnd('=')
             if not (Builtin.augmentableOperators.Contains baseOp)
             then None
@@ -330,14 +330,6 @@ module private RewriterImpl =
         | FunCall(Op _, _) as op -> simplifyOperator env op
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
-
-        // iq's smoothstep trick: http://www.pouet.net/topic.php?which=6751&page=1#c295695
-        | FunCall(Var var, [Float (0.M,_); Float (1.M,_); _]) as e when var.Name = "smoothstep" -> e
-        | FunCall(Var var, [a; b; x]) when var.Name = "smoothstep" && options.smoothstepTrick ->
-            let sub1 = FunCall(Op "-", [x; a])
-            let sub2 = FunCall(Op "-", [b; a])
-            let div  = FunCall(Op "/", [sub1; sub2]) |> mapExpr env
-            FunCall(Var (Ident "smoothstep"), [Float (0.M,""); Float (1.M,""); div])
 
         | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
