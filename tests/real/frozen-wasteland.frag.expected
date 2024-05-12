@@ -249,7 +249,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   if(rz<FAR)
     {
       vec3 pos=ro+rz*rightdir,nor=normal(pos,rz);
-      float d=distance(pos,ro);
+      float d=length(pos-ro);
       nor=bump(pos,nor,d);
       float shd=shadow(pos,eyedir),dif=clamp(dot(nor,eyedir),0.,1.);
       vec3 ref=reflect(rightdir,nor);
