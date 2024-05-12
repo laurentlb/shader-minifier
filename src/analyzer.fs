@@ -110,7 +110,7 @@ module private VariableInlining =
     //  - it is either:
     //      - an uninitialized local (remove it). this breaks the shader if the local is read.
     //      - the init value is a simple constant, or with aggro inlining, it uses only builtin functions and variables never written to.
-    let markUnwrittenVariablesWithSimpleInit isTopLevel = function
+    let markUnwrittenVariablesWithSimpleInit level = function
         | (ty: Type, defs) when not ty.IsExternal ->
             for (def:DeclElt) in defs do
                 if not def.name.ToBeInlined && // already done in a previous pass
@@ -119,7 +119,7 @@ module private VariableInlining =
                     match def.init with
                     | None ->
                         // Top-level values are special, in particular in HLSL. Keep them for now.
-                        if not isTopLevel then
+                        if level <> Level.TopLevel then
                             // Never-written locals without init should be unused: inline (remove) them.
                             debug $"{def.name.Loc}: inlining (removing) unassigned local '{Printer.debugDecl def}'"
                             def.name.ToBeInlined <- true
@@ -127,7 +127,7 @@ module private VariableInlining =
                         if canBeInlined init then
                             // Never-written locals and globals are inlined when their value is "simple enough".
                             // This can increase non-compressed size but decreases compressed size.
-                            let varKind = if isTopLevel then "global" else "local"
+                            let varKind = match level with Level.TopLevel -> "global" | Level.InFunc -> "local"
                             debug $"{def.name.Loc}: inlining {varKind} variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
                             def.name.ToBeInlined <- true
         | _ -> ()
@@ -135,8 +135,8 @@ module private VariableInlining =
     let markInlinableVariables li =
         let mapStmt _ stmt =
             match stmt with
-            | Decl d -> markUnwrittenVariablesWithSimpleInit false d
-            | ForD (d, _, _, _) -> markUnwrittenVariablesWithSimpleInit false d
+            | Decl d -> markUnwrittenVariablesWithSimpleInit Level.InFunc d
+            | ForD (d, _, _, _) -> markUnwrittenVariablesWithSimpleInit Level.InFunc d
             | Block b -> markSafelyInlinableLocals b
             | _ -> ()
             stmt
@@ -145,7 +145,7 @@ module private VariableInlining =
         // Visit globals
         for tl in li do
             match tl with
-            | TLDecl d -> markUnwrittenVariablesWithSimpleInit true d; ()
+            | TLDecl d -> markUnwrittenVariablesWithSimpleInit Level.TopLevel d; ()
             | _ -> ()
         ()
 

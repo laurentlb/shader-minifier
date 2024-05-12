@@ -199,6 +199,9 @@ type Shader = {
 [<NoComparison>] [<RequireQualifiedAccess>]
 type BlockLevel = FunctionRoot of FunctionType | Nested | Unknown
 
+[<RequireQualifiedAccess>]
+type Level = TopLevel | InFunc
+
 [<NoComparison; NoEquality>]
 type MapEnv = {
     fExpr: MapEnv -> Expr -> Expr
