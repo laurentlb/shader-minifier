@@ -331,7 +331,7 @@ module private RewriterImpl =
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
-        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
+        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Renamer.renameField field)
 
         | Var s as e ->
             match env.vars.TryFind s.Name with
