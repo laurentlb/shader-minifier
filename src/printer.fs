@@ -117,7 +117,8 @@ type PrinterImpl(withLocations) =
             | Op "?:", [a1; a2; a3] ->
                 let prec = precedence.["?:"]
                 let res = out "%s?%s%s:%s%s" (exprToSLevel indent (prec+1) a1)
-                            (nl (indent+1)) (exprToSLevel (indent+1) prec a2)
+                    // The middle expression of ?: is parsed as if grouped: precedence doesn't apply to it.
+                            (nl (indent+1)) (exprToSLevel (indent+1) 0 a2)
                             (nl (indent+1)) (exprToSLevel (indent+1) prec a3)
                 if prec < level then out "(%s)" res else res
             

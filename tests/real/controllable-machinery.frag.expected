@@ -28,13 +28,13 @@ vec4 BPos(float t)
   float a;
   t=mod(t,tCyc);
   p=t<5.?
-    (a=0.,vec3(-1.018+2.118*t/5.,bEdge,0)):
+    a=0.,vec3(-1.018+2.118*t/5.,bEdge,0):
     t<10.?
-      (a=1.57079635*(t-5.)/5.,vec3(1.1,bEdge+sin(a),1.-cos(a))):
+      a=1.57079635*(t-5.)/5.,vec3(1.1,bEdge+sin(a),1.-cos(a)):
       t<15.?
-        (a=1.57079635,vec3(1.1-2.118*(t-10.)/5.,1.+bEdge,1)):
+        a=1.57079635,vec3(1.1-2.118*(t-10.)/5.,1.+bEdge,1):
         t<17.5?
-          (a=1.57079635,vec3(-1.018,1.+bEdge,1.-(t-15.)/2.5)):
+          a=1.57079635,vec3(-1.018,1.+bEdge,1.-(t-15.)/2.5):
           (t-=17.5,a=-1.57079635*t,vec3(-1.018,1.+bEdge-t*t,0));
   return vec4(p,a);
 }
@@ -355,7 +355,7 @@ vec3 ShowScene(vec3 ro,vec3 rd)
   idObjT=idObj;
   dstGear=GearRay(ro,rd);
   idObj=dstGear<min(dstObj,dstFar)?
-    (dstObj=dstGear,1):
+    dstObj=dstGear,1:
     idObjT;
   dstBlk=BlkHit(ro,rd);
   if(min(dstBlk,dstObj)<dstFar)

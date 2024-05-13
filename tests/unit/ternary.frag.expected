@@ -15,7 +15,7 @@ void main()
 {
   int d=0,e=0;
   k==0?
-    (sin(O.x),d=1):
+    sin(O.x),d=1:
     (cos(O.x),e=2);
   O.x=float(d);
   O.y=float(e);
@@ -25,3 +25,4 @@ int f2()
   k++;
   return k;
 }
+

@@ -235,7 +235,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   p.x*=iResolution.x/iResolution.y;
   vec2 mo=iMouse.xy/iResolution.xy-.5;
   mo=mo==vec2(-.5)?
-    (mo=vec2(-.1,.07)):
+    mo=vec2(-.1,.07):
     mo;
   mo.x*=iResolution.x/iResolution.y;
   vec3 ro=vec3(smoothstep(0.,1.,tri(time*1.5)*.3)*1.5,smoothstep(0.,1.,tri(time*3.)*3.)*.08,-time*3.5-130.);
