@@ -117,7 +117,7 @@ let private initPrivate argv needFiles =
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
     let glslVerStr = (sprintf "%A" (args.GetResult(GlslVersionArg, defaultValue = GLSL_460))).Substring(5)
-    let gles = glslVerStr.Contains("es")
+    let essl = glslVerStr.Contains("es")
     let glslVerNumber = System.Int32.Parse(glslVerStr.Substring(0,3))
 
     if filenames.Length = 0 && needFiles then
@@ -132,8 +132,8 @@ let private initPrivate argv needFiles =
         options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
         options.hlsl <- args.Contains(Hlsl)
-        options.glslver <- (if not gles then glslVerNumber else 0)
-        options.esslver <- (if gles then glslVerNumber else 0)
+        options.glslver <- (if not essl && not options.hlsl then glslVerNumber else 0)
+        options.esslver <- (if essl then glslVerNumber else 0)
         options.noInlining <- args.Contains(NoInlining)
         options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
         options.noSequence <- args.Contains(NoSequence)
