@@ -16,6 +16,11 @@ type OutputFormat =
     | [<CustomCommandLine("nasm")>] Nasm
     | [<CustomCommandLine("rust")>] Rust
 
+type GlslVersion =
+    | [<CustomCommandLine("460")>] GLSL_460
+    | [<CustomCommandLine("100es")>] GLSL_100es
+    | [<CustomCommandLine("300es")>] GLSL_300es
+
 type FieldSet =
     | RGBA
     | XYZW
@@ -26,6 +31,7 @@ type CliArguments =
     | [<CustomCommandLine("-v")>] Verbose
     | [<CustomCommandLine("--debug")>] Debug
     | [<CustomCommandLine("--hlsl")>] Hlsl
+    | [<CustomCommandLine("--glsl-version")>] GlslVersionArg of GlslVersion
     | [<CustomCommandLine("--format")>] FormatArg of OutputFormat
     | [<CustomCommandLine("--field-names")>] FieldNames of FieldSet
     | [<CustomCommandLine("--preserve-externals")>] PreserveExternals
@@ -48,6 +54,7 @@ type CliArguments =
             | Verbose -> "Verbose, display additional information"
             | Debug -> "Debug, display more additional information"
             | Hlsl -> "Use HLSL (default is GLSL)"
+            | GlslVersionArg _ -> "Use GLSL version (default is 460)"
             | FormatArg _ -> "Choose to format the output (use 'text' if you want just the shader)"
             | FieldNames _ -> "Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'"
             | PreserveExternals -> "Do not rename external values (e.g. uniform)"
@@ -72,6 +79,8 @@ type Options() =
     member val preserveExternals = false with get, set
     member val preserveAllGlobals = false with get, set
     member val hlsl = false with get, set
+    member val glslver = 460 with get, set
+    member val esslver = 0 with get, set
     member val noInlining = false with get, set
     member val aggroInlining = false with get, set
     member val noSequence = false with get, set
@@ -107,6 +116,9 @@ let private initPrivate argv needFiles =
     let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
+    let glslVerStr = (sprintf "%A" (args.GetResult(GlslVersionArg, defaultValue = GLSL_460))).Substring(5)
+    let gles = glslVerStr.Contains("es")
+    let glslVerNumber = System.Int32.Parse(glslVerStr.Substring(0,3))
 
     if filenames.Length = 0 && needFiles then
         printfn "%s" (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
@@ -120,6 +132,8 @@ let private initPrivate argv needFiles =
         options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
         options.hlsl <- args.Contains(Hlsl)
+        options.glslver <- (if not gles then glslVerNumber else 0)
+        options.esslver <- (if gles then glslVerNumber else 0)
         options.noInlining <- args.Contains(NoInlining)
         options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
         options.noSequence <- args.Contains(NoSequence)
