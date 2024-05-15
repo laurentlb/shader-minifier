@@ -734,7 +734,7 @@ const char *mouton_frag =
    "b*=smoothstep(k,k-.005,w);"
    "k=fract(23.*pow(w,.25));"
    "k-=smoothstep(.95,.99,k);"
-   "b=smoothstep(0.,8.,t)*smoothstep(153.,150.,t)*mix(b,mix(vec3(1,.6,0),vec3(1,0,0),pow(k,1.)),smoothstep(.135,.136,w)*smoothstep(147.,148.,t));"
+   "b=smoothstep(0.,8.,t)*smoothstep(153.,150.,t)*mix(b,mix(vec3(1,.6,0),vec3(1,0,0),k),smoothstep(.135,.136,w)*smoothstep(147.,148.,t));"
    "U=vec4(b/(1.+pow(length(v*2.-1.),4.)*.04),1);"
  "}";
 
