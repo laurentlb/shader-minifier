@@ -169,7 +169,7 @@ vec3 DoLighting(vec3 mat,vec3 pos,vec3 normal,vec3 eyeDir,float d,float specular
   float sh=Shadow(pos,sunLight);
   vec3 col=mat*SUN_COLOUR*max(dot(sunLight,normal),0.)*sh+mat*CubeMap(iChannel3,normal,64.)*.5;
   normal=reflect(eyeDir,normal);
-  return col+pow(max(dot(sunLight,normal),0.),1.)*SUN_COLOUR*texture(iChannel3,normal).xyz*specular*sh;
+  return col+max(dot(sunLight,normal),0.)*SUN_COLOUR*texture(iChannel3,normal).xyz*specular*sh;
 }
 vec3 GetNormal(vec3 p,float sphereR)
 {
