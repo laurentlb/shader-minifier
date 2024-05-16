@@ -1,6 +1,7 @@
 ﻿module Ast
 
 open Options.Globals
+open Language.Globals
 
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
@@ -144,7 +145,7 @@ and FunctionType = {
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
 } with
-    member this.isExternal = options.hlsl && this.semantics <> []
+    member this.isExternal = language.hlsl && this.semantics <> []
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
@@ -285,7 +286,7 @@ let rec mapStmt blockLevel env stmt =
             let env', decl = mapDecl env init
             let res = ForD (decl, Option.map (mapExpr env') cond,
                             Option.map (mapExpr env') inc, snd (mapStmt' env' body))
-            if options.hlsl then env', res
+            if language.hlsl then env', res
             else env, res
         | ForE(init, cond, inc, body) ->
             let res = ForE (Option.map (mapExpr env) init, Option.map (mapExpr env) cond,

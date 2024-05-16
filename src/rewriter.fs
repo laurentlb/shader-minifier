@@ -5,6 +5,7 @@ open System.Collections.Generic
 open Builtin
 open Ast
 open Options.Globals
+open Language.Globals
 
 let renameField field =
     if isFieldSwizzle field then
@@ -398,7 +399,7 @@ module private RewriterImpl =
         | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
         // int a=2; for (int b=3; ...)  ->  int a=2, b=3; for (; ...)
-        | Decl(ty1, li1) :: ForD((ty2, li2), cond, inc, body) :: l when ty1 = ty2 && (options.hlsl || options.glslver>0 || options.esslver>=300) ->
+        | Decl(ty1, li1) :: ForD((ty2, li2), cond, inc, body) :: l when ty1 = ty2 && language.dynamicloop ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: ForE(None, cond, inc, body) :: l)
         | e::l -> e :: squeezeConsecutiveDeclarations l
 

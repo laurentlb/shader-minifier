@@ -3,6 +3,7 @@
 open System.Collections.Generic
 open Ast
 open Options.Globals
+open Language.Globals
 
 module private RenamerImpl =
 
@@ -239,7 +240,7 @@ module private RenamerImpl =
         let aux (env: Env) (decl: Ast.DeclElt) =
             Option.iter (renExpr env) decl.init
             Option.iter (renExpr env) decl.size
-            let isExternal = level = Level.TopLevel && (ty.IsExternal || options.hlsl)
+            let isExternal = level = Level.TopLevel && (ty.IsExternal || language.hlsl)
 
             if (level = Level.TopLevel && options.preserveAllGlobals) ||
                     List.contains decl.name.Name options.noRenamingList then
@@ -296,7 +297,7 @@ module private RenamerImpl =
             renStmt newEnv body |> ignore<Env>
             Option.iter (renExpr newEnv) cond
             Option.iter (renExpr newEnv) inc
-            if options.hlsl then newEnv
+            if language.hlsl then newEnv
             else env
         | ForE(init, cond, inc, body) as stmt ->
             let newEnv = env.onEnterFunction env stmt

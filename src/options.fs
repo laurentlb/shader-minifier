@@ -3,6 +3,7 @@
 open System.IO
 open Argu
 open System
+open Language.Globals
 
 let version = "1.3.6" // Shader Minifier version
 let debugMode = false
@@ -78,9 +79,6 @@ type Options() =
     member val canonicalFieldNames = "xyzw" with get, set
     member val preserveExternals = false with get, set
     member val preserveAllGlobals = false with get, set
-    member val hlsl = false with get, set
-    member val glslver = 460 with get, set
-    member val esslver = 0 with get, set
     member val noInlining = false with get, set
     member val aggroInlining = false with get, set
     member val noSequence = false with get, set
@@ -117,8 +115,14 @@ let private initPrivate argv needFiles =
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
     let glslVerStr = (sprintf "%A" (args.GetResult(GlslVersionArg, defaultValue = GLSL_460))).Substring(5)
-    let essl = glslVerStr.Contains("es")
     let glslVerNumber = System.Int32.Parse(glslVerStr.Substring(0,3))
+    language <-
+        if args.Contains(Hlsl) then
+            LanguageHLSL 0
+        else if glslVerStr.Contains("es") then
+            LanguageESSL glslVerNumber
+        else
+            LanguageGLSL glslVerNumber
 
     if filenames.Length = 0 && needFiles then
         printfn "%s" (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
@@ -131,9 +135,6 @@ let private initPrivate argv needFiles =
         options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
         options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
-        options.hlsl <- args.Contains(Hlsl)
-        options.glslver <- (if not essl && not options.hlsl then glslVerNumber else 0)
-        options.esslver <- (if essl then glslVerNumber else 0)
         options.noInlining <- args.Contains(NoInlining)
         options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
         options.noSequence <- args.Contains(NoSequence)

@@ -1,6 +1,7 @@
 ﻿module Parse
 
 open Options.Globals
+open Language.Globals
 
 open FParsec.Primitives
 open FParsec.CharParsers
@@ -181,7 +182,7 @@ type private ParseImpl() =
     }
 
     let structDecl =
-        let semi = if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
+        let semi = if language.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
         (structSpecifier .>> semi) |>> Ast.TypeDecl
 
     // eg. "const out int", "uniform float", "int[2][3]"
@@ -223,11 +224,11 @@ type private ParseImpl() =
         pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
     let qualifier = parse {
-        let! ret = if options.hlsl then hlslQualifier else glslQualifier
+        let! ret = if language.hlsl then hlslQualifier else glslQualifier
         return ret
     }
     let specifiedType = parse {
-        let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
+        let! ret = if language.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
         return ret
     }
 
@@ -258,7 +259,7 @@ type private ParseImpl() =
         let! ret = blockSpecifier (Printer.typeToS ty + s)
                       |>> Ast.TypeDecl
         // semi-colon seems to be optional in hlsl
-        do! if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
+        do! if language.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
         return ret
     }
 
@@ -309,7 +310,7 @@ type private ParseImpl() =
 
     // HLSL attribute, eg. [maxvertexcount(12)]
     let attribute =
-        if options.hlsl then
+        if language.hlsl then
             ch '[' >>. manyCharsTill anyChar (ch ']')
                 |>> (function s -> "[" + s + "]")
         else
