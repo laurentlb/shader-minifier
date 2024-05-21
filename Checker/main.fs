@@ -9,14 +9,16 @@ open System.Text.RegularExpressions
 
 type CliArguments =
     | Update_Golden
-    | Skip_GLSL_Compile
+    | Skip_Glslang_Compile
+    | GLSL_Driver_Compile
     | Skip_Performance_Tests
 
     interface IArgParserTemplate with
         member s.Usage =
             match s with
             | Update_Golden -> "Update the golden tests"
-            | Skip_GLSL_Compile -> "Skip the GLSL compilation of shaders"
+            | Skip_Glslang_Compile -> "Skip testing compilation of shaders with glslang"
+            | GLSL_Driver_Compile -> "Test GLSL compilation of shaders agaist current OpenGL driver"
             | Skip_Performance_Tests -> "Skip the tests of performance"
 
 let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine()
@@ -24,17 +26,18 @@ let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine()
 
 let initOpenTK () =
     // OpenTK requires a GameWindow
-    if not (cliArgs.Contains(Skip_GLSL_Compile)) then
+    if cliArgs.Contains(GLSL_Driver_Compile) then
         new OpenTK.GameWindow() |> ignore
 
-// Return true if the file can be compiled as a GLSL shader.
-let canBeCompiled content =
-    if cliArgs.Contains(Skip_GLSL_Compile) then
+// Return true if the file can be compiled as a GLSL shader by the current OpenGL driver
+let canBeCompiledByDriver content =
+    if not (cliArgs.Contains(GLSL_Driver_Compile)) then
         true
     else
         let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
         GL.ShaderSource(fragmentShader, content)
         GL.CompileShader(fragmentShader)
+        let driverinfo = sprintf "%s / %s / %s / %s" (GL.GetString(StringName.Vendor)) (GL.GetString(StringName.Renderer)) (GL.GetString(StringName.Version)) (GL.GetString(StringName.ShadingLanguageVersion))
         let mutable status = 0
         GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, &status)
         let info = GL.GetShaderInfoLog(fragmentShader)
@@ -46,8 +49,48 @@ let canBeCompiled content =
             //    printf "%s\nDriver compilation warnings: %s" driverinfo info
             true
         else
-            printfn "compilation failed: %s" info
+            printf "%s\nDriver compilation failed:\n%s" driverinfo info
             false
+
+let canBeCompiledByGlslang (content: string) =
+    if cliArgs.Contains(Skip_Glslang_Compile) then
+        true
+    else
+    let stage = "frag"
+    let mutable tgtopt = ""
+    let mutable versopt = "-d"
+    // glslang bug workarounds:
+    // after 330, spir-v targeting must be enabled or else not all OpenGL GLSL features are supported
+    // for 1xx languages, spir-v targeting must be disabled
+    if Regex.Match(content, @"^\s*#version\s+[34]", RegexOptions.Multiline).Success then
+        tgtopt <- "--target-env opengl --amb --aml"
+    // 300es is not supported, override it to 310es when detected
+    if Regex.Match(content, @"^\s*#version\s+300\s+es", RegexOptions.Multiline).Success then
+        versopt <- "--glsl-version 310es"
+    let si = ProcessStartInfo()
+    si.FileName <- "glslang"
+    si.Arguments <- sprintf "%s %s --stdin -S %s" versopt tgtopt stage
+    si.UseShellExecute <- false
+    si.RedirectStandardInput <- true
+    si.RedirectStandardOutput <- true
+    si.RedirectStandardError <- true
+    let proc = Process.Start(si)
+    proc.StandardInput.Write(content)
+    proc.StandardInput.Close()
+    let info = (proc.StandardOutput.ReadToEnd()) + (proc.StandardError.ReadToEnd())
+    proc.WaitForExit()
+    if proc.ExitCode.Equals(0) then
+        true
+    else
+        printf "glslang compilation failed:\n%s\n" info
+        false
+
+let canBeCompiled content =
+    let mutable fullsrc = content
+    // If there is no "void main", add one (at the end, to not disturb any #version line)
+    if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
+        fullsrc <- fullsrc + "\n#line 1 2\nvoid main(){}\n"
+    canBeCompiledByGlslang fullsrc && canBeCompiledByDriver fullsrc
 
 let doMinify file content =
     let arr = ShaderMinifier.minify [|file, content|] |> fst |> Array.map (fun s -> s.code)
