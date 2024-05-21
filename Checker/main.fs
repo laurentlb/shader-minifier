@@ -122,7 +122,7 @@ let main argv =
 
     initOpenTK()
     let mutable failures = testGolden()
-    Options.init([|"--format"; "text"; "fake.frag"|])
+    Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
     let realTests = Directory.GetFiles("tests/real", "*.frag");
     for f in unitTests do
