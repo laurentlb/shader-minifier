@@ -63,7 +63,7 @@ let canBeCompiledByGlslang (content: string) =
     // after 330, spir-v targeting must be enabled or else not all OpenGL GLSL features are supported
     // for 1xx languages, spir-v targeting must be disabled
     if Regex.Match(content, @"^\s*#version\s+[34]", RegexOptions.Multiline).Success then
-        tgtopt <- "--target-env opengl --amb --aml"
+        tgtopt <- "--target-env opengl --amb --aml -o Checker/.out.spv"
     // 300es is not supported, override it to 310es when detected
     if Regex.Match(content, @"^\s*#version\s+300\s+es", RegexOptions.Multiline).Success then
         versopt <- "--glsl-version 310es"
