@@ -4,8 +4,8 @@ int foo(int x,int y)
 {
   return(x+x)*y>>x^y|y;
 }
-int output;
+int outputvar;
 void main()
 {
-  output=foo(0,0);
+  outputvar=foo(0,0);
 }

@@ -4,7 +4,7 @@
 # define VAR_ZH "t"
 # define VAR__V "x"
 # define VAR_a_ "i"
-# define VAR_output "f"
+# define VAR_outputvar "f"
 # define VAR_stopinlining "v"
 
 const char *overload_frag =

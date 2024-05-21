@@ -14,8 +14,8 @@ float baz(float a)
   a=a+5.+sin(a);
   return-a-a+a;
 }
-out vec3 output;
+out vec3 outputvar;
 void notMain(float x)
 {
-  output.xyz=vec3(92)+vec3(bar(x)+baz(x));
+  outputvar.xyz=vec3(92)+vec3(bar(x)+baz(x));
 }

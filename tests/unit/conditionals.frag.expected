@@ -1,12 +1,12 @@
-int noinline;
+int noinlinevar;
 bool success()
 {
-  noinline++;
+  noinlinevar++;
   return true;
 }
 bool fail()
 {
-  noinline++;
+  noinlinevar++;
   return false;
 }
 bool ternary()

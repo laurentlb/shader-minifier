@@ -3,7 +3,7 @@ uniform sampler2D _V;
 uniform vec2 a_;
 in vec2 ZH;
 out float stopinlining;
-out vec4 output;
+out vec4 outputvar;
 
 float f1() { return stopinlining+0.1; }
 float f2(void) { return stopinlining+0.2; }
@@ -34,5 +34,5 @@ void main()
   float b = 2. * f2(1.2) - f2();
   float c = f3(true) + f3(0, 1) - f3(0, 1, 2, 3);
   float d = hashTex(_V, a_ * ZH);
-  output=vec4(a,b,c,d+stopinlining++);
+  outputvar=vec4(a,b,c,d+stopinlining++);
 }

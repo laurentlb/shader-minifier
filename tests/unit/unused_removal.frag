@@ -15,15 +15,15 @@ vec2 pos = vec2(0.5);
 
 // hidden() is unused and should be removed even if a parameter named 'hidden' is used in another function.
 int hidden() {
-	int noinline = 0;
-	noinline++;
-	return noinline;
+	int noinlinevar = 0;
+	noinlinevar++;
+	return noinlinevar;
 }
 
 float foo(float hidden) {
-	float noinline = 0.;
-	noinline++;
-	return hidden+noinline;
+	float noinlinevar = 0.;
+	noinlinevar++;
+	return hidden+noinlinevar;
 }
 
 void main(){
