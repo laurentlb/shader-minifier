@@ -35,9 +35,15 @@ let canBeCompiled content =
         let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
         GL.ShaderSource(fragmentShader, content)
         GL.CompileShader(fragmentShader)
+        let mutable status = 0
+        GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, &status)
         let info = GL.GetShaderInfoLog(fragmentShader)
+        let info = if info.EndsWith("\n") then info else info + "\n"
         GL.DeleteShader(fragmentShader)
-        if info = "" then
+        if status = 1 then
+            // getting warnings is not reliable: the shader may be cached but the warnings are not
+            //if info.Length > 1 then
+            //    printf "%s\nDriver compilation warnings: %s" driverinfo info
             true
         else
             printfn "compilation failed: %s" info
