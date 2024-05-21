@@ -3,7 +3,7 @@
 # define ARRAY_FRAG_EXPECTED_
 
 const char *array_frag =
- "#version 120\n"
+ "#version 430\n"
  "float a[5]=float[5](3.4,4.2,5.,5.2,1.1),b[5]=float[5](3.4,4.2,5.,5.2,1.1),c[]=float[](3.4,4.2,5.,5.2,1.1),d[5]=float[](3.4,4.2,5.,5.2,1.1),e[]=float[5](3.4,4.2,5.,5.2,1.1);"
  "void arrayTypes()"
  "{}"

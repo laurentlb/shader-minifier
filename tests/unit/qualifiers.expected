@@ -4,6 +4,7 @@
 # define VAR_foo "f"
 
 const char *qualifiers_frag =
+ "#version 130\n"
  "in vec3 f;"
  "float v(float f)"
  "{"

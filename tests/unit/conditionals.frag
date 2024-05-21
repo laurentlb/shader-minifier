@@ -1,3 +1,5 @@
+#version 120
+
 int noinlinevar;
 bool success() { noinlinevar++; return true; }
 bool fail() { noinlinevar++; return false; }
