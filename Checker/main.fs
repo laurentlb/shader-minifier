@@ -68,7 +68,12 @@ let canBeCompiledByGlslang (content: string) =
     if Regex.Match(content, @"^\s*#version\s+300\s+es", RegexOptions.Multiline).Success then
         versopt <- "--glsl-version 310es"
     let si = ProcessStartInfo()
-    si.FileName <- "glslang"
+    si.FileName <-
+        if Environment.OSVersion.Platform = PlatformID.Win32NT then
+            "Checker/glslang.exe"
+        else
+            // must be installed externally
+            "glslang"
     si.Arguments <- sprintf "%s %s --stdin -S %s" versopt tgtopt stage
     si.UseShellExecute <- false
     si.RedirectStandardInput <- true
