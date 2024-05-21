@@ -34,23 +34,23 @@ let canBeCompiledByDriver content =
     if not (cliArgs.Contains(GLSL_Driver_Compile)) then
         true
     else
-        let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
-        GL.ShaderSource(fragmentShader, content)
-        GL.CompileShader(fragmentShader)
-        let driverinfo = sprintf "%s / %s / %s / %s" (GL.GetString(StringName.Vendor)) (GL.GetString(StringName.Renderer)) (GL.GetString(StringName.Version)) (GL.GetString(StringName.ShadingLanguageVersion))
-        let mutable status = 0
-        GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, &status)
-        let info = GL.GetShaderInfoLog(fragmentShader)
-        let info = if info.EndsWith("\n") then info else info + "\n"
-        GL.DeleteShader(fragmentShader)
-        if status = 1 then
-            // getting warnings is not reliable: the shader may be cached but the warnings are not
-            //if info.Length > 1 then
-            //    printf "%s\nDriver compilation warnings: %s" driverinfo info
-            true
-        else
-            printf "%s\nDriver compilation failed:\n%s" driverinfo info
-            false
+    let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
+    GL.ShaderSource(fragmentShader, content)
+    GL.CompileShader(fragmentShader)
+    let driverinfo = sprintf "%s / %s / %s / %s" (GL.GetString(StringName.Vendor)) (GL.GetString(StringName.Renderer)) (GL.GetString(StringName.Version)) (GL.GetString(StringName.ShadingLanguageVersion))
+    let mutable status = 0
+    GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, &status)
+    let info = GL.GetShaderInfoLog(fragmentShader)
+    let info = if info.EndsWith("\n") then info else info + "\n"
+    GL.DeleteShader(fragmentShader)
+    if status = 1 then
+        // getting warnings is not reliable: the shader may be cached but the warnings are not
+        //if info.Length > 1 then
+        //    printf "%s\nDriver compilation warnings: %s" driverinfo info
+        true
+    else
+        printf "%s\nDriver compilation failed:\n%s" driverinfo info
+        false
 
 let canBeCompiledByGlslang (content: string) =
     if cliArgs.Contains(Skip_Glslang_Compile) then
@@ -131,7 +131,7 @@ let testPerformance files =
 
 // Generated files may contain the Shader Minifier version.
 // Ignore version changes in the tests.
-let versionRegex = new Regex(@"\bShader Minifier \d(\.\d+)+");
+let versionRegex = new Regex(@"\bShader Minifier \d(\.\d+)+")
 
 let runCommand argv =
     let cleanString (s: string) =
@@ -162,7 +162,7 @@ let runCommand argv =
 let testGolden () =
     let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
         let line = line.Trim()
-        if line.Length = 0 || line.[0] = '#' then 
+        if line.Length = 0 || line.[0] = '#' then
             None
         else
             Some (line.Split([|' '|]))
@@ -178,7 +178,7 @@ let main argv =
     let mutable failures = testGolden()
     Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
     let unitTests = Directory.GetFiles("tests/unit", "*.frag")
-    let realTests = Directory.GetFiles("tests/real", "*.frag");
+    let realTests = Directory.GetFiles("tests/real", "*.frag")
     for f in unitTests do
         if not (testMinifyAndCompile f) then
             failures <- failures + 1
@@ -187,6 +187,6 @@ let main argv =
         printfn "All good."
     else
         printfn "%d failures." failures
-    
+
     //System.Console.ReadLine() |> ignore
     if failures = 0 then 0 else 1
