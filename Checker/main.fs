@@ -61,20 +61,24 @@ let canBeCompiledByDriver stage (content: string) =
         printf "%s\nDriver compilation failed:\n%s" driverinfo info
         false
 
-let canBeCompiledByGlslang stage (content: string) =
+let canBeCompiledByGlslang lang stage (content: string) =
     if cliArgs.Contains(Skip_Glslang_Compile) then
         true
     else
     let mutable tgtopt = ""
     let mutable versopt = "-d"
-    // glslang bug workarounds:
-    // after 330, spir-v targeting must be enabled or else not all OpenGL GLSL features are supported
-    // for 1xx languages, spir-v targeting must be disabled
-    if Regex.Match(content, @"^\s*#version\s+[34]", RegexOptions.Multiline).Success then
-        tgtopt <- "--target-env opengl --amb --aml -o Checker/.out.spv"
-    // 300es is not supported, override it to 310es when detected
-    if Regex.Match(content, @"^\s*#version\s+300\s+es", RegexOptions.Multiline).Success then
-        versopt <- "--glsl-version 310es"
+    if lang = "hlsl" then
+        versopt <- "-D --hlsl-dx9-compatible"
+        tgtopt <- "--target-env spirv1.6 -V"
+    else
+        // glslang bug workarounds:
+        // after 330, spir-v targeting must be enabled or else not all OpenGL GLSL features are supported
+        // for 1xx languages, spir-v targeting must be disabled
+        if Regex.Match(content, @"^\s*#version\s+[34]", RegexOptions.Multiline).Success then
+            tgtopt <- "--target-env opengl --amb --aml -o Checker/.out.spv"
+        // 300es is not supported, override it to 310es when detected
+        if Regex.Match(content, @"^\s*#version\s+300\s+es", RegexOptions.Multiline).Success then
+            versopt <- "--glsl-version 310es"
     let si = ProcessStartInfo()
     si.FileName <-
         if Environment.OSVersion.Platform = PlatformID.Win32NT then
@@ -99,22 +103,23 @@ let canBeCompiledByGlslang stage (content: string) =
         false
 
 // Note that "100" is ESSL, "#version 100 es" is not valid!
-let shaderlangs = set ("110 120 130 140 150 330 400 410 420 430 440 450 460 100 300es".Split ' ')
+let shaderlangs = set ("110 120 130 140 150 330 400 410 420 430 440 450 460 100 300es hlsl".Split ' ')
 
 let canBeCompiled lang stage content =
     if not (shaderlangs.Contains(lang)) then raise (ArgumentException(sprintf "unknown lang %s" lang))
     let mutable lang = lang
     let mutable stage = stage
     let mutable fullsrc = content
-    // If there is no "void main", add one (at the end, to not disturb any #version line)
-    if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
-        fullsrc <- fullsrc + "\n#line 1 2\nvoid main(){}\n"
-    // If there is no "#version" line, add one
-    // "#line 1 1" resets line numbering in error messages
-    let verstr = Regex.Replace(lang, @"(\d+)(\w*)", @"$1 $2") // "450" -> "450", "300es" -> "300 es"
-    if not (Regex.Match(fullsrc, @"^\s*#version\s+", RegexOptions.Multiline).Success) then
-        fullsrc <- "#version " + verstr + "\n#line 1 1\n" + fullsrc
-    canBeCompiledByGlslang stage fullsrc && canBeCompiledByDriver stage fullsrc
+    if lang <> "hlsl" then
+        // If there is no "void main", add one (at the end, to not disturb any #version line)
+        if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
+            fullsrc <- fullsrc + "\n#line 1 2\nvoid main(){}\n"
+        // If there is no "#version" line, add one
+        // "#line 1 1" resets line numbering in error messages
+        let verstr = Regex.Replace(lang, @"(\d+)(\w*)", @"$1 $2") // "450" -> "450", "300es" -> "300 es"
+        if not (Regex.Match(fullsrc, @"^\s*#version\s+", RegexOptions.Multiline).Success) then
+            fullsrc <- "#version " + verstr + "\n#line 1 1\n" + fullsrc
+    canBeCompiledByGlslang lang stage fullsrc && ((lang = "hlsl") || canBeCompiledByDriver stage fullsrc)
 
 let doMinify file content =
     let arr = ShaderMinifier.minify [|file, content|] |> fst |> Array.map (fun s -> s.code)

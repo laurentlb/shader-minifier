@@ -12,7 +12,7 @@
 330 frag tests/out/real/slisesix.minind.frag
 330 frag tests/out/real/lunaquatic.minind.frag
 
-# hlsl frag tests/out/real/elevated.minind.hlsl
+hlsl frag tests/out/real/elevated.minind.hlsl
 
 110 frag tests/out/real/yx_long_way_from_home.minind.frag
 110 frag tests/out/real/oscars_chair.minind.frag
