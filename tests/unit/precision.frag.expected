@@ -4,7 +4,3 @@ precision highp float;
 precision mediump int;
 precision lowp sampler2D;
 precision lowp samplerCube;
-layout(triangles)in;
-layout(triangle_strip,max_vertices=3)out;
-layout(local_size_x=32)in;
-layout(location=0) out vec4 t;
