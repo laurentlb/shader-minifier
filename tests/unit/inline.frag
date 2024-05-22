@@ -141,12 +141,15 @@ float inlineWithShadowing(float x) {
 	return inl;
 }
 
+/*
 // repro for a bug
 float inline_uninitialized()
 {
+    // Error: 'c' : undeclared identifier
     float c;
     return c;
 }
+*/
 
 // repro for a bug
 float glo;

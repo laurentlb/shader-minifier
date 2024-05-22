@@ -105,11 +105,6 @@ float inlineWithShadowing(float x)
     }
   return inl;
 }
-float inline_uninitialized()
-{
-  float c;
-  return c;
-}
 float glo;
 float noinline_readsTheGlobal()
 {

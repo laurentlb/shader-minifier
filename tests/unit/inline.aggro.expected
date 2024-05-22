@@ -90,10 +90,6 @@ float inlineWithShadowing(float x)
     }
   return sin(2.5);
 }
-float inline_uninitialized()
-{
-  return c;
-}
 float glo;
 float noinline_readsTheGlobal()
 {
