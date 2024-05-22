@@ -42,7 +42,7 @@ float multiPass2()
 {
   return 9.;
 }
-atomic_uint hydrogen;
+layout(binding=0) uniform atomic_uint hydrogen;
 uint builtin_with_or_without_side_effects(uint x)
 {
   uint not_inlined=atomicCounterIncrement(hydrogen),inlined=max(x*x,x+1);
@@ -83,7 +83,7 @@ void lvalues()
   arr[a]=2.;
 }
 uniform int time;
-in int sync;
+flat in int sync;
 int dependOnConst()
 {
   int x=(time+sync)*2;
