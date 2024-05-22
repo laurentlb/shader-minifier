@@ -110,20 +110,29 @@ let canBeCompiled lang stage content =
     let mutable lang = lang
     let mutable stage = stage
     let mutable fullsrc = content
-    if lang = "shadertoy" then
-        let header = File.ReadAllText "tests/shadertoy.h.glsl"
-        fullsrc <- header + "\n#line 1 1\n" + fullsrc
-        lang <- "300es"
-        stage <- "frag"
     if lang <> "hlsl" then
+        let mutable lineadj = 0
+        let setline num file =
+            // "#line line srcnum" sets line numbering in error messages
+            sprintf "\n#line %d %d\n" (num + lineadj) file
+        if lang = "shadertoy" then
+            let header = File.ReadAllText "tests/shadertoy.h.glsl"
+            fullsrc <- header + (setline 1 1) + fullsrc
+            lang <- "300es"
+            stage <- "frag"
+        let mutable verstr = Regex.Replace(lang, @"(\d+)(\w*)", @"$1 $2") // "450" -> "450", "300es" -> "300 es"
+        let versmatch = Regex.Match(fullsrc, @"^\s*#version\s+(\d.*)", RegexOptions.Multiline)
+        if versmatch.Success then
+            verstr <- versmatch.Groups[1].Value
+        // #line directive is off-by-one before GLSL 330
+        if Regex.Match(verstr, @"1[1-5]").Success then
+            lineadj <- -1
+        // If there is no "#version" line, add one
+        if not versmatch.Success then
+            fullsrc <- "#version " + verstr + (setline 1 1) + fullsrc
         // If there is no "void main", add one (at the end, to not disturb any #version line)
         if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
-            fullsrc <- fullsrc + "\n#line 1 2\nvoid main(){}\n"
-        // If there is no "#version" line, add one
-        // "#line 1 1" resets line numbering in error messages
-        let verstr = Regex.Replace(lang, @"(\d+)(\w*)", @"$1 $2") // "450" -> "450", "300es" -> "300 es"
-        if not (Regex.Match(fullsrc, @"^\s*#version\s+", RegexOptions.Multiline).Success) then
-            fullsrc <- "#version " + verstr + "\n#line 1 1\n" + fullsrc
+            fullsrc <- fullsrc + (setline 1 2) + "void main(){}\n"
     canBeCompiledByGlslang lang stage fullsrc && ((lang = "hlsl") || canBeCompiledByDriver stage fullsrc)
 
 let doMinify file content =
