@@ -145,6 +145,7 @@ float inlineWithShadowing(float x) {
 // repro for a bug
 float inline_uninitialized()
 {
+    // https://github.com/laurentlb/shader-minifier/issues/317
     // Error: 'c' : undeclared identifier
     float c;
     return c;
