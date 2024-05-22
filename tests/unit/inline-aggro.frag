@@ -1,3 +1,5 @@
+#version 150
+
 // *** Things we should inline
 
 float inl1() {
