@@ -24,11 +24,11 @@ hlsl frag tests/out/real/elevated.minind.hlsl
 110 frag tests/out/real/mouton/mouton.minind.frag
 110 frag tests/out/real/mouton/fxaa.minind.frag
 
-# shadertoy frag tests/out/real/ed-209.minind.frag
-# shadertoy frag tests/out/real/frozen-wasteland.minind.frag
-# shadertoy frag tests/out/real/controllable-machinery.minind.frag
-# shadertoy frag tests/out/real/endeavour.minind.frag
-# shadertoy frag tests/out/real/audio-flight-v2.minind.frag
-# shadertoy frag tests/out/real/buoy.minind.frag
-# shadertoy frag tests/out/real/orchard.minind.frag
-# shadertoy frag tests/out/real/robin.minind.frag
+shadertoy frag tests/out/real/ed-209.minind.frag
+shadertoy frag tests/out/real/frozen-wasteland.minind.frag
+shadertoy frag tests/out/real/controllable-machinery.minind.frag
+shadertoy frag tests/out/real/endeavour.minind.frag
+shadertoy frag tests/out/real/audio-flight-v2.minind.frag
+shadertoy frag tests/out/real/buoy.minind.frag
+shadertoy frag tests/out/real/orchard.minind.frag
+shadertoy frag tests/out/real/robin.minind.frag

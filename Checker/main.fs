@@ -103,13 +103,18 @@ let canBeCompiledByGlslang lang stage (content: string) =
         false
 
 // Note that "100" is ESSL, "#version 100 es" is not valid!
-let shaderlangs = set ("110 120 130 140 150 330 400 410 420 430 440 450 460 100 300es hlsl".Split ' ')
+let shaderlangs = set ("110 120 130 140 150 330 400 410 420 430 440 450 460 100 300es hlsl shadertoy".Split ' ')
 
 let canBeCompiled lang stage content =
     if not (shaderlangs.Contains(lang)) then raise (ArgumentException(sprintf "unknown lang %s" lang))
     let mutable lang = lang
     let mutable stage = stage
     let mutable fullsrc = content
+    if lang = "shadertoy" then
+        let header = File.ReadAllText "tests/shadertoy.h.glsl"
+        fullsrc <- header + "\n#line 1 1\n" + fullsrc
+        lang <- "300es"
+        stage <- "frag"
     if lang <> "hlsl" then
         // If there is no "void main", add one (at the end, to not disturb any #version line)
         if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
