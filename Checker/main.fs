@@ -9,6 +9,7 @@ open System.Text.RegularExpressions
 
 type CliArguments =
     | Update_Golden
+    | Compile_Golden
     | Skip_Glslang_Compile
     | GLSL_Driver_Compile
     | Skip_Performance_Tests
@@ -17,6 +18,7 @@ type CliArguments =
         member s.Usage =
             match s with
             | Update_Golden -> "Update the golden tests"
+            | Compile_Golden -> "Always test compilation of the golden tests"
             | Skip_Glslang_Compile -> "Skip testing compilation of shaders with glslang"
             | GLSL_Driver_Compile -> "Test GLSL compilation of shaders agaist current OpenGL driver"
             | Skip_Performance_Tests -> "Skip the tests of performance"
@@ -96,28 +98,39 @@ let canBeCompiledByGlslang stage (content: string) =
         printf "glslang compilation failed:\n%s\n" info
         false
 
-let canBeCompiled stage content =
+// Note that "100" is ESSL, "#version 100 es" is not valid!
+let shaderlangs = set ("110 120 130 140 150 330 400 410 420 430 440 450 460 100 300es".Split ' ')
+
+let canBeCompiled lang stage content =
+    if not (shaderlangs.Contains(lang)) then raise (ArgumentException(sprintf "unknown lang %s" lang))
+    let mutable lang = lang
+    let mutable stage = stage
     let mutable fullsrc = content
     // If there is no "void main", add one (at the end, to not disturb any #version line)
     if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
         fullsrc <- fullsrc + "\n#line 1 2\nvoid main(){}\n"
+    // If there is no "#version" line, add one
+    // "#line 1 1" resets line numbering in error messages
+    let verstr = Regex.Replace(lang, @"(\d+)(\w*)", @"$1 $2") // "450" -> "450", "300es" -> "300 es"
+    if not (Regex.Match(fullsrc, @"^\s*#version\s+", RegexOptions.Multiline).Success) then
+        fullsrc <- "#version " + verstr + "\n#line 1 1\n" + fullsrc
     canBeCompiledByGlslang stage fullsrc && canBeCompiledByDriver stage fullsrc
 
 let doMinify file content =
     let arr = ShaderMinifier.minify [|file, content|] |> fst |> Array.map (fun s -> s.code)
     Printer.print arr.[0]
 
-let testMinifyAndCompile (file: string) =
+let testMinifyAndCompile lang (file: string) =
     try
         let content = File.ReadAllText file
         let stage = Regex.Match(file, @"[^\.]+$").Value
         let compile = not (Regex.Match(content, @"^//NOCOMPILE").Success)
-        if compile && not (canBeCompiled stage content) then
+        if compile && not (canBeCompiled lang stage content) then
             printfn "Invalid input file '%s'" file
             false
         else
             let minified = doMinify file content + "\n"
-            if compile && not (canBeCompiled stage minified) then
+            if compile && not (canBeCompiled lang stage minified) then
                 printfn "Minification broke the file '%s'" file
                 printfn "%s" minified
                 false
@@ -150,11 +163,24 @@ let runCommand argv =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
+    let shaders, exportedNames = ShaderMinifier.minifyFiles options.filenames
     let result =
         use out = new StringWriter()
-        let shaders, exportedNames = ShaderMinifier.minifyFiles options.filenames
         Formatter.print out shaders exportedNames options.outputFormat
         out.ToString() |> cleanString
+    options.outputFormat <- Options.OutputFormat.IndentedText
+    options.exportKkpSymbolMaps <- false
+    for shader in shaders do
+        let resultindented =
+            use out = new StringWriter()
+            Formatter.print out [|shader|] exportedNames options.outputFormat
+            out.ToString() |> cleanString
+        let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
+        let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
+        let name = split[1].Value
+        let ext = split[2].Value
+        Directory.CreateDirectory outdir |> ignore
+        File.WriteAllText(outdir + name + ".minind." + ext, resultindented + "\n")
     if result = expected then
         printfn "Success: %s" options.outputName
         0
@@ -177,19 +203,51 @@ let testGolden () =
     )
     commands |> Array.sumBy runCommand
 
+let runCompiler (argv: string array) =
+    if (cliArgs.Contains(Skip_Glslang_Compile)) && (not (cliArgs.Contains(GLSL_Driver_Compile))) then
+        0
+    else
+    let lang = argv[0]
+    let stage = argv[1]
+    let filename = argv[2]
+    let content = File.ReadAllText filename
+    let info = sprintf "%s (%s %s)" filename lang stage
+    if canBeCompiled lang stage content then
+        printfn "Compiled: %s" info
+        0
+    else
+        printfn "Compile failure: %s" info
+        1
+
+let testCompiled () =
+    if not (cliArgs.Contains(Update_Golden) || cliArgs.Contains(Compile_Golden)) then
+        0
+    else
+    let commands = File.ReadAllLines "tests/compile.txt" |> Array.choose (fun line ->
+        let line = line.Trim()
+        if line.Length = 0 || line.[0] = '#' then
+            None
+        else
+            Some (line.Split([|' '|]))
+    )
+    commands |> Array.sumBy runCompiler
+
 [<EntryPoint>]
 let main argv =
     // Manually run compression tests by enabling this line:
     // CompressionTests.run ()
 
     initOpenTK()
-    let mutable failures = testGolden()
+    let mutable failures = 0
+    failures <- failures + testGolden()
+    failures <- failures + testCompiled()
     Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
     let srcfilter e = Regex.Match(e, @"\.(vert|geom|frag|comp)$").Success
     let unitTests = Directory.GetFiles("tests/unit", "*") |> Array.filter srcfilter
     let realTests = Directory.GetFiles("tests/real", "*.frag")
     for f in unitTests do
-        if not (testMinifyAndCompile f) then
+        // tests with no #version default to 110
+        if not (testMinifyAndCompile "110" f) then
             failures <- failures + 1
     testPerformance (Seq.concat [realTests; unitTests] |> Seq.toArray)
     if failures = 0 then

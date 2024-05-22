@@ -3,6 +3,7 @@
 #################
 
 Checker/.out.spv
+tests/out/
 
 #################
 ## Eclipse

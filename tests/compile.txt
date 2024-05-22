@@ -1,0 +1,34 @@
+330 frag tests/out/real/chocolux.minind.frag
+330 frag tests/out/real/clod.minind.frag
+110 frag tests/out/real/kinder_painter.minind.frag
+330 frag tests/out/real/disco.minind.frag
+330 frag tests/out/real/leizex.minind.frag
+330 frag tests/out/real/heart.minind.frag
+330 frag tests/out/real/mandelbulb.minind.frag
+110 frag tests/out/real/to_the_road_of_ribbon.minind.frag
+330 frag tests/out/real/sult.minind.frag
+330 frag tests/out/real/monjori.minind.frag
+330 frag tests/out/real/valley_ball.minind.glsl
+330 frag tests/out/real/slisesix.minind.frag
+330 frag tests/out/real/lunaquatic.minind.frag
+
+# hlsl frag tests/out/real/elevated.minind.hlsl
+
+110 frag tests/out/real/yx_long_way_from_home.minind.frag
+110 frag tests/out/real/oscars_chair.minind.frag
+110 frag tests/out/real/the_real_party_is_in_your_pocket.minind.frag
+# illegal input (bad preprocessing?) - 110 frag tests/out/real/ohanami.minind.frag
+430 comp tests/out/real/terrarium.minind.frag
+430 comp tests/out/real/from-the-seas-to-the-stars.minind.frag
+110 vert tests/out/real/mouton/mouton.minind.vert
+110 frag tests/out/real/mouton/mouton.minind.frag
+110 frag tests/out/real/mouton/fxaa.minind.frag
+
+# shadertoy frag tests/out/real/ed-209.minind.frag
+# shadertoy frag tests/out/real/frozen-wasteland.minind.frag
+# shadertoy frag tests/out/real/controllable-machinery.minind.frag
+# shadertoy frag tests/out/real/endeavour.minind.frag
+# shadertoy frag tests/out/real/audio-flight-v2.minind.frag
+# shadertoy frag tests/out/real/buoy.minind.frag
+# shadertoy frag tests/out/real/orchard.minind.frag
+# shadertoy frag tests/out/real/robin.minind.frag
