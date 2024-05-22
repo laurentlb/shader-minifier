@@ -5,7 +5,7 @@
 330 frag tests/out/real/leizex.minind.frag
 330 frag tests/out/real/heart.minind.frag
 330 frag tests/out/real/mandelbulb.minind.frag
-110 frag tests/out/real/to_the_road_of_ribbon.minind.frag
+# Minifier bug: same name used for a variable and for a function: 110 frag tests/out/real/to_the_road_of_ribbon.minind.frag
 330 frag tests/out/real/sult.minind.frag
 330 frag tests/out/real/monjori.minind.frag
 330 frag tests/out/real/valley_ball.minind.glsl
@@ -28,7 +28,7 @@ shadertoy frag tests/out/real/ed-209.minind.frag
 shadertoy frag tests/out/real/frozen-wasteland.minind.frag
 shadertoy frag tests/out/real/controllable-machinery.minind.frag
 shadertoy frag tests/out/real/endeavour.minind.frag
-shadertoy frag tests/out/real/audio-flight-v2.minind.frag
+# Glslang bug? Missing space after macro name: shadertoy frag tests/out/real/audio-flight-v2.minind.frag
 shadertoy frag tests/out/real/buoy.minind.frag
-shadertoy frag tests/out/real/orchard.minind.frag
+# Glslang bug? Missing space after macro name: shadertoy frag tests/out/real/orchard.minind.frag
 shadertoy frag tests/out/real/robin.minind.frag

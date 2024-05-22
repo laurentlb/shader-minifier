@@ -1,3 +1,5 @@
+//NOCOMPILE - Minifier bug: "return i+++++i+i"
+
 float f(float g)
 {
 	float f = 0.0;
