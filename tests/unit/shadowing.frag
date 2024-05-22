@@ -1,4 +1,4 @@
-//NOCOMPILE - Minifier bug: "return i+++++i+i"
+//NOCOMPILE - https://github.com/laurentlb/shader-minifier/issues/403
 
 float f(float g)
 {

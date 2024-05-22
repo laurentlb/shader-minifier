@@ -28,7 +28,7 @@ shadertoy frag tests/out/real/ed-209.minind.frag
 shadertoy frag tests/out/real/frozen-wasteland.minind.frag
 shadertoy frag tests/out/real/controllable-machinery.minind.frag
 shadertoy frag tests/out/real/endeavour.minind.frag
-# Glslang bug? Missing space after macro name: shadertoy frag tests/out/real/audio-flight-v2.minind.frag
+# https://github.com/laurentlb/shader-minifier/issues/401 : shadertoy frag tests/out/real/audio-flight-v2.minind.frag
 shadertoy frag tests/out/real/buoy.minind.frag
-# Glslang bug? Missing space after macro name: shadertoy frag tests/out/real/orchard.minind.frag
+# https://github.com/laurentlb/shader-minifier/issues/401 : shadertoy frag tests/out/real/orchard.minind.frag
 shadertoy frag tests/out/real/robin.minind.frag
