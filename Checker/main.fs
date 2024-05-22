@@ -30,11 +30,18 @@ let initOpenTK () =
         new OpenTK.GameWindow() |> ignore
 
 // Return true if the file can be compiled as a GLSL shader by the current OpenGL driver
-let canBeCompiledByDriver content =
+let canBeCompiledByDriver stage (content: string) =
     if not (cliArgs.Contains(GLSL_Driver_Compile)) then
         true
     else
-    let fragmentShader = GL.CreateShader(ShaderType.FragmentShader)
+    let fragmentShader = GL.CreateShader(
+        match stage with
+        | "vert" -> ShaderType.VertexShader
+        | "geom" -> ShaderType.GeometryShader
+        | "frag" -> ShaderType.FragmentShader
+        | "comp" -> ShaderType.ComputeShader
+        | _ -> ShaderType.FragmentShader
+        )
     GL.ShaderSource(fragmentShader, content)
     GL.CompileShader(fragmentShader)
     let driverinfo = sprintf "%s / %s / %s / %s" (GL.GetString(StringName.Vendor)) (GL.GetString(StringName.Renderer)) (GL.GetString(StringName.Version)) (GL.GetString(StringName.ShadingLanguageVersion))
@@ -52,11 +59,10 @@ let canBeCompiledByDriver content =
         printf "%s\nDriver compilation failed:\n%s" driverinfo info
         false
 
-let canBeCompiledByGlslang (content: string) =
+let canBeCompiledByGlslang stage (content: string) =
     if cliArgs.Contains(Skip_Glslang_Compile) then
         true
     else
-    let stage = "frag"
     let mutable tgtopt = ""
     let mutable versopt = "-d"
     // glslang bug workarounds:
@@ -90,12 +96,12 @@ let canBeCompiledByGlslang (content: string) =
         printf "glslang compilation failed:\n%s\n" info
         false
 
-let canBeCompiled content =
+let canBeCompiled stage content =
     let mutable fullsrc = content
     // If there is no "void main", add one (at the end, to not disturb any #version line)
     if not (Regex.Match(" " + fullsrc, @"(?s)[^\w]void\s+main\s*(\s*)").Success) then
         fullsrc <- fullsrc + "\n#line 1 2\nvoid main(){}\n"
-    canBeCompiledByGlslang fullsrc && canBeCompiledByDriver fullsrc
+    canBeCompiledByGlslang stage fullsrc && canBeCompiledByDriver stage fullsrc
 
 let doMinify file content =
     let arr = ShaderMinifier.minify [|file, content|] |> fst |> Array.map (fun s -> s.code)
@@ -104,12 +110,14 @@ let doMinify file content =
 let testMinifyAndCompile (file: string) =
     try
         let content = File.ReadAllText file
-        if not (canBeCompiled content) then
+        let stage = Regex.Match(file, @"[^\.]+$").Value
+        let compile = not (Regex.Match(content, @"^//NOCOMPILE").Success)
+        if compile && not (canBeCompiled stage content) then
             printfn "Invalid input file '%s'" file
             false
         else
             let minified = doMinify file content + "\n"
-            if not (canBeCompiled minified) then
+            if compile && not (canBeCompiled stage minified) then
                 printfn "Minification broke the file '%s'" file
                 printfn "%s" minified
                 false
@@ -177,7 +185,8 @@ let main argv =
     initOpenTK()
     let mutable failures = testGolden()
     Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
-    let unitTests = Directory.GetFiles("tests/unit", "*.frag")
+    let srcfilter e = Regex.Match(e, @"\.(vert|geom|frag|comp)$").Success
+    let unitTests = Directory.GetFiles("tests/unit", "*") |> Array.filter srcfilter
     let realTests = Directory.GetFiles("tests/real", "*.frag")
     for f in unitTests do
         if not (testMinifyAndCompile f) then

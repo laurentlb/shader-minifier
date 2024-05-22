@@ -1,15 +1,4 @@
-//NOCOMPILE - not a real shader: mixes frag, comp, and geom semantics
-
-#version 300 es
-
-precision highp float;
-precision mediump int;
-precision lowp sampler2D;
-precision lowp samplerCube;
-
-layout(triangles) in; // #29
-layout(triangle_strip, max_vertices = 3) out; // #29
-layout(local_size_x = 32) in; // #22
+#version 330
 
 // #17
 layout(location=0) out vec4 f_color;
