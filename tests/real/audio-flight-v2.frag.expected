@@ -8,7 +8,7 @@
 
 #define PI 3.14159265358
 
-#define MINDIST.0001
+#define MINDIST .0001
 
 #define MAXDIST 125.
 

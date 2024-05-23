@@ -129,6 +129,7 @@ and Stmt =
     | DoWhile of Expr * Stmt
     | Jump of JumpKeyword * Expr option (*break, continue, return (expr)?, discard*)
     | Verbatim of string
+    | Directive of string list // ["#define"; "name"; "value"]
     | Switch of Expr * (CaseLabel * Stmt list) list
 with member this.asStmtList = match this with
                               | Block stmts -> stmts
@@ -165,6 +166,7 @@ and FunctionType = {
 
 and TopLevel =
     | TLVerbatim of string
+    | TLDirective of string list
     | Function of FunctionType * Stmt
     | TLDecl of Decl
     | TypeDecl of TypeSpec // structs
@@ -293,7 +295,7 @@ let rec mapStmt blockLevel env stmt =
             env, res
         | Jump(k, e) ->
             env, Jump (k, Option.map (mapExpr env) e)
-        | Verbatim _ as v -> env, v
+        | (Verbatim _ | Directive _) as v -> env, v
         | Switch(e, cl) ->
             let mapLabel = function
                 | Case e -> Case (mapExpr env e)

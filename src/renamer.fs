@@ -316,7 +316,7 @@ module private RenamerImpl =
             renStmt newEnv body |> ignore<Env>
             env
         | Jump(_, e) -> renOpt e; env
-        | Verbatim _ -> env
+        | Verbatim _ | Directive _ -> env
         | Switch(e, cl) ->
             let renLabel = function
                 | Case e -> renExpr env e

@@ -92,7 +92,7 @@ float distanceRayPoint(vec3 ro,vec3 rd,vec3 p,out float h)
   return length(p-ro-rd*h);
 }
 
-#define SIZE.03
+#define SIZE .03
 
 vec3 floatingSeeds(vec3 ro,vec3 rd,float tmax)
 {

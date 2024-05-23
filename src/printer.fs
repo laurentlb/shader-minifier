@@ -4,7 +4,6 @@ open System
 open System.Linq
 open System.Collections.Generic
 open Ast
-open Options.Globals
 open System.Text.RegularExpressions
 
 let private kkpSymFormat shaderSymbol minifiedSize (symbolPool: string array) (symbolIndexes: int16 array) =
@@ -202,6 +201,10 @@ type PrinterImpl(withLocations) =
         if vars.IsEmpty then ""
         else out "%s %s" (typeToS ty) (vars |> commaListToS out1)
 
+    let directiveToS = function
+        | [dir; name; value] -> out "%s %s%s\n" dir name value
+        | li -> out "%s\n" (String.concat " " li)
+
     /// Detect if the current statement might accept a dangling else.
     /// Note that the function needs to be recursive to detect things like:
     ///   if(a) for(;;) if(b) {} else {}
@@ -252,9 +255,8 @@ type PrinterImpl(withLocations) =
         | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS indent exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
-            let s = if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s
-            if s <> "" && s.[0] = '#' then out "\n%s" s
-            else s
+            if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s
+        | Directive d -> "\n" + directiveToS d
         | Switch(e, cl) ->
             let labelToS = function
                 | Case e -> out "case %s:" (exprToS indent e)
@@ -276,9 +278,10 @@ type PrinterImpl(withLocations) =
 
     let topLevelToS = function
         | TLVerbatim s ->
-            // add a space at end when it seems to be needed
+            // add a space at the end when it seems to be needed
             let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
             out "%s%s" s trailing
+        | TLDirective d -> directiveToS d
         | Function (fct, Block []) -> out "%s%s{}" (funToS fct) (nl 0)
         | Function (fct, (Block _ as body)) -> out "%s%s" (funToS fct) (stmtToS 0 body)
         | Function (fct, body) -> out "%s%s{%s%s}" (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
@@ -290,7 +293,7 @@ type PrinterImpl(withLocations) =
         let mutable wasMacro = true
         // handle the required \n before a macro
         let f x =
-            let isMacro = match x with TLVerbatim s -> s <> "" && s.[0] = '#' | _ -> false
+            let isMacro = match x with TLDirective _ -> true | _ -> false
             let needEndLine = isMacro && not wasMacro
             wasMacro <- isMacro
             if needEndLine then out "\n%s" (nl 0 + topLevelToS x)
@@ -313,7 +316,8 @@ type PrinterImpl(withLocations) =
                 | TypeDecl (TypeBlock (_, Some name, _)) -> name.OldName
                 | TypeDecl _ -> "*type decl*" // unnamed TypeBlock (a top-level TypeDecl cannot be a TypeName)
                 | Precision _ -> "*precision*"
-                | TLVerbatim s when s.StartsWith("#define") -> "#define"
+                | TLDirective ("#define"::_) -> "#define"
+                | TLDirective _ -> "*directive*"
                 | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
             symbolMap.AddMapping tlString symbolName
         let shaderSymbol = shader.mangledFilename

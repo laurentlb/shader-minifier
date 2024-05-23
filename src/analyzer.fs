@@ -65,7 +65,7 @@ module private VariableInlining =
                         localDefs.[def.name.Name] <- (def.name, isConst)
             | Expr e
             | Jump (_, Some e) -> localExpr <- e :: localExpr
-            | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
+            | Directive _ | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
 
         let localReferences = countReferences [for e in localExpr -> Expr e]
         let allReferences = countReferences block
@@ -190,7 +190,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
             | e -> e
         let findStmtSideEffects _ = function
             // Side effects can hide in macros.
-            | Verbatim _ as s -> hasExternallyVisibleSideEffect <- true; s
+            | (Verbatim _ | Directive _) as s -> hasExternallyVisibleSideEffect <- true; s
             | s -> s
         mapTopLevel (mapEnv findExprSideEffects findStmtSideEffects) [tl] |> ignore<TopLevel list>
         hasExternallyVisibleSideEffect
