@@ -1,4 +1,4 @@
-float f(inout float noinline){return 0.;}
+float f(inout float noinlinevar){return 0.;}
 
 float a;
 void main()

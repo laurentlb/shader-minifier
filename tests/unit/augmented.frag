@@ -1,3 +1,5 @@
+#version 130
+
 #extension GL_EXT_gpu_shader4 : enable
 
 int foo(int x, int y) {
@@ -10,8 +12,8 @@ int foo(int x, int y) {
     return a;
 }
 
-int output;
+int outputvar;
 
 void main() {
-    output = foo(0, 0);
+    outputvar = foo(0, 0);
 }

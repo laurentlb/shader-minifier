@@ -1,3 +1,5 @@
+//NOCOMPILE - https://github.com/laurentlb/shader-minifier/issues/403
+
 float f(float g)
 {
 	float f = 0.0;

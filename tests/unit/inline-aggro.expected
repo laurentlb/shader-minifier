@@ -1,3 +1,5 @@
+#version 150
+
 float inl1()
 {
   return 126.;

@@ -1,4 +1,4 @@
-#version 120
+#version 420
 
 float result;
 
@@ -62,7 +62,7 @@ float multiPass2() {
   return b;
 }
 
-atomic_uint hydrogen;
+layout(binding=0) uniform atomic_uint hydrogen;
 uint builtin_with_or_without_side_effects(uint x)
 {
 	uint not_inlined = atomicCounterIncrement(hydrogen);
@@ -115,7 +115,7 @@ void lvalues() {
 }
 
 uniform int time;
-in int sync;
+flat in int sync;
 
 int dependOnConst() {
   int x = time + sync;
@@ -141,12 +141,16 @@ float inlineWithShadowing(float x) {
 	return inl;
 }
 
+/*
 // repro for a bug
 float inline_uninitialized()
 {
+    // https://github.com/laurentlb/shader-minifier/issues/317
+    // Error: 'c' : undeclared identifier
     float c;
     return c;
 }
+*/
 
 // repro for a bug
 float glo;

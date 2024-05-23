@@ -1,9 +1,9 @@
 vec2 pos=vec2(.5);
 float foo()
 {
-  float noinline=0.;
-  noinline++;
-  return 3.+noinline;
+  float noinlinevar=0.;
+  noinlinevar++;
+  return 3.+noinlinevar;
 }
 void main()
 {

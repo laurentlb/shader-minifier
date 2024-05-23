@@ -1,3 +1,5 @@
+#version 130
+
 void switchConst() {
   switch (42) {
     case 42:

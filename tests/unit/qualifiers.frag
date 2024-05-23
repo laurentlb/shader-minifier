@@ -1,3 +1,5 @@
+#version 130
+
 in vec3 foo;
 
 float f(in float a) {
