@@ -304,8 +304,9 @@ type private ParseImpl() =
         let ident = manyChars (pchar '_' <|> asciiLetter <|> digit)
         // parse the #define macros to get the macro name
         let define = pipe2 (keyword "define" >>. ident) line
-                       (fun id line -> forbiddenNames <- id :: forbiddenNames; "define " + id + line)
-        pchar '#' >>. (define <|> line) .>> ws |>> (fun s -> "#" + s + "\n")
+                       (fun id line -> forbiddenNames <- id :: forbiddenNames; ["#define"; id; line])
+        let otherDirective = line |>> (fun s -> ["#" + s])
+        pchar '#' >>. (define <|> otherDirective) .>> ws
 
     // HLSL attribute, eg. [maxvertexcount(12)]
     let attribute =
@@ -333,7 +334,7 @@ type private ParseImpl() =
         doWhileLoop
         switch
         verbatim |>> Ast.Verbatim
-        macro |>> Ast.Verbatim
+        macro |>> Ast.Directive
         attribute |>> Ast.Verbatim
         attempt ((declaration .>> ch ';') |>> Ast.Decl)
         simpleStatement .>> ch ';'] <?> "statement"
@@ -357,7 +358,7 @@ type private ParseImpl() =
     let toplevel =
         let decl = declaration .>> ch ';'
         let item = choice [
-                    macro |>> Ast.TLVerbatim
+                    macro |>> Ast.TLDirective
                     verbatim |>> Ast.TLVerbatim
                     attribute |>> Ast.TLVerbatim
                     attempt decl |>> Ast.TLDecl

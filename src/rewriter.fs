@@ -45,8 +45,7 @@ module private RewriterImpl =
         let write c =
             last <- c
             result.Append(c) |> ignore
-        let isId c = Char.IsLetterOrDigit c || c = '_' || c = '('
-        // hack because we can't remove space in "#define foo (1+1)"
+        let isId c = Char.IsLetterOrDigit c || c = '_'
 
         let mutable space = false
         let mutable wasNewline = false
@@ -69,6 +68,12 @@ module private RewriterImpl =
 
         result.ToString()
 
+    let stripDirectiveSpaces = function
+        | ["#define"; name; value] ->
+            // we need to distinguish between " #define f (x)" and "#define f(x)"
+            let spacePrefix = if value.StartsWith(" ") then " " else ""
+            ["#define"; name; spacePrefix + stripSpaces value]
+        | li -> List.map stripSpaces li
 
     let declsNotToInline (d: DeclElt list) = d |> List.filter (fun x -> not x.name.ToBeInlined)
 
@@ -514,7 +519,7 @@ module private RewriterImpl =
     let simplifyBlock blockLevel stmts = 
         let b = stmts
         // Avoid some optimizations when there are preprocessor directives.
-        let hasPreprocessor = Seq.exists (function Verbatim _ -> true | _ -> false) b
+        let hasPreprocessor = Seq.exists (function Verbatim _ | Directive _ -> true | _ -> false) b
 
         // Remove dead code after return/break/...
         let endOfCode = Seq.tryFindIndex (function Jump _ -> true | _ -> false) b
@@ -715,8 +720,9 @@ module private RewriterImpl =
                             If (cond, body1, body2)
                 | _ -> If (cond, body1, body2)
         | Verbatim s -> Verbatim (stripSpaces s)
+        | Directive d -> Directive (stripDirectiveSpaces d)
         | e -> e
-    
+
     let rec removeUnusedFunctions code =
         let funcInfos = Analyzer.findFuncInfos code
         let isUnused (funcInfo : Analyzer.FuncInfo) =
@@ -877,6 +883,7 @@ let simplify li =
             let li = RewriterImpl.declsNotToInline li
             if li = [] then None else TLDecl (RewriterImpl.rwType ty, li) |> Some
         | TLVerbatim s -> TLVerbatim (RewriterImpl.stripSpaces s) |> Some
+        | TLDirective d -> TLDirective (RewriterImpl.stripDirectiveSpaces d) |> Some
         | Function (fct, _) when fct.fName.ToBeInlined -> None
         | Function (fct, body) -> Function (RewriterImpl.rwFType fct, body) |> Some
         | e -> e |> Some

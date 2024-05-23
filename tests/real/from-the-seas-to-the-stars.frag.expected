@@ -2,7 +2,7 @@
 
 layout(location=3) uniform int mode;
 layout(location=4) uniform int millisecs;
-layout (local_size_x=8,local_size_y=8)in;
+layout(local_size_x=8,local_size_y=8)in;
 
 uniform layout(binding=0,r32ui) uimage2DMS d0;
 uniform layout(binding=6,rgba8) image2D outtex;

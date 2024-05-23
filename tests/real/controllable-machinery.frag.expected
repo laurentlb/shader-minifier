@@ -2,7 +2,7 @@
 
 #if 0
 
-#define VAR_ZERO min (iFrame,0)
+#define VAR_ZERO min(iFrame,0)
 
 #else
 
@@ -16,7 +16,7 @@ vec2 qBlk;
 float dstFar,tCur,tMov,angRot,bEdge,tCyc,cnPos,hitBlk;
 int idObj;
 
-#define DMIN(id)if (d<dMin){dMin=d;idObj=id;}
+#define DMIN(id)if(d<dMin){dMin=d;idObj=id;}
 
 #define txBuf iChannel0
 
