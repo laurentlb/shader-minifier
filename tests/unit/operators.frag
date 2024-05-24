@@ -66,5 +66,5 @@ float swap_op_order(float g)
 {
 	float a = g*((g--)*(g--));
 	float b = g*((g+2.)*(g+3.));
-	return a*b;
+	return a*b*g;
 }

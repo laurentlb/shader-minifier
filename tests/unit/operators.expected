@@ -51,9 +51,8 @@
  "}"
  "float swap_op_order(float g)"
  "{"
-   "float a=g*(g--*g--);"
-   "g*=(g+2.)*(g+3.);"
-   "return a*g;"
+   "float a=g*(g--*g--),b=(g+2.)*(g+3.)*g;"
+   "return a*b*g;"
  "}",
 
 #endif
