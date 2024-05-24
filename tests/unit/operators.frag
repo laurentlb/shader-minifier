@@ -61,3 +61,10 @@ float cool_ops(float g)
 	f += --f + (- +(++f));
 	return f;
 }
+
+float swap_op_order(float g)
+{
+	float a = g*((g--)*(g--));
+	float b = g*((g+2.)*(g+3.));
+	return a*b;
+}
