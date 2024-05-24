@@ -48,6 +48,12 @@
    "g-=-g--- --g;"
    "g*=g+g;"
    "return g+--g-++g;"
+ "}"
+ "float swap_op_order(float g)"
+ "{"
+   "float a=g*(g--*g--);"
+   "g*=(g+2.)*(g+3.);"
+   "return a*g;"
  "}",
 
 #endif
