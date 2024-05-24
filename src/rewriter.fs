@@ -202,12 +202,12 @@ module private RewriterImpl =
 
         // Swap operands to get rid of parentheses
         // x*(y*z) -> y*z*x
-        | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])]) ->
+        | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])]) when isPure x && isPure y && isPure z ->
             FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
-        // x+(y+z) -> y+z+x
-        // x+(y-z) -> y-z+a
+        // x+(y+z) -> x+y+z
+        // x+(y-z) -> x+y-z
         | FunCall(Op "+", [NoParen x; FunCall(Op ("+"|"-") as op, [y; z])]) ->
-            FunCall(Op "+", [FunCall(op, [y; z]); x]) |> env.fExpr env
+            FunCall(op, [FunCall(Op "+", [x; y]); z]) |> env.fExpr env
         // x-(y+z) -> x-y-z
         | FunCall(Op "-", [x; FunCall(Op "+", [y; z])]) ->
             FunCall(Op "-", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env
