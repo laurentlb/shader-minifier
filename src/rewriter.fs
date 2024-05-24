@@ -207,7 +207,7 @@ module private RewriterImpl =
         // x+(y+z) -> y+z+x
         // x+(y-z) -> y-z+a
         | FunCall(Op "+", [NoParen x; FunCall(Op ("+"|"-") as op, [y; z])]) ->
-            FunCall(Op "+", [FunCall(op, [y; z]); x]) |> env.fExpr env
+            FunCall(Op "+", [FunCall(op, [x; y]); z]) |> env.fExpr env
         // x-(y+z) -> x-y-z
         | FunCall(Op "-", [x; FunCall(Op "+", [y; z])]) ->
             FunCall(Op "-", [FunCall(Op "-", [x; y]); z]) |> env.fExpr env

@@ -46,7 +46,7 @@ void main()
   if(gl_TexCoord[0].w>.5)
     {
       ti=max(0,time)/3.;
-      ti=floor(ti)+clamp(fract(ti)*2,0,1)+noise(floor(gl_FragCoord.xy));
+      ti=noise(floor(gl_FragCoord.xy))+floor(ti)+clamp(fract(ti)*2,0,1);
       ti=floor(ti);
       float zoom=1.5;
       vec2 filmoffset=vec2(0);

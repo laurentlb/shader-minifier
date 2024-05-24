@@ -16,7 +16,7 @@
  "}"
  "int no_parens(int a,int b,int c)"
  "{"
-   "return b+c+a+a+b*c;"
+   "return a+b+c+a+b*c;"
  "}"
  "int no_parens2(int a,int b,int c)"
  "{"
@@ -47,7 +47,7 @@
    "g/=-g+g;"
    "g-=-g--- --g;"
    "g*=g+g;"
-   "return--g-++g+g;"
+   "return g- --g+ ++g;"
  "}",
 
 #endif

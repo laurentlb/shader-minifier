@@ -76,7 +76,7 @@ float f()
   s+=s+noinline_canInlineWhenArgIsInlinable5();
   s+=s+noinline_canInlineWhenArgIsInlinable6();
   s+=s+noinline_cannotInlineWhenArgIsNotInlinable(s);
-  return s+noinline_cannotInlineWhenArgIsNotInlinable(acos(s))+s;
+  return s+s+noinline_cannotInlineWhenArgIsNotInlinable(acos(s));
 }
 void main()
 {
