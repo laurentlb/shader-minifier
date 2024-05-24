@@ -47,7 +47,7 @@
    "g/=-g+g;"
    "g-=-g--- --g;"
    "g*=g+g;"
-   "return g- --g+ ++g;"
+   "return g+--g-++g;"
  "}",
 
 #endif

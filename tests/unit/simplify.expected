@@ -12,7 +12,7 @@ float baz(float a)
 {
   a=a+4.+sin(a);
   a=a+5.+sin(a);
-  return a+a+a;
+  return a-a-a;
 }
 out vec3 outputvar;
 void notMain(float x)
