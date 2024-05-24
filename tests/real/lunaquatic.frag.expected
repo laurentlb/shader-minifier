@@ -60,8 +60,8 @@ vec3 getWaterNormal(vec3 p)
 }
 int traceTerrain(vec3 ro,vec3 rd,float maxt,out float depth)
 {
-  float lh,ly,delt=0.,t=.1;
-  for(;t<maxt;t+=delt)
+  float lh,ly,delt=0.;
+  for(float t=.1;t<maxt;t+=delt)
     {
       ro+=rd*delt;
       depth=height(ro.xz);
