@@ -134,7 +134,7 @@ type PrinterImpl(withLocations) =
                     else
                         (exprToSLevel indent prec a1), (exprToSLevel indent (prec+1) a2)
 
-                let op = if op.EndsWith("+") && e2.StartsWith("+") then op + " " else op
+                let op = if op = "+" && e2.StartsWith("+") then op + " " else op
                 let res = out "%s%s%s" e1 op e2
                 if prec < level then out "(%s)" res
                 else res
