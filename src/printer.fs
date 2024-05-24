@@ -128,11 +128,15 @@ type PrinterImpl(withLocations) =
             // Binary operators.
             | Op op, [a1; a2] ->
                 let prec = precedence.[op]
-                let res =
+                let e1, e2 =
                     if prec = precedence.["="] then // "=", "+=", or other operator with right-associativity
-                        out "%s%s%s" (exprToSLevel indent (prec+1) a1) op (exprToSLevel indent prec a2)
+                        (exprToSLevel indent (prec+1) a1), (exprToSLevel indent prec a2)
                     else
-                        out "%s%s%s" (exprToSLevel indent prec a1) op (exprToSLevel indent (prec+1) a2)
+                        (exprToSLevel indent prec a1), (exprToSLevel indent (prec+1) a2)
+
+                // Add a space to avoid "+" or "-" to be parsed as "++" or "--".
+                let op = if (op = "+" || op = "-") && e2.StartsWith(op) then op + " " else op
+                let res = out "%s%s%s" e1 op e2
                 if prec < level then out "(%s)" res
                 else res
 

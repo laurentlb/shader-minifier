@@ -39,6 +39,15 @@
      "x+cos(x):"
      "x*sin(x);"
    "return x*x;"
+ "}"
+ "float cool_ops(float g)"
+ "{"
+   "g=0.;"
+   "g+=g+++ ++g;"
+   "g/=-g+g;"
+   "g-=-g--- --g;"
+   "g*=g+g;"
+   "return--g-++g+g;"
  "}",
 
 #endif

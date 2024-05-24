@@ -50,3 +50,14 @@ float desugar_compound_assignment_for_ternary(float x)
 		x *= sin(x);
 	return x * x;
 }
+
+float cool_ops(float g)
+{
+	float f = 0.0;
+	f += +f++ + ++f;
+	f /= -f - -f;
+	f -= -f-- - --f;
+	f *= +f + +f;
+	f += --f + (- +(++f));
+	return f;
+}
