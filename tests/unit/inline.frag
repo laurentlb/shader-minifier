@@ -178,6 +178,6 @@ vec3 repro(vec2 fragCoord, float iTime)
     vec3 camera = used_many_times;
     vec4 cc = vec4(camera - used_many_times, 1.);
     sky+= pow(max(dot(sky, used_many_times), 0.0), 20.0) * .03;
-    col = dot(col + mix(sky, cc.xyz, cc.w) + camera, used_many_times);
+    col = vec3(dot(col + mix(sky, cc.xyz, cc.w) + camera, used_many_times));
     return col + pow(max(dot(sky, used_many_times), 0.0), 6.0) * .2;
 }
