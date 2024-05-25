@@ -116,12 +116,13 @@ float dontCompressAssigments()
   glo=50.+noinline_readsTheGlobal();
   return glo*glo;
 }
-vec3 repro(vec2 fragCoord)
+vec3 repro(vec2 fragCoord,float iTime)
 {
-  float time=iTime+(fragCoord.xy/(fragCoord*2.).xy).x*10.;
-  vec3 long_and_used_only_once=vec3((fragCoord.y+sin(time*.5)*.4-fragCoord.x+time*.5)*normalize(vec3(0,0,1))),col=long_and_used_only_once,sky=col+long_and_used_only_once,camera=long_and_used_only_once;
-  vec4 cc=camera-long_and_used_only_once;
-  sky+=pow(max(dot(sky,long_and_used_only_once),0.),20.)*.03;
-  col=dot(col+mix(sky,cc.xyz,cc.w)+camera,long_and_used_only_once);
-  return col+pow(max(dot(sky,long_and_used_only_once),0.),6.)*.2;
+  iTime+=(fragCoord.xy/(fragCoord*2.).xy).x*10.;
+  vec3 long_and_used_only_once=vec3((fragCoord.y+sin(iTime*.5)*.4-fragCoord.x+iTime*.5)*normalize(vec3(0,0,1))),used_many_times=long_and_used_only_once,col=used_many_times,sky=col+used_many_times;
+  long_and_used_only_once=used_many_times;
+  vec4 cc=long_and_used_only_once-used_many_times;
+  sky+=pow(max(dot(sky,used_many_times),0.),20.)*.03;
+  col=dot(col+mix(sky,cc.xyz,cc.w)+long_and_used_only_once,used_many_times);
+  return col+pow(max(dot(sky,used_many_times),0.),6.)*.2;
 }

@@ -166,7 +166,7 @@ float dontCompressAssigments()
 }
 
 // repro for dual-kind-mixing aggressive-inlining bug
-vec3 repro(vec2 fragCoord)
+vec3 repro(vec2 fragCoord, float iTime)
 {
     float time = iTime*1.+(fragCoord.xy / (fragCoord*2.).xy).x*10.0;
 	
