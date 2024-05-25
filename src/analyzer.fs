@@ -88,14 +88,17 @@ module private VariableInlining =
         | Float _ -> true
         | _ -> false
 
-    // Detect if a variable can be inlined, based on its value.
-    let canBeInlined (init: Expr) =
+    // Detect if a variable can be inlined in multiple places, based on its value.
+    let isSimpleEnoughToInline (init: Expr) =
         match init with
         | e when isTrivialExpr e -> true
         | _ when not options.aggroInlining -> false
         // Allow a few things to be inlined with aggroInlining
         | Var v
-        | Dot (Var v, _) -> isEffectivelyConst v
+        | Dot (Var v, _) ->
+            match v.Declaration with // Don't inline the use of a variable that's already marked for inlining!
+            | Declaration.Variable vd when not vd.decl.name.ToBeInlined -> isEffectivelyConst v
+            | _ -> false
         | FunCall(Op op, args) ->
             not (Builtin.assignOps.Contains op) &&
                 args |> List.forall isTrivialExpr
@@ -124,7 +127,7 @@ module private VariableInlining =
                             debug $"{def.name.Loc}: inlining (removing) unassigned local '{Printer.debugDecl def}'"
                             def.name.ToBeInlined <- true
                     | Some init ->
-                        if canBeInlined init then
+                        if isSimpleEnoughToInline init then
                             // Never-written locals and globals are inlined when their value is "simple enough".
                             // This can increase non-compressed size but decreases compressed size.
                             let varKind = match level with Level.TopLevel -> "global" | Level.InFunc -> "local"
@@ -132,12 +135,20 @@ module private VariableInlining =
                             def.name.ToBeInlined <- true
         | _ -> ()
 
-    let markInlinableVariables li =
+    let markSafelyInlinableVariables li =
+        let mapStmt _ stmt =
+            match stmt with
+            | Block b -> markSafelyInlinableLocals b
+            | _ -> ()
+            stmt
+        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
+        ()
+
+    let markSimpleInlinableVariables li =
         let mapStmt _ stmt =
             match stmt with
             | Decl d -> markUnwrittenVariablesWithSimpleInit Level.InFunc d
             | ForD (d, _, _, _) -> markUnwrittenVariablesWithSimpleInit Level.InFunc d
-            | Block b -> markSafelyInlinableLocals b
             | _ -> ()
             stmt
         // Visit locals
@@ -149,7 +160,10 @@ module private VariableInlining =
             | _ -> ()
         ()
 
-let markInlinableVariables = VariableInlining.markInlinableVariables
+let markInlinableVariables li =
+    VariableInlining.markSafelyInlinableVariables li
+    // "simple" inlining must come after "safe" inlining, because it must check that it's not going to inline a var already being inlined.
+    VariableInlining.markSimpleInlinableVariables li
 
 let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inlining
     let findWrites (env: MapEnv) = function
