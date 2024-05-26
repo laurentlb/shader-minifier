@@ -13,28 +13,6 @@ let renameField field =
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
-let rec private sideEffects = function
-    | Var _ -> []
-    | Int _
-    | Float _ -> []
-    | Dot(v, _)  -> sideEffects v
-    | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
-    | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
-    | FunCall(Var fct, args) as e ->
-        match fct.Declaration with
-        | Declaration.UserFunction fd when not fd.hasExternallyVisibleSideEffects -> args |> List.collect sideEffects
-        | _ -> [e]
-    | FunCall(Op "?:", [condExpr; thenExpr; elseExpr]) as e ->
-        if sideEffects thenExpr = [] && sideEffects elseExpr = []
-        then sideEffects condExpr
-        else [e] // We could apply sideEffects to thenExpr and elseExpr, but the result wouldn't necessarily have the same type...
-    | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
-    | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
-    | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
-    | e -> [e]
-
-let rec private isPure e = sideEffects e = []
-
 module private RewriterImpl =
 
     // Remove useless spaces in macros
@@ -202,7 +180,8 @@ module private RewriterImpl =
 
         // Swap operands to get rid of parentheses
         // x*(y*z) -> y*z*x
-        | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])]) when isPure x && isPure y && isPure z ->
+        | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])])
+            when Analyzer.isPure x && Analyzer.isPure y && Analyzer.isPure z ->
             FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
         // x+(y+z) -> x+y+z
         // x+(y-z) -> x+y-z
@@ -344,6 +323,7 @@ module private RewriterImpl =
         | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
         | Var s as e ->
+            // Replace uses of inlined variables.
             match env.vars.TryFind s.Name with
             | Some (_, {name = id; init = Some init}) when id.ToBeInlined ->
                 didInline.Value <- true
@@ -576,7 +556,7 @@ module private RewriterImpl =
                     // Remove unused assignment immediately followed by re-assignment:  m=14.;m=58.;  ->  14.;m=58.;
                     | 0 -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
                     // Inline this single use of a used-once assignment into the immediately following re-assignment:  m=14.;m=58.-m;  ->  m=58.-14.;
-                    | 1 when isPure init1 && isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
+                    | 1 when Analyzer.isPure init1 && Analyzer.isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
                         let newInit2 = replaceUsesOfIdentByExpr init2 name.Name init1
                         debug $"{name.Loc}: merge consecutive pure assignments to the same local '{name}'"
                         Some [Expr (FunCall (Op "=", [Var name2; newInit2]))]
@@ -587,12 +567,12 @@ module private RewriterImpl =
                 when declElt.name.Name = name2.Name ->
                     match countUsesOfIdentName init2 declElt.name.Name with
                     | 0 ->
-                        match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
+                        match declElt.init |> Option.map Analyzer.sideEffects |> Option.defaultValue [] with
                         // float m=14;m=58.;  ->  float m=58.;
                         | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
                         // float m=f();m=58.;  ->  float m=(f(),58.);
                         | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
-                    | 1 when Option.forall isPure declElt.init && isPure init2 ->
+                    | 1 when Option.forall Analyzer.isPure declElt.init && Analyzer.isPure init2 ->
                         let newInit =
                             match declElt.init with
                             | None -> init2 // float m; m=1.;  ->  float m=1.;
@@ -606,7 +586,7 @@ module private RewriterImpl =
         // Reduces impure expression statements to their side effects.
         let b = b |> List.collect (function
             | Expr e ->
-                match sideEffects e with
+                match Analyzer.sideEffects e with
                 | [] -> [] // Remove pure statements.
                 | [e] -> [Expr e]
                 | sideEffects -> [Expr (commaSeparatedExprs sideEffects)]

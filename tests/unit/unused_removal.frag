@@ -26,10 +26,23 @@ float foo(float hidden) {
 	return hidden+noinlinevar;
 }
 
+float glob;
+float side_effect() {
+	return glob++;
+}
+
+vec4 noinline_test()
+{
+  vec4 bb;
+  return bb;
+}
+
 void main(){
+	float unused_var = side_effect();
+
   if (false) {
     noinline_actually_unreachable2();
 	return;
   }
-  gl_FragColor = vec4(foo(3.), g());
+  gl_FragColor = vec4(foo(3.), g()) + noinline_test();
 }

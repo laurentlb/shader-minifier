@@ -8,6 +8,28 @@ open Options.Globals
 // information in the AST nodes, e.g. find which variables are modified,
 // which declarations can be inlined.
 
+let rec sideEffects = function
+    | Var _ -> []
+    | Int _
+    | Float _ -> []
+    | Dot(v, _)  -> sideEffects v
+    | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
+    | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
+    | FunCall(Var fct, args) as e ->
+        match fct.Declaration with
+        | Declaration.UserFunction fd when not fd.hasExternallyVisibleSideEffects -> args |> List.collect sideEffects
+        | _ -> [e]
+    | FunCall(Op "?:", [condExpr; thenExpr; elseExpr]) as e ->
+        if sideEffects thenExpr = [] && sideEffects elseExpr = []
+        then sideEffects condExpr
+        else [e] // We could apply sideEffects to thenExpr and elseExpr, but the result wouldn't necessarily have the same type...
+    | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
+    | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
+    | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
+    | e -> [e]
+
+let rec isPure e = sideEffects e = []
+
 let varUsesInStmt stmt = 
     let mutable idents = []
     let collectLocalUses _ = function
@@ -57,7 +79,8 @@ module private VariableInlining =
                 for def in declElts do
                     // can only inline if it has a value
                     match def.init with
-                    | None -> ()
+                    | None ->
+                        localDefs.[def.name.Name] <- (def.name, true)
                     | Some init ->
                         localExpr <- init :: localExpr
                         let isConst = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
@@ -73,13 +96,18 @@ module private VariableInlining =
         for def in localDefs do
             let ident, isConst = def.Value
             if not ident.DoNotInline && not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
+                let decl = ident.VarDecl.Value.decl
                 match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
-                | (_, 1), (_, 1) when isConst ->
+                | (_, 1), (_, 1) when isConst && decl.init <> None ->
                     debug $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
-                    debug $"{ident.Loc}: inlining (removing) local variable '{Printer.debugIdent ident}' because it's safe to inline and unused"
-                    ident.ToBeInlined <- true
+                    let ok = match decl.init with
+                             | Some init -> isPure init
+                             | None -> true
+                    if ok then
+                        debug $"{ident.Loc}: inlining (removing) local variable '{Printer.debugDecl decl}' because it's unused and the init is pure or missing"
+                        ident.ToBeInlined <- true
                 | _ -> ()
 
     let isTrivialExpr = function
@@ -93,11 +121,11 @@ module private VariableInlining =
         match init with
         | e when isTrivialExpr e -> true
         | _ when not options.aggroInlining -> false
-        // Allow a few things to be inlined with aggroInlining
+        // Allow a few things to be inlined with aggroInlining (even if they have side effects!)
         | Var v
         | Dot (Var v, _) ->
-            match v.Declaration with // Don't inline the use of a variable that's already marked for inlining!
-            | Declaration.Variable vd when not vd.decl.name.ToBeInlined -> isEffectivelyConst v
+            match v.VarDecl with // Don't inline the use of a variable that's already marked for inlining!
+            | Some vd when not vd.decl.name.ToBeInlined -> isEffectivelyConst v
             | _ -> false
         | FunCall(Op op, args) ->
             not (Builtin.assignOps.Contains op) &&
@@ -120,12 +148,9 @@ module private VariableInlining =
                    not def.name.DoNotInline &&
                    not def.name.VarDecl.Value.isEverWrittenAfterDecl then
                     match def.init with
-                    | None ->
+                    | None -> ()
                         // Top-level values are special, in particular in HLSL. Keep them for now.
-                        if level <> Level.TopLevel then
-                            // Never-written locals without init should be unused: inline (remove) them.
-                            debug $"{def.name.Loc}: inlining (removing) unassigned local '{Printer.debugDecl def}'"
-                            def.name.ToBeInlined <- true
+                        // Never-written locals without init might be unused, but we don't know for sure here. Let safe inlining handle them.
                     | Some init ->
                         if isSimpleEnoughToInline init then
                             // Never-written locals and globals are inlined when their value is "simple enough".
