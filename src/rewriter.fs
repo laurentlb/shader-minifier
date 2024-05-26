@@ -6,11 +6,6 @@ open Builtin
 open Ast
 open Options.Globals
 
-let renameField field =
-    if isFieldSwizzle field then
-        field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
-    else field
-
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
 let rec private sideEffects = function
@@ -341,7 +336,7 @@ module private RewriterImpl =
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
-        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
+        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Renamer.renameField field)
 
         | Var s as e ->
             match env.vars.TryFind s.Name with
