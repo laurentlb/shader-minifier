@@ -1,11 +1,18 @@
 vec2 pos=vec2(.5);
+float glob;
 float foo()
 {
   float noinlinevar=0.;
   noinlinevar++;
   return 3.+noinlinevar;
 }
+vec4 noinline_test()
+{
+  vec4 bb;
+  return bb;
+}
 void main()
 {
-  gl_FragColor=vec4(foo(),vec3(0));
+  float unused_var=glob++;
+  gl_FragColor=vec4(foo(),vec3(0))+noinline_test();
 }
