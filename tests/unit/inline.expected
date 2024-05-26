@@ -102,3 +102,12 @@ float dontCompressAssigments()
   glo=50.+noinline_readsTheGlobal();
   return glo*glo;
 }
+vec3 repro(vec2 fragCoord,float iTime)
+{
+  iTime+=(fragCoord.xy/(fragCoord*2.).xy).x*10.;
+  vec3 used_many_times=vec3((fragCoord.y+sin(iTime*.5)*.4-fragCoord.x+iTime*.5)*normalize(vec3(0,0,1))),col=used_many_times,sky=col+used_many_times,camera=used_many_times;
+  vec4 cc=vec4(camera-used_many_times,1);
+  sky+=pow(max(dot(sky,used_many_times),0.),20.)*.03;
+  col=vec3(dot(col+mix(sky,cc.xyz,cc.w)+camera,used_many_times));
+  return col+pow(max(dot(sky,used_many_times),0.),6.)*.2;
+}

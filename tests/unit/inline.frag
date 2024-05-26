@@ -164,3 +164,20 @@ float dontCompressAssigments()
 	glo = 50. + noinline_readsTheGlobal();
 	return glo*glo;
 }
+
+// repro for dual-kind-mixing aggressive-inlining bug
+vec3 repro(vec2 fragCoord, float iTime)
+{
+    float time = iTime*1.+(fragCoord.xy / (fragCoord*2.).xy).x*10.0;
+	
+    vec3 long_and_used_only_once = vec3((fragCoord.y+sin(time*.5)*.4 - fragCoord.x+time*.5)*normalize(vec3(0,0, 1.)));
+    vec3 used_many_times = long_and_used_only_once;
+
+    vec3 col = used_many_times;
+    vec3 sky  = col + used_many_times;
+    vec3 camera = used_many_times;
+    vec4 cc = vec4(camera - used_many_times, 1.);
+    sky+= pow(max(dot(sky, used_many_times), 0.0), 20.0) * .03;
+    col = vec3(dot(col + mix(sky, cc.xyz, cc.w) + camera, used_many_times));
+    return col + pow(max(dot(sky, used_many_times), 0.0), 6.0) * .2;
+}
