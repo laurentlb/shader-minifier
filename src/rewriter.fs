@@ -430,6 +430,8 @@ module private RewriterImpl =
         | Jump (JumpKeyword.Continue, _) -> false
         | If (_cond, bodyT, bodyF) -> hasNoContinue [bodyT] && hasNoContinue (Option.toList bodyF)
         | Switch (_e, cases) -> cases |> List.forall (fun (_label, stmts) -> hasNoContinue stmts)
+        | Block stmts -> hasNoContinue stmts
+        // No need to search in nested for loops, because their continue wouldn't apply to this level.
         | _ -> true)
 
     // Reuse an existing local variable declaration that won't be used anymore, instead of introducing a new one.

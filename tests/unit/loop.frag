@@ -43,6 +43,16 @@ void main()
 		if (a < b) a=b; else continue; // continue prevents moving b++ to a for
 		b++;
 	}
+	b = a;
+	while (b<50.)
+	{
+		a += b;
+		{
+			float a = b-a;
+			if (a < b) a=b; else continue; // continue prevents moving b++ to a for
+		}
+		b++;
+	}
 	for (; b<50.; ++b)
 	{
 		c+=cos(b);
