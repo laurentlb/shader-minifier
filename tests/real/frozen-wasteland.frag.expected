@@ -108,8 +108,8 @@ float Noise3d(vec3 x)
     {
       vec3 p=floor(x),f=fract(x);
       f=f*f*(3.-2.*f);
-      vec2 uv=p.xy+vec2(37,17)*p.z+f.xy,rg=textureLod(iChannel0,(uv+.5)/256.,0.).yx;
-      h+=mix(rg.x,rg.y,f.z)*a;
+      vec2 uv=textureLod(iChannel0,(p.xy+vec2(37,17)*p.z+f.xy+.5)/256.,0.).yx;
+      h+=mix(uv.x,uv.y,f.z)*a;
       a*=.5;
       x+=x;
     }

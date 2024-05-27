@@ -7,22 +7,22 @@
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/many_variables.frag
- "int L(float i,float L,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
+ "int L(float L,float K,float J,float I,float H,float G,float F,float E,float D,float C,float B,float A)"
  "{"
-   "i=G;"
-   "int t=1,f=2,r=3,K=4;"
-   "K=5;"
-   "r=6;"
+   "L=G;"
+   "int t=1,f=2,i=3,r=4;"
+   "r=5;"
+   "i=6;"
    "f=7;"
    "t=8;"
-   "i=F;"
-   "float M=E,N=D,O=C,P=B,Q=A;"
-   "int R=1,S=2,T=3,U=4,V=5,W=6,X=7,Y=8;"
-   "float Z=0.;"
-   "int _=1,a=2,b=3,c=4,d=5,e=6,g=7,h=8;"
-   "float j=0.;"
-   "int k=1,l=2,m=3,n=4,o=5,p=6,q=7,s=8;"
-   "return t+Y+h+s;"
+   "L=A;"
+   "f=8;"
+   "L=0.;"
+   "i=8;"
+   "L=0.;"
+   "r=7;"
+   "r=8;"
+   "return t+f+i+r;"
  "}",
 
 #endif

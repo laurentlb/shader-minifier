@@ -13,7 +13,12 @@ let renameField field =
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
-module private RewriterImpl =
+[<RequireQualifiedAccess>] 
+type private OptimizationPass =
+    | First
+    | Second // adds "var reuse"
+
+type private RewriterImpl(optimizationPass: OptimizationPass) =
 
     // Remove useless spaces in macros
     let stripSpaces str =
@@ -624,8 +629,9 @@ module private RewriterImpl =
         let b = replaceIfReturnsWithReturnTernary b
 
         let b =
-            // We ensure control flow analysis is trivial by only doing this at the root block level.
-            if (match blockLevel with BlockLevel.FunctionRoot _ -> false | _ -> true) || hasPreprocessor
+            if optimizationPass <> OptimizationPass.Second &&
+                // We ensure control flow analysis is trivial by only doing this at the root block level.
+                (match blockLevel with BlockLevel.FunctionRoot _ -> false | _ -> true) || hasPreprocessor
             then b
             else reuseExistingVarDecl blockLevel b
 
@@ -702,7 +708,7 @@ module private RewriterImpl =
         | Directive d -> Directive (stripDirectiveSpaces d)
         | e -> e
 
-    let rec removeUnusedFunctions code =
+    static let rec removeUnusedFunctions code =
         let funcInfos = Analyzer.findFuncInfos code
         let isUnused (funcInfo : Analyzer.FuncInfo) =
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
@@ -720,6 +726,25 @@ module private RewriterImpl =
             | Function _ as t -> if Set.contains t unused then edited <- true; false else true
             | _ -> true)
         if edited then removeUnusedFunctions code else code
+
+    let cleanup tl =
+        tl |> List.choose (function
+            | TLDecl (ty, li) ->
+                let li = declsNotToInline li
+                if li = [] then None else TLDecl (rwType ty, li) |> Some
+            | TLVerbatim s -> TLVerbatim (stripSpaces s) |> Some
+            | TLDirective d -> TLDirective (stripDirectiveSpaces d) |> Some
+            | Function (fct, _) when fct.fName.ToBeInlined -> None
+            | Function (fct, body) -> Function (rwFType fct, body) |> Some
+            | e -> e |> Some
+        )
+        |> squeezeTLDeclarations
+
+    member _.Cleanup = cleanup 
+    member _.SimplifyExpr = simplifyExpr
+    member _.SimplifyStmt = simplifyStmt
+    static member RemoveUnusedFunctions = removeUnusedFunctions
+
 
 // reorder functions if there were forward declarations
 let reorderFunctions code =
@@ -826,8 +851,8 @@ module private ArgumentInlining =
             didInline.Value <- true
             code
 
-let rec private iterateSimplifyAndInline passCount li =
-    let li = if not options.noRemoveUnused then RewriterImpl.removeUnusedFunctions li else li
+let rec private iterateSimplifyAndInline optimizationPass passCount li =
+    let li = if not options.noRemoveUnused then RewriterImpl.RemoveUnusedFunctions li else li
     Analyzer.resolve li
     Analyzer.markWrites li
     if not options.noInlining then
@@ -835,7 +860,8 @@ let rec private iterateSimplifyAndInline passCount li =
         Analyzer.markInlinableVariables li
     let didInline = ref false
     let before = Printer.print li
-    let li = mapTopLevel (mapEnv (RewriterImpl.simplifyExpr didInline) RewriterImpl.simplifyStmt) li
+    let rewriter = RewriterImpl(optimizationPass)
+    let li = mapTopLevel (mapEnv (rewriter.SimplifyExpr didInline) (rewriter.SimplifyStmt)) li
 
     // now that the functions were inlined, we can remove them
     let li = li |> List.filter (function
@@ -844,27 +870,18 @@ let rec private iterateSimplifyAndInline passCount li =
     
     let li = if options.noInlining then li else ArgumentInlining.apply didInline li
 
-    if passCount > 10 then
+    if passCount > 20 then
         debug $"! possible unstable loop in change detection. stopping analysis."
         li
     else
         let after = Printer.print li
         if after <> before then
             debug $"- significant changes happened: running analysis again..."
-            iterateSimplifyAndInline (passCount + 1) li
+            iterateSimplifyAndInline optimizationPass (passCount + 1) li
         else li
 
 let simplify li =
     li
-    |> iterateSimplifyAndInline 1
-    |> List.choose (function
-        | TLDecl (ty, li) ->
-            let li = RewriterImpl.declsNotToInline li
-            if li = [] then None else TLDecl (RewriterImpl.rwType ty, li) |> Some
-        | TLVerbatim s -> TLVerbatim (RewriterImpl.stripSpaces s) |> Some
-        | TLDirective d -> TLDirective (RewriterImpl.stripDirectiveSpaces d) |> Some
-        | Function (fct, _) when fct.fName.ToBeInlined -> None
-        | Function (fct, body) -> Function (RewriterImpl.rwFType fct, body) |> Some
-        | e -> e |> Some
-    )
-    |> RewriterImpl.squeezeTLDeclarations
+    |> iterateSimplifyAndInline OptimizationPass.First 1
+    |> iterateSimplifyAndInline OptimizationPass.Second 1
+    |> (RewriterImpl(OptimizationPass.First)).Cleanup

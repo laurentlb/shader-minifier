@@ -217,26 +217,29 @@ void mainImage(out vec4 O,vec2 F)
       ro+=lp;
       lp.xy+=path(lp.z);
       ro.xy+=path(ro.z);
-      vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),c=ro+f*.183,rd=c+uv.x*r+uv.y*normalize(cross(f,r))-ro;
-      rd.xy=r2(.2*sin(time*.3)-path(lp.z).x/24.)*rd.xy;
-      rd.xz=r2(y-path(lp.z+1.).y/14.)*rd.xz;
-      vec2 t=marcher(ro,rd);
-      float d=t.x,m=t.y;
+      vec3 f=normalize(lp-ro),r=normalize(cross(vec3(0,1,0),f)),c=ro+f*.183;
+      f=c+uv.x*r+uv.y*normalize(cross(f,r))-ro;
+      f.xy=r2(.2*sin(time*.3)-path(lp.z).x/24.)*f.xy;
+      f.xz=r2(y-path(lp.z+1.).y/14.)*f.xz;
+      vec2 t=marcher(ro,f);
+      x=t.x;
+      y=t.y;
       s_hp=g_hp;
-      if(d<MAXDIST)
+      if(x<MAXDIST)
         {
-          vec3 p=ro+rd*d,n=normal(p,d),lpos=vec3(0,0,.25)-p+lp;
-          lpos.xy+=path(lpos.z);
-          vec3 l=normalize(lpos);
-          float diff=clamp(dot(n,l),.01,1.),spec=pow(max(dot(reflect(l,n),rd),.01),24.);
-          vec3 h=m==11.?
+          vec3 p=ro+f*x,n=normal(p,x);
+          p=vec3(0,0,.25)-p+lp;
+          p.xy+=path(p.z);
+          p=normalize(p);
+          float diff=clamp(dot(n,p),.01,1.),spec=pow(max(dot(reflect(p,n),f),.01),24.);
+          p=y==11.?
             vec3(.005):
             vec3(1);
-          if(m==3.||m==4.)
-            h=vec3(.012);
+          if(y==3.||y==4.)
+            p=vec3(.012);
           if(tm>13.25)
-            C=h*diff+spec;
-          else if(m==3.||m==4.)
+            C=p*diff+spec;
+          else if(y==3.||y==4.)
             C=hsv2rgb(vec3(s_hp.z*.01,.8,.6))*diff;
         }
       if(tm>13.25)

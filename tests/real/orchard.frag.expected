@@ -287,11 +287,11 @@ void mainImage(out vec4 fragColour,vec2 fragCoord)
               leavesTexture(pos,nor):
               fruitTexture(pos,nor,float(matID-3));
         mat*=randomTint(pos);
-        vec3 temp=lighting(mat,pos,nor,rd,d);
+        nor=lighting(mat,pos,nor,rd,d);
         if(matID==3)
-          temp=temp*.4+vec3(.15,.01,0);
-        temp=mix(sky,temp,exp(-d*.01));
-        col+=temp*stack[i].alpha;
+          nor=nor*.4+vec3(.15,.01,0);
+        nor=mix(sky,nor,exp(-d*.01));
+        col+=nor*stack[i].alpha;
       }
   vec4 cc=getClouds(camera,rd);
   sky=mix(sky+pow(max(dot(sunLight,rd),0.),20.)*SUN_COLOUR*.03,cc.xyz,cc.w);

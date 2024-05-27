@@ -56,7 +56,7 @@ let compressionTest args files =
         out.ToString().ToCharArray()
 
     let pointer = &&minified.[0]
-    log "%-40s " (match files with [f] -> f | f::_ -> f + "..." | [] -> "?")
+    log "%-40s " (match files with [f] -> f | f::_ -> f + " (and others)" | [] -> "?")
     log "%5d " minified.Length
     let compressedSize = Crinkler.ApproximateModels4k(pointer, minified.Length)
     log "=> %8.3f\n" compressedSize

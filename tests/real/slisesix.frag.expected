@@ -66,11 +66,12 @@ float bicho(vec3 x,float mindist)
   float ca=.46625-6.*sa*exp2(-10.*sa);
   for(int j=1;j<7;j++)
     {
-      float an=6.2831/7.*float(j),aa=an+.4*sa*noise3f(vec3(4.*sa,2.5,an))+.29,rc=cos(aa),rs=sin(aa);
-      vec3 q=vec3(x.x*rc-x.z*rs,x.y+ca,x.x*rs+x.z*rc);
-      float dd=dot(q.yz,q.yz);
-      if(q.x>0.&&q.x<1.5&&dd<r2)
-        r2=dd;
+      float an=6.2831/7.*float(j),aa=an+.4*sa*noise3f(vec3(4.*sa,2.5,an))+.29,rc=cos(aa);
+      an=sin(aa);
+      vec3 q=vec3(x.x*rc-x.z*an,x.y+ca,x.x*an+x.z*rc);
+      an=dot(q.yz,q.yz);
+      if(q.x>0.&&q.x<1.5&&an<r2)
+        r2=an;
     }
   ca=sqrt(r2)-.045;
   r2=clamp(fax*3.,0.,1.);
@@ -172,7 +173,7 @@ void main()
       nor.y+=bumpa*(fbm(32.*vec3(pos.x,pos.y+1e-4,pos.z))-kk);
       nor.z+=bumpa*(fbm(32.*vec3(pos.xy,pos.z+1e-4))-kk);
       nor=normalize(nor);
-      float spe=0.;
+      bumpa=0.;
       vec3 lig=vec3(.5-pos.x,.8-pos.y,1.5-pos.z);
       float llig=dot(lig,lig);
       lig*=inversesqrt(llig);
@@ -180,19 +181,19 @@ void main()
       dif=2.5*exp2(-1.75*llig)*clamp(matID==4?
         .5+.5*dif:
         .1+.9*dif,0.,1.);
-      float dif2=(nor[0]+nor[1])*.075;
+      llig=(nor[0]+nor[1])*.075;
       if(matID==0)
         {
-          float xoff=13.1*float(subMatID&255),fb=fbm(16.*vec3(pos.x+xoff,pos.yz));
-          rgb=vec3(.7)+fb*vec3(.2,.22,.25);
+          float xoff=fbm(16.*vec3(pos.x+13.1*float(subMatID&255),pos.yz));
+          rgb=vec3(.7)+xoff*vec3(.2,.22,.25);
           float baldscale=.51+.34*(float(subMatID>>9&15)/14.);
           rgb*=baldscale;
-          float fx=1.;
+          baldscale=1.;
           if((subMatID&256)!=0)
-            fx=-1.;
-          float m=sin(64.*pos.z*fx+64.*pos.x+4.*fb);
-          m=smoothstep(.25,.5,m)-smoothstep(.5,.75,m);
-          rgb+=m*vec3(.15);
+            baldscale=-1.;
+          baldscale=sin(64.*pos.z*baldscale+64.*pos.x+4.*xoff);
+          baldscale=smoothstep(.25,.5,baldscale)-smoothstep(.5,.75,baldscale);
+          rgb+=baldscale*vec3(.15);
         }
       else if(matID==2)
         rgb=vec3(0);
@@ -200,46 +201,46 @@ void main()
         {
           float fb=fbm(16.*pos),m=sin(64.*pos.z+64.*pos.x+4.*fb);
           m=smoothstep(.3,.5,m)-smoothstep(.5,.7,m);
-          rgb=vec3(.59)+fb*vec3(.17,.18,.21)+m*vec3(.15)+vec3(dif2);
+          rgb=vec3(.59)+fb*vec3(.17,.18,.21)+m*vec3(.15)+vec3(llig);
         }
       else if(matID==4)
         {
           float ft=fbm(16.*pos);
           rgb=vec3(.82,.73,.65)+ft*vec3(.1);
-          float fs=.9+.1*fbm(32.*pos);
-          rgb*=fs;
-          float fre=max(-dot(nor,rd),0.);
-          rgb-=vec3(fre*fre*.45);
-          spe=.2*pow(clamp((nor.y-nor.z)*.707,0.,1.),32.);
+          ft=.9+.1*fbm(32.*pos);
+          rgb*=ft;
+          ft=max(-dot(nor,rd),0.);
+          rgb-=vec3(ft*ft*.45);
+          bumpa=.2*pow(clamp((nor.y-nor.z)*.707,0.,1.),32.);
         }
       else
         {
           float fb=fbm(16.*pos);
-          rgb=vec3(.64,.61,.59)+fb*vec3(.21,.19,.19)+dif2;
+          rgb=vec3(.64,.61,.59)+fb*vec3(.21,.19,.19)+llig;
         }
-      float ao,totao=0.,sca=10.;
+      float totao=0.,sca=10.;
       for(int aoi=0;aoi<5;aoi++)
         {
           float hr=.01+.015*float(aoi*aoi);
           vec3 aopos=nor*hr+pos;
           int kk,kk2;
           float dd=map(aopos,kk,kk2);
-          ao=-dd+hr;
-          totao+=ao*sca;
+          llig=-dd+hr;
+          totao+=llig*sca;
           sca*=.5;
         }
-      ao=1.-clamp(totao,0.,1.);
-      float so=0.;
+      llig=1.-clamp(totao,0.,1.);
+      totao=0.;
       for(int i=0;i<6;i++)
         {
           float h=float(i)/6.;
           vec3 aopos=lig*(.01+h)+pos;
           int kk,kk2;
           float dd=map(aopos,kk,kk2);
-          so+=(1.-h)*dd*2.*(10./6.);
+          totao+=(1.-h)*dd*2.*(10./6.);
         }
-      dif*=clamp((so-.4)*1.5,0.,1.);
-      rgb=(vec3(spe)+rgb*(ao*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05)))*exp2(-.4*t);
+      dif*=clamp((totao-.4)*1.5,0.,1.);
+      rgb=(vec3(bumpa)+rgb*(llig*vec3(.25,.3,.35)+dif*vec3(1.95,1.65,1.05)))*exp2(-.4*t);
     }
   rgb=(sqrt(rgb)*.7+.3*rgb)*vec3(.83,1,.83)*1.2*(.25+.75*clamp(.6*abs(pixel.x-1.)*abs(pixel.x+1.),0.,1.));
   gl_FragColor=vec4(rgb,1);

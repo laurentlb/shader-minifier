@@ -125,8 +125,8 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
             {
               float dis;
               lfnoise(.5*t.y*c.xx,dis);
-              float ya=abs(t.x-.4*dis)-.15;
-              col=mix(col,.3*col,smoothstep(-.01,.01,-ya));
+              dis=abs(t.x-.4*dis)-.15;
+              col=mix(col,.3*col,smoothstep(-.01,.01,-dis));
             }
         }
       else if(s.y==2.)

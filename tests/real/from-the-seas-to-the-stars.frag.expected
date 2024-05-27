@@ -756,9 +756,10 @@ void main()
           campos.xz=vec2(cos(a),sin(a))*-5.2*.7;
         }
       p.y+=.5;
-      vec3 r=normalize(camtarget-campos),s=normalize(cross(vec3(0,1,0),r)),t=cross(s,r);
+      camtarget=normalize(camtarget-campos);
+      vec3 s=normalize(cross(vec3(0,1,0),camtarget)),t=cross(s,camtarget);
       p-=campos;
-      p=transpose(mat3(s,-t,r))*p;
+      p=transpose(mat3(s,-t,camtarget))*p;
       p.xy*=rotmat(sin(time/2)*.05*cameraroll+cameraroll2);
       p.y+=(fbm(vec2(time/16))-.5)*.1*cameraroll;
       p.x+=(fbm(vec2(time/14+10))-.5)*.1*cameraroll;
@@ -781,11 +782,12 @@ void main()
               w.x=R();
               w.y=R();
               w.z=R();
-              uint colbits=uint(col.z*31+w.x)|uint(col.y*63+w.y)<<5|uint(col.x*31+w.z)<<11,depthbits=uint(clamp(1./(1.+p.z),0,1)*65535.),outbits=depthbits<<16|colbits;
-              imageAtomicMax(d0,ivec2(x+1,y),int(coord.x&7),outbits);
-              imageAtomicMax(d0,ivec2(x-1,y),int(coord.x+2&7),outbits);
-              imageAtomicMax(d0,ivec2(x,y-1),int(coord.x+4&7),outbits);
-              imageAtomicMax(d0,ivec2(x,y+1),int(coord.x+6&7),outbits);
+              uint colbits=uint(col.z*31+w.x)|uint(col.y*63+w.y)<<5|uint(col.x*31+w.z)<<11,depthbits=uint(clamp(1./(1.+p.z),0,1)*65535.);
+              colbits|=depthbits<<16;
+              imageAtomicMax(d0,ivec2(x+1,y),int(coord.x&7),colbits);
+              imageAtomicMax(d0,ivec2(x-1,y),int(coord.x+2&7),colbits);
+              imageAtomicMax(d0,ivec2(x,y-1),int(coord.x+4&7),colbits);
+              imageAtomicMax(d0,ivec2(x,y+1),int(coord.x+6&7),colbits);
             }
         }
     }
