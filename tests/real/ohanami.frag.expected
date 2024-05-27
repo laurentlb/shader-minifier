@@ -60,14 +60,15 @@ void main()
       vec3 w=normalize(vec3(0,1.3,0)-ro),u=normalize(cross(w,vec3(0,1,0)));
       rd=mat3(u,normalize(cross(w,-u)),w)*rd;
       gl_FragColor.xyz=vec3(.8,.8,1)/6;
-      float t=0.,d=0.;
+      zoom=0.;
+      float d=0.;
       for(int i=0;i<100;++i)
         {
-          d=f(ro+rd*t);
+          d=f(ro+rd*zoom);
           if(d<.001)
             break;
-          t+=d;
-          if(t>10)
+          zoom+=d;
+          if(zoom>10)
             return;
         }
       gl_FragColor.xyz=vec3(.75,.6,.4)/1.5;
@@ -75,34 +76,33 @@ void main()
         gl_FragColor.xyz=vec3(1,.7,.8);
       if(col3<.02&&(ti<17||ti>22))
         gl_FragColor.xyz=vec3(.5,1,.6)/3;
-      vec3 ld=normalize(vec3(1,3+cos(ti)/2,1+sin(ti*3)/2));
-      float d2=f(ro+rd*t+ld*.01),l=max(0,(d2-d)/.01),d3=f(ro+rd*t+vec3(0,1,0)*.01),l2=max(0,.5+.5*(d3-d)/.01);
+      w=normalize(vec3(1,3+cos(ti)/2,1+sin(ti*3)/2));
+      float d2=f(ro+rd*zoom+w*.01),l=max(0,(d2-d)/.01),d3=f(ro+rd*zoom+vec3(0,1,0)*.01),l2=max(0,.5+.5*(d3-d)/.01);
       {
-        vec3 rp=ro+rd*t;
+        vec3 rp=ro+rd*zoom;
         if(ti>12&&ti<22)
           if(col2<.01||d3+d2/7>.0017&&pow(valnoise(rp.xz*8),2)>abs(ti-18)/5.)
             gl_FragColor.xyz=vec3(.65);
       }
-      vec3 ld=normalize(vec3(1,3+cos(ti)/2,1+sin(ti*3)/2));
-      float d2=f(ro+rd*t+ld*.01),l=max(0,(d2-d)/.01),d3=f(ro+rd*t+vec3(0,1,0)*.01),l2=max(0,.5+.5*(d3-d)/.01);
+      float d2=f(ro+rd*zoom+w*.01),l=max(0,(d2-d)/.01),d3=f(ro+rd*zoom+vec3(0,1,0)*.01),l2=max(0,.5+.5*(d3-d)/.01);
       {
-        vec3 rp=ro+rd*t;
+        vec3 rp=ro+rd*zoom;
         if(ti>12&&ti<17)
           if(col2<.01||d3+d2/7>.0017&&valnoise(rp.xz*8)<(ti-12)/3.)
             gl_FragColor.xyz=vec3(.65);
       }
-      vec3 rp=ro+rd*(t-.001);
-      t=.1;
-      float sh=1.;
+      u=ro+rd*(zoom-.001);
+      zoom=.1;
+      d2=1.;
       for(int i=0;i<30;++i)
         {
-          d=f(rp+ld*t)+.01;
-          sh=min(sh,d*50+.3);
+          d=f(u+w*zoom)+.01;
+          d2=min(d2,d*50+.3);
           if(d<1e-4)
             break;
-          t+=d;
+          zoom+=d;
         }
-      gl_FragColor.xyz*=sh*(.2+.8*l)*vec3(1,1,.9)*.7+l2*vec3(.85,.85,1)*.4;
+      gl_FragColor.xyz*=d2*(.2+.8*l)*vec3(1,1,.9)*.7+l2*vec3(.85,.85,1)*.4;
     }
   else
     {
@@ -131,9 +131,10 @@ void main()
                   }
               }
         }
-      vec2 e=vec2(.001,0),p2=p+(valnoise(p*18)-.5)*.01;
-      float c0=dot(vec3(1./3.),samp(p2).xyz);
-      c=((c*vec3(mix(.1,1,1.-clamp(max(abs(dot(vec3(1./3.),samp(p2+e.yx*1.8).xyz)-c0),abs(dot(vec3(1./3.),samp(p2+e.xy).xyz)-c0))*4,0,.13)))-.5)*1.1+.5)*(1.-smoothstep(91,97,time));
+      vec2 e=vec2(.001,0);
+      p+=(valnoise(p*18)-.5)*.01;
+      float c0=dot(vec3(1./3.),samp(p).xyz);
+      c=((c*vec3(mix(.1,1,1.-clamp(max(abs(dot(vec3(1./3.),samp(p+e.yx*1.8).xyz)-c0),abs(dot(vec3(1./3.),samp(p+e.xy).xyz)-c0))*4,0,.13)))-.5)*1.1+.5)*(1.-smoothstep(91,97,time));
       gl_FragColor.xyz=sqrt(c*mix(.9,1,valnoise(t.xy*400)))*1.28;
     }
 }
