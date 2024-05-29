@@ -65,7 +65,7 @@ and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
 and Expr =
     | Int of int64 * string
     | Float of decimal * string
-    | Var of Ident
+    | Var of Ident // 'Var' can be an identifier referencing a variable or a function! (or a macro)
     | Op of string
     | FunCall of Expr * Expr list // The first Expr of a FunCall can be: Op, Var, Subscript, or Dot.
     | Subscript of Expr * Expr option
