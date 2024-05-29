@@ -114,6 +114,7 @@ type private RewriterImpl(optimizationPass: OptimizationPass) =
                  Some (name, augmentedE)
         | _ -> None
 
+    let (|ResolvedVariableUse|_|) = Analyzer.(|ResolvedVariableUse|_|)
 
     let simplifyOperator env = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
@@ -225,14 +226,11 @@ type private RewriterImpl(optimizationPass: OptimizationPass) =
 
         // x=...+x  ->  x+=...
         // Works only if the operator is commutative. * is not commutative with vectors and matrices.
-        | FunCall(Op "=", [Var x; FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
-                when x.Name = y.Name
-                && match x.VarDecl with
-                    // * is commutative when at least one operand is scalar
-                    | Some d -> op <> "*" || d.ty.isScalar
-                    | _ -> false
+        | FunCall(Op "=", [ResolvedVariableUse (v, vd); FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
+                when v.Name = y.Name
+                && (op <> "*" || vd.ty.isScalar) // * is commutative when at least one operand is scalar
                 ->
-            FunCall(Op (op + "="), [Var x; e])
+            FunCall(Op (op + "="), [Var v; e])
 
         // Unsafe when x contains NaN or Inf values.
         //| FunCall(Op "=", [Var x; FunCall(Var fctName, [Int (0, _)])])
@@ -327,12 +325,12 @@ type private RewriterImpl(optimizationPass: OptimizationPass) =
 
         | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
 
-        | Var s as e ->
+        | ResolvedVariableUse (_, vd) as e when vd.decl.name.ToBeInlined ->
             // Replace uses of inlined variables.
-            match s.VarDecl with
-            | Some vd when vd.decl.name.ToBeInlined && vd.decl.init <> None ->
+            match vd.decl.init with
+            | Some init ->
                 didInline.Value <- true
-                vd.decl.init.Value |> mapExpr env
+                init |> mapExpr env
             | _ -> e
 
         | FunCall(Var var, [e; Number 1.M]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x
@@ -542,15 +540,9 @@ type private RewriterImpl(optimizationPass: OptimizationPass) =
             | Decl (_, [declElt]), Jump(JumpKeyword.Return, Some (Var v)) // int x=f();return x;  ->  return f();
                 when v.Name = declElt.name.Name && declElt.init.IsSome ->
                     Some [Jump(JumpKeyword.Return, declElt.init)]
-            | Expr (Assignment (v1, e)), Jump(JumpKeyword.Return, Some (Var v2)) // x=f();return x;  ->  return f();
-                when v1.Name = v2.Name ->
-                    match v1.VarDecl with
-                    | Some d ->
-                        if d.scope <> VarScope.Global && not (d.ty.isOutOrInout) then
-                            Some [Jump(JumpKeyword.Return, Some e)]
-                        else
-                            None
-                    | _ -> None
+            | Expr (Assignment (v1, e)), Jump(JumpKeyword.Return, Some (ResolvedVariableUse (v2, vd))) // x=f();return x;  ->  return f();
+                when v1.Name = v2.Name && vd.scope <> VarScope.Global && not (vd.ty.isOutOrInout) ->
+                    Some [Jump(JumpKeyword.Return, Some e)]
             // assignment to a local immediately followed by re-assignment
             | Expr (Assignment (name, init1)), (Expr (Assignment (name2, init2)) as assign2)
                 when name.Name = name2.Name ->

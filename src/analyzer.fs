@@ -8,6 +8,13 @@ open Options.Globals
 // information in the AST nodes, e.g. find which variables are modified,
 // which declarations can be inlined.
 
+let (|ResolvedVariableUse|_|) = function
+    | Var v ->
+        match v.Declaration with
+        | Declaration.Variable vd -> Some (v, vd)
+        | _ -> None
+    | _ -> None
+
 let rec sideEffects = function
     | Var _ -> []
     | Int _
@@ -44,10 +51,8 @@ module private VariableInlining =
     let countReferences stmtList =
         let counts = Dictionary<VarDecl, int>()
         let collectLocalUses _ = function
-            | Var v as e ->
-                match v.VarDecl with
-                | Some vd -> counts.[vd] <- match counts.TryGetValue(vd) with _, n -> n + 1
-                | _ -> ()
+            | ResolvedVariableUse (_, vd) as e ->
+                counts.[vd] <- match counts.TryGetValue(vd) with _, n -> n + 1
                 e
             | e -> e
         for expr in stmtList do
@@ -121,11 +126,10 @@ module private VariableInlining =
         | e when isTrivialExpr e -> true
         | _ when not options.aggroInlining -> false
         // Allow a few things to be inlined with aggroInlining (even if they have side effects!)
-        | Var v
-        | Dot (Var v, _) ->
-            match v.VarDecl with // Don't inline the use of a variable that's already marked for inlining!
-            | Some vd when not vd.decl.name.ToBeInlined -> isEffectivelyConst v
-            | _ -> false
+        | ResolvedVariableUse (v, vd)
+        | Dot (ResolvedVariableUse (v, vd), _)
+            when not vd.decl.name.ToBeInlined -> // Don't inline the use of a variable that's already marked for inlining!
+            isEffectivelyConst v
         | FunCall(Op op, args) ->
             not (Builtin.assignOps.Contains op) &&
                 args |> List.forall isTrivialExpr
@@ -191,8 +195,8 @@ let markInlinableVariables li =
 
 let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inlining
     let findWrites (env: MapEnv) = function
-        | Var v as e when env.isInWritePosition && v.VarDecl <> None ->
-            v.VarDecl.Value.isEverWrittenAfterDecl <- true
+        | ResolvedVariableUse (v, vd) as e when env.isInWritePosition ->
+            vd.isEverWrittenAfterDecl <- true
             v.isVarWrite <- true
             e
         | FunCall(Var v, args) as e ->
@@ -351,16 +355,16 @@ module private FunctionInlining =
         let mutable argIsWritten = false
 
         let visitArgUses _ = function
-            | Var id as e when id.VarDecl <> None ->
-                match id.VarDecl.Value.scope with
+            | ResolvedVariableUse (v, vd) as e ->
+                match vd.scope with
                 | VarScope.Local ->
                     failwith "There shouldn't be any locals in a function with a single return statement."
                 | VarScope.Parameter ->
-                    argIsWritten <- argIsWritten || id.VarDecl.Value.isEverWrittenAfterDecl
-                    argUsageCounts.[id.Name] <- match argUsageCounts.TryGetValue(id.Name) with _, n -> n + 1
+                    argIsWritten <- argIsWritten || vd.isEverWrittenAfterDecl
+                    argUsageCounts.[v.Name] <- match argUsageCounts.TryGetValue(v.Name) with _, n -> n + 1
                 | VarScope.Global ->
                     shadowedGlobal <- shadowedGlobal || (callSites |> List.exists (fun callSite ->
-                        callSite.varsInScope |> List.contains id.Name))
+                        callSite.varsInScope |> List.contains v.Name))
                 e
             | e -> e
         mapTopLevel (mapEnvExpr visitArgUses) [func] |> ignore<TopLevel list>
