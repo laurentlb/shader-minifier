@@ -41,7 +41,7 @@ let varUsesInStmt stmt =
 module private VariableInlining =
 
     // Return the list of variables used in the statements, with the number of references.
-    let countReferences stmtList = // INCORRECT: the counts of shadowing variables are merged!
+    let countReferences stmtList =
         let counts = Dictionary<VarDecl, int>()
         let collectLocalUses _ = function
             | Var v as e ->
