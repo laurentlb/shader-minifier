@@ -118,10 +118,9 @@ vec3 repro(vec2 fragCoord,float iTime)
 vec3 g(float x)
 {
   float y=x*x;
-  vec3 b=vec3(10.*x*x);
   {
     float b=23.*x;
     y+=b*b;
   }
-  return b*2.+vec3(y);
+  return vec3(10.*x*x)*2.+vec3(y);
 }

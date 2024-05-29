@@ -42,10 +42,12 @@ module private VariableInlining =
 
     // Return the list of variables used in the statements, with the number of references.
     let countReferences stmtList = // INCORRECT: the counts of shadowing variables are merged!
-        let counts = Dictionary<string, int>()
+        let counts = Dictionary<VarDecl, int>()
         let collectLocalUses _ = function
             | Var v as e ->
-                counts.[v.Name] <- match counts.TryGetValue(v.Name) with _, n -> n + 1
+                match v.VarDecl with
+                | Some vd -> counts.[vd] <- match counts.TryGetValue(vd) with _, n -> n + 1
+                | _ -> ()
                 e
             | e -> e
         for expr in stmtList do
@@ -54,11 +56,8 @@ module private VariableInlining =
 
     let isEffectivelyConst (ident: Ident) =
         match ident.Declaration with
-        | Declaration.Variable varDecl ->
-            // A variable not reassigned is effectively constant.
-            not varDecl.isEverWrittenAfterDecl
-        | Declaration.UserFunction funDecl ->
-            not funDecl.hasExternallyVisibleSideEffects
+        | Declaration.Variable varDecl -> not varDecl.isEverWrittenAfterDecl
+        | Declaration.UserFunction funDecl -> not funDecl.hasExternallyVisibleSideEffects
         | Declaration.BuiltinFunction -> Builtin.pureBuiltinFunctions.Contains ident.Name
         | _ -> false
 
@@ -83,8 +82,7 @@ module private VariableInlining =
                         localDefs.[def.name.Name] <- (def.name, true)
                     | Some init ->
                         localExpr <- init :: localExpr
-                        let isConst = // INCORRECT: the shadowing variables are merged! they might hide a writing reference!
-                            varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
+                        let isConst = varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
                         localDefs.[def.name.Name] <- (def.name, isConst)
             | Expr e
             | Jump (_, Some e) -> localExpr <- e :: localExpr
@@ -95,9 +93,10 @@ module private VariableInlining =
 
         for def in localDefs do
             let ident, isConst = def.Value
-            if not ident.DoNotInline && not ident.ToBeInlined && not ident.VarDecl.Value.isEverWrittenAfterDecl then
-                let decl = ident.VarDecl.Value.decl
-                match localReferences.TryGetValue(def.Key), allReferences.TryGetValue(def.Key) with
+            let varDecl = ident.VarDecl.Value
+            if not ident.DoNotInline && not ident.ToBeInlined && not varDecl.isEverWrittenAfterDecl then
+                let decl = varDecl.decl
+                match localReferences.TryGetValue(varDecl), allReferences.TryGetValue(varDecl) with
                 | (_, 1), (_, 1) when isConst && decl.init <> None ->
                     debug $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
                     ident.ToBeInlined <- true

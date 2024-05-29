@@ -198,8 +198,7 @@ float calcOcc(vec3 pos,vec3 nor,float d)
   for(float h=.05;h<.3;h+=.07)
     {
       vec3 opos=pos+h*nor;
-      float d=map(opos,d).x;
-      occ+=(h-d)*sca;
+      occ+=(h-map(opos,d).x)*sca;
       sca*=.95;
     }
   return clamp(1.-2.*occ,0.,1.);
