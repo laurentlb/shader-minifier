@@ -179,3 +179,14 @@ vec3 repro(vec2 fragCoord, float iTime)
     col = vec3(dot(col + mix(sky, cc.xyz, cc.w) + camera, used_many_times));
     return col + pow(max(dot(sky, used_many_times), 0.0), 6.0) * .2;
 }
+
+vec3 g(float x)
+{
+    float y = x * x;
+    vec3 b = vec3(10.0 * x * x); // b should be inlined (used only once)
+    {
+        float b = 23.0 * x; // even though there is another b in a sub block
+        y += b * b;
+    }
+    return b * 2.0 + vec3(y);
+}

@@ -329,10 +329,10 @@ type private RewriterImpl(optimizationPass: OptimizationPass) =
 
         | Var s as e ->
             // Replace uses of inlined variables.
-            match env.vars.TryFind s.Name with
-            | Some (_, {name = id; init = Some init}) when id.ToBeInlined ->
+            match s.VarDecl with
+            | Some vd when vd.decl.name.ToBeInlined && vd.decl.init <> None ->
                 didInline.Value <- true
-                init |> mapExpr env
+                vd.decl.init.Value |> mapExpr env
             | _ -> e
 
         | FunCall(Var var, [e; Number 1.M]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x

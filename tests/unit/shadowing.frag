@@ -4,12 +4,13 @@ float f(float g)
 	f += f++ + ++f;
 	return f;
 }
+float glob;
 float g(float f)
 {
 	{
 		f++;
 		float f = f + 1.0, g = 9.0;
-		f+=g;
+		glob+=f+=g;
 	}
 	return f;
 }

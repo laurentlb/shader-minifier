@@ -202,7 +202,6 @@ void main()
           w.y=R();
           w.z=R();
           w.w=R();
-          vec3 op=(w.xyz*2-1)*vec3(1,.5,.1);
           if(w.w<smoothstep(30.,45.,time))
             return;
           w.w=R();
@@ -757,9 +756,9 @@ void main()
         }
       p.y+=.5;
       camtarget=normalize(camtarget-campos);
-      vec3 s=normalize(cross(vec3(0,1,0),camtarget)),t=cross(s,camtarget);
+      vec3 s=normalize(cross(vec3(0,1,0),camtarget));
       p-=campos;
-      p=transpose(mat3(s,-t,camtarget))*p;
+      p=transpose(mat3(s,-cross(s,camtarget),camtarget))*p;
       p.xy*=rotmat(sin(time/2)*.05*cameraroll+cameraroll2);
       p.y+=(fbm(vec2(time/16))-.5)*.1*cameraroll;
       p.x+=(fbm(vec2(time/14+10))-.5)*.1*cameraroll;

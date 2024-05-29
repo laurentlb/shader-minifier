@@ -3,11 +3,13 @@ float f(float g)
   g=0.;
   return g+g+++ ++g;
 }
+float glob;
 float g(float f)
 {
   {
     f++;
-    float f=f+1.+9.;
+    float f=f+1.;
+    glob+=f+=9.;
   }
   return f;
 }

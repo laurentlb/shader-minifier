@@ -131,3 +131,13 @@ vec3 repro(vec2 fragCoord,float iTime)
   col=vec3(dot(col+mix(sky,cc.xyz,cc.w)+long_and_used_only_once,used_many_times));
   return col+pow(max(dot(sky,used_many_times),0.),6.)*.2;
 }
+vec3 g(float x)
+{
+  float y=x*x;
+  vec3 b=vec3(10.*x*x);
+  {
+    float b=23.*x;
+    y+=b*b;
+  }
+  return b*2.+vec3(y);
+}
