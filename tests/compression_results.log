@@ -1,5 +1,5 @@
 clod.frag (and others)                    8706 => 1475.856
-mouton/mouton.vert (and others)          16624 => 2386.597
+mouton/mouton.vert (and others)          16601 => 2399.791
 audio-flight-v2.frag                      4471 =>  874.321
 buoy.frag                                 4005 =>  599.099
 controllable-machinery.frag               7671 => 1220.647
@@ -21,4 +21,4 @@ terrarium.frag                            3575 =>  747.677
 the_real_party_is_in_your_pocket.frag    11974 => 1767.561
 valley_ball.glsl                          4307 =>  881.820
 yx_long_way_from_home.frag                2925 =>  598.425
-Total: 133078 => 23256.311
+Total: 133055 => 23269.505

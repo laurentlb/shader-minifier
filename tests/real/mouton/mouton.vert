@@ -116,14 +116,14 @@ void main(void)
         if (time > 3.)
             blink = max(fract(iTime*.333), fract(iTime*.333+.08));
     } else if (time < 54.8) { // Panel food!
-        float noinline_time = time-52.;
+        float time = time-52.;
         panelPos = vec3(-5.,0.,-8.);
         sheepPos = vec3(INFINITE);
         
         eyeDir = vec3(.3,.0,1.);
         eyesSurprise = .2;
         
-        float transition = smoothstep(0.,.5,noinline_time);
+        float transition = smoothstep(0.,.5,time);
         
         camFocal = mix(4., 3., transition);
         camPos = vec3(0.,3., -4.);
@@ -184,7 +184,7 @@ void main(void)
         if (time > 3.)
             blink = max(fract(iTime*.333), fract(iTime*.333+.08));
     } else if (time < 81.25) { // Panel warning!
-        float noinline_time = time-76.;
+        float time = time-76.;
         panelWarningPos = vec3(-5.,0.,-8.);
         
         eyeDir = vec3(.5,-0.15,1.);
@@ -192,7 +192,7 @@ void main(void)
         animationSpeed = vec3(3.,1.5,6.);
         
         
-        float transition = smoothstep(0.,1.,noinline_time);
+        float transition = smoothstep(0.,1.,time);
         
         camFocal = mix(4., 3., transition);
         camPos = vec3(0.,3., -4.);
@@ -258,12 +258,12 @@ void main(void)
         camTa = vec3(0., 3., 0.);
 
     } else if (time < 112.) { // sign -> flower
-        float noinline_time = time-110.;
+        float time = time-110.;
         sheepPos = vec3(INFINITE);
         panelWarningPos = vec3(-2.,0.,-8.);
         flowerPos = vec3(5.,0.,-20.);
         
-        float transition = smoothstep(.5,1.,noinline_time);
+        float transition = smoothstep(.5,1.,time);
         camFocal = mix(3., 4., transition);
         camPos = vec3(0.,5.5, 2.);
         
@@ -355,7 +355,7 @@ void main(void)
         anvilPos = vec3(0.,smoothstep(.3,.2,time)*13.,-22.);
 
     } else { // ending screen
-        float noinline_time = time-143.;
+        float time = time-143.;
         
         eyeDir = vec3(0.,0.,1.);
         sheepPos = vec3(INFINITE);
@@ -364,7 +364,7 @@ void main(void)
         
         camTa = vec3(2., 3.6, -18.);
         camPos = vec3(5.,5.,2.);
-        float transition = smoothstep(1.7,2.2,noinline_time);
+        float transition = smoothstep(1.7,2.2,time);
         camFocal = 2.5 + transition*4.2;
         anvilPos = vec3(7.,0.,-20.);
     }
