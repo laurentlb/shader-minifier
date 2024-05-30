@@ -3,10 +3,7 @@
 open System
 open System.IO
 
-// TODO(rubix): clean up the mess
-let mutable withLocations = false
-
-type Impl(options: Options.Options) =
+type private Impl(options: Options.Options, withLocations) =
 
     let minify shader =
         if options.exportKkpSymbolMaps then
@@ -41,7 +38,7 @@ type Impl(options: Options.Options) =
     let escape (str: string) =
         str.Replace("\"", "\\\"").Replace("\n", "\\n")
 
-    member _.printCVariables out (shaders: Ast.Shader[]) exportedNames =
+    let printCVariables out (shaders: Ast.Shader[]) exportedNames =
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
@@ -66,7 +63,7 @@ type Impl(options: Options.Options) =
 
         fprintfn out "#endif // %s" macroName
 
-    member _.printCArray out (shaders: Ast.Shader[]) exportedNames =
+    let printCArray out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
         fprintfn out "#ifndef SHADER_MINIFIER_IMPL"
@@ -91,11 +88,11 @@ type Impl(options: Options.Options) =
 
         fprintfn out "#endif"
 
-    member _.printNoHeader out (shaders: Ast.Shader[]) =
+    let printNoHeader out (shaders: Ast.Shader[]) =
         let str = [for shader in shaders -> minify shader] |> String.concat "\n"
         fprintf out "%s" str
 
-    member _.printIndented out (shaders: Ast.Shader[]) =
+    let printIndented out (shaders: Ast.Shader[]) =
         [for shader in shaders do
             if shaders.Length > 1 then
                 yield "// " + shader.filename
@@ -106,7 +103,7 @@ type Impl(options: Options.Options) =
         |> String.concat ""
         |> fprintf out "%s"
 
-    member _.printJSHeader out (shaders: Ast.Shader[]) exportedNames =
+    let printJSHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
         for value: Ast.ExportedName in List.sort exportedNames do
@@ -117,7 +114,7 @@ type Impl(options: Options.Options) =
             fprintfn out "var %s = `%s`" shader.mangledFilename (minify shader)
             fprintfn out ""
 
-    member _.printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
+    let printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
         let escape (str: string) =
             str.Replace("\"", "\\\"").Replace("\n", "', 10, '")
 
@@ -138,7 +135,7 @@ type Impl(options: Options.Options) =
 
             fprintfn out ""
 
-    member _.printRustHeader out (shaders: Ast.Shader[]) exportedNames =
+    let printRustHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
         for value: Ast.ExportedName in List.sort exportedNames do
@@ -152,11 +149,17 @@ type Impl(options: Options.Options) =
                     sprintf " %s%s\\" indent (escape line)]
             fprintfn out "%s0\";" lines
 
-let print options out shaders exportedNames = function
-    | Options.IndentedText -> Impl(options).printIndented out shaders
-    | Options.Text -> Impl(options).printNoHeader out shaders
-    | Options.CVariables -> Impl(options).printCVariables out shaders exportedNames
-    | Options.CArray -> Impl(options).printCArray out shaders exportedNames
-    | Options.JS -> Impl(options).printJSHeader out shaders exportedNames
-    | Options.Nasm -> Impl(options).printNasmHeader out shaders exportedNames
-    | Options.Rust -> Impl(options).printRustHeader out shaders exportedNames
+    member this.Format out shaders exportedNames = function
+        | Options.IndentedText -> printIndented out shaders
+        | Options.Text -> printNoHeader out shaders
+        | Options.CVariables -> printCVariables out shaders exportedNames
+        | Options.CArray -> printCArray out shaders exportedNames
+        | Options.JS -> printJSHeader out shaders exportedNames
+        | Options.Nasm -> printNasmHeader out shaders exportedNames
+        | Options.Rust -> printRustHeader out shaders exportedNames
+
+let print options =
+    Impl(options, false).Format
+
+let printWithLocations options =
+    Impl(options, true).Format
