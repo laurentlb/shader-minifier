@@ -1,12 +1,10 @@
 ﻿module Parse
 
-open Options.Globals
-
 open FParsec.Primitives
 open FParsec.CharParsers
 open FParsec
 
-type private ParseImpl() =
+type private ParseImpl(options: Options.Options) =
 
     let mutable forbiddenNames = []
     let mutable reorderFunctions = false
@@ -388,4 +386,4 @@ type private ParseImpl() =
           }
         | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
-let runParser = (new ParseImpl()).runParser
+let runParser options = (new ParseImpl(options)).runParser

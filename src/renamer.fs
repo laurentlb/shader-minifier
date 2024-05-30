@@ -2,54 +2,53 @@
 
 open System.Collections.Generic
 open Ast
-open Options.Globals
 
-module private RenamerImpl =
+// Environment for renamer
+// This object is useful to separate the AST walking from the renaming strategy.
+// Maybe we could use a single mutable object, instead of creating envs all the time.
+// TODO: create a real class.
+[<NoComparison; NoEquality>]
+type private Env = {
+    // Map from an old variable name to the new one.
+    varRenames: Map<string, string>
+    // Map from a new function name and function arity to the old name.
+    funRenames: Map<string, Map<int, string>>
+    // List of names that are still available.
+    availableNames: string list
 
-    // Environment for renamer
-    // This object is useful to separate the AST walking from the renaming strategy.
-    // Maybe we could use a single mutable object, instead of creating envs all the time.
-    // TODO: create a real class.
-    [<NoComparison; NoEquality>]
-    type Env = {
-        // Map from an old variable name to the new one.
-        varRenames: Map<string, string>
-        // Map from a new function name and function arity to the old name.
-        funRenames: Map<string, Map<int, string>>
-        // List of names that are still available.
-        availableNames: string list
+    exportedNames: Ast.ExportedName list ref
 
-        exportedNames: Ast.ExportedName list ref
-
-        // Whether multiple functions can have the same name (but different arity).
-        allowOverloading: bool
-        // Function that decides a name (and returns the modified Env).
-        newName: Env -> Ident -> Env
-        // Function called when we enter a function, optionally updates the Env.
-        onEnterFunction: Env -> Stmt -> Env
+    // Whether multiple functions can have the same name (but different arity).
+    allowOverloading: bool
+    // Function that decides a name (and returns the modified Env).
+    newName: Env -> Ident -> Env
+    // Function called when we enter a function, optionally updates the Env.
+    onEnterFunction: Env -> Stmt -> Env
+}
+with
+    static member Create(availableNames, allowOverloading, newName, onEnterFunction) = {
+        varRenames = Map.empty
+        funRenames = Map.empty
+        availableNames = availableNames
+        exportedNames = ref []
+        allowOverloading = allowOverloading
+        newName = newName
+        onEnterFunction = onEnterFunction
     }
-    with
-        static member Create(availableNames, allowOverloading, newName, onEnterFunction) = {
-            varRenames = Map.empty
-            funRenames = Map.empty
-            availableNames = availableNames
-            exportedNames = ref []
-            allowOverloading = allowOverloading
-            newName = newName
-            onEnterFunction = onEnterFunction
-        }
 
-        member this.Rename(id: Ident, newName) =
-            let prevName = id.Name
-            let names = this.availableNames |> List.except [newName]
-            id.Rename(newName)
-            {this with varRenames = this.varRenames.Add(prevName, newName); availableNames = names}
+    member this.Rename(id: Ident, newName) =
+        let prevName = id.Name
+        let names = this.availableNames |> List.except [newName]
+        id.Rename(newName)
+        {this with varRenames = this.varRenames.Add(prevName, newName); availableNames = names}
 
-        member this.Update(varRenames, funRenames, availableNames) = 
-            {this with varRenames = varRenames; funRenames = funRenames; availableNames = availableNames}
+    member this.Update(varRenames, funRenames, availableNames) = 
+        {this with varRenames = varRenames; funRenames = funRenames; availableNames = availableNames}
 
 
           (* Contextual renaming *)
+
+type private RenamerImpl(options: Options.Options) =
 
     let computeContextTable text =
         let contextTable = new Dictionary<(char*char), int>()
@@ -380,7 +379,7 @@ module private RenamerImpl =
         let mutable env = Env.Create([], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
         renameAsts shaders env
 
-    let rename shaders =
+    member _.rename shaders =
         let exportedNames = assignUniqueIds shaders
 
         // TODO: combine from all shaders
@@ -404,4 +403,4 @@ module private RenamerImpl =
         env.exportedNames.Value <- exportedNames
         renameAsts shaders env
 
-let rename = RenamerImpl.rename
+let rename options = RenamerImpl(options).rename

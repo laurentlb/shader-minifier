@@ -2,14 +2,13 @@
 
 open System
 open System.IO
-open Options.Globals
 
 // TODO(rubix): clean up the mess
 let mutable withLocations = false
 
-module private Impl =
+type Impl(options: Options.Options) =
 
-    let private minify shader =
+    let minify shader =
         if options.exportKkpSymbolMaps then
             if options.outputFormat = Options.IndentedText then
                 failwith "exporting symbols is not compatible with indented mode"
@@ -27,11 +26,11 @@ module private Impl =
             else
                 Printer.printIndented shader.code
 
-    let private formatPrefix = function
+    let formatPrefix = function
         | Ast.ExportPrefix.Variable -> "var"
         | Ast.ExportPrefix.HlslFunction -> "F"
 
-    let private getLines shader = [
+    let getLines shader = [
         let lines = minify shader
         for line in lines.Trim([|'\000'|]).Split([|'\000'|]) do
             // count the number of \t at the beginning of the string
@@ -39,10 +38,10 @@ module private Impl =
             yield new String(' ', 2 * indentLevel), line.Substring(indentLevel)
         ]
 
-    let private escape (str: string) =
+    let escape (str: string) =
         str.Replace("\"", "\\\"").Replace("\n", "\\n")
 
-    let printCVariables out (shaders: Ast.Shader[]) exportedNames =
+    member _.printCVariables out (shaders: Ast.Shader[]) exportedNames =
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
@@ -67,7 +66,7 @@ module private Impl =
 
         fprintfn out "#endif // %s" macroName
 
-    let printCArray out (shaders: Ast.Shader[]) exportedNames =
+    member _.printCArray out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
         fprintfn out "#ifndef SHADER_MINIFIER_IMPL"
@@ -92,11 +91,11 @@ module private Impl =
 
         fprintfn out "#endif"
 
-    let printNoHeader out (shaders: Ast.Shader[]) =
+    member _.printNoHeader out (shaders: Ast.Shader[]) =
         let str = [for shader in shaders -> minify shader] |> String.concat "\n"
         fprintf out "%s" str
 
-    let printIndented out (shaders: Ast.Shader[]) =
+    member _.printIndented out (shaders: Ast.Shader[]) =
         [for shader in shaders do
             if shaders.Length > 1 then
                 yield "// " + shader.filename
@@ -107,7 +106,7 @@ module private Impl =
         |> String.concat ""
         |> fprintf out "%s"
 
-    let printJSHeader out (shaders: Ast.Shader[]) exportedNames =
+    member _.printJSHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
         for value: Ast.ExportedName in List.sort exportedNames do
@@ -118,7 +117,7 @@ module private Impl =
             fprintfn out "var %s = `%s`" shader.mangledFilename (minify shader)
             fprintfn out ""
 
-    let printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
+    member _.printNasmHeader out (shaders: Ast.Shader[]) exportedNames =
         let escape (str: string) =
             str.Replace("\"", "\\\"").Replace("\n", "', 10, '")
 
@@ -139,7 +138,7 @@ module private Impl =
 
             fprintfn out ""
 
-    let printRustHeader out (shaders: Ast.Shader[]) exportedNames =
+    member _.printRustHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
         for value: Ast.ExportedName in List.sort exportedNames do
@@ -153,11 +152,11 @@ module private Impl =
                     sprintf " %s%s\\" indent (escape line)]
             fprintfn out "%s0\";" lines
 
-let print out shaders exportedNames = function
-    | Options.IndentedText -> Impl.printIndented out shaders
-    | Options.Text -> Impl.printNoHeader out shaders
-    | Options.CVariables -> Impl.printCVariables out shaders exportedNames
-    | Options.CArray -> Impl.printCArray out shaders exportedNames
-    | Options.JS -> Impl.printJSHeader out shaders exportedNames
-    | Options.Nasm -> Impl.printNasmHeader out shaders exportedNames
-    | Options.Rust -> Impl.printRustHeader out shaders exportedNames
+let print options out shaders exportedNames = function
+    | Options.IndentedText -> Impl(options).printIndented out shaders
+    | Options.Text -> Impl(options).printNoHeader out shaders
+    | Options.CVariables -> Impl(options).printCVariables out shaders exportedNames
+    | Options.CArray -> Impl(options).printCArray out shaders exportedNames
+    | Options.JS -> Impl(options).printJSHeader out shaders exportedNames
+    | Options.Nasm -> Impl(options).printNasmHeader out shaders exportedNames
+    | Options.Rust -> Impl(options).printRustHeader out shaders exportedNames

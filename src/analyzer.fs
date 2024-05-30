@@ -2,7 +2,7 @@
 
 open System.Collections.Generic
 open Ast
-open Options.Globals
+open Options.Globals // TODO: remove dependency on Globals.options
 
 // The module performs some static analysis on the code and stores the
 // information in the AST nodes, e.g. find which variables are modified,

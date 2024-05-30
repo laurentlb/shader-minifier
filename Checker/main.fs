@@ -1,5 +1,4 @@
 ﻿open OpenTK.Graphics.OpenGL
-open Options.Globals
 open System
 open System.Diagnostics
 open System.IO
@@ -135,11 +134,11 @@ let canBeCompiled lang stage content =
             fullsrc <- fullsrc + (setline 1 2) + "void main(){}\n"
     canBeCompiledByGlslang lang stage fullsrc && ((lang = "hlsl") || canBeCompiledByDriver stage fullsrc)
 
-let doMinify file content =
-    let arr = ShaderMinifier.minify [|file, content|] |> fst |> Array.map (fun s -> s.code)
+let doMinify options file content =
+    let arr = ShaderMinifier.minify options [|file, content|] |> fst |> Array.map (fun s -> s.code)
     Printer.print arr.[0]
 
-let testMinifyAndCompile lang (file: string) =
+let testMinifyAndCompile options lang (file: string) =
     try
         let content = File.ReadAllText file
         let stage = Regex.Match(file, @"[^\.]+$").Value
@@ -148,7 +147,7 @@ let testMinifyAndCompile lang (file: string) =
             printfn "Invalid input file '%s'" file
             false
         else
-            let minified = doMinify file content + "\n"
+            let minified = doMinify options file content + "\n"
             if compile && not (canBeCompiled lang stage minified) then
                 printfn "Minification broke the file '%s'" file
                 printfn "%s" minified
@@ -165,7 +164,8 @@ let testPerformance files =
     let contents = files |> Array.map File.ReadAllText
     let stopwatch = Stopwatch.StartNew()
     for str in contents do
-        doMinify "perf test" str |> ignore<string>
+        let options = Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
+        doMinify options "perf test" str |> ignore<string>
     let time = stopwatch.Elapsed
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
 
@@ -177,22 +177,22 @@ let runCommand argv =
     let cleanString (s: string) =
         let s = s.Replace("\r\n", "\n").Trim()
         versionRegex.Replace(s, "")
-    Options.init argv
+    let options = Options.init argv
     let expected =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
-    let shaders, exportedNames = ShaderMinifier.minifyFiles options.filenames
+    let shaders, exportedNames = ShaderMinifier.minifyFiles options
     let result =
         use out = new StringWriter()
-        Formatter.print out shaders exportedNames options.outputFormat
+        Formatter.print options out shaders exportedNames options.outputFormat
         out.ToString() |> cleanString
     options.outputFormat <- Options.OutputFormat.IndentedText
     options.exportKkpSymbolMaps <- false
     for shader in shaders do
         let resultindented =
             use out = new StringWriter()
-            Formatter.print out [|shader|] exportedNames options.outputFormat
+            Formatter.print options out [|shader|] exportedNames options.outputFormat
             out.ToString() |> cleanString
         let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
         let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
@@ -260,13 +260,13 @@ let main argv =
     let mutable failures = 0
     failures <- failures + testGolden()
     failures <- failures + testCompiled()
-    Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
     let srcfilter e = Regex.Match(e, @"\.(vert|geom|frag|comp)$").Success
     let unitTests = Directory.GetFiles("tests/unit", "*") |> Array.filter srcfilter
     let realTests = Directory.GetFiles("tests/real", "*.frag")
     for f in unitTests do
         // tests with no #version default to 110
-        if not (testMinifyAndCompile "110" f) then
+        let options = Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
+        if not (testMinifyAndCompile options "110" f) then
             failures <- failures + 1
     testPerformance (Seq.concat [realTests; unitTests] |> Seq.toArray)
     if failures = 0 then
