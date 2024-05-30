@@ -84,15 +84,10 @@ type Options() =
     member val filenames = [||]: string[] with get, set
 
 module Globals =
+    // TODO: remove
     let options = Options()
 
-    // like printfn when verbose option is set
-    let vprintf fmt = fprintf (if options.verbose then stdout else TextWriter.Null) fmt
-
-    let forceDebug = Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes"
-    let debug str = if options.debug || forceDebug then printfn "%s" str
-
-open Globals
+    let debug str = if options.debug then printfn "%s" str
 
 let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version
 
@@ -108,9 +103,10 @@ let private initPrivate argv needFiles =
     let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
 
+    let options = Globals.options // TODO: create a new option object.
     if filenames.Length = 0 && needFiles then
         printfn "%s" (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
-        false
+        None
     else
         options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
         options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
@@ -130,9 +126,13 @@ let private initPrivate argv needFiles =
         options.exportKkpSymbolMaps <- args.Contains(ExportKkpSymbolMaps)
         options.noRenamingList <- noRenamingList
         options.filenames <- filenames
-        true
+
+        if Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes" then
+            options.debug <- true
+
+        Some options
 
 let flagsHelp = lazy (argParser.Value.PrintUsage(message = helpTextMessage))
 
-let init argv = initPrivate argv false |> ignore<bool>
+let init argv = initPrivate argv false |> Option.get
 let initFiles argv = initPrivate argv true

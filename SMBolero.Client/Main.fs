@@ -49,15 +49,15 @@ type Message =
     | ClearError
 
 let minify flags content =
-    Options.init flags
-    let shaders, exportedNames = ShaderMinifier.minify [|"input", content|]
+    let options = Options.init flags
+    let shaders, exportedNames = ShaderMinifier.minify options [|"input", content|]
     let out = new System.IO.StringWriter()
     Formatter.withLocations <- false
-    Formatter.print out shaders exportedNames Options.Globals.options.outputFormat
+    Formatter.print options out shaders exportedNames options.outputFormat
 
     let withLoc = new System.IO.StringWriter()
     Formatter.withLocations <- true
-    Formatter.print withLoc shaders exportedNames Options.Globals.options.outputFormat
+    Formatter.print options withLoc shaders exportedNames options.outputFormat
 
     out.ToString(), ShaderMinifier.getSize shaders, withLoc.ToString()
 

@@ -4,7 +4,7 @@ open System
 open System.Collections.Generic
 open Builtin
 open Ast
-open Options.Globals
+open Options.Globals // TODO: remove dependency on Globals.options
 
 let renameField field =
     if isFieldSwizzle field then
@@ -18,7 +18,7 @@ type private OptimizationPass =
     | First
     | Second // adds "var reuse"
 
-type private RewriterImpl(optimizationPass: OptimizationPass) =
+type private RewriterImpl(options: Options.Options, optimizationPass: OptimizationPass) =
 
     // Remove useless spaces in macros
     let stripSpaces str =
@@ -842,7 +842,7 @@ module private ArgumentInlining =
             didInline.Value <- true
             code
 
-let rec private iterateSimplifyAndInline optimizationPass passCount li =
+let rec private iterateSimplifyAndInline (options: Options.Options) optimizationPass passCount li =
     let li = if not options.noRemoveUnused then RewriterImpl.RemoveUnusedFunctions li else li
     Analyzer.resolve li
     Analyzer.markWrites li
@@ -851,7 +851,7 @@ let rec private iterateSimplifyAndInline optimizationPass passCount li =
         Analyzer.markInlinableVariables li
     let didInline = ref false
     let before = Printer.print li
-    let rewriter = RewriterImpl(optimizationPass)
+    let rewriter = RewriterImpl(options, optimizationPass)
     let li = mapTopLevel (mapEnv (rewriter.SimplifyExpr didInline) (rewriter.SimplifyStmt)) li
 
     // now that the functions were inlined, we can remove them
@@ -868,11 +868,11 @@ let rec private iterateSimplifyAndInline optimizationPass passCount li =
         let after = Printer.print li
         if after <> before then
             debug $"- significant changes happened: running analysis again..."
-            iterateSimplifyAndInline optimizationPass (passCount + 1) li
+            iterateSimplifyAndInline options optimizationPass (passCount + 1) li
         else li
 
-let simplify li =
+let simplify options li =
     li
-    |> iterateSimplifyAndInline OptimizationPass.First 1
-    |> iterateSimplifyAndInline OptimizationPass.Second 1
-    |> (RewriterImpl(OptimizationPass.First)).Cleanup
+    |> iterateSimplifyAndInline options OptimizationPass.First 1
+    |> iterateSimplifyAndInline options OptimizationPass.Second 1
+    |> (RewriterImpl(options, OptimizationPass.First)).Cleanup

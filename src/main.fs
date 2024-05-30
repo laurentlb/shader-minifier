@@ -1,16 +1,15 @@
 ﻿module Main
 
-open Options.Globals
-
 [<EntryPoint>]
 let main argv =
     let err =
         try
-            if Options.initFiles argv then 
+            match Options.initFiles argv with
+            | Some options ->
                 if options.verbose then
                     printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
-                ShaderMinifier.run options.filenames
-            else 1
+                ShaderMinifier.run options
+            | None -> 1
         with
         | :? Argu.ArguParseException as ex ->
             printfn "%s" ex.Message

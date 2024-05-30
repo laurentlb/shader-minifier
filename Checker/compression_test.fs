@@ -48,11 +48,11 @@ let log fmt =
     Printf.ksprintf logger fmt
 
 let compressionTest args files =
-    Options.init(args)
+    let options = Options.init(Array.append args [|for f in files -> "tests/real/" + f|])
     let minified =
         use out = new StringWriter()
-        let shaders, exportedNames = ShaderMinifier.minifyFiles [|for f in files -> "tests/real/" + f|]
-        Formatter.print out shaders exportedNames Options.Text
+        let shaders, exportedNames = ShaderMinifier.minifyFiles options
+        Formatter.print options out shaders exportedNames Options.Text
         out.ToString().ToCharArray()
 
     let pointer = &&minified.[0]

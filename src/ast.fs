@@ -1,6 +1,6 @@
 ﻿module Ast
 
-open Options.Globals
+open Options.Globals // TODO: remove dependency on Globals.options
 
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
