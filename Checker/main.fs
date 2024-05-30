@@ -177,12 +177,12 @@ let runCommand argv =
     let cleanString (s: string) =
         let s = s.Replace("\r\n", "\n").Trim()
         versionRegex.Replace(s, "")
-    let options = Options.init argv
+    let options, filenames = Options.initFiles argv
     let expected =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
-    let shaders, exportedNames = ShaderMinifier.minifyFiles options
+    let shaders, exportedNames = ShaderMinifier.minifyFiles options filenames
     let result =
         use out = new StringWriter()
         Formatter.print options out shaders exportedNames options.outputFormat

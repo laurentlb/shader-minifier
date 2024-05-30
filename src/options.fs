@@ -81,7 +81,6 @@ type Options() =
     member val moveDeclarations = false with get, set
     member val preprocess = false with get, set
     member val exportKkpSymbolMaps = false with get, set
-    member val filenames = [||]: string[] with get, set
 
 module Globals =
     // TODO: remove
@@ -96,43 +95,41 @@ let private argParser = lazy (
         programName = "Shader Minifier",
         helpTextMessage = helpTextMessage))
 
-let private initPrivate argv needFiles =
+let private initPrivate argv =
     let args = argParser.Value.Parse(argv)
-
-    let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
-    let noRenamingList = [for i in opt.Split([|','|]) -> i.Trim()]
-    let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
-
     let options = Globals.options // TODO: create a new option object.
-    if filenames.Length = 0 && needFiles then
-        printfn "%s" (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
-        None
-    else
-        options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
-        options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
-        options.verbose <- args.Contains(Verbose)
-        options.debug <- args.Contains(Debug)
-        options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
-        options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
-        options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
-        options.hlsl <- args.Contains(Hlsl)
-        options.noInlining <- args.Contains(NoInlining)
-        options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
-        options.noSequence <- args.Contains(NoSequence)
-        options.noRenaming <- args.Contains(NoRenaming)
-        options.noRemoveUnused <- args.Contains(NoRemoveUnused)
-        options.moveDeclarations <- args.Contains(MoveDeclarations)
-        options.preprocess <- args.Contains(Preprocess)
-        options.exportKkpSymbolMaps <- args.Contains(ExportKkpSymbolMaps)
-        options.noRenamingList <- noRenamingList
-        options.filenames <- filenames
 
-        if Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes" then
-            options.debug <- true
+    options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
+    options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
+    options.verbose <- args.Contains(Verbose)
+    options.debug <- args.Contains(Debug)
+    options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
+    options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
+    options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
+    options.hlsl <- args.Contains(Hlsl)
+    options.noInlining <- args.Contains(NoInlining)
+    options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
+    options.noSequence <- args.Contains(NoSequence)
+    options.noRenaming <- args.Contains(NoRenaming)
+    options.noRemoveUnused <- args.Contains(NoRemoveUnused)
+    options.moveDeclarations <- args.Contains(MoveDeclarations)
+    options.preprocess <- args.Contains(Preprocess)
+    options.exportKkpSymbolMaps <- args.Contains(ExportKkpSymbolMaps)
+    options.noRenamingList <-
+        let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
+        [for i in opt.Split([|','|]) -> i.Trim()]
 
-        Some options
+    if Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes" then
+        options.debug <- true
+
+    let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
+    options, filenames
 
 let flagsHelp = lazy (argParser.Value.PrintUsage(message = helpTextMessage))
 
-let init argv = initPrivate argv false |> Option.get
-let initFiles argv = initPrivate argv true
+let init argv = initPrivate argv |> fst
+let initFiles argv =
+    let options, filenames = initPrivate argv
+    if filenames.Length = 0 then
+        failwith (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
+    options, filenames

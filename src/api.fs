@@ -42,19 +42,19 @@ let minify (options: Options.Options) (files: (string*string)[]) =
         vprintf "Identifiers renamed. "; printSize shaders
         shaders, exportedNames
 
-let minifyFiles (options: Options.Options) =
-    let files = options.filenames |> Array.map (fun f ->
+let minifyFiles (options: Options.Options) filenames =
+    let files = filenames |> Array.map (fun f ->
         let content = readFile f
         let filename = if f = "" then "stdin" else f
         filename, content)
     minify options files
 
-let run (options: Options.Options) =
+let run (options: Options.Options) filenames =
     use out =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
         else new StreamWriter(options.outputName) :> TextWriter
     try
-        let shaders, exportedNames = minifyFiles options
+        let shaders, exportedNames = minifyFiles options filenames
         Formatter.print options out shaders exportedNames options.outputFormat
         0
     with exn ->
