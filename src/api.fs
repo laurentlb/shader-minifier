@@ -48,6 +48,10 @@ let minifyFiles (options: Options.Options) filenames =
         filename, content)
     minify options files
 
+let format = Formatter.print
+let formatWithLocations = Formatter.printWithLocations
+let print = Printer.print
+
 let run (options: Options.Options) filenames =
     use out =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout

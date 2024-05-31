@@ -1,4 +1,4 @@
-﻿module Parse
+﻿module internal Parse
 
 open FParsec.Primitives
 open FParsec.CharParsers

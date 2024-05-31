@@ -1,4 +1,4 @@
-﻿module Rewriter
+﻿module internal Rewriter
 
 open System
 open System.Collections.Generic

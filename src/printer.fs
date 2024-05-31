@@ -1,4 +1,4 @@
-﻿module Printer
+﻿module internal Printer
 
 open System
 open System.Linq

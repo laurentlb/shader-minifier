@@ -1,4 +1,4 @@
-﻿module Renamer
+﻿module internal Renamer
 
 open System.Collections.Generic
 open Ast

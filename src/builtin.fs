@@ -1,4 +1,4 @@
-module Builtin
+module internal Builtin
 
 // source: https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
 
