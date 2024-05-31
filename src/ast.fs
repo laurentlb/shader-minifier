@@ -347,3 +347,85 @@ let stringToJumpKeyword = function
     | "discard" -> JumpKeyword.Discard
     | "return" -> JumpKeyword.Return
     | s -> failwith ("not a keyword: " + s)
+
+// TODO: Move these to a separate file? Find a better name than Utils?
+type Utils(options: Options.Options) =
+
+    member _.renameField field =
+        if Builtin.isFieldSwizzle field then
+            field |> String.map (fun c -> options.canonicalFieldNames.[Builtin.swizzleIndex c])
+        else field
+
+    member _.varUsesInStmt stmt = 
+        let mutable idents = []
+        let collectLocalUses _ = function
+            | Var v as e -> idents <- v :: idents; e
+            | e -> e
+        mapStmt BlockLevel.Unknown (mapEnvExpr options collectLocalUses) stmt |> ignore<MapEnv * Stmt>
+        idents
+
+// Identifier that has been resolved to its variable declaration.
+let (|ResolvedVariableUse|_|) = function
+    | Var v ->
+        match v.Declaration with
+        | Declaration.Variable vd -> Some (v, vd)
+        | _ -> None
+    | _ -> None
+
+// Expression that doesn't need parentheses around it.
+let (|NoParen|_|) = function
+    | Int _ | Float _ | Dot _ | Var _ | FunCall (Var _, _) | Subscript _ as x -> Some x
+    | _ -> None
+
+// Expression that statically evaluates to a boolean value.
+let (|True|False|NotABool|) = function
+    | Int (i, _) when i <> 0 -> True
+    | Int (i, _) when i = 0 -> False
+    | Float (f, _) when f <> 0.M -> True
+    | Float (f, _) when f = 0.M -> False
+    | Var var when var.Name = "true" -> True
+    | Var var when var.Name = "false" -> False
+    | _ -> NotABool
+
+// Expression that statically evaluates to a numeric value.
+let (|Number|_|) = function
+    | Int (i, _) -> Some (decimal i)
+    | Float (f, _) -> Some f
+    | _ -> None
+    
+// Expression that is equivalent to an assignment.
+let (|Assignment|_|) = function
+    | FunCall (Op "=", [Var v; e]) -> Some (v, e)
+    | FunCall (Op op, [Var name; e]) when Builtin.assignOps.Contains op ->
+        let baseOp = op.TrimEnd('=')
+        if not (Builtin.augmentableOperators.Contains baseOp)
+        then None
+        else let augmentedE = FunCall (Op baseOp, [Var name; e])
+             Some (name, augmentedE)
+    | _ -> None
+
+let bool = function
+    | true -> Var (Ident "true") // Int (1, "")
+    | false -> Var (Ident "false") // Int (0, "")
+
+let rec sideEffects = function
+    | Var _ -> []
+    | Int _
+    | Float _ -> []
+    | Dot(v, _)  -> sideEffects v
+    | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
+    | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
+    | FunCall(Var fct, args) as e ->
+        match fct.Declaration with
+        | Declaration.UserFunction fd when not fd.hasExternallyVisibleSideEffects -> args |> List.collect sideEffects
+        | _ -> [e]
+    | FunCall(Op "?:", [condExpr; thenExpr; elseExpr]) as e ->
+        if sideEffects thenExpr = [] && sideEffects elseExpr = []
+        then sideEffects condExpr
+        else [e] // We could apply sideEffects to thenExpr and elseExpr, but the result wouldn't necessarily have the same type...
+    | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
+    | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
+    | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
+    | e -> [e]
+
+let isPure e = sideEffects e = []

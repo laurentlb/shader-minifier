@@ -95,7 +95,7 @@ let canBeCompiledByGlslang lang stage (content: string) =
     proc.StandardInput.Close()
     let info = (proc.StandardOutput.ReadToEnd()) + (proc.StandardError.ReadToEnd())
     proc.WaitForExit()
-    if proc.ExitCode.Equals(0) then
+    if proc.ExitCode = 0 then
         true
     else
         printf "glslang compilation failed:\n%s\n" info

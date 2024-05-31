@@ -81,10 +81,6 @@ type Options() =
     member val moveDeclarations = false with get, set
     member val preprocess = false with get, set
     member val exportKkpSymbolMaps = false with get, set
-    member this.renameField field =
-        if Builtin.isFieldSwizzle field then
-            field |> String.map (fun c -> this.canonicalFieldNames.[Builtin.swizzleIndex c])
-        else field
     member this.trace str = if this.debug then printfn "%s" str
 
 

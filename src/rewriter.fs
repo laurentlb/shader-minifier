@@ -54,10 +54,6 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
     let declsNotToInline (d: DeclElt list) = d |> List.filter (fun x -> not x.name.ToBeInlined)
 
-    let bool = function
-        | true -> Var (Ident "true") // Int (1, "")
-        | false -> Var (Ident "false") // Int (0, "")
-
     let inlineFn (declArgs:Decl list) passedArgs bodyExpr =
         let mutable argMap = Map.empty
         for declArg, passedArg in List.zip declArgs passedArgs do
@@ -75,40 +71,6 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
             | ie -> ie
         mapExpr (mapEnvExpr options mapInline) bodyExpr
-
-    // Expression that doesn't need parentheses around it.
-    let (|NoParen|_|) = function
-        | Int _ | Float _ | Dot _ | Var _ | FunCall (Var _, _) | Subscript _ as x -> Some x
-        | _ -> None
-
-    // Expression that statically evaluates to a boolean value.
-    let (|True|False|NotABool|) = function
-        | Int (i, _) when i <> 0 -> True
-        | Int (i, _) when i = 0 -> False
-        | Float (f, _) when f <> 0.M -> True
-        | Float (f, _) when f = 0.M -> False
-        | Var var when var.Name = "true" -> True
-        | Var var when var.Name = "false" -> False
-        | _ -> NotABool
-
-    // Expression that statically evaluates to a numeric value.
-    let (|Number|_|) = function
-        | Int (i, _) -> Some (decimal i)
-        | Float (f, _) -> Some f
-        | _ -> None
-    
-    // Expression that is equivalent to an assignment.
-    let (|Assignment|_|) = function
-        | FunCall (Op "=", [Var v; e]) -> Some (v, e)
-        | FunCall (Op op, [Var name; e]) when Builtin.assignOps.Contains op ->
-            let baseOp = op.TrimEnd('=')
-            if not (Builtin.augmentableOperators.Contains baseOp)
-            then None
-            else let augmentedE = FunCall (Op baseOp, [Var name; e])
-                 Some (name, augmentedE)
-        | _ -> None
-
-    let (|ResolvedVariableUse|_|) = Analyzer.(|ResolvedVariableUse|_|)
 
     let simplifyOperator env = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
@@ -181,7 +143,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         // Swap operands to get rid of parentheses
         // x*(y*z) -> y*z*x
         | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])])
-            when Analyzer.isPure x && Analyzer.isPure y && Analyzer.isPure z ->
+            when isPure x && isPure y && isPure z ->
             FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
         // x+(y+z) -> x+y+z
         // x+(y-z) -> x+y-z
@@ -317,7 +279,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
-        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, options.renameField field)
+        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Utils(options).renameField field)
 
         | ResolvedVariableUse (_, vd) as e when vd.decl.name.ToBeInlined ->
             // Replace uses of inlined variables.
@@ -458,14 +420,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     declElt1.size = declElt2.size &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
-                    Analyzer.varUsesInStmt options (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                    Utils(options).varUsesInStmt (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
                 )
 
                 match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
                     options.trace $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
-                    for v in Analyzer.varUsesInStmt options (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
+                    for v in Utils(options).varUsesInStmt (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
                         if v.Name = declElt2.name.Name then
                             v.Rename(declElt1.name.Name)
                     match declElt2.init with
@@ -509,7 +471,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> true)
 
         let countUsesOfIdentName expr identName =
-            Analyzer.varUsesInStmt options (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
+            Utils(options).varUsesInStmt (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
 
         let replaceUsesOfIdentByExpr expr identName replacement =
             let visitAndReplace _ = function
@@ -549,7 +511,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     // Remove unused assignment immediately followed by re-assignment:  m=14.;m=58.;  ->  14.;m=58.;
                     | 0 -> Some [Expr init1; assign2] // Transform is safe even if the var is an out parameter.
                     // Inline this single use of a used-once assignment into the immediately following re-assignment:  m=14.;m=58.-m;  ->  m=58.-14.;
-                    | 1 when Analyzer.isPure init1 && Analyzer.isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
+                    | 1 when isPure init1 && isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
                         let newInit2 = replaceUsesOfIdentByExpr init2 name.Name init1
                         options.trace $"{name.Loc}: merge consecutive pure assignments to the same local '{name}'"
                         Some [Expr (FunCall (Op "=", [Var name2; newInit2]))]
@@ -560,12 +522,12 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 when declElt.name.Name = name2.Name ->
                     match countUsesOfIdentName init2 declElt.name.Name with
                     | 0 ->
-                        match declElt.init |> Option.map Analyzer.sideEffects |> Option.defaultValue [] with
+                        match declElt.init |> Option.map sideEffects |> Option.defaultValue [] with
                         // float m=14;m=58.;  ->  float m=58.;
                         | [] -> Some [Decl (ty, [{declElt with init = Some init2}])]
                         // float m=f();m=58.;  ->  float m=(f(),58.);
                         | es -> Some [Decl (ty, [{declElt with init = Some (commaSeparatedExprs (es @ [init2]))}])]
-                    | 1 when Option.forall Analyzer.isPure declElt.init && Analyzer.isPure init2 ->
+                    | 1 when Option.forall isPure declElt.init && isPure init2 ->
                         match declElt.init with
                         | None -> None // can't replace  float a;a=f(a);  by  float a=f(a);
                         | Some init1 -> // float m=14.;m=58.-m;  ->  float m=58.-14.;
@@ -578,7 +540,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         // Reduces impure expression statements to their side effects.
         let b = b |> List.collect (function
             | Expr e ->
-                match Analyzer.sideEffects e with
+                match sideEffects e with
                 | [] -> [] // Remove pure statements.
                 | [e] -> [Expr e]
                 | sideEffects -> [Expr (commaSeparatedExprs sideEffects)]
@@ -754,89 +716,6 @@ let reorderFunctions (options: Options.Options) code =
     rest @ order
 
 
-type [<NoComparison>] ArgumentInlining_Inlining = { // TODO: investigate if/why there's no way to declare a type inside a type in F#
-    func: TopLevel
-    argIndex: int
-    varDecl: VarDecl
-    argExpr: Expr
-}
-
-// Inline the argument of a function call into the function body.
-type private ArgumentInlining(options: Options.Options) =
-
-    let rec isInlinableExpr = function
-        // This is different that purity: reading a variable is pure, but non-inlinable in general.
-        | Var v when v.Name = "true" || v.Name = "false" -> true
-        | Int _
-        | Float _ -> true
-        | FunCall(Var fct, args) -> Builtin.pureBuiltinFunctions.Contains fct.Name && List.forall isInlinableExpr args
-        | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
-        | _ -> false
-
-    // Find when functions are always called with the same trivial expr, that can be inlined into the function body.
-    let findInlinings code: ArgumentInlining_Inlining list =
-        let mutable argInlinings = []
-        Analyzer.resolve options code
-        Analyzer.markWrites options code
-        let funcInfos = Analyzer.findFuncInfos options code
-        for funcInfo in funcInfos do
-            let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
-            // If the function is overloaded, removing a parameter could conflict with another overload.
-            if canBeRenamed && not (funcInfo.funcType.isExternal(options)) && funcInfo.isOverloaded then
-                let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.prototype = funcInfo.funcType.prototype)
-                for argIndex, (_, argDecl) in List.indexed funcInfo.funcType.parameters do
-                    match argDecl.name.VarDecl with
-                    | Some varDecl when not varDecl.ty.isOutOrInout -> // Only inline 'in' parameters.
-                        let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
-                        match argExprs with
-                        | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
-                            options.trace $"{varDecl.decl.name.Loc}: inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{Printer.debugFunc funcInfo.funcType}'"
-                            argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
-                        | _ -> ()
-                    | _ -> ()
-        argInlinings
-
-    let apply (didInline: bool ref) code =
-        let argInlinings = findInlinings code
-
-        let removeInlined func list =
-            list
-            |> List.indexed
-            |> List.filter (fun (idx, _) -> not (argInlinings |> List.exists (fun inl -> inl.func = func && inl.argIndex = idx)))
-            |> List.map snd
-
-        let applyExpr _ = function
-            | FunCall (Var v, argExprs) as f ->
-                // Remove the argument expression from the call site.
-                match v.Declaration with
-                | Declaration.UserFunction fd -> FunCall (Var v, removeInlined fd.func argExprs)
-                | _ -> f
-            | x -> x
-
-        let applyTopLevel = function
-            | Function(fct, body) as f ->
-                // Handle argument inlining for other functions called by f.
-                let _, body = mapStmt (BlockLevel.FunctionRoot fct) (mapEnvExpr options applyExpr) body
-                // Handle argument inlining for f. Remove the parameter from the declaration.
-                let fct = {fct with args = removeInlined f fct.args}
-                // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
-                let decls =
-                    argInlinings
-                    |> List.filter (fun inl -> inl.func = f)
-                    |> List.map (fun inl -> Decl (
-                        {inl.varDecl.ty with typeQ = inl.varDecl.ty.typeQ |> List.filter ((=) "const")},
-                        [{inl.varDecl.decl with init = Some inl.argExpr}]))
-                Function(fct, Block (decls @ body.asStmtList))
-            | tl -> tl
-
-        if argInlinings.IsEmpty then
-            code
-        else
-            let code = code |> List.map applyTopLevel
-            didInline.Value <- true
-            code
-    member _.Apply = apply
-
 let rec private iterateSimplifyAndInline (options: Options.Options) optimizationPass passCount li =
     let li = if not options.noRemoveUnused then RewriterImpl.RemoveUnusedFunctions options li else li
     Analyzer.resolve options li
@@ -854,7 +733,7 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
         | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
         | _ -> true)
     
-    let li = if options.noInlining then li else (ArgumentInlining(options)).Apply didInline li
+    let li = if options.noInlining then li else (Analyzer.ArgumentInlining(options)).Apply didInline li
 
     if passCount > 20 then
         options.trace $"! possible unstable loop in change detection. stopping analysis."
