@@ -81,12 +81,12 @@ type Options() =
     member val moveDeclarations = false with get, set
     member val preprocess = false with get, set
     member val exportKkpSymbolMaps = false with get, set
+    member this.renameField field =
+        if Builtin.isFieldSwizzle field then
+            field |> String.map (fun c -> this.canonicalFieldNames.[Builtin.swizzleIndex c])
+        else field
+    member this.trace str = if this.debug then printfn "%s" str
 
-module Globals =
-    // TODO: remove
-    let options = Options()
-
-    let debug str = if options.debug then printfn "%s" str
 
 let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version
 
@@ -97,7 +97,7 @@ let private argParser = lazy (
 
 let private initPrivate argv =
     let args = argParser.Value.Parse(argv)
-    let options = Globals.options // TODO: create a new option object.
+    let options = Options()
 
     options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
     options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)

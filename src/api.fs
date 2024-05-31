@@ -2,7 +2,6 @@
 
 open System
 open System.IO
-open Options.Globals // TODO: remove dependency on Globals.options
 
 let getSize (shaders: Ast.Shader[]) =
     shaders |> Array.map (fun s -> Printer.print s.code)
@@ -23,15 +22,15 @@ let minify (options: Options.Options) (files: (string*string)[]) =
             let length = getSize shaders
             printfn "Shader size is: %d" length
 
-    let names = String.Join(",", files |> Array.map (fun (n,c) -> $"'{n}' ({c.Length}b)")) in debug $"----- minifying {names}"
+    let names = String.Join(",", files |> Array.map (fun (n,c) -> $"'{n}' ({c.Length}b)")) in options.trace $"----- minifying {names}"
     vprintf "Input file size is: %d\n" (files |> Array.sumBy (fun (_, s) -> s.Length))
     let shaders = files |> Array.map (fun (f, c) -> Parse.runParser options f c)
     vprintf "File parsed. "; printSize shaders
 
     for shader in shaders do
-        if shaders.Length > 1 then debug $"---- {shader.filename}"
+        if shaders.Length > 1 then options.trace $"---- {shader.filename}"
         if shader.reorderFunctions then
-            shader.code <- Rewriter.reorderFunctions shader.code
+            shader.code <- Rewriter.reorderFunctions options shader.code
         shader.code <- Rewriter.simplify options shader.code
     vprintf "Rewrite tricks applied. "; printSize shaders
 

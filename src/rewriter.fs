@@ -4,12 +4,6 @@ open System
 open System.Collections.Generic
 open Builtin
 open Ast
-open Options.Globals // TODO: remove dependency on Globals.options
-
-let renameField field =
-    if isFieldSwizzle field then
-        field |> String.map (fun c -> options.canonicalFieldNames.[swizzleIndex c])
-    else field
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
@@ -80,7 +74,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 // mutations to affect all of the inlined idents.
                 | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
             | ie -> ie
-        mapExpr (mapEnvExpr mapInline) bodyExpr
+        mapExpr (mapEnvExpr options mapInline) bodyExpr
 
     // Expression that doesn't need parentheses around it.
     let (|NoParen|_|) = function
@@ -323,7 +317,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
-        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, renameField field)
+        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, options.renameField field)
 
         | ResolvedVariableUse (_, vd) as e when vd.decl.name.ToBeInlined ->
             // Replace uses of inlined variables.
@@ -464,14 +458,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     declElt1.size = declElt2.size &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
-                    Analyzer.varUsesInStmt (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                    Analyzer.varUsesInStmt options (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
                 )
 
                 match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
-                    debug $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
-                    for v in Analyzer.varUsesInStmt (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
+                    options.trace $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
+                    for v in Analyzer.varUsesInStmt options (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
                         if v.Name = declElt2.name.Name then
                             v.Rename(declElt1.name.Name)
                     match declElt2.init with
@@ -515,13 +509,13 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> true)
 
         let countUsesOfIdentName expr identName =
-            Analyzer.varUsesInStmt (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
+            Analyzer.varUsesInStmt options (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
 
         let replaceUsesOfIdentByExpr expr identName replacement =
             let visitAndReplace _ = function
                 | Var v when v.Name = identName -> replacement
                 | e -> e
-            mapExpr (mapEnvExpr visitAndReplace) expr
+            mapExpr (mapEnvExpr options visitAndReplace) expr
 
         // Merge two consecutive items into one, everywhere possible in a list.
         let rec squeeze (f : 'a * 'a -> 'a list option) = function
@@ -557,7 +551,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     // Inline this single use of a used-once assignment into the immediately following re-assignment:  m=14.;m=58.-m;  ->  m=58.-14.;
                     | 1 when Analyzer.isPure init1 && Analyzer.isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
                         let newInit2 = replaceUsesOfIdentByExpr init2 name.Name init1
-                        debug $"{name.Loc}: merge consecutive pure assignments to the same local '{name}'"
+                        options.trace $"{name.Loc}: merge consecutive pure assignments to the same local '{name}'"
                         Some [Expr (FunCall (Op "=", [Var name2; newInit2]))]
                     | _ -> None
                 | _ -> None
@@ -575,7 +569,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         match declElt.init with
                         | None -> None // can't replace  float a;a=f(a);  by  float a=f(a);
                         | Some init1 -> // float m=14.;m=58.-m;  ->  float m=58.-14.;
-                            debug $"{declElt.name.Loc}: merge assignment with preceding local declaration '{Printer.debugDecl declElt}'"
+                            options.trace $"{declElt.name.Loc}: merge assignment with preceding local declaration '{Printer.debugDecl declElt}'"
                             let newInit = replaceUsesOfIdentByExpr init2 declElt.name.Name init1
                             Some [Decl (ty, [{declElt with init = Some newInit}])]
                     | _ -> None
@@ -699,24 +693,24 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | Directive d -> Directive (stripDirectiveSpaces d)
         | e -> e
 
-    static let rec removeUnusedFunctions code =
-        let funcInfos = Analyzer.findFuncInfos code
+    static let rec removeUnusedFunctions (options: Options.Options) code =
+        let funcInfos = Analyzer.findFuncInfos options code
         let isUnused (funcInfo : Analyzer.FuncInfo) =
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
             let isCalled = funcInfos |> List.exists (fun n ->
                 n.callSites
                 |> List.map (fun c -> c.prototype)
                 |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
-            canBeRenamed && not isCalled && not funcInfo.funcType.isExternal
+            canBeRenamed && not isCalled && not (funcInfo.funcType.isExternal(options))
         let unused = [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo]
         if not unused.IsEmpty then
-            debug($"removing unused functions: " + String.Join(", ", unused |> List.map (fun fi -> Printer.debugFunc fi.funcType)))
+            options.trace($"removing unused functions: " + String.Join(", ", unused |> List.map (fun fi -> Printer.debugFunc fi.funcType)))
         let unused = unused |> List.map (fun fi -> fi.func) |> set
         let mutable edited = false
         let code = code |> List.filter (function
             | Function _ as t -> if Set.contains t unused then edited <- true; false else true
             | _ -> true)
-        if edited then removeUnusedFunctions code else code
+        if edited then removeUnusedFunctions options code else code
 
     let cleanup tl =
         tl |> List.choose (function
@@ -738,7 +732,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
 
 // reorder functions if there were forward declarations
-let reorderFunctions code =
+let reorderFunctions (options: Options.Options) code =
     if options.verbose then
         printfn "Reordering functions because of forward declarations."
     
@@ -755,13 +749,20 @@ let reorderFunctions code =
             // Recurse
             node.func :: graphReorder nodes
 
-    let order = code |> Analyzer.findFuncInfos |> graphReorder
+    let order = code |> Analyzer.findFuncInfos options |> graphReorder
     let rest = code |> List.filter (function Function _ -> false | _ -> true)
     rest @ order
 
 
+type [<NoComparison>] ArgumentInlining_Inlining = { // TODO: investigate if/why there's no way to declare a type inside a type in F#
+    func: TopLevel
+    argIndex: int
+    varDecl: VarDecl
+    argExpr: Expr
+}
+
 // Inline the argument of a function call into the function body.
-module private ArgumentInlining =
+type private ArgumentInlining(options: Options.Options) =
 
     let rec isInlinableExpr = function
         // This is different that purity: reading a variable is pure, but non-inlinable in general.
@@ -772,23 +773,16 @@ module private ArgumentInlining =
         | FunCall(Op op, args) -> not (Builtin.assignOps.Contains op) && List.forall isInlinableExpr args
         | _ -> false
 
-    type [<NoComparison>] Inlining = {
-        func: TopLevel
-        argIndex: int
-        varDecl: VarDecl
-        argExpr: Expr
-    }
-
     // Find when functions are always called with the same trivial expr, that can be inlined into the function body.
-    let private findInlinings code: Inlining list =
+    let findInlinings code: ArgumentInlining_Inlining list =
         let mutable argInlinings = []
-        Analyzer.resolve code
-        Analyzer.markWrites code
-        let funcInfos = Analyzer.findFuncInfos code
+        Analyzer.resolve options code
+        Analyzer.markWrites options code
+        let funcInfos = Analyzer.findFuncInfos options code
         for funcInfo in funcInfos do
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
             // If the function is overloaded, removing a parameter could conflict with another overload.
-            if canBeRenamed && not funcInfo.funcType.isExternal && funcInfo.isOverloaded then
+            if canBeRenamed && not (funcInfo.funcType.isExternal(options)) && funcInfo.isOverloaded then
                 let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.prototype = funcInfo.funcType.prototype)
                 for argIndex, (_, argDecl) in List.indexed funcInfo.funcType.parameters do
                     match argDecl.name.VarDecl with
@@ -796,7 +790,7 @@ module private ArgumentInlining =
                         let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
                         match argExprs with
                         | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
-                            debug $"{varDecl.decl.name.Loc}: inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{Printer.debugFunc funcInfo.funcType}'"
+                            options.trace $"{varDecl.decl.name.Loc}: inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{Printer.debugFunc funcInfo.funcType}'"
                             argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
                         | _ -> ()
                     | _ -> ()
@@ -822,7 +816,7 @@ module private ArgumentInlining =
         let applyTopLevel = function
             | Function(fct, body) as f ->
                 // Handle argument inlining for other functions called by f.
-                let _, body = mapStmt (BlockLevel.FunctionRoot fct) (mapEnvExpr applyExpr) body
+                let _, body = mapStmt (BlockLevel.FunctionRoot fct) (mapEnvExpr options applyExpr) body
                 // Handle argument inlining for f. Remove the parameter from the declaration.
                 let fct = {fct with args = removeInlined f fct.args}
                 // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
@@ -841,33 +835,34 @@ module private ArgumentInlining =
             let code = code |> List.map applyTopLevel
             didInline.Value <- true
             code
+    member _.Apply = apply
 
 let rec private iterateSimplifyAndInline (options: Options.Options) optimizationPass passCount li =
-    let li = if not options.noRemoveUnused then RewriterImpl.RemoveUnusedFunctions li else li
-    Analyzer.resolve li
-    Analyzer.markWrites li
+    let li = if not options.noRemoveUnused then RewriterImpl.RemoveUnusedFunctions options li else li
+    Analyzer.resolve options li
+    Analyzer.markWrites options li
     if not options.noInlining then
-        Analyzer.markInlinableFunctions li
-        Analyzer.markInlinableVariables li
+        (Analyzer.FunctionInlining(options)).MarkInlinableFunctions li
+        (Analyzer.VariableInlining(options)).MarkInlinableVariables li
     let didInline = ref false
     let before = Printer.print li
     let rewriter = RewriterImpl(options, optimizationPass)
-    let li = mapTopLevel (mapEnv (rewriter.SimplifyExpr didInline) (rewriter.SimplifyStmt)) li
+    let li = mapTopLevel (mapEnv options (rewriter.SimplifyExpr didInline) (rewriter.SimplifyStmt)) li
 
     // now that the functions were inlined, we can remove them
     let li = li |> List.filter (function
         | Function (funcType, _) -> not funcType.fName.ToBeInlined || funcType.fName.Name.StartsWith("i_")
         | _ -> true)
     
-    let li = if options.noInlining then li else ArgumentInlining.apply didInline li
+    let li = if options.noInlining then li else (ArgumentInlining(options)).Apply didInline li
 
     if passCount > 20 then
-        debug $"! possible unstable loop in change detection. stopping analysis."
+        options.trace $"! possible unstable loop in change detection. stopping analysis."
         li
     else
         let after = Printer.print li
         if after <> before then
-            debug $"- significant changes happened: running analysis again..."
+            options.trace $"- significant changes happened: running analysis again..."
             iterateSimplifyAndInline options optimizationPass (passCount + 1) li
         else li
 
