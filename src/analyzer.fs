@@ -2,7 +2,6 @@
 
 open System.Collections.Generic
 open Ast
-open Options.Globals // TODO: remove dependency on Globals.options
 
 // The module performs some static analysis on the code and stores the
 // information in the AST nodes, e.g. find which variables are modified,
@@ -37,15 +36,21 @@ let rec sideEffects = function
 
 let rec isPure e = sideEffects e = []
 
-let varUsesInStmt stmt = 
+let varUsesInStmt options stmt = 
     let mutable idents = []
     let collectLocalUses _ = function
         | Var v as e -> idents <- v :: idents; e
         | e -> e
-    mapStmt BlockLevel.Unknown (mapEnvExpr collectLocalUses) stmt |> ignore<MapEnv * Stmt>
+    mapStmt BlockLevel.Unknown (mapEnvExpr options collectLocalUses) stmt |> ignore<MapEnv * Stmt>
     idents
 
-module private VariableInlining =
+let private isTrivialExpr = function // "trivial" means "small enough to inline to multiple places".
+    | Var v when v.Name = "true" || v.Name = "false" -> true
+    | Int _
+    | Float _ -> true
+    | _ -> false
+
+type VariableInlining(options: Options.Options) =
 
     // Return the list of variables used in the statements, with the number of references.
     let countReferences stmtList =
@@ -56,7 +61,7 @@ module private VariableInlining =
                 e
             | e -> e
         for expr in stmtList do
-            mapStmt BlockLevel.Unknown (mapEnvExpr collectLocalUses) expr |> ignore<MapEnv * Stmt>
+            mapStmt BlockLevel.Unknown (mapEnvExpr options collectLocalUses) expr |> ignore<MapEnv * Stmt>
         counts
 
     let isEffectivelyConst (ident: Ident) =
@@ -87,7 +92,7 @@ module private VariableInlining =
                         localDefs.[def.name.Name] <- (def.name, true)
                     | Some init ->
                         localExpr <- init :: localExpr
-                        let isConst = varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
+                        let isConst = varUsesInStmt options (Expr init) |> Seq.forall isEffectivelyConst
                         localDefs.[def.name.Name] <- (def.name, isConst)
             | Expr e
             | Jump (_, Some e) -> localExpr <- e :: localExpr
@@ -103,22 +108,16 @@ module private VariableInlining =
                 let decl = varDecl.decl
                 match localReferences.TryGetValue(varDecl), allReferences.TryGetValue(varDecl) with
                 | (_, 1), (_, 1) when isConst && decl.init <> None ->
-                    debug $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
+                    options.trace  $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
                     let ok = match decl.init with
                              | Some init -> isPure init
                              | None -> true
                     if ok then
-                        debug $"{ident.Loc}: inlining (removing) local variable '{Printer.debugDecl decl}' because it's unused and the init is pure or missing"
+                        options.trace $"{ident.Loc}: inlining (removing) local variable '{Printer.debugDecl decl}' because it's unused and the init is pure or missing"
                         ident.ToBeInlined <- true
                 | _ -> ()
-
-    let isTrivialExpr = function
-        | Var v when v.Name = "true" || v.Name = "false" -> true
-        | Int _
-        | Float _ -> true
-        | _ -> false
 
     // Detect if a variable can be inlined in multiple places, based on its value.
     let isSimpleEnoughToInline (init: Expr) =
@@ -159,7 +158,7 @@ module private VariableInlining =
                             // Never-written locals and globals are inlined when their value is "simple enough".
                             // This can increase non-compressed size but decreases compressed size.
                             let varKind = match level with Level.TopLevel -> "global" | Level.InFunc -> "local"
-                            debug $"{def.name.Loc}: inlining {varKind} variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
+                            options.trace $"{def.name.Loc}: inlining {varKind} variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
                             def.name.ToBeInlined <- true
         | _ -> ()
 
@@ -169,7 +168,7 @@ module private VariableInlining =
             | Block b -> markSafelyInlinableLocals b
             | _ -> ()
             stmt
-        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
+        mapTopLevel (mapEnv options (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
         ()
 
     let markSimpleInlinableVariables li =
@@ -180,20 +179,21 @@ module private VariableInlining =
             | _ -> ()
             stmt
         // Visit locals
-        mapTopLevel (mapEnv (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
+        mapTopLevel (mapEnv options (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
         // Visit globals
         for tl in li do
             match tl with
             | TLDecl d -> markUnwrittenVariablesWithSimpleInit Level.TopLevel d; ()
             | _ -> ()
         ()
+    
+    member _.MarkInlinableVariables li =
+        markSafelyInlinableVariables li
+        // "simple" inlining must come after "safe" inlining, because it must check that it's not going to inline a var already being inlined.
+        markSimpleInlinableVariables li
 
-let markInlinableVariables li =
-    VariableInlining.markSafelyInlinableVariables li
-    // "simple" inlining must come after "safe" inlining, because it must check that it's not going to inline a var already being inlined.
-    VariableInlining.markSimpleInlinableVariables li
 
-let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inlining
+let markWrites options topLevel = // calculates hasExternallyVisibleSideEffects, for inlining
     let findWrites (env: MapEnv) = function
         | ResolvedVariableUse (v, vd) as e when env.isInWritePosition ->
             vd.isEverWrittenAfterDecl <- true
@@ -210,7 +210,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
                 e
             | _ -> e
         | e -> e
-    mapTopLevel (mapEnvExpr findWrites) topLevel |> ignore<TopLevel list>
+    mapTopLevel (mapEnvExpr options findWrites) topLevel |> ignore<TopLevel list>
 
     let findExternallyVisibleSideEffect tl =
         let mutable hasExternallyVisibleSideEffect = false
@@ -234,7 +234,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
             // Side effects can hide in macros.
             | (Verbatim _ | Directive _) as s -> hasExternallyVisibleSideEffect <- true; s
             | s -> s
-        mapTopLevel (mapEnv findExprSideEffects findStmtSideEffects) [tl] |> ignore<TopLevel list>
+        mapTopLevel (mapEnv options findExprSideEffects findStmtSideEffects) [tl] |> ignore<TopLevel list>
         hasExternallyVisibleSideEffect
 
     for tl in topLevel do
@@ -248,7 +248,7 @@ let markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inl
 
 // Create an ident.Declaration for each declaration in the file.
 // Give each Ident a reference to that Declaration.
-let resolve topLevel =
+let resolve options topLevel =
     let resolveExpr (env: MapEnv) = function
         | FunCall (Var v, args) as e ->
             v.Declaration <-
@@ -284,9 +284,9 @@ let resolve topLevel =
     // First visit all declarations, creating them.
     for tl in topLevel do
         resolveGlobalsAndParameters tl
-    mapTopLevel (mapEnv (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
+    mapTopLevel (mapEnv options (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
     // Then, visit all uses and associate them to their declaration.
-    mapTopLevel (mapEnvExpr resolveExpr) topLevel |> ignore<TopLevel list>
+    mapTopLevel (mapEnvExpr options resolveExpr) topLevel |> ignore<TopLevel list>
 
 
 // findFuncInfos finds the call graph, and other related informations for function inlining.
@@ -305,7 +305,7 @@ type FuncInfo = {
     isResolvable: bool // Currently we cannot resolve overloaded functions based on argument types.
     isOverloaded: bool
 }
-let findFuncInfos code =
+let findFuncInfos options code =
     let findCallSites block = // Gets the list of call sites in this function
         let callSites = List()
         let collect (mEnv : MapEnv) = function
@@ -313,7 +313,7 @@ let findFuncInfos code =
                 callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length); argExprs = argExprs }
                 e
             | e -> e
-        mapStmt BlockLevel.Unknown (mapEnvExpr collect) block |> ignore<MapEnv * Stmt>
+        mapStmt BlockLevel.Unknown (mapEnvExpr options collect) block |> ignore<MapEnv * Stmt>
         callSites |> Seq.toList
     let functions = code |> List.choose (function
         | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
@@ -327,7 +327,8 @@ let findFuncInfos code =
         { FuncInfo.func = func; funcType = funcType; name = name; callSites = callSites; body = block; isResolvable = isResolvable; isOverloaded = isOverloaded })
     funcInfos
 
-module private FunctionInlining =
+
+type FunctionInlining(options: Options.Options) =
 
     // To ensure correctness, we verify if it's safe to inline.
     //
@@ -367,7 +368,7 @@ module private FunctionInlining =
                         callSite.varsInScope |> List.contains v.Name))
                 e
             | e -> e
-        mapTopLevel (mapEnvExpr visitArgUses) [func] |> ignore<TopLevel list>
+        mapTopLevel (mapEnvExpr options visitArgUses) [func] |> ignore<TopLevel list>
 
         let argsAreUsedAtMostOnce = not (argUsageCounts.Values |> Seq.exists (fun n -> n > 1))
         let ok =
@@ -380,16 +381,16 @@ module private FunctionInlining =
         if not funcInfo.funcType.fName.DoNotInline && verifyArgsUses funcInfo.func callSites then
             // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
             // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
-            debug $"{funcInfo.funcType.fName.Loc}: inlining function '{Printer.debugFunc funcInfo.funcType}' into {callSites.Length} call sites"
+            options.trace $"{funcInfo.funcType.fName.Loc}: inlining function '{Printer.debugFunc funcInfo.funcType}' into {callSites.Length} call sites"
             for callSite in callSites do
                 callSite.ident.ToBeInlined <- true
             funcInfo.funcType.fName.ToBeInlined <- true
 
     let markInlinableFunctions code =
-        let funcInfos = findFuncInfos code
+        let funcInfos = findFuncInfos options code
         for funcInfo in funcInfos do
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
-            if canBeRenamed && not funcInfo.funcType.isExternal && funcInfo.isResolvable then
+            if canBeRenamed && not (funcInfo.funcType.isExternal(options)) && funcInfo.isResolvable then
                 if not funcInfo.funcType.hasOutOrInoutParams then // [F]
                     // Find calls to this function. This works because we checked that the function is not overloaded ambiguously.
                     let callSites = funcInfos |> List.collect (fun n -> n.callSites)
@@ -397,8 +398,8 @@ module private FunctionInlining =
                     if callSites.Length > 0 then // Unused function elimination is not handled here
                         match funcInfo.body.asStmtList with
                         | [Jump (JumpKeyword.Return, Some body)] -> // [C]
-                            if callSites.Length = 1 || VariableInlining.isTrivialExpr body then // [B]
+                            if callSites.Length = 1 || isTrivialExpr body then // [B]
                                 tryMarkFunctionToInline funcInfo callSites
                         | _ -> ()
 
-let markInlinableFunctions = FunctionInlining.markInlinableFunctions
+    member _.MarkInlinableFunctions = markInlinableFunctions

@@ -1,7 +1,5 @@
 ﻿module Ast
 
-open Options.Globals // TODO: remove dependency on Globals.options
-
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
 
@@ -145,7 +143,7 @@ and FunctionType = {
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
 } with
-    member this.isExternal = options.hlsl && this.semantics <> []
+    member this.isExternal(options: Options.Options) = options.hlsl && this.semantics <> []
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
@@ -212,21 +210,23 @@ type MapEnv = {
     fns: Map<(string * int), (FunctionType * Stmt) list> // This doesn't support type-based disambiguation of user-defined function overloading
     isInWritePosition: bool // used for findWrites only
     blockLevel: BlockLevel
+    options: Options.Options
 } with
     member this.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
         let oldFnsList = (this.fns.TryFind(fct.prototype) |> Option.defaultValue [])
         let newFnsList = (fct, body) :: (if replaceMostRecentOverload then oldFnsList.Tail else oldFnsList)
         {this with fns = this.fns.Add(fct.prototype, newFnsList)}
 
-let mapEnv fe fi = {
+let mapEnv options fe fi = {
     fExpr = fe
     fStmt = fi
     vars = Map.empty
     fns = Map.empty
     isInWritePosition = false
     blockLevel = BlockLevel.Unknown
+    options = options
 }
-let mapEnvExpr fe = mapEnv fe (fun _ -> id)
+let mapEnvExpr options fe = mapEnv options fe (fun _ -> id)
 
 let foldList env fct li =
     let mutable env = env
@@ -287,7 +287,7 @@ let rec mapStmt blockLevel env stmt =
             let env', decl = mapDecl env init
             let res = ForD (decl, Option.map (mapExpr env') cond,
                             Option.map (mapExpr env') inc, snd (mapStmt' env' body))
-            if options.hlsl then env', res
+            if env.options.hlsl then env', res
             else env, res
         | ForE(init, cond, inc, body) ->
             let res = ForE (Option.map (mapExpr env) init, Option.map (mapExpr env) cond,

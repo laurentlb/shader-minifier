@@ -205,7 +205,7 @@ type private RenamerImpl(options: Options.Options) =
             env
 
     let renFctName env (f: FunctionType) =
-        if (f.isExternal && options.preserveExternals) || options.preserveAllGlobals then
+        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
             env
         elif List.contains f.fName.Name options.noRenamingList then
             env
@@ -216,7 +216,7 @@ type private RenamerImpl(options: Options.Options) =
                 env
             | None ->
                 let newEnv = renFunction env (List.length f.args) f.fName
-                if f.isExternal then export env ExportPrefix.HlslFunction f.fName
+                if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
     let renList env fct li =
@@ -232,7 +232,7 @@ type private RenamerImpl(options: Options.Options) =
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v
             | e -> e
-        mapExpr (mapEnvExpr mapper) expr |> ignore<Expr>
+        mapExpr (mapEnvExpr options mapper) expr |> ignore<Expr>
 
     let renDecl level env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
@@ -266,7 +266,7 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the variables known in varRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let stillUsedSet =
-            [for ident in Analyzer.varUsesInStmt block -> ident.Name]
+            [for ident in Analyzer.varUsesInStmt options block -> ident.Name]
                 |> Seq.choose env.varRenames.TryFind |> set
 
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
