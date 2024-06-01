@@ -427,7 +427,7 @@ side-effects might can prevent the optimization).
 For example:
 
 ```glsl
-float d = 0.;
+float d = 100.;
 d = min(d, sdfBox(...));
 d = min(d, sdfBall(...));
 return d;
@@ -436,7 +436,7 @@ return d;
 can be simplified into:
 
 ```glsl
-return min(min(0., sdfBox(...)), sdfBall(...));
+return min(min(100., sdfBox(...)), sdfBall(...));
 ```
 
 ## Variable reuse
