@@ -62,7 +62,6 @@
     <Compile Include="src\preprocessor.fs" />
     <Compile Include="src\parse.fs" />
     <Compile Include="src\api.fs" />
-    <Compile Include="src\main.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Argu">
