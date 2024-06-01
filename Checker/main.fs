@@ -192,6 +192,20 @@ let runCommand argv =
         minifier.Format(out)
         out.ToString() |> cleanString
 
+    let options = { options with outputFormat = Options.OutputFormat.IndentedText; exportKkpSymbolMaps = false}
+    if filenames.Length = 1 then
+        let shader = minifier.GetShaders[0]
+        let resultindented =
+            use out = new StringWriter()
+            minifier.Format(out, options)
+            out.ToString() |> cleanString
+        let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
+        let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
+        let name = split[1].Value
+        let ext = split[2].Value
+        Directory.CreateDirectory outdir |> ignore
+        File.WriteAllText(outdir + name + ".minind." + ext, resultindented + "\n")
+
     if result = expected then
         printfn "Success: %s" options.outputName
         0

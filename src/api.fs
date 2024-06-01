@@ -46,4 +46,6 @@ type Minifier(options, files) =
     member _.GetShaders = shaders
 
     member _.Format(writer) = Formatter.print options writer shaders exportedNames
+    member _.Format(writer, options) =
+        Formatter.print options writer shaders exportedNames
     member _.FormatWithLocations(writer) = Formatter.printWithLocations options writer shaders exportedNames
