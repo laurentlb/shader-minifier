@@ -51,10 +51,10 @@ let minify flags content =
     let options = Options.init flags
     let shaders, exportedNames = ShaderMinifier.minify options [|"input", content|]
     let out = new System.IO.StringWriter()
-    ShaderMinifier.format options out shaders exportedNames options.outputFormat
+    ShaderMinifier.format options out shaders exportedNames
 
     let withLoc = new System.IO.StringWriter()
-    ShaderMinifier.formatWithLocations options withLoc shaders exportedNames options.outputFormat
+    ShaderMinifier.formatWithLocations options withLoc shaders exportedNames
 
     out.ToString(), ShaderMinifier.getSize shaders, withLoc.ToString()
 

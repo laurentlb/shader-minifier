@@ -149,7 +149,8 @@ type private Impl(options: Options.Options, withLocations) =
                     sprintf " %s%s\\" indent (escape line)]
             fprintfn out "%s0\";" lines
 
-    member this.Format out shaders exportedNames = function
+    member this.Format out shaders exportedNames =
+        match options.outputFormat with
         | Options.IndentedText -> printIndented out shaders
         | Options.Text -> printNoHeader out shaders
         | Options.CVariables -> printCVariables out shaders exportedNames

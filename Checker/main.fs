@@ -186,14 +186,13 @@ let runCommand argv =
     let shaders, exportedNames = ShaderMinifier.minify options files
     let result =
         use out = new StringWriter()
-        ShaderMinifier.format options out shaders exportedNames options.outputFormat
+        ShaderMinifier.format options out shaders exportedNames
         out.ToString() |> cleanString
-    options.outputFormat <- Options.OutputFormat.IndentedText
-    options.exportKkpSymbolMaps <- false
+    let options = { options with outputFormat = Options.OutputFormat.IndentedText; exportKkpSymbolMaps = false}
     for shader in shaders do
         let resultindented =
             use out = new StringWriter()
-            ShaderMinifier.format options out [|shader|] exportedNames options.outputFormat
+            ShaderMinifier.format options out [|shader|] exportedNames
             out.ToString() |> cleanString
         let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
         let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
