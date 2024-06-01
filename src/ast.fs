@@ -347,3 +347,10 @@ let stringToJumpKeyword = function
     | "discard" -> JumpKeyword.Discard
     | "return" -> JumpKeyword.Return
     | s -> failwith ("not a keyword: " + s)
+
+let (|ResolvedVariableUse|_|) = function
+    | Var v ->
+        match v.Declaration with
+        | Declaration.Variable vd -> Some (v, vd)
+        | _ -> None
+    | _ -> None
