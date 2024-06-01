@@ -220,7 +220,7 @@ let testGolden () =
         else
             Some (line.Split([|' '|]))
     )
-    commands |> Array.sumBy runCommand
+    commands |> Array.Parallel.map runCommand |> Array.sum
 
 let runCompiler (argv: string array) =
     if (cliArgs.Contains(Skip_Glslang_Compile)) && (not (cliArgs.Contains(GLSL_Driver_Compile))) then
@@ -249,7 +249,7 @@ let testCompiled () =
         else
             Some (line.Split([|' '|]))
     )
-    commands |> Array.sumBy runCompiler
+    commands |> Array.Parallel.map runCompiler |> Array.sum
 
 [<EntryPoint>]
 let main argv =
