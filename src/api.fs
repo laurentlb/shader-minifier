@@ -17,18 +17,16 @@ let minify (options: Options.Options) (files: (string*string)[]) =
     let names = String.concat "," [for n, c in files -> $"'{n}' ({c.Length}b)"]
     options.trace $"----- minifying {names}"
     vprintf "Input file size is: %d\n" (files |> Array.sumBy (fun (_, s) -> s.Length))
-    let shaders = [|for f, c in files -> Parse.runParser options f c|]
-    vprintf "File parsed. "; printSize shaders
 
-    let shaders = [|
-        for shader in shaders do
-            if shaders.Length > 1 then options.trace $"---- {shader.filename}"
-            let code =
-                if shader.reorderFunctions then
-                    Rewriter.reorderFunctions options shader.code
-                else shader.code
-            yield { shader with code = Rewriter.simplify options code }
-    |]
+    let parseAndRewrite (filename, content) =
+        let shader = Parse.runParser options filename content
+        let code =
+            if shader.reorderFunctions then
+                Rewriter.reorderFunctions options shader.code
+            else shader.code
+        { shader with code = Rewriter.simplify options code }
+
+    let shaders = Array.Parallel.map parseAndRewrite files
     vprintf "Rewrite tricks applied. "; printSize shaders
 
     if options.noRenaming then
