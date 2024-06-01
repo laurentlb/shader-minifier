@@ -5,6 +5,7 @@ open System.IO
 
 open Argu
 open System.Text.RegularExpressions
+open ShaderMinifier
 
 type CliArguments =
     | Update_Golden
@@ -135,8 +136,10 @@ let canBeCompiled lang stage content =
     canBeCompiledByGlslang lang stage fullsrc && ((lang = "hlsl") || canBeCompiledByDriver stage fullsrc)
 
 let doMinify options file content =
-    let arr = ShaderMinifier.minify options [|file, content|] |> fst |> Array.map (fun s -> s.code)
-    ShaderMinifier.print arr.[0]
+    let minifier = Minifier(options, [|file, content|])
+    use tw = new System.IO.StringWriter()
+    minifier.Format(tw)
+    tw.ToString()
 
 let testMinifyAndCompile options lang (file: string) =
     try
@@ -164,7 +167,7 @@ let testPerformance files =
     let contents = files |> Array.map File.ReadAllText
     let stopwatch = Stopwatch.StartNew()
     for str in contents do
-        let options = Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
+        let options = Options.init([|"--format"; "text"; "--no-remove-unused"|])
         doMinify options "perf test" str |> ignore<string>
     let time = stopwatch.Elapsed
     printfn "%i files minified in %f seconds." files.Length time.TotalSeconds
@@ -177,29 +180,18 @@ let runCommand argv =
     let cleanString (s: string) =
         let s = s.Replace("\r\n", "\n").Trim()
         versionRegex.Replace(s, "")
-    let options, filenames = Options.initFiles argv
+    let options, filenames = Minifier.ParseOptionsWithFiles(argv)
     let expected =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
     let files = [|for f in filenames -> f, File.ReadAllText(f)|]
-    let shaders, exportedNames = ShaderMinifier.minify options files
+    let minifier = Minifier(options, files)
     let result =
         use out = new StringWriter()
-        ShaderMinifier.format options out shaders exportedNames
+        minifier.Format(out)
         out.ToString() |> cleanString
-    let options = { options with outputFormat = Options.OutputFormat.IndentedText; exportKkpSymbolMaps = false}
-    for shader in shaders do
-        let resultindented =
-            use out = new StringWriter()
-            ShaderMinifier.format options out [|shader|] exportedNames
-            out.ToString() |> cleanString
-        let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
-        let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
-        let name = split[1].Value
-        let ext = split[2].Value
-        Directory.CreateDirectory outdir |> ignore
-        File.WriteAllText(outdir + name + ".minind." + ext, resultindented + "\n")
+
     if result = expected then
         printfn "Success: %s" options.outputName
         0
@@ -265,7 +257,7 @@ let main argv =
     let realTests = Directory.GetFiles("tests/real", "*.frag")
     for f in unitTests do
         // tests with no #version default to 110
-        let options = Options.init([|"--format"; "text"; "--no-remove-unused"; "fake.frag"|])
+        let options = Options.init([|"--format"; "text"; "--no-remove-unused"|])
         if not (testMinifyAndCompile options "110" f) then
             failures <- failures + 1
     testPerformance (Seq.concat [realTests; unitTests] |> Seq.toArray)

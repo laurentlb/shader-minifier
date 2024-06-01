@@ -5,6 +5,7 @@ open Bolero
 open Bolero.Html
 open Bolero.Remoting.Client
 open Bolero.Templating.Client
+open ShaderMinifier
 
 /// Routing endpoints definition.
 type Page =
@@ -48,15 +49,15 @@ type Message =
     | ClearError
 
 let minify flags content =
-    let options = Options.init flags
-    let shaders, exportedNames = ShaderMinifier.minify options [|"input", content|]
+    let options = Minifier.ParseOptions(flags)
+    let minifier = Minifier(options, [|"input", content|])
     let out = new System.IO.StringWriter()
-    ShaderMinifier.format options out shaders exportedNames
+    minifier.Format(out)
 
     let withLoc = new System.IO.StringWriter()
-    ShaderMinifier.formatWithLocations options withLoc shaders exportedNames
+    minifier.FormatWithLocations(withLoc)
 
-    out.ToString(), ShaderMinifier.getSize shaders, withLoc.ToString()
+    out.ToString(), minifier.GetSize, withLoc.ToString()
 
 module API =
     [<Microsoft.JSInterop.JSInvokableAttribute("minify")>]
@@ -74,7 +75,7 @@ let update (jsRuntime: Microsoft.JSInterop.IJSRuntime) message model =
             if not model.flags.inlining then yield "--no-inlining"
             if not model.flags.removeUnused then yield "--no-remove-unused"
             if not model.flags.renaming then yield "--no-renaming"
-            yield! model.flags.other.Split(' ')
+            yield! model.flags.other.Split([|' '|], System.StringSplitOptions.RemoveEmptyEntries)
         |]
         printfn "Minify %s" (String.concat " " allFlags)
         try

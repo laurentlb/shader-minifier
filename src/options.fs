@@ -128,7 +128,12 @@ let private initPrivate argv =
 
 let flagsHelp = lazy (argParser.Value.PrintUsage(message = helpTextMessage))
 
-let init argv = initPrivate argv |> fst
+let init argv =
+    let options, filenames = initPrivate argv
+    if filenames.Length > 0 then
+        failwithf "Unexpected arguments: %A" (String.concat " " filenames)
+    options
+
 let initFiles argv =
     let options, filenames = initPrivate argv
     if filenames.Length = 0 then

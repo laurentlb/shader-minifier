@@ -1,5 +1,6 @@
 ﻿module Main
 
+open ShaderMinifier
 open System.IO
 
 let readFile file =
@@ -8,21 +9,21 @@ let readFile file =
         else new StreamReader(file)
     stream.ReadToEnd()
 
-let minifyFiles (options: Options.Options) filenames =
+let minifyFiles (options: Options.Options) filenames out =
     let files = [|
         for f in filenames do
             let content = readFile f
             let filename = if f = "" then "stdin" else f
             yield filename, content |]
-    ShaderMinifier.minify options files
+    let minifier = Minifier(options, files)
+    minifier.Format(out)
 
 let run (options: Options.Options) filenames =
     use out =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
         else new StreamWriter(options.outputName) :> TextWriter
     try
-        let shaders, exportedNames = minifyFiles options filenames
-        ShaderMinifier.format options out shaders exportedNames
+        minifyFiles options filenames out
         0
     with exn ->
         printfn "%s" (exn.ToString())
