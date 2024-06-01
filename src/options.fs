@@ -63,24 +63,26 @@ type CliArguments =
             | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
             | Filenames _ -> "List of files to minify"
 
-type Options() =
-    member val outputName = "shader_code.h" with get, set
-    member val outputFormat = CVariables with get, set
-    member val verbose = false with get, set
-    member val debug = false with get, set
-    member val canonicalFieldNames = "xyzw" with get, set
-    member val preserveExternals = false with get, set
-    member val preserveAllGlobals = false with get, set
-    member val hlsl = false with get, set
-    member val noInlining = false with get, set
-    member val aggroInlining = false with get, set
-    member val noSequence = false with get, set
-    member val noRenaming = false with get, set
-    member val noRenamingList = ["main"; "mainImage"] with get, set
-    member val noRemoveUnused = false with get, set
-    member val moveDeclarations = false with get, set
-    member val preprocess = false with get, set
-    member val exportKkpSymbolMaps = false with get, set
+type Options = {
+    outputName: string
+    outputFormat: OutputFormat
+    verbose: bool
+    debug: bool
+    canonicalFieldNames: string
+    preserveExternals: bool
+    preserveAllGlobals: bool
+    hlsl: bool
+    noInlining: bool
+    aggroInlining: bool
+    noSequence: bool
+    noRenaming: bool
+    noRenamingList: string list
+    noRemoveUnused: bool
+    moveDeclarations: bool
+    preprocess: bool
+    exportKkpSymbolMaps: bool
+}
+with
     member this.renameField field =
         if Builtin.isFieldSwizzle field then
             field |> String.map (fun c -> this.canonicalFieldNames.[Builtin.swizzleIndex c])
@@ -97,30 +99,29 @@ let private argParser = lazy (
 
 let private initPrivate argv =
     let args = argParser.Value.Parse(argv)
-    let options = Options()
-
-    options.outputName <- args.GetResult(OutputName, defaultValue = "shader_code.h")
-    options.outputFormat <- args.GetResult(FormatArg, defaultValue = CVariables)
-    options.verbose <- args.Contains(Verbose)
-    options.debug <- args.Contains(Debug)
-    options.canonicalFieldNames <- (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
-    options.preserveExternals <- args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
-    options.preserveAllGlobals <- args.Contains(PreserveAllGlobals)
-    options.hlsl <- args.Contains(Hlsl)
-    options.noInlining <- args.Contains(NoInlining)
-    options.aggroInlining <- args.Contains(AggroInlining) && not (args.Contains(NoInlining))
-    options.noSequence <- args.Contains(NoSequence)
-    options.noRenaming <- args.Contains(NoRenaming)
-    options.noRemoveUnused <- args.Contains(NoRemoveUnused)
-    options.moveDeclarations <- args.Contains(MoveDeclarations)
-    options.preprocess <- args.Contains(Preprocess)
-    options.exportKkpSymbolMaps <- args.Contains(ExportKkpSymbolMaps)
-    options.noRenamingList <-
-        let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
-        [for i in opt.Split([|','|]) -> i.Trim()]
-
-    if Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes" then
-        options.debug <- true
+    let options = {
+        outputName = args.GetResult(OutputName, defaultValue = "shader_code.h");
+        outputFormat = args.GetResult(FormatArg, defaultValue = CVariables);
+        verbose = args.Contains(Verbose)
+        debug =
+            args.Contains(Debug) ||
+            Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes"
+        canonicalFieldNames = (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
+        preserveExternals = args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
+        preserveAllGlobals = args.Contains(PreserveAllGlobals)
+        hlsl = args.Contains(Hlsl)
+        noInlining = args.Contains(NoInlining)
+        aggroInlining = args.Contains(AggroInlining) && not (args.Contains(NoInlining))
+        noSequence = args.Contains(NoSequence)
+        noRenaming = args.Contains(NoRenaming)
+        noRemoveUnused = args.Contains(NoRemoveUnused)
+        moveDeclarations = args.Contains(MoveDeclarations)
+        preprocess = args.Contains(Preprocess)
+        exportKkpSymbolMaps = args.Contains(ExportKkpSymbolMaps)
+        noRenamingList =
+            let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
+            [for i in opt.Split([|','|]) -> i.Trim()]
+    }
 
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
     options, filenames

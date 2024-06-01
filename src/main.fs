@@ -22,7 +22,7 @@ let run (options: Options.Options) filenames =
         else new StreamWriter(options.outputName) :> TextWriter
     try
         let shaders, exportedNames = minifyFiles options filenames
-        ShaderMinifier.format options out shaders exportedNames options.outputFormat
+        ShaderMinifier.format options out shaders exportedNames
         0
     with exn ->
         printfn "%s" (exn.ToString())
