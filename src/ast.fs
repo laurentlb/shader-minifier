@@ -188,7 +188,7 @@ type ExportedName = {
 
 type Shader = {
     filename: string
-    mutable code: TopLevel list
+    code: TopLevel list
     forbiddenNames: string list
     reorderFunctions: bool  // set to true if we saw a forward declaration
 } with member this.mangledFilename = (System.IO.Path.GetFileName this.filename).Replace(".", "_")

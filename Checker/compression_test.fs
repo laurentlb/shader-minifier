@@ -47,16 +47,17 @@ let log fmt =
 
     Printf.ksprintf logger fmt
 
-let compressionTest args files =
+let compressionTest args filenames =
     let options = Options.init(args)
     let minified =
         use out = new StringWriter()
-        let shaders, exportedNames = ShaderMinifier.minifyFiles options [|for f in files -> "tests/real/" + f|]
+        let files = [|for f in filenames -> f, File.ReadAllText("tests/real/" + f)|]
+        let shaders, exportedNames = ShaderMinifier.minify options files
         ShaderMinifier.format options out shaders exportedNames Options.Text
         out.ToString().ToCharArray()
 
     let pointer = &&minified.[0]
-    log "%-40s " (match files with [f] -> f | f::_ -> f + " (and others)" | [] -> "?")
+    log "%-40s " (match filenames with [f] -> f | f::_ -> f + " (and others)" | [] -> "?")
     log "%5d " minified.Length
     let compressedSize = Crinkler.ApproximateModels4k(pointer, minified.Length)
     log "=> %8.3f\n" compressedSize
