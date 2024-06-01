@@ -312,11 +312,14 @@ them all at the same time by listing them all on the command-line.
 - [Automatic inlining](TRANSFORMATIONS.md#Automatic-inlining)
 - [Aggressive inlining](TRANSFORMATIONS.md#Aggressive-inlining)
 - [Explicit inlining](TRANSFORMATIONS.md#Explicit-inlining)
+- [Reassignment merging](TRANSFORMATIONS.md#Reassignment-merging)
+- [Variable reuse](TRANSFORMATIONS.md#Variable-reuse)
 - [Vector constructors](TRANSFORMATIONS.md#Vector-constructors)
 - [Function predeclarations](TRANSFORMATIONS.md#Function-predeclarations)
 - [Unused local variables](TRANSFORMATIONS.md#Unused-local-variables)
 - [Dead code removal](TRANSFORMATIONS.md#Dead-code-removal)
 - [Unused function removal](TRANSFORMATIONS.md#Unused-function-removal)
+- [Other functions](TRANSFORMATIONS.md#Other-functions)
 - [Renaming](TRANSFORMATIONS.md#Renaming)
 
 
