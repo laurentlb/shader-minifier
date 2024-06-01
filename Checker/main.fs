@@ -182,7 +182,8 @@ let runCommand argv =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
            | _ -> reraise ()
-    let shaders, exportedNames = ShaderMinifier.minifyFiles options filenames
+    let files = [|for f in filenames -> f, File.ReadAllText(f)|]
+    let shaders, exportedNames = ShaderMinifier.minify options files
     let result =
         use out = new StringWriter()
         ShaderMinifier.format options out shaders exportedNames options.outputFormat
