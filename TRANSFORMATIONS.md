@@ -121,13 +121,14 @@ int foo() {
 
 If you write `x*(y*z)`, Shader Minifier will not remove the parentheses because
 it would change the orders of evaluation (this could be a problem with floating
-point numbers and affect the precision of the result). Instead, it will swap the
-operands and return `y*z*x`.
+point numbers and affect the precision of the result). Instead, it will swap
+the operands and return `y*z*x`. With additive operators, we assume we can
+remove the parentheses.
 
 We apply this technique in a few cases:
 - `x*(y*z)` becomes `y*z*x`
-- `x+(y+z)` becomes `y+z+x`
-- `x+(y-z)` becomes `y-z+x`
+- `x+(y+z)` becomes `x+y+z`
+- `x+(y-z)` becomes `x+y-z`
 - `x-(y+z)` becomes `x-y-z`
 - `x-(y-z)` becomes `x-y+z`
 
@@ -377,7 +378,7 @@ int foo(int x) {
 
 will be simplified into:
 
-```c
+```glsl
 int foo(int x)
 {
   return 10*x;
@@ -386,7 +387,7 @@ int foo(int x)
 
 And this input:
 
-```c
+```glsl
 float i_foo(float f, float g, float x) {
   return f*x + g*x + f*g;
 }
@@ -398,7 +399,7 @@ float bar(float a) {
 
 will be simplified into:
 
-```c
+```glsl
 float bar(float a)
 {
   return 2.*sin(sqrt(a))+3.*sin(sqrt(a))+6.;
@@ -412,6 +413,62 @@ use a macro, except this gives the minifier full visibility through it.)
 If you want to aggressively reduce the size of your shader, try inlining more
 variables. Inlining can have performance implications though (if the variable
 stored the result of a computation), so be careful with it.
+
+## Reassignment merging
+
+Shader Minifier can remove or merge assignment statements in some cases:
+- if a variable is declared and reassigned on the next line;
+- if a variable is reassigned on two consecutive lines;
+- if a variable is reassigned and then part of a return.
+
+Of course, this is not always possible (the variable should be read only once;
+side-effects might can prevent the optimization).
+
+For example:
+
+```glsl
+float d = 100.;
+d = min(d, sdfBox(...));
+d = min(d, sdfBall(...));
+return d;
+```
+
+can be simplified into:
+
+```glsl
+return min(min(100., sdfBox(...)), sdfBall(...));
+```
+
+## Variable reuse
+
+If a local variable is no longer used and we declare a new variable of the
+same type, the old variable will be reused instead.
+
+For example:
+
+```glsl
+int a = 1;
+// ...
+f(a);
+int b = 2;
+// ...
+f(b);
+```
+
+can be simplified to:
+
+```glsl
+int a = 1;
+// ...
+f(a);
+a = 2;
+// ...
+f(a)'
+```
+
+**Note**: This operation reduces the number of variables in the file, which
+usually improves the compression. When renaming is disabled, the code can be
+misleading, as the variable name won't match the code behavior anymore.
 
 ## Vector constructors
 
@@ -467,6 +524,11 @@ default, this is the case for `main` and `mainImage`.
 
 **Note**: Use `--no-remove-unused` to disable this transformation.
 
+
+## Other functions
+
+* `distance(a, b)` becomes `length(a-b)`.
+* `pow(x, 1.)` becomes `x`.
 
 ## Renaming
 
