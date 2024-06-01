@@ -14,9 +14,12 @@ shader is minified by hand by experienced demosceners, Shader Minifier is often
 able to optimize it further. See this [2010
 report](https://www.ctrl-alt-test.fr/2010/glsl-minifier-smaller-and-smaller/).
 
-To be notified of new releases, use the watch feature of GitHub.
+Shader Minifier is available:
+* As an online website: https://ctrl-alt-test.fr/minifier/
+* As a command-line tool (download from [Releases](https://github.com/laurentlb/shader-minifier/releases))
+* As a .NET library (see [Example](https://github.com/laurentlb/shader-minifier/tree/master/Example))
 
-Try the online version here: https://ctrl-alt-test.fr/minifier/
+To be notified of new releases, use the watch feature of GitHub.
 
 ## Features
 

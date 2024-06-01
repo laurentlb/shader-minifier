@@ -1,5 +1,6 @@
 ﻿module CompressionTests
 
+open ShaderMinifier
 open System.Runtime.InteropServices
 open System.IO
 open System.Text
@@ -52,8 +53,8 @@ let compressionTest args filenames =
     let minified =
         use out = new StringWriter()
         let files = [|for f in filenames -> f, File.ReadAllText("tests/real/" + f)|]
-        let shaders, exportedNames = ShaderMinifier.minify options files
-        ShaderMinifier.format options out shaders exportedNames
+        let minifier = Minifier(options, files)
+        minifier.Format(out)
         out.ToString().ToCharArray()
 
     let pointer = &&minified.[0]
