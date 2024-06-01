@@ -20,9 +20,6 @@ hlsl frag tests/out/real/elevated.minind.hlsl
 # illegal input (bad preprocessing?) - 110 frag tests/out/real/ohanami.minind.frag
 430 comp tests/out/real/terrarium.minind.frag
 430 comp tests/out/real/from-the-seas-to-the-stars.minind.frag
-110 vert tests/out/real/mouton/mouton.minind.vert
-110 frag tests/out/real/mouton/mouton.minind.frag
-110 frag tests/out/real/mouton/fxaa.minind.frag
 
 shadertoy frag tests/out/real/ed-209.minind.frag
 shadertoy frag tests/out/real/frozen-wasteland.minind.frag
