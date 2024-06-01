@@ -12,7 +12,7 @@ void main()
 }
 """;
 
-var file = new Tuple<string, string>("filename.frag", shader);
+var file = Tuple.Create("filename.frag", shader);
 var options = Minifier.ParseOptions(new[] { "--format", "text" });
 var minifier = new Minifier(options, new[] { file });
 minifier.Format(System.Console.Out);
