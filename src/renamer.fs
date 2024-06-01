@@ -266,7 +266,7 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the variables known in varRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let stillUsedSet =
-            [for ident in Analyzer.varUsesInStmt options block -> ident.Name]
+            [for ident in Analyzer.Analyzer(options).varUsesInStmt block -> ident.Name]
                 |> Seq.choose env.varRenames.TryFind |> set
 
         let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
