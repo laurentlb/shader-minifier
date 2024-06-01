@@ -95,7 +95,7 @@ let canBeCompiledByGlslang lang stage (content: string) =
     proc.StandardInput.Close()
     let info = (proc.StandardOutput.ReadToEnd()) + (proc.StandardError.ReadToEnd())
     proc.WaitForExit()
-    if proc.ExitCode.Equals(0) then
+    if proc.ExitCode = 0 then
         true
     else
         printf "glslang compilation failed:\n%s\n" info
@@ -136,7 +136,7 @@ let canBeCompiled lang stage content =
 
 let doMinify options file content =
     let arr = ShaderMinifier.minify options [|file, content|] |> fst |> Array.map (fun s -> s.code)
-    Printer.print arr.[0]
+    ShaderMinifier.print arr.[0]
 
 let testMinifyAndCompile options lang (file: string) =
     try
@@ -185,14 +185,14 @@ let runCommand argv =
     let shaders, exportedNames = ShaderMinifier.minifyFiles options filenames
     let result =
         use out = new StringWriter()
-        Formatter.print options out shaders exportedNames options.outputFormat
+        ShaderMinifier.format options out shaders exportedNames options.outputFormat
         out.ToString() |> cleanString
     options.outputFormat <- Options.OutputFormat.IndentedText
     options.exportKkpSymbolMaps <- false
     for shader in shaders do
         let resultindented =
             use out = new StringWriter()
-            Formatter.print options out [|shader|] exportedNames options.outputFormat
+            ShaderMinifier.format options out [|shader|] exportedNames options.outputFormat
             out.ToString() |> cleanString
         let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
         let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups

@@ -1,4 +1,4 @@
-﻿module Formatter
+﻿module internal Formatter
 
 open System
 open System.IO

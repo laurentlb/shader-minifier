@@ -1,4 +1,4 @@
-﻿module Analyzer
+﻿module internal Analyzer
 
 open System.Collections.Generic
 open Ast

@@ -52,7 +52,7 @@ let compressionTest args files =
     let minified =
         use out = new StringWriter()
         let shaders, exportedNames = ShaderMinifier.minifyFiles options [|for f in files -> "tests/real/" + f|]
-        Formatter.print options out shaders exportedNames Options.Text
+        ShaderMinifier.format options out shaders exportedNames Options.Text
         out.ToString().ToCharArray()
 
     let pointer = &&minified.[0]
