@@ -9,6 +9,11 @@ open Analyzer
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
+let private isKnownToHaveTypeFloat = function
+    | Float _ -> true
+    | ResolvedVariableUse (_, vd) -> vd.decl.name.Name = "float"
+    | _ -> false
+
 [<RequireQualifiedAccess>] 
 type private OptimizationPass =
     | First
@@ -290,6 +295,32 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         let args = dropLastSwizzle vecSize args
         FunCall (Var constr, args)
 
+    let simplifyVecDot (vecName: string) args (field: string) e =
+        let vecSize = vecName.ToCharArray() |> Array.last |> string |> int
+        if not (
+            args |> Seq.forall Effects.isPure && // check that arguments can be reordered
+            args |> List.length = vecSize // check that the Nth swizzle index maps to the Nth arg
+        )
+        then e
+        else
+            let indexes = field.ToCharArray() |> Seq.map Builtin.swizzleIndex |> Seq.toList
+            match indexes |> List.length with
+            | 1 -> // vec3(a,b,c).y  ->  b
+                match List.tryItem indexes.Head args with
+                | Some arg when isKnownToHaveTypeFloat arg -> arg
+                | _ -> e
+            | 2 | 3 | 4 -> // vec3(a,b,c).yx  ->  vec2(b,a)
+                // find whether the repeated fields are repeatable exprs (don't repeat function calls or long exprs)
+                let repeatedIndexes = indexes |> List.countBy id |> List.filter (fun (_, count) -> count > 1) |> List.map (fun (key, _) -> key)
+                let isRepeatableExpr = function
+                    | Var _ | Int _ | Float _ -> true
+                    | _ -> false
+                if repeatedIndexes |> List.forall (fun index -> isRepeatableExpr args[index]) then
+                    let constructor = Ident("vec" + string (indexes |> List.length))
+                    FunCall(Var constructor, indexes |> List.map (fun index -> args[index]))
+                else e
+            | _ -> e
+
     let simplifyExpr (didInline: bool ref) env = function
         | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
             match env.fns.TryFind (v.Name, passedArgs.Length) with
@@ -317,6 +348,11 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
+        | Dot(FunCall(Var constr, args), field) as e when (constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4") ->
+            let e = simplifyVecDot constr.Name args field e
+            match e with
+            | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, options.renameField field)
+            | _ -> e
         | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, options.renameField field)
 
         | ResolvedVariableUse (_, vd) as e when vd.decl.name.ToBeInlined ->
