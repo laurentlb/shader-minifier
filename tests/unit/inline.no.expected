@@ -143,5 +143,5 @@ vec3 g(float x)
 }
 vec3 vecs(float x)
 {
-  return vec3(0)+vec3(4,3,4)+vec3(1,2,3,g(8.)*g(9.)).zzw;
+  return vec3(0)+vec3(4,3,4)+vec3(3,3,g(8.)*g(9.));
 }

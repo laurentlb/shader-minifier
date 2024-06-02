@@ -196,5 +196,5 @@ vec3 vecs(float x)
 {
 	return vec4(0.,0.,0.,1.25).xyz
 		+ vec2(3,4).yxy
-		+ vec3(1,2,3,g(8.)*g(9.)).zzw;
+		+ vec4(1,2,3,g(8.)*g(9.)).zzw;
 }
