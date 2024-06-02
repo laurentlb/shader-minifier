@@ -257,7 +257,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         // basic type of the object being constructed, the scalar construction rules (above) are used to convert
         // the parameters."
         let useInts = function
-            | Float (f, _) as e when Decimal.Round(f) = f ->
+            | Float (f, _) as e when optimizationPass = OptimizationPass.Second // only do this after other transforms that can apply only to floats.
+                && Decimal.Round(f) = f ->
                 try
                     let candidate = Int (int f, "")
                     if (Printer.exprToS candidate).Length <= (Printer.exprToS e).Length then

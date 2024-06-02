@@ -184,9 +184,10 @@ vec3 g(float x)
 {
     float y = x * x;
     vec3 b = vec3(10.0 * x * x); // b should be inlined (used only once)
+	vec3 c = vec3(10.0, 20.0, 30.0);
     {
         float b = 23.0 * x; // even though there is another b in a sub block
-        y += b * b;
+        y += b * b + c.z;
     }
     return b * 2.0 + vec3(y);
 }
