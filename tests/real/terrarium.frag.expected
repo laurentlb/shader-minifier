@@ -54,7 +54,7 @@ void main()
           vec3 sc=mix(vec3(1),vec3(0,.35,.9),smoothstep(0.,23.,-time)),ec=mix(vec3(1,1.3,.28),vec3(.9,.2,.3),smoothstep(1e2,138.,-time));
           p=mix(sc,ec,sqrt(clamp(float(x>>20)/1024,0,1)))*(x&1048575)/100*smoothstep(0,14,-time);
           vec2 q=abs(vec2(coord)/vec2(1280,720)-.5);
-          p=pow(p*(.8+.2*cos(time*20.)*max(0.,1.+time/50.)),vec3(1.3,1.1,1).zyx)*(1-(pow(q.x,4)+pow(q.y,4))*4);
+          p=pow(p*(.8+.2*cos(time*20.)*max(0.,1.+time/50.)),vec3(1,1.1,1.3))*(1-(pow(q.x,4)+pow(q.y,4))*4);
           p=sqrt(p/(p+1));
           float a=smoothstep(125.,130.,-time)-smoothstep(136.,145.,-time);
           p=mix(mix(mix(p,vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*2.9,-.01,.99),1.).x),vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*5.,-.01,.99),2.).y),vec3(1),a*textureLod(lt,clamp((vec2(coord)/vec2(1280,720)-vec2(.05))*9.,-.01,.99),3.).z);

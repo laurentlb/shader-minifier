@@ -173,7 +173,7 @@ vec3 DoLighting(vec3 mat,vec3 pos,vec3 normal,vec3 eyeDir,float d,float specular
 }
 vec3 GetNormal(vec3 p,float sphereR)
 {
-  return normalize(vec3(Map(p+vec2(.01,0).xyy)-Map(p-vec2(.01,0).xyy),Map(p+vec2(.01,0).yxy)-Map(p-vec2(.01,0).yxy),Map(p+vec2(.01,0).yyx)-Map(p-vec2(.01,0).yyx)));
+  return normalize(vec3(Map(p+vec3(.01,0,0))-Map(p-vec3(.01,0,0)),Map(p+vec3(0,.01,0))-Map(p-vec3(0,.01,0)),Map(p+vec3(0,0,.01))-Map(p-vec3(0,0,.01))));
 }
 float SphereRadius(float t)
 {

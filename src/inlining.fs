@@ -34,14 +34,12 @@ type VariableInlining(options: Options.Options) =
     // Mark variables as inlinable when possible.
     // Variables are always safe to inline when all of:
     //  - the variable is used only once in the current block
-    //  - the variable is not used in a sub-block (e.g. inside a loop), for runtime performance
+    //  - the variable is not used in a loop sub-block, for runtime performance
     //  - the init value refers only to variables that are never written to, and functions that are builtin and pure
     let markSafelyInlinableLocals block =
         // Variables that are defined in this scope.
         // The boolean indicate if the variable initialization is const.
         let localDefs = Dictionary<string, (Ident * bool)>()
-        // List of all expressions in the current block. Do not look in sub-blocks.
-        let mutable localExpr = []
         for stmt: Stmt in block do
             match stmt with
             | Decl (_, declElts) ->
@@ -51,14 +49,30 @@ type VariableInlining(options: Options.Options) =
                     | None ->
                         localDefs.[def.name.Name] <- (def.name, true)
                     | Some init ->
-                        localExpr <- init :: localExpr
                         let isConst = Analyzer(options).varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
                         localDefs.[def.name.Name] <- (def.name, isConst)
+            | _ -> ()
+        // List of all expressions under the current block, but do not look in loops.
+        let mutable localExprs = []
+        let rec addLocalExprs stmt = 
+            match stmt with
+            | Decl (_, declElts) ->
+                for def in declElts do
+                    match def.init with
+                    | None -> ()
+                    | Some init -> localExprs <- init :: localExprs
             | Expr e
-            | Jump (_, Some e) -> localExpr <- e :: localExpr
-            | Directive _ | Verbatim _ | Jump (_, None) | Block _ | If _| ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
+            | Jump (_, Some e) -> localExprs <- e :: localExprs
+            | If (cond, th, el) ->
+                localExprs <- cond :: localExprs
+                addLocalExprs th
+                el |> Option.iter addLocalExprs
+            | Block stmts -> stmts |> Seq.iter addLocalExprs
+            | Directive _ | Verbatim _ | Jump (_, None) | ForE _ | ForD _ | While _ | DoWhile _ | Switch _ -> ()
+        for stmt: Stmt in block do
+            addLocalExprs stmt
 
-        let localReferences = countReferences [for e in localExpr -> Expr e]
+        let localReferences = countReferences [for e in localExprs -> Expr e]
         let allReferences = countReferences block
 
         for def in localDefs do

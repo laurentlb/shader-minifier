@@ -276,11 +276,8 @@ MarchData room(vec3 p)
   float doorHole=sdBox(p,frameInner+vec3(0,0,1)),backWall=length(p.z-8.);
   r.d=min(backWall,max(length(p.z),-doorHole+.1));
   if(r.d==backWall)
-    {
-      float ocp=min(max(min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9))),min(.7-abs(xy.x+1.2),-xy.y)),max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))));
-      if(ocp<.3)
-        r.mat=vec3(.39,.57,.71);
-    }
+    if(min(max(min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9))),min(.7-abs(xy.x+1.2),-xy.y)),max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))))<.3)
+      r.mat=vec3(.39,.57,.71);
   doorHole=max(sdBox(p,frameInner+vec3(.4,.4,.1)),-doorHole);
   backWall=frameInner.x*.5;
   p.x-=frameInner.x;

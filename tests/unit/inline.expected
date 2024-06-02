@@ -120,7 +120,11 @@ vec3 g(float x)
   float y=x*x;
   {
     float b=23.*x;
-    y+=b*b;
+    y+=b*b+30.;
   }
   return vec3(10.*x*x)*2.+vec3(y);
+}
+vec3 vecs(float x)
+{
+  return vec3(0)+vec3(4,3,4)+vec3(3,3,g(8.)*g(9.));
 }
