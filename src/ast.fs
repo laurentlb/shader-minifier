@@ -79,8 +79,10 @@ and Expr =
 
 and TypeSpec =
     | TypeName of string
-    // e.g. struct foo { float x; float y; }
+    // struct or interface block, e.g. struct foo { float x; float y; }
     | TypeBlock of string(*type*) * Ident option(*name*) * Decl list
+    // An interface block followed by an instance name (in a TLDecl), like structs, declares an instance.
+    // An interface block without an instance name (in a TypeDecl), unlike structs, introduces a set of external global variables.
 
 and Type = {
     name: TypeSpec // e.g. int
@@ -167,7 +169,7 @@ and TopLevel =
     | TLDirective of string list
     | Function of FunctionType * Stmt
     | TLDecl of Decl
-    | TypeDecl of TypeSpec // structs
+    | TypeDecl of TypeSpec // structs or interface blocks
     | Precision of Type
 
 let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}

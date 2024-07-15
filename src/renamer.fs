@@ -234,11 +234,12 @@ type private RenamerImpl(options: Options.Options) =
             | e -> e
         mapExpr (mapEnvExpr options mapper) expr |> ignore<Expr>
 
-    let renDecl level env (ty:Type, vars) =
+    let renDecl level isFieldOfAnInterfaceBlockWithoutInstanceName env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =
             Option.iter (renExpr env) decl.init
             Option.iter (renExpr env) decl.size
-            let isExternal = level = Level.TopLevel && (ty.IsExternal || options.hlsl)
+            let isExternal = (level = Level.TopLevel && (ty.IsExternal || options.hlsl)) ||
+                             isFieldOfAnInterfaceBlockWithoutInstanceName
 
             if (level = Level.TopLevel && options.preserveAllGlobals) ||
                     List.contains decl.name.Name options.noRenamingList then
@@ -280,7 +281,7 @@ type private RenamerImpl(options: Options.Options) =
         function
         | Expr e -> renExpr env e; env
         | Decl d ->
-            renDecl Level.InFunc env d
+            renDecl Level.InFunc false env d
         | Block b ->
             renList env renStmt b |> ignore<Env>
             env
@@ -291,7 +292,7 @@ type private RenamerImpl(options: Options.Options) =
             env
         | ForD(init, cond, inc, body) as stmt ->
             let newEnv = env.onEnterFunction env stmt
-            let newEnv = renDecl Level.InFunc newEnv init
+            let newEnv = renDecl Level.InFunc false newEnv init
             renStmt newEnv body |> ignore<Env>
             Option.iter (renExpr newEnv) cond
             Option.iter (renExpr newEnv) inc
@@ -332,12 +333,12 @@ type private RenamerImpl(options: Options.Options) =
     let renTyBlock (env: Env) = function
         | TypeBlock("struct", _, _) -> env
         | TypeBlock(_, _, fields) ->
-            // treat the fields as if they were global variables
-            renList env (renDecl Level.TopLevel) fields
+            // interface block without an instance name: the fields are treated as external global variables
+            renList env (renDecl Level.TopLevel true) fields
         | _ -> env
 
     let rec renTopLevelName env = function
-        | TLDecl d -> renDecl Level.TopLevel env d
+        | TLDecl d -> renDecl Level.TopLevel false env d
         | TypeDecl tyDecl -> renTyBlock env tyDecl
         | Function(fct, _) -> renFctName env fct
         | _ -> env
@@ -345,7 +346,7 @@ type private RenamerImpl(options: Options.Options) =
     let rec renTopLevelBody (env: Env) = function
         | Function(fct, body) ->
             let env = env.onEnterFunction env body
-            let env = renList env (renDecl Level.InFunc) fct.args
+            let env = renList env (renDecl Level.InFunc false) fct.args
             renStmt env body |> ignore<Env>
         | _ -> ()
 
