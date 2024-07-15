@@ -63,6 +63,7 @@
 # Multifile tests
 
 --no-remove-unused --move-declarations --format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
+--no-remove-unused --format c-array -o tests/unit/interface-block-renaming.expected tests/unit/interface-block-renaming1.frag tests/unit/interface-block-renaming2.frag
 
 # kkp symbols tests
 
