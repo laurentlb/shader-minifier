@@ -167,10 +167,16 @@ type private ParseImpl(options: Options.Options) =
 
         let decls = many (declaration .>> ch ';' |>> check)
         let name = opt ident
-        pipe2 name (between (ch '{') (ch '}') decls)
-            (fun n d ->
+
+        let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
+                   |> opt
+                   |>> (function Some s -> $"<{s}>" | None -> "")
+        let baseClassName = pipe2 (ch ':' >>. ident |>> (fun id -> id.Name)) generic (+)
+                            |> opt
+        pipe4 name (opt generic) baseClassName (between (ch '{') (ch '}') decls)
+            (fun n t c d ->
                 Option.iter (fun (i:Ast.Ident) -> forbiddenNames <- i.Name::forbiddenNames) n
-                Ast.TypeBlock(prefix, n, d))
+                Ast.TypeBlock(prefix, n, t, c, d))
 
     let structSpecifier = parse {
         let! str = keyword "struct"
@@ -314,6 +320,14 @@ type private ParseImpl(options: Options.Options) =
         else
             pzero
 
+    // HLSL template, e.g. template<typename T>
+    let template =
+        if options.hlsl then
+            str "template" >>. ch '<' >>. manyCharsTill anyChar (ch '>')
+                |>> (function s -> $"template<{s}>")
+        else
+            pzero
+
     let jump =
         let key =
             choice [keyword "break"; keyword "continue"; keyword "discard"]
@@ -324,6 +338,7 @@ type private ParseImpl(options: Options.Options) =
 
     // A statement
     do stmtRef.Value <- choice [
+        template |>> Ast.Verbatim
         block
         jump
         forLoop
@@ -357,6 +372,7 @@ type private ParseImpl(options: Options.Options) =
         let decl = declaration .>> ch ';'
         let item = choice [
                     macro |>> Ast.TLDirective
+                    template |>> Ast.TLVerbatim
                     verbatim |>> Ast.TLVerbatim
                     attribute |>> Ast.TLVerbatim
                     attempt decl |>> Ast.TLDecl

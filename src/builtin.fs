@@ -8,6 +8,7 @@ let keywords = System.Collections.Generic.HashSet<_>([
   "struct"; "layout"; "centroid"; "flat"; "smooth"; "noperspective"; "patch"; "sample"; "invariant";
   "precise"; "subroutine"; "coherent"; "volatile"; "restrict"; "readonly"; "writeonly";
   "const"; "uniform"; "buffer"; "shared"; "attribute"; "varying"
+  "template"
 ])
 
 let builtinScalarTypes = set [

@@ -170,14 +170,16 @@ type PrinterImpl(withLocations) =
         let res = sem |> List.map (exprToS 0) |> String.concat ":"
         if res = "" then res else ":" + res
 
-    let rec structToS prefix id decls =
+    let rec structToS prefix id template baseCls decls =
         let name = match id with None -> "" | Some (s: Ident) -> " " + s.Name
+        let name = match template with None -> name | Some t -> name + t
+        let c = match baseCls with None -> "" | Some s -> $" : {s}"
         let d = decls |> List.map (fun s -> declToS 0 s + ";") |> String.concat ""
-        out "%s{%s}" (sp2 prefix name) d
+        out "%s%s{%s}" (sp2 prefix name) c d
 
     and typeSpecToS = function
         | TypeName s -> s
-        | TypeBlock(prefix, id, decls) -> structToS prefix id decls
+        | TypeBlock(prefix, id, template, baseCls, decls) -> structToS prefix id template baseCls decls
 
     and typeToS (ty: Type) =
         let get = function
@@ -317,7 +319,7 @@ type PrinterImpl(withLocations) =
                 match tl with
                 | Function (fct, _) -> fct.fName.OldName
                 | TLDecl (_, declElts) -> declElts |> List.map (fun declElt -> declElt.name.OldName) |> String.concat ","
-                | TypeDecl (TypeBlock (_, Some name, _)) -> name.OldName
+                | TypeDecl (TypeBlock (_, Some name, _, _, _)) -> name.OldName
                 | TypeDecl _ -> "*type decl*" // unnamed TypeBlock (a top-level TypeDecl cannot be a TypeName)
                 | Precision _ -> "*precision*"
                 | TLDirective ("#define"::_) -> "#define"

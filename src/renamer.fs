@@ -331,8 +331,8 @@ type private RenamerImpl(options: Options.Options) =
     // e.g. struct foo { int a; float b; }
     //   or uniform foo { int a; float b; }
     let renTyBlock (env: Env) = function
-        | TypeBlock("struct", _, _) -> env
-        | TypeBlock(_, _, fields) ->
+        | TypeBlock("struct", _, _, _, _) -> env
+        | TypeBlock(_, _, _, _, fields) ->
             // interface block without an instance name: the fields are treated as external global variables
             renList env (renDecl Level.TopLevel true) fields
         | _ -> env
