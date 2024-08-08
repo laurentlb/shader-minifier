@@ -173,7 +173,7 @@ type PrinterImpl(withLocations) =
     let rec structToS prefix id template baseCls decls =
         let name = match id with None -> "" | Some (s: Ident) -> " " + s.Name
         let name = match template with None -> name | Some t -> name + t
-        let c = match baseCls with None -> "" | Some s -> $" : {s}"
+        let c = match baseCls with None -> "" | Some s -> $":{s}"
         let d = decls |> List.map (fun s -> declToS 0 s + ";") |> String.concat ""
         out "%s%s{%s}" (sp2 prefix name) c d
 
