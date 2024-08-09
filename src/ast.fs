@@ -80,7 +80,7 @@ and Expr =
 and TypeSpec =
     | TypeName of string
     // struct or interface block, e.g. struct foo { float x; float y; }
-    | TypeBlock of string(*type*) * Ident option(*name*) * Decl list
+    | TypeBlock of string(*type*) * Ident option(*name*) * string option(*template*) * string option(*base class*) * Decl list
     // An interface block followed by an instance name (in a TLDecl), like structs, declares an instance.
     // An interface block without an instance name (in a TypeDecl), unlike structs, introduces a set of external global variables.
 
