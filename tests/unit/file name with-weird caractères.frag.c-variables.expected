@@ -1,0 +1,11 @@
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+#ifndef FILE_NAME_WITH_WEIRD_CARACT_RES_FRAG_C_VARIABLES_EXPECTED_
+# define FILE_NAME_WITH_WEIRD_CARACT_RES_FRAG_C_VARIABLES_EXPECTED_
+
+const char *file_name_with_weird_caract_res_frag =
+ "void main()"
+ "{"
+   "gl_FragColor=vec4(.33,.66,.99,1);"
+ "}";
+
+#endif // FILE_NAME_WITH_WEIRD_CARACT_RES_FRAG_C_VARIABLES_EXPECTED_

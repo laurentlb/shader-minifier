@@ -200,7 +200,7 @@ let runCommand argv =
             minifier.Format(out, options)
             out.ToString() |> cleanString
         let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
-        let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
+        let split = Regex.Match(System.IO.Path.GetFileName shader.filename, @"(^.*)\.([^\.]+)$").Groups
         let name = split[1].Value
         let ext = split[2].Value
         Directory.CreateDirectory outdir |> ignore
@@ -219,12 +219,25 @@ let runCommand argv =
         1
 
 let testGolden () =
+    let splitArgs line =
+        let mutable args = []
+        let mutable insideQuotes = false
+        let mutable arg = ""
+        for c in line do
+            match c with
+            | '"' -> insideQuotes <- not insideQuotes
+            | ' ' when not insideQuotes ->
+                args <- arg :: args
+                arg <- ""
+            | c -> arg <- $"{arg}{c}"
+        if arg <> "" then args <- arg :: args
+        args |> List.rev
     let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
         let line = line.Trim()
         if line.Length = 0 || line.[0] = '#' then
             None
         else
-            Some (line.Split([|' '|]))
+            Some (splitArgs line |> List.toArray)
     )
     commands |> Array.Parallel.map runCommand |> Array.sum
 

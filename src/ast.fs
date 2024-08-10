@@ -1,5 +1,7 @@
 ﻿module Ast
 
+open System.Text.RegularExpressions
+
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
 
@@ -188,12 +190,15 @@ type ExportedName = {
     newName: string
 }
 
+let mangleToAscii s = Regex.Replace(s, @"[^a-zA-Z_0-9]", "_") // é -> _
+let mangleToUnicode s = Regex.Replace(s, @"\W", "_")          // é -> é
+
 type Shader = {
     filename: string
     code: TopLevel list
     forbiddenNames: string list
     reorderFunctions: bool  // set to true if we saw a forward declaration
-} with member this.mangledFilename = (System.IO.Path.GetFileName this.filename).Replace(".", "_")
+} with member this.mangledFilename = mangleToUnicode (System.IO.Path.GetFileName this.filename)
 
 // mapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting visible variable and function declarations along the way.
