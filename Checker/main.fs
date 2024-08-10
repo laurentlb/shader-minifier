@@ -219,12 +219,25 @@ let runCommand argv =
         1
 
 let testGolden () =
+    let splitArgs line =
+        let mutable args = []
+        let mutable insideQuotes = false
+        let mutable arg = ""
+        for c in line do
+            match c with
+            | '"' -> insideQuotes <- not insideQuotes
+            | ' ' when not insideQuotes ->
+                args <- arg :: args
+                arg <- ""
+            | c -> arg <- $"{arg}{c}"
+        if arg <> "" then args <- arg :: args
+        args |> List.rev
     let commands = File.ReadAllLines "tests/commands.txt" |> Array.choose (fun line ->
         let line = line.Trim()
         if line.Length = 0 || line.[0] = '#' then
             None
         else
-            Some (line.Split([|' '|]))
+            Some (splitArgs line |> List.toArray)
     )
     commands |> Array.Parallel.map runCommand |> Array.sum
 

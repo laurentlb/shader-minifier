@@ -1,0 +1,3 @@
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+
+var file_name_with_spaces_frag = `void main(){gl_FragColor=vec4(.33,.66,.99,1);}`

@@ -42,7 +42,7 @@ type private Impl(options: Options.Options, withLocations) =
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
-        let macroName = fileName.Replace(".", "_").ToUpper() + "_"
+        let macroName = fileName.Replace(".", "_").Replace(" ", "_").ToUpper() + "_"
 
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 

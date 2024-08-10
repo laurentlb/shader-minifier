@@ -1,0 +1,7 @@
+// Generated with  (https://github.com/laurentlb/Shader_Minifier/)
+
+pub const FILE_NAME_WITH_SPACES_FRAG: &'static [u8] = b"\
+ void main()\
+ {\
+   gl_FragColor=vec4(.33,.66,.99,1);\
+ }\0";
