@@ -200,7 +200,7 @@ let runCommand argv =
             minifier.Format(out, options)
             out.ToString() |> cleanString
         let outdir = "tests/out/" + Regex.Replace(options.outputName, @"^tests/(.*)/[^/]*$", @"$1") + "/"
-        let split = Regex.Match(shader.mangledFilename, @"(^.*)_([^_]+)$").Groups
+        let split = Regex.Match(System.IO.Path.GetFileName shader.filename, @"(^.*)\.([^\.]+)$").Groups
         let name = split[1].Value
         let ext = split[2].Value
         Directory.CreateDirectory outdir |> ignore
