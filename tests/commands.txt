@@ -6,10 +6,10 @@
 --format js -o tests/real/disco.expected tests/real/disco.frag
 --format nasm -o tests/real/leizex.expected tests/real/leizex.frag
 --format rust -o tests/real/heart.expected tests/real/heart.frag
---format c-variables -o "tests/unit/file name with spaces.frag.c-variables.expected" "tests/unit/file name with spaces.frag"
---format js -o "tests/unit/file name with spaces.frag.js.expected" "tests/unit/file name with spaces.frag"
---format nasm -o "tests/unit/file name with spaces.frag.nasm.expected" "tests/unit/file name with spaces.frag"
---format rust -o "tests/unit/file name with spaces.frag.rust.expected" "tests/unit/file name with spaces.frag"
+--format c-variables -o "tests/unit/file name with-weird caractères.frag.c-variables.expected" "tests/unit/file name with-weird caractères.frag"
+--format js -o "tests/unit/file name with-weird caractères.frag.js.expected" "tests/unit/file name with-weird caractères.frag"
+--format nasm -o "tests/unit/file name with-weird caractères.frag.nasm.expected" "tests/unit/file name with-weird caractères.frag"
+--format rust -o "tests/unit/file name with-weird caractères.frag.rust.expected" "tests/unit/file name with-weird caractères.frag"
 
 # Unit tests
 

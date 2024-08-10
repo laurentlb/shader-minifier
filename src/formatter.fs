@@ -2,6 +2,7 @@
 
 open System
 open System.IO
+open System.Text.RegularExpressions
 
 type private Impl(options: Options.Options, withLocations) =
 
@@ -42,7 +43,7 @@ type private Impl(options: Options.Options, withLocations) =
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
-        let macroName = fileName.Replace(".", "_").Replace(" ", "_").ToUpper() + "_"
+        let macroName = Ast.mangleToAscii(System.IO.Path.GetFileName fileName).ToUpper() + "_"
 
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
@@ -54,7 +55,7 @@ type private Impl(options: Options.Options, withLocations) =
 
         fprintfn out ""
         for shader in shaders do
-            fprintfn out "const char *%s =" shader.mangledFilename
+            fprintfn out "const char *%s =" (Ast.mangleToAscii shader.mangledFilename)
             let lines = String.concat Environment.NewLine [
                 for indent, line in getLines shader do
                     sprintf " %s\"%s\"" indent (escape line)]
@@ -127,7 +128,7 @@ type private Impl(options: Options.Options, withLocations) =
         for shader in shaders do
             // fprintfn out "_%s:%s\tdb '%s', 0" shader.mangledFilename Environment.NewLine (minify shader)
 
-            fprintfn out "_%s:" shader.mangledFilename // \tdb '%s', 0" shader.mangledFilename Environment.NewLine (minify shader)
+            fprintfn out "_%s:" (Ast.mangleToAscii shader.mangledFilename) // \tdb '%s', 0" shader.mangledFilename Environment.NewLine (minify shader)
             let lines = String.concat Environment.NewLine [
                 for indent, line in getLines shader do
                     sprintf "\tdb %s'%s'" indent (escape line)]

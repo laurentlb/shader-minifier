@@ -1,6 +1,6 @@
 ; Generated with  (https://github.com/laurentlb/Shader_Minifier/)
 
-_file_name_with_spaces_frag:
+_file_name_with_weird_caract_res_frag:
 	db 'void main()'
 	db '{'
 	db   'gl_FragColor=vec4(.33,.66,.99,1);'
