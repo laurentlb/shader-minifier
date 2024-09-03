@@ -49,17 +49,13 @@ float vine(vec3 p,float c,float h)
 
 #ifdef TRIANGLE_NOISE
 
-vec3 tri3(vec3 p)
-{
-  return vec3(tri(p.z+tri(p.y)),tri(p.z+tri(p.x)),tri(p.y+tri(p.x)));
-}
 float Noise3d(vec3 p)
 {
   float z=1.4,rz=0.;
   vec3 bp=p;
   for(float i=0.;i<=2.;i++)
     {
-      vec3 dg=tri3(bp);
+      vec3 dg=vec3(tri(bp.z+tri(bp.y)),tri(bp.z+tri(bp.x)),tri(bp.y+tri(bp.x)));
       p+=dg;
       bp*=2.;
       z*=1.5;
@@ -74,10 +70,6 @@ float Noise3d(vec3 p)
 
 #ifdef FOUR_D_NOISE
 
-vec4 quad(vec4 p)
-{
-  return abs(fract(p.yzwx+p.wzxy)-.5);
-}
 float Noise3d(vec3 q)
 {
   float z=1.4;
@@ -86,7 +78,7 @@ float Noise3d(vec3 q)
   vec4 bp=p;
   for(float i=0.;i<=2.;i++)
     {
-      vec4 dg=quad(bp);
+      vec4 dg=abs(fract(bp.yzwx+bp.wzxy)-.5);
       p+=dg;
       z*=1.5;
       p*=1.3;

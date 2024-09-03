@@ -98,7 +98,7 @@ type Analyzer(options: Options.Options) =
                     e
                 | _ -> e
             | e -> e
-        mapTopLevel (mapEnvExpr options findWrites) topLevel |> ignore<TopLevel list>
+        iterTopLevel (mapEnvExpr options findWrites) topLevel
 
         let findExternallyVisibleSideEffect tl =
             let mutable hasExternallyVisibleSideEffect = false
@@ -122,7 +122,7 @@ type Analyzer(options: Options.Options) =
                 // Side effects can hide in macros.
                 | (Verbatim _ | Directive _) as s -> hasExternallyVisibleSideEffect <- true; s
                 | s -> s
-            mapTopLevel (mapEnv options findExprSideEffects findStmtSideEffects) [tl] |> ignore<TopLevel list>
+            iterTopLevel (mapEnv options findExprSideEffects findStmtSideEffects) [tl]
             hasExternallyVisibleSideEffect
 
         for tl in topLevel do
@@ -172,6 +172,6 @@ type Analyzer(options: Options.Options) =
         // First visit all declarations, creating them.
         for tl in topLevel do
             resolveGlobalsAndParameters tl
-        mapTopLevel (mapEnv options (fun _ -> id) resolveStmt) topLevel |> ignore<TopLevel list>
+        iterTopLevel (mapEnv options (fun _ -> id) resolveStmt) topLevel
         // Then, visit all uses and associate them to their declaration.
-        mapTopLevel (mapEnvExpr options resolveExpr) topLevel |> ignore<TopLevel list>
+        iterTopLevel (mapEnvExpr options resolveExpr) topLevel

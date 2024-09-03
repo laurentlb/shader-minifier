@@ -351,6 +351,8 @@ let mapTopLevel env li =
         | e -> env, e)
     res
 
+let iterTopLevel env li = mapTopLevel env li |> ignore<TopLevel list>
+
 let jumpKeywordToString = function
     | JumpKeyword.Break -> "break"
     | JumpKeyword.Continue -> "continue"
