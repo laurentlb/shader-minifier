@@ -29,20 +29,29 @@ float notShadowedFunc(inout float notinlinable)
   notinlinable=2.;
   return-2.;
 }
-float A3()
+float shadowedVar=0.;
+float A1_PRESERVED()
+{
+  return shadowedVar;
+}
+float A3_PRESERVED()
 {
   float a=10.;
   return shadowedFunc(a);
 }
-float B1(float x)
+float B1_PRESERVED(float x)
 {
   return pow(2.,x);
 }
-float C1()
+float C1_PRESERVED()
 {
   float x=sin(0.);
   x++;
   return 3.+x;
+}
+float D1_PRESERVED(float d,float dd)
+{
+  return d+d;
 }
 float glob;
 float watchout(out float x)
@@ -53,53 +62,53 @@ float inuit(inout float greenland)
 {
   return greenland++;
 }
-float E1()
+float E1_PRESERVED(float bad1,float ok)
 {
-  float bad1=6.;
   return bad1++;
 }
-float E3()
+float E3_PRESERVED(float bad3,float ok)
 {
-  float bad3=6.;
   return bad3+=1.;
 }
-float E4()
+float E4_PRESERVED(float bad4,float ok)
 {
-  float bad4=6.;
   return watchout(bad4);
 }
-float E5()
+float E5_PRESERVED(float bad5,float ok)
 {
-  float bad5=6.;
   return inuit(bad5);
 }
-float F2(out float ff)
+float F2_PRESERVED(out float ff)
 {
   return 7.;
 }
-float F3(inout float f)
+float F3_PRESERVED(inout float f)
 {
   return 7.;
 }
-float G1(float g1,float g2)
+float setup()
 {
-  return 7.;
+  return shadowedVar++;
 }
 float f()
 {
-  float shadowedVar=-1.,shadowedFunc=-2.,_A3=A3(),_A4=notShadowedFunc(globalFloat);
+  float shadowedVar=-1.,shadowedFunc=-2.,_A3=A3_PRESERVED(),_A4=notShadowedFunc(globalFloat);
   int sep;
   sep++;
   sep++;
+  float four=4.,five=5.,_D1=D1_PRESERVED(four,five),_D2=four+five;
+  four++,five++;
   sep++;
-  float _E2=6.+watchout(glob)-glob--*(glob*=10.)+inuit(glob),_E4=E4(),_E5=E5();
+  float six=6.,ten=10.,_E1=E1_PRESERVED(six,ten),_E2=six+watchout(glob)-glob--*(glob*=ten)+inuit(glob),_E3=E3_PRESERVED(six,ten),_E4=E4_PRESERVED(six,ten),_E5=E5_PRESERVED(six,ten);
+  six++,ten++;
   sep++;
-  float o,_F2=F2(o);
-  o=F3(o);
+  float o,_F2=F2_PRESERVED(o);
+  o=F3_PRESERVED(o);
   sep++;
+  setup();
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+1.+_A3+_A4+(B1(3.)+B1(4.))+4.+C1()+(3.+sin(0.))+8.+9.+E1()+_E2+E3()+_E4+_E5+7.+_F2+o;
+  return shadowedVar+shadowedFunc+four+five+six+ten+A1_PRESERVED()+1.+_A3+_A4+(B1_PRESERVED(3.)+B1_PRESERVED(4.))+4.+C1_PRESERVED()+(3.+sin(0.))+_D1+_D2+_E1+_E2+_E3+_E4+_E5+7.+_F2+o;
 }
 float g()
 {
