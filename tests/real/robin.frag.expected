@@ -171,14 +171,6 @@ vec3 DoLighting(vec3 mat,vec3 pos,vec3 normal,vec3 eyeDir,float d,float specular
   normal=reflect(eyeDir,normal);
   return col+max(dot(sunLight,normal),0.)*SUN_COLOUR*texture(iChannel3,normal).xyz*specular*sh;
 }
-vec3 GetNormal(vec3 p,float sphereR)
-{
-  return normalize(vec3(Map(p+vec3(.01,0,0))-Map(p-vec3(.01,0,0)),Map(p+vec3(0,.01,0))-Map(p-vec3(0,.01,0)),Map(p+vec3(0,0,.01))-Map(p-vec3(0,0,.01))));
-}
-float SphereRadius(float t)
-{
-  return t*.012;
-}
 float Scene(vec3 rO,vec3 rD,vec2 fragCoord)
 {
   float t=2.+.1*Hash(fragCoord.xy*fract(iTime)),alphaAcc=0.;
@@ -189,7 +181,7 @@ float Scene(vec3 rO,vec3 rD,vec2 fragCoord)
       if(hits==8||alphaAcc>=1.||t>45.)
         break;
       p=rO+t*rD;
-      float sphereR=SphereRadius(t),h=Map(p);
+      float sphereR=t*.012,h=Map(p);
       if(h<sphereR)
         {
           float alpha=max((1.-alphaAcc)*min((sphereR-h)/sphereR,1.),0.);
@@ -271,7 +263,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
         float specular=0.,d=dStack[s][i];
         if(d<0.)
           continue;
-        vec3 pos=cameraPos+camTarget*d,normal=GetNormal(pos,SphereRadius(d)),alb=Colour(pos,normal,specular);
+        vec3 pos=cameraPos+camTarget*d,normal=normalize(vec3(Map(pos+vec3(.01,0,0))-Map(pos-vec3(.01,0,0)),Map(pos+vec3(0,.01,0))-Map(pos-vec3(0,.01,0)),Map(pos+vec3(0,0,.01))-Map(pos-vec3(0,0,.01)))),alb=Colour(pos,normal,specular);
         cu+=DoLighting(alb,pos,normal,camTarget,d,specular)*aStack[s][i];
       }
   t=smoothstep(1.9,0.,zoomTurn.y);

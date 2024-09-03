@@ -57,8 +57,9 @@ float B2_INLINED() { return 2.0; }
 float C1_PRESERVED() { float x = sin(0.); x++; return 3.0 + x; }
 float C2_INLINED() { return 3.0 + sin(0.); }
 
-float D1_PRESERVED(float d, float dd) { return d+d; }
+float D1_INLINED(float d, float dd) { return d+d; }
 float D2_INLINED(float d, float dd) { return d+dd; }
+float D3_PRESERVED(float d, float dd) { return d+d; }
 
 float glob;
 float watchout(out float x) { return x = 9.0; }
@@ -99,8 +100,9 @@ float f() {
 	sep++;
     // [D] Only inline a function if it uses its 'in' parameters at most once.
 	float four = 4.0, five = 5.0;
-	float _D1 = D1_PRESERVED(four, five); // not inlined
+	float _D1 = D1_INLINED(four, five); // not inlined
 	float _D2 = D2_INLINED(four, five); // inlined
+	float _D3 = D3_PRESERVED(four + 1.0, sin(five)); // not inlined
 	four++, five++; // prevent variable inlining and argument inlining into D1 and D2.
 
 	sep++;
@@ -129,7 +131,7 @@ float f() {
 		_A1+_A2+_A3+_A4+
 		_B1+_B2+
 		_C1+_C2+
-		_D1+_D2+
+		_D1+_D2+_D3+
 		_E1+_E2+_E3+_E4+_E5+
 		_F1+_F2+_F3;
 }

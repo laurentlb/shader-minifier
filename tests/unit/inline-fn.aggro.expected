@@ -49,7 +49,7 @@ float C1_PRESERVED()
   x++;
   return 3.+x;
 }
-float D1_PRESERVED(float d,float dd)
+float D3_PRESERVED(float d,float dd)
 {
   return d+d;
 }
@@ -96,7 +96,7 @@ float f()
   int sep;
   sep++;
   sep++;
-  float four=4.,five=5.,_D1=D1_PRESERVED(four,five),_D2=four+five;
+  float four=4.,five=5.,_D1=four+four,_D2=four+five,_D3=D3_PRESERVED(four+1.,sin(five));
   four++,five++;
   sep++;
   float six=6.,ten=10.,_E1=E1_PRESERVED(six,ten),_E2=six+watchout(glob)-glob--*(glob*=ten)+inuit(glob),_E3=E3_PRESERVED(six,ten),_E4=E4_PRESERVED(six,ten),_E5=E5_PRESERVED(six,ten);
@@ -108,7 +108,7 @@ float f()
   setup();
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+four+five+six+ten+A1_PRESERVED()+1.+_A3+_A4+(B1_PRESERVED(3.)+B1_PRESERVED(4.))+4.+C1_PRESERVED()+(3.+sin(0.))+_D1+_D2+_E1+_E2+_E3+_E4+_E5+7.+_F2+o;
+  return shadowedVar+shadowedFunc+four+five+six+ten+A1_PRESERVED()+1.+_A3+_A4+(B1_PRESERVED(3.)+B1_PRESERVED(4.))+4.+C1_PRESERVED()+(3.+sin(0.))+_D1+_D2+_D3+_E1+_E2+_E3+_E4+_E5+7.+_F2+o;
 }
 float g()
 {

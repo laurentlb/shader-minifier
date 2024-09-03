@@ -142,7 +142,7 @@ type VariableInlining(options: Options.Options) =
             | Block b -> markSafelyInlinableLocals b
             | _ -> ()
             stmt
-        mapTopLevel (mapEnv options (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
+        iterTopLevel (mapEnv options (fun _ -> id) mapStmt) li
         ()
 
     let markSimpleInlinableVariables li =
@@ -153,7 +153,7 @@ type VariableInlining(options: Options.Options) =
             | _ -> ()
             stmt
         // Visit locals
-        mapTopLevel (mapEnv options (fun _ -> id) mapStmt) li |> ignore<TopLevel list>
+        iterTopLevel (mapEnv options (fun _ -> id) mapStmt) li
         // Visit globals
         for tl in li do
             match tl with
@@ -176,10 +176,10 @@ type FunctionInlining(options: Options.Options) =
     //     Exception: if the body is "trivial" it will be inlined at all call sites.
     // [C] Only inline a function if it is a single expression return.
     //     This also ensures the function does not declare any locals.
-    // [D] Only inline a function if it uses its 'in' parameters at most once.
+    // [D] Only inline a function if it uses its 'in' parameters at most once,
+    //     or if the parameter is used multiple times but the argument expression can be duplicated at the call site.
     //     No attempt is made to inline in other cases. For example, it would be correct to inline
-    //     when an 'in' parameter is read more than once but is an expression without side-effects,
-    //     or when the parameter is written but the argument is a lvalue that doesn't make any side effect and is not used after the call site.
+    //     when the parameter is written but the argument is a lvalue that doesn't make any side effect and is not used after the call site.
     //     Repeating the expression could increase the shader size or decrease run time performance.
     // [E] Only inline a function if its 'in' parameters are never written to (through assignOps or calling an out or inout function or operator).
     //     No attempt is made to find if the passed argument is an lvalue that's never used after calling the function to inline.
@@ -189,35 +189,65 @@ type FunctionInlining(options: Options.Options) =
     //     Evaluating them could have side effects (e.g. a[b++]), which is a problem if they are used more than once.
     //     If the 'out' parameters are read from, inlining can change the behavior.
     //     It's fine if 'out' parameters are written in more than one place.
-    let verifyArgsUses func (callSites: CallSite list) =
-        let argUsageCounts = Dictionary<string, int>()
+    // [G] Only inline a function if the argument expressions are pure.
+    //     Inlining can change the evaluation order of the arguments, and will remove unused arguments.
+    //     This is fine when they are pure. Except in one case:
+    //     BUG: Function inlining can delay the evaluation order of an argument expression that reads a global,
+    //     and the global can be modified by the inlined function before it's evaluated as part of the argument.
+    //         int g = 0; int foo(int a) { return ++g - a; } int main() { return foo(g); } // `foo(g)` is 1, but `g++ - g` would be 0
+    let verifyVarsAndParams funcInfo (callSites: CallSite list) =
+        let paramUsageCounts = Dictionary<string, int>()
         let mutable shadowedGlobal = false
-        let mutable argIsWritten = false
+        let mutable paramIsWritten = false
 
-        let visitArgUses _ = function
+        let visitVarUsesInBody _ = function
             | ResolvedVariableUse (v, vd) as e ->
                 match vd.scope with
                 | VarScope.Local ->
-                    failwith "There shouldn't be any locals in a function with a single return statement."
+                    failwith "There shouldn't be any locals in a function whose body is a single return statement."
                 | VarScope.Parameter ->
-                    argIsWritten <- argIsWritten || vd.isEverWrittenAfterDecl
-                    argUsageCounts.[v.Name] <- match argUsageCounts.TryGetValue(v.Name) with _, n -> n + 1
+                    if vd.isEverWrittenAfterDecl then
+                        paramIsWritten <- true
+                    paramUsageCounts.[v.Name] <- match paramUsageCounts.TryGetValue(v.Name) with _, n -> n + 1
                 | VarScope.Global ->
-                    shadowedGlobal <- shadowedGlobal || (callSites |> List.exists (fun callSite ->
-                        callSite.varsInScope |> List.contains v.Name))
+                    if callSites |> List.exists (fun callSite -> callSite.varsInScope |> List.contains v.Name) then
+                        shadowedGlobal <- true
                 e
             | e -> e
-        mapTopLevel (mapEnvExpr options visitArgUses) [func] |> ignore<TopLevel list>
+        iterTopLevel (mapEnvExpr options visitVarUsesInBody) [funcInfo.func]
 
-        let argsAreUsedAtMostOnce = not (argUsageCounts.Values |> Seq.exists (fun n -> n > 1))
-        let ok =
-            argsAreUsedAtMostOnce && // [D]
-            not argIsWritten && // [E]
-            not shadowedGlobal // [A]
-        ok
+        if paramIsWritten || // [E]
+            shadowedGlobal // [A]
+        then false
+        else
+            let canBeDuplicated = function
+                | ResolvedVariableUse (v, vd) -> // allow non-global variable reads
+                    not v.isVarWrite &&
+                    not (vd.scope = VarScope.Global)
+                | e -> isTrivialExpr e
+
+            let paramNames = funcInfo.funcType.args |> List.map (fun (_, argDeclElts) ->
+                match argDeclElts with
+                | [declElt] -> declElt.name.Name
+                | _ -> failwith "arguments have one declElt each.")
+
+            let mutable hasAnyImpureArg = false
+            let mutable cannotDuplicateArg = false
+            for callSite in callSites do
+                for argIndex, argExpr in callSite.argExprs |> Seq.indexed do
+                    if not (Effects.isPure argExpr) then
+                        hasAnyImpureArg <- true
+                    let paramUsageCount = match paramUsageCounts.TryGetValue(paramNames.[argIndex]) with _, n -> n
+                    if paramUsageCount > 1 && not (canBeDuplicated argExpr) then
+                        cannotDuplicateArg <- true
+
+            let ok =
+                not hasAnyImpureArg && // [G]
+                not cannotDuplicateArg // [D]
+            ok
 
     let tryMarkFunctionToInline (funcInfo: FuncInfo) (callSites: CallSite list) =
-        if not funcInfo.funcType.fName.DoNotInline && verifyArgsUses funcInfo.func callSites then
+        if not funcInfo.funcType.fName.DoNotInline && verifyVarsAndParams funcInfo callSites then
             // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
             // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
             options.trace $"{funcInfo.funcType.fName.Loc}: inlining function '{Printer.debugFunc funcInfo.funcType}' into {callSites.Length} call sites"

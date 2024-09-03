@@ -116,10 +116,6 @@ void ComputeBoatTransform()
   boatForward=normalize(boatForward);
   boatPosition+=0.*boatUp;
 }
-vec3 WorldToBoat(vec3 dir)
-{
-  return vec3(dot(dir,boatRight),dot(dir,boatUp),dot(dir,boatForward));
-}
 float TraceBoat(vec3 pos,vec3 ray)
 {
   pos=boatPosition-pos;
@@ -132,7 +128,7 @@ vec3 ShadeBoat(vec3 pos,vec3 ray)
 {
   pos-=boatPosition;
   vec3 norm=normalize(pos);
-  pos=WorldToBoat(pos);
+  pos=vec3(dot(pos,boatRight),dot(pos,boatUp),dot(pos,boatForward));
   vec3 lightDir=normalize(vec3(-2,3,1));
   float aa=4./iResolution.x;
   pos=mix(vec3(1,.8,.08),mix(vec3(.04),mix(mix(vec3(1),vec3(.04),smoothstep(-aa*4.,aa*4.,cos(atan(pos.x,pos.z)*6.))),mix(vec3(.04),vec3(1,.01,0),smoothstep(.25-aa,.25,abs(pos.y))),smoothstep(.2-aa*1.5,.2,abs(pos.y))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.6))),smoothstep(.05-aa,.05,abs(abs(pos.y)-.65)))*(smoothstep(-.1,1.,dot(norm,lightDir))*vec3(1,.9,.8)+vec3(.06,.1,.1));
