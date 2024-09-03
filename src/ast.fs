@@ -81,10 +81,18 @@ and Expr =
 
 and TypeSpec =
     | TypeName of string
-    // struct or interface block, e.g. struct foo { float x; float y; }
-    | TypeBlock of string(*type*) * Ident option(*name*) * string option(*template*) * string option(*base class*) * Decl list
-    // An interface block followed by an instance name (in a TLDecl), like structs, declares an instance.
-    // An interface block without an instance name (in a TypeDecl), unlike structs, introduces a set of external global variables.
+    | TypeBlock of StructOrInterfaceBlock
+
+// An interface block followed by an instance name (in a TLDecl), like structs, declares an instance.
+// An interface block without an instance name (in a TypeDecl), unlike structs, introduces a set of external global variables.
+// struct or interface block, e.g. struct Point<T> : Base { int x; int y; T item; }
+and StructOrInterfaceBlock = {
+    prefix: string // "struct" if it's a struct, otherwise things like "uniform" or "layout(...)"
+    name: Ident option // Point
+    template: string option // "<T>"
+    baseClass: string option // "Base"
+    fields: Decl list // int x; int y; T item;
+}
 
 and Type = {
     name: TypeSpec // e.g. int
@@ -171,7 +179,7 @@ and TopLevel =
     | TLDirective of string list
     | Function of FunctionType * Stmt
     | TLDecl of Decl
-    | TypeDecl of TypeSpec // structs or interface blocks
+    | TypeDecl of StructOrInterfaceBlock // struct declaration, or interface block that introduce a set of external global variables.
     | Precision of Type
 
 let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}

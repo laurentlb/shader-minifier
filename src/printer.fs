@@ -170,16 +170,16 @@ type PrinterImpl(withLocations) =
         let res = sem |> List.map (exprToS 0) |> String.concat ":"
         if res = "" then res else ":" + res
 
-    let rec structToS prefix id template baseCls decls =
-        let name = match id with None -> "" | Some (s: Ident) -> " " + s.Name
-        let name = match template with None -> name | Some t -> name + t
-        let c = match baseCls with None -> "" | Some s -> $":{s}"
-        let d = decls |> List.map (fun s -> declToS 0 s + ";") |> String.concat ""
-        out "%s%s{%s}" (sp2 prefix name) c d
+    let rec blockToS (block: StructOrInterfaceBlock) =
+        let name = match block.name with None -> "" | Some (s: Ident) -> " " + s.Name
+        let name = match block.template with None -> name | Some t -> name + t
+        let c = match block.baseClass with None -> "" | Some s -> $":{s}"
+        let d = block.fields |> List.map (fun s -> declToS 0 s + ";") |> String.concat ""
+        out "%s%s{%s}" (sp2 block.prefix name) c d
 
     and typeSpecToS = function
         | TypeName s -> s
-        | TypeBlock(prefix, id, template, baseCls, decls) -> structToS prefix id template baseCls decls
+        | TypeBlock block -> blockToS block
 
     and typeToS (ty: Type) =
         let get = function
@@ -293,7 +293,7 @@ type PrinterImpl(withLocations) =
         | Function (fct, body) -> out "%s%s{%s%s}" (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
         | Precision ty -> out "precision %s;" (typeToS ty);
         | TLDecl decl -> out "%s;" (declToS 0 decl)
-        | TypeDecl t -> out "%s;" (typeSpecToS t)
+        | TypeDecl b -> out "%s;" (blockToS b)
 
     let printIndented tl = 
         let mutable wasMacro = true
@@ -319,8 +319,8 @@ type PrinterImpl(withLocations) =
                 match tl with
                 | Function (fct, _) -> fct.fName.OldName
                 | TLDecl (_, declElts) -> declElts |> List.map (fun declElt -> declElt.name.OldName) |> String.concat ","
-                | TypeDecl (TypeBlock (_, Some name, _, _, _)) -> name.OldName
-                | TypeDecl _ -> "*type decl*" // unnamed TypeBlock (a top-level TypeDecl cannot be a TypeName)
+                | TypeDecl { name = Some n } -> n.OldName
+                | TypeDecl _ -> "*type decl*" // struct or unnamed interface block
                 | Precision _ -> "*precision*"
                 | TLDirective ("#define"::_) -> "#define"
                 | TLDirective _ -> "*directive*"

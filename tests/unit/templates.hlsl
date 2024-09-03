@@ -4,6 +4,8 @@ struct literal {
 };
 
 template <typename T>
-void DoSomething(T arg) {
+literal<T> DoSomething(T arg, literal<T> b) {
   T a = arg;
+  literal<T> c = b;
+  return c;
 }
