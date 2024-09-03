@@ -331,15 +331,14 @@ type private RenamerImpl(options: Options.Options) =
     // e.g. struct foo { int a; float b; }
     //   or uniform foo { int a; float b; }
     let renTyBlock (env: Env) = function
-        | TypeBlock("struct", _, _, _, _) -> env
-        | TypeBlock(_, _, _, _, fields) ->
+        | { StructOrInterfaceBlock.prefix = "struct" } -> env
+        | block ->
             // interface block without an instance name: the fields are treated as external global variables
-            renList env (renDecl Level.TopLevel true) fields
-        | _ -> env
+            renList env (renDecl Level.TopLevel true) block.fields
 
     let rec renTopLevelName env = function
         | TLDecl d -> renDecl Level.TopLevel false env d
-        | TypeDecl tyDecl -> renTyBlock env tyDecl
+        | TypeDecl block -> renTyBlock env block
         | Function(fct, _) -> renFctName env fct
         | _ -> env
 
