@@ -285,6 +285,9 @@ type ArgumentInlining(options: Options.Options) =
 
     let rec isInlinableExpr = function
         // This is different that purity: reading a variable is pure, but non-inlinable in general.
+        | ResolvedVariableUse (_, vd) ->
+            // 'in' uniforms are read-only globals, they can be inlined
+            vd.scope = VarScope.Global && not vd.isEverWrittenAfterDecl
         | Var v when v.Name = "true" || v.Name = "false" -> true
         | Int _
         | Float _ -> true
