@@ -56,8 +56,8 @@ in vec3 camPos;
 float len(vec3 pos) {
   return length(pos);
 }
-void main450() {
+float main450() {
   float a = len(camPos);
   float b = len(camPos);
-  f(a, b);
+  return a + b;
 }

@@ -30,7 +30,7 @@ float len()
 {
   return length(camPos);
 }
-void main450()
+float main450()
 {
-  f(len(),len());
+  return len()+len();
 }
