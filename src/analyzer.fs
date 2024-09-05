@@ -59,7 +59,7 @@ type Analyzer(options: Options.Options) =
                     callSites.Add { ident = id; varsInScope = mEnv.vars.Keys |> Seq.toList; prototype = (id.Name, argExprs.Length); argExprs = argExprs }
                     e
                 | e -> e
-            mapStmt BlockLevel.Unknown (mapEnvExpr options collect) block |> ignore<MapEnv * Stmt>
+            options.visitor(collect).iterStmt BlockLevel.Unknown block
             callSites |> Seq.toList
         let functions = code |> List.choose (function
             | Function(funcType, block) as f -> Some (funcType, funcType.fName.Name, block, f)
@@ -78,12 +78,14 @@ type Analyzer(options: Options.Options) =
         let collectLocalUses _ = function
             | Var v as e -> idents <- v :: idents; e
             | e -> e
-        mapStmt BlockLevel.Unknown (mapEnvExpr options collectLocalUses) stmt |> ignore<MapEnv * Stmt>
+        options.visitor(collectLocalUses).iterStmt BlockLevel.Unknown stmt
         idents
 
-    member _.markWrites topLevel = // calculates hasExternallyVisibleSideEffects, for inlining
+    // recalculates hasExternallyVisibleSideEffects/isVarWrite/isEverWrittenAfterDecl, for inlining
+    member _.markWrites topLevel =
         let findWrites (env: MapEnv) = function
             | ResolvedVariableUse (v, vd) as e when env.isInWritePosition ->
+                // those two are never set to false on a fresh re-analysis?
                 vd.isEverWrittenAfterDecl <- true
                 v.isVarWrite <- true
                 e
@@ -94,11 +96,11 @@ type Analyzer(options: Options.Options) =
                     // but we also need to handle variable writes through "out" or "inout" parameters.
                     for arg, (ty, _) in List.zip args funcDecl.funcType.args do
                         let newEnv = if ty.isOutOrInout then {env with isInWritePosition = true} else env
-                        (mapExpr newEnv arg: Expr) |> ignore<Expr>
+                        newEnv.iterExpr arg
                     e
                 | _ -> e
             | e -> e
-        iterTopLevel (mapEnvExpr options findWrites) topLevel
+        options.visitor(findWrites).iterTopLevel topLevel
 
         let findExternallyVisibleSideEffect tl =
             let mutable hasExternallyVisibleSideEffect = false
@@ -122,7 +124,7 @@ type Analyzer(options: Options.Options) =
                 // Side effects can hide in macros.
                 | (Verbatim _ | Directive _) as s -> hasExternallyVisibleSideEffect <- true; s
                 | s -> s
-            iterTopLevel (mapEnv options findExprSideEffects findStmtSideEffects) [tl]
+            options.visitor(findExprSideEffects, findStmtSideEffects).iterTopLevel [tl]
             hasExternallyVisibleSideEffect
 
         for tl in topLevel do
@@ -172,6 +174,6 @@ type Analyzer(options: Options.Options) =
         // First visit all declarations, creating them.
         for tl in topLevel do
             resolveGlobalsAndParameters tl
-        iterTopLevel (mapEnv options (fun _ -> id) resolveStmt) topLevel
+        options.visitor(fStmt = resolveStmt).iterTopLevel topLevel
         // Then, visit all uses and associate them to their declaration.
-        iterTopLevel (mapEnvExpr options resolveExpr) topLevel
+        options.visitor(resolveExpr).iterTopLevel topLevel

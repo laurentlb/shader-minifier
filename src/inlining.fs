@@ -21,7 +21,7 @@ type VariableInlining(options: Options.Options) =
                 e
             | e -> e
         for expr in stmtList do
-            mapStmt BlockLevel.Unknown (mapEnvExpr options collectLocalUses) expr |> ignore<MapEnv * Stmt>
+            options.visitor(collectLocalUses).iterStmt BlockLevel.Unknown expr
         counts
 
     let isEffectivelyConst (ident: Ident) =
@@ -142,7 +142,7 @@ type VariableInlining(options: Options.Options) =
             | Block b -> markSafelyInlinableLocals b
             | _ -> ()
             stmt
-        iterTopLevel (mapEnv options (fun _ -> id) mapStmt) li
+        options.visitor(fStmt = mapStmt).iterTopLevel li
         ()
 
     let markSimpleInlinableVariables li =
@@ -153,7 +153,7 @@ type VariableInlining(options: Options.Options) =
             | _ -> ()
             stmt
         // Visit locals
-        iterTopLevel (mapEnv options (fun _ -> id) mapStmt) li
+        options.visitor(fStmt = mapStmt).iterTopLevel li
         // Visit globals
         for tl in li do
             match tl with
@@ -214,7 +214,7 @@ type FunctionInlining(options: Options.Options) =
                         shadowedGlobal <- true
                 e
             | e -> e
-        iterTopLevel (mapEnvExpr options visitVarUsesInBody) [funcInfo.func]
+        options.visitor(visitVarUsesInBody).iterTopLevel [funcInfo.func]
 
         if paramIsWritten || // [E]
             shadowedGlobal // [A]
@@ -338,7 +338,7 @@ type ArgumentInlining(options: Options.Options) =
         let applyTopLevel = function
             | Function(fct, body) as f ->
                 // Handle argument inlining for other functions called by f.
-                let _, body = mapStmt (BlockLevel.FunctionRoot fct) (mapEnvExpr options applyExpr) body
+                let _, body = options.visitor(applyExpr).mapStmt (BlockLevel.FunctionRoot fct) body
                 // Handle argument inlining for f. Remove the parameter from the declaration.
                 let fct = {fct with args = removeInlined f fct.args}
                 // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.

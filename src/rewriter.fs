@@ -81,7 +81,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 // mutations to affect all of the inlined idents.
                 | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
             | ie -> ie
-        mapExpr (mapEnvExpr options mapInline) bodyExpr
+        options.visitor(mapInline).mapExpr bodyExpr
 
     // Expression that doesn't need parentheses around it.
     let (|NoParen|_|) = function
@@ -361,7 +361,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             match vd.decl.init with
             | Some init ->
                 didInline.Value <- true
-                init |> mapExpr env
+                init |> env.mapExpr
             | _ -> e
 
         | FunCall(Var var, [e; Number 1.M]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x
@@ -552,7 +552,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             let visitAndReplace _ = function
                 | Var v when v.Name = identName -> replacement
                 | e -> e
-            mapExpr (mapEnvExpr options visitAndReplace) expr
+            options.visitor(visitAndReplace).mapExpr expr
 
         // Merge two consecutive items into one, everywhere possible in a list.
         let rec squeeze (f : 'a * 'a -> 'a list option) = function
@@ -801,7 +801,7 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
     let didInline = ref false
     let before = Printer.print li
     let rewriter = RewriterImpl(options, optimizationPass)
-    let li = mapTopLevel (mapEnv options (rewriter.SimplifyExpr didInline) (rewriter.SimplifyStmt)) li
+    let li = options.visitor(rewriter.SimplifyExpr didInline, rewriter.SimplifyStmt).mapTopLevel li
 
     // now that the functions were inlined, we can remove them
     let li = li |> List.filter (function
