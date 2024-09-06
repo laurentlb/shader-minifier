@@ -232,7 +232,7 @@ type private RenamerImpl(options: Options.Options) =
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v
             | e -> e
-        mapExpr (mapEnvExpr options mapper) expr |> ignore<Expr>
+        options.visitor(mapper).iterExpr expr
 
     let renDecl level isFieldOfAnInterfaceBlockWithoutInstanceName env (ty:Type, vars) =
         let aux (env: Env) (decl: Ast.DeclElt) =

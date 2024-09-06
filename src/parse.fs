@@ -331,9 +331,9 @@ type private ParseImpl(options: Options.Options) =
     let jump =
         let key =
             choice [keyword "break"; keyword "continue"; keyword "discard"]
-              |>> (fun k -> Ast.Jump(Ast.stringToJumpKeyword k, None))
+              |>> (fun k -> Ast.Jump(Ast.JumpKeyword.fromString k, None))
 
-        let ret = pipe2 (keyword "return") (opt expr) (fun k e -> Ast.Jump(Ast.stringToJumpKeyword k, e))
+        let ret = pipe2 (keyword "return") (opt expr) (fun k e -> Ast.Jump(Ast.JumpKeyword.fromString k, e))
         (key <|> ret) .>> ch ';'
 
     // A statement

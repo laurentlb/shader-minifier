@@ -257,8 +257,8 @@ type PrinterImpl(withLocations) =
             out "while(%s)%s" (exprToS indent cond) (stmtToSInd indent body)
         | DoWhile(cond, body) ->
             out "do%s%s%swhile(%s);" (nl (indent+1)) (stmtToS' (indent + 1) body |> sp) (nl indent) (exprToS indent cond)
-        | Jump(k, None) -> out "%s;" (jumpKeywordToString k)
-        | Jump(k, Some exp) -> out "%s%s;" (jumpKeywordToString k) (exprToS indent exp |> sp)
+        | Jump(k, None) -> out "%s;" k.toString
+        | Jump(k, Some exp) -> out "%s%s;" k.toString (exprToS indent exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
             if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s

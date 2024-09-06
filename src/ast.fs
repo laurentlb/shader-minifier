@@ -60,7 +60,19 @@ and FunDecl(func, funcType) =
     member val func: TopLevel = func with get
     member val funcType: FunctionType = funcType with get
     member val hasExternallyVisibleSideEffects = false with get, set
-and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return
+and [<RequireQualifiedAccess>] JumpKeyword = Break | Continue | Discard | Return with
+    member this.toString =
+        match this with
+        | JumpKeyword.Break -> "break"
+        | JumpKeyword.Continue -> "continue"
+        | JumpKeyword.Discard -> "discard"
+        | JumpKeyword.Return -> "return"
+    static member fromString = function
+        | "break" -> JumpKeyword.Break
+        | "continue" -> JumpKeyword.Continue
+        | "discard" -> JumpKeyword.Discard
+        | "return" -> JumpKeyword.Return
+        | s -> failwith ("not a keyword: " + s)
 
 and Expr =
     | Int of int64 * string
@@ -208,7 +220,7 @@ type Shader = {
     reorderFunctions: bool  // set to true if we saw a forward declaration
 } with member this.mangledFilename = mangleToUnicode (System.IO.Path.GetFileName this.filename)
 
-// mapEnv is a kind of visitor that applies transformations to statements and expressions,
+// MapEnv is a kind of visitor that applies transformations to statements and expressions,
 // while also collecting visible variable and function declarations along the way.
 
 [<NoComparison>] [<RequireQualifiedAccess>]
@@ -218,7 +230,7 @@ type BlockLevel = FunctionRoot of FunctionType | Nested | Unknown
 type Level = TopLevel | InFunc
 
 [<NoComparison; NoEquality>]
-type MapEnv = {
+type MapEnv private = {
     fExpr: MapEnv -> Expr -> Expr
     fStmt: MapEnv -> Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
@@ -227,143 +239,132 @@ type MapEnv = {
     blockLevel: BlockLevel
     options: Options.Options
 } with
-    member this.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
+    member private this.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
         let oldFnsList = (this.fns.TryFind(fct.prototype) |> Option.defaultValue [])
         let newFnsList = (fct, body) :: (if replaceMostRecentOverload then oldFnsList.Tail else oldFnsList)
         {this with fns = this.fns.Add(fct.prototype, newFnsList)}
 
-let mapEnv options fe fi = {
-    fExpr = fe
-    fStmt = fi
-    vars = Map.empty
-    fns = Map.empty
-    isInWritePosition = false
-    blockLevel = BlockLevel.Unknown
-    options = options
-}
-let mapEnvExpr options fe = mapEnv options fe (fun _ -> id)
+    member env.foldList fct li =
+        let mutable env = env
+        let res = li |> List.map (fun i ->
+            let newEnv, x = fct env i
+            env <- newEnv
+            x)
+        env, res
 
-let foldList env fct li =
-    let mutable env = env
-    let res = li |> List.map (fun i ->
-        let newEnv, x = fct env i
-        env <- newEnv
-        x)
-    env, res
+    // Applies env.fExpr recursively on all nodes of an expression.
+    member env.iterExpr e = env.mapExpr e |> ignore<Expr>
+    member env.mapExpr = function
+        | FunCall(Op o as fct, first::args) when Builtin.assignOps.Contains o ->
+            let first = {env with isInWritePosition = true}.mapExpr first
+            env.fExpr env (FunCall(env.mapExpr fct, first :: List.map env.mapExpr args))
+        | FunCall(fct, args) ->
+            let env = {env with isInWritePosition = false}
+            env.fExpr env (FunCall(env.mapExpr fct, List.map env.mapExpr args))
+        | Subscript(arr, ind) ->
+            let indexEnv = {env with isInWritePosition = false}
+            env.fExpr env (Subscript(env.mapExpr arr, Option.map indexEnv.mapExpr ind))
+        | Dot(e,  field) -> env.fExpr env (Dot(env.mapExpr e, field))
+        | Cast(id, e) -> env.fExpr env (Cast(id, env.mapExpr e))
+        | VectorExp(li) ->
+            env.fExpr env (VectorExp(List.map env.mapExpr li))
+        | e -> env.fExpr env e
 
-// Applies env.fExpr recursively on all nodes of an expression.
-let rec mapExpr env = function
-    | FunCall(Op o as fct, first::args) when Builtin.assignOps.Contains o ->
-        let first = mapExpr {env with isInWritePosition = true} first
-        env.fExpr env (FunCall(mapExpr env fct, first :: List.map (mapExpr env) args))
-    | FunCall(fct, args) ->
-        let env = {env with isInWritePosition = false}
-        env.fExpr env (FunCall(mapExpr env fct, List.map (mapExpr env) args))
-    | Subscript(arr, ind) ->
-        let indexEnv = {env with isInWritePosition = false}
-        env.fExpr env (Subscript(mapExpr env arr, Option.map (mapExpr indexEnv) ind))
-    | Dot(e,  field) -> env.fExpr env (Dot(mapExpr env e, field))
-    | Cast(id, e) -> env.fExpr env (Cast(id, mapExpr env e))
-    | VectorExp(li) ->
-        env.fExpr env (VectorExp(List.map (mapExpr env) li))
-    | e -> env.fExpr env e
+    member env.mapDecl (ty, vars) =
+        let aux (env: MapEnv) (decl: DeclElt) =
+            // First visit the initialization value, then add the decl to the env
+            // e.g. in `float x = x + 1`, the two `x` are not the same!
+            let ret = {
+                decl with
+                    size=Option.map env.mapExpr decl.size
+                    init=Option.map env.mapExpr decl.init}
+            let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
+            env, ret
+        let env, vars = env.foldList aux vars
+        env, (ty, vars)
 
-and mapDecl env (ty, vars) =
-    let aux env (decl: DeclElt) =
-        // First visit the initialization value, then add the decl to the env
-        // e.g. in `float x = x + 1`, the two `x` are not the same!
-        let ret = {
-            decl with
-                size=Option.map (mapExpr env) decl.size
-                init=Option.map (mapExpr env) decl.init}
-        let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
-        env, ret
-    let env, vars = foldList env aux vars
-    env, (ty, vars)
+    member env.iterStmt blockLevel stmt = env.mapStmt blockLevel stmt |> ignore<MapEnv * Stmt>
+    member env.mapStmt blockLevel stmt =
+        let mapStmt' (env: MapEnv) = env.mapStmt BlockLevel.Nested
+        let env = {env with blockLevel = BlockLevel.Nested}
+        let aux = function
+            | Block stmts ->
+                let _, stmts = env.foldList mapStmt' stmts
+                env, Block stmts
+            | Expr e -> env, Expr (env.mapExpr e)
+            | Decl d ->
+                let env, res = env.mapDecl d
+                env, Decl res
+            | If(cond, th, el) ->
+                env, If (env.mapExpr cond, snd (mapStmt' env th), Option.map (mapStmt' env >> snd) el)
+            | While(cond, body) ->
+                env, While (env.mapExpr cond, snd (mapStmt' env body))
+            | DoWhile(cond, body) ->
+                env, DoWhile (env.mapExpr cond, snd (mapStmt' env body))
+            | ForD(init, cond, inc, body) ->
+                let env', decl = env.mapDecl init
+                let res = ForD (decl, Option.map (env'.mapExpr) cond,
+                                Option.map (env'.mapExpr) inc, snd (mapStmt' env' body))
+                if env.options.hlsl then env', res
+                else env, res
+            | ForE(init, cond, inc, body) ->
+                let res = ForE (Option.map env.mapExpr init, Option.map env.mapExpr cond,
+                                Option.map env.mapExpr inc, snd (mapStmt' env body))
+                env, res
+            | Jump(k, e) ->
+                env, Jump (k, Option.map env.mapExpr e)
+            | (Verbatim _ | Directive _) as v -> env, v
+            | Switch(e, cl) ->
+                let mapLabel = function
+                    | Case e -> Case (env.mapExpr e)
+                    | Default -> Default
+                let mapCase (l, sl) =
+                    let _, sl = env.foldList mapStmt' sl
+                    (mapLabel l, sl)
+                env, Switch (env.mapExpr e, List.map mapCase cl)
+        let env, res = aux stmt
+        let env = {env with blockLevel = blockLevel}
+        env, env.fStmt env res
 
-let rec mapStmt blockLevel env stmt =
-    let mapStmt' = mapStmt BlockLevel.Nested
-    let env = {env with blockLevel = BlockLevel.Nested}
-    let aux = function
-        | Block stmts ->
-            let _, stmts = foldList env mapStmt' stmts
-            env, Block stmts
-        | Expr e -> env, Expr (mapExpr env e)
-        | Decl d ->
-            let env, res = mapDecl env d
-            env, Decl res
-        | If(cond, th, el) ->
-            env, If (mapExpr env cond, snd (mapStmt' env th), Option.map (mapStmt' env >> snd) el)
-        | While(cond, body) ->
-            env, While (mapExpr env cond, snd (mapStmt' env body))
-        | DoWhile(cond, body) ->
-            env, DoWhile (mapExpr env cond, snd (mapStmt' env body))
-        | ForD(init, cond, inc, body) ->
-            let env', decl = mapDecl env init
-            let res = ForD (decl, Option.map (mapExpr env') cond,
-                            Option.map (mapExpr env') inc, snd (mapStmt' env' body))
-            if env.options.hlsl then env', res
-            else env, res
-        | ForE(init, cond, inc, body) ->
-            let res = ForE (Option.map (mapExpr env) init, Option.map (mapExpr env) cond,
-                            Option.map (mapExpr env) inc, snd (mapStmt' env body))
-            env, res
-        | Jump(k, e) ->
-            env, Jump (k, Option.map (mapExpr env) e)
-        | (Verbatim _ | Directive _) as v -> env, v
-        | Switch(e, cl) ->
-            let mapLabel = function
-                | Case e -> Case (mapExpr env e)
-                | Default -> Default
-            let mapCase (l, sl) =
-                let _, sl = foldList env mapStmt' sl
-                (mapLabel l, sl)
-            env, Switch (mapExpr env e, List.map mapCase cl)
-    let env, res = aux stmt
-    let env = {env with blockLevel = blockLevel}
-    env, env.fStmt env res
+    member env.iterTopLevel li = env.mapTopLevel li |> ignore<TopLevel list>
+    member env.mapTopLevel li =
+        let _, res = li |> env.foldList (fun env tl ->
+            match tl with
+            | TLDecl t ->
+                let env, res = env.mapDecl t
+                env, TLDecl res
+            | Function(fct, body) ->
+                // Back up the vars without the parameters.
+                let varsWithoutParameters = env.vars
+                // Add the function to env.fns, to have it when transforming the parameters.
+                let env = env.withFunction(fct, body, replaceMostRecentOverload = false)
+                // Transform the parameters and add them to env.vars, to have them when transforming the body.
+                let env, args = env.foldList (fun env -> env.mapDecl) fct.args
+                // Update env.fns with the transformed parameters.
+                let fct = { fct with args = args }
+                let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
 
-let mapTopLevel env li =
-    let _, res = li |> foldList env (fun env tl ->
-        match tl with
-        | TLDecl t ->
-            let env, res = mapDecl env t
-            env, TLDecl res
-        | Function(fct, body) ->
-            // Back up the vars without the parameters.
-            let varsWithoutParameters = env.vars
-            // Add the function to env.fns, to have it when transforming the parameters.
-            let env = env.withFunction(fct, body, replaceMostRecentOverload = false)
-            // Transform the parameters and add them to env.vars, to have them when transforming the body.
-            let env, args = foldList env mapDecl fct.args
-            // Update env.fns with the transformed parameters.
-            let fct = { fct with args = args }
-            let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
+                // Transform the body. The env modifications (local variables) are discarded.
+                let _, body = env.mapStmt (BlockLevel.FunctionRoot fct) body
+                // Update env.fns with the transformed body.
+                let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
 
-            // Transform the body. The env modifications (local variables) are discarded.
-            let _, body = mapStmt (BlockLevel.FunctionRoot fct) env body
-            // Update env.fns with the transformed body.
-            let env = env.withFunction(fct, body, replaceMostRecentOverload = true)
+                // Remove the parameters from env.vars, so that following functions don't see them.
+                let env = {env with vars = varsWithoutParameters}
+                env, Function(fct, body)
+            | e -> env, e)
+        res
 
-            // Remove the parameters from env.vars, so that following functions don't see them.
-            let env = {env with vars = varsWithoutParameters}
-            env, Function(fct, body)
-        | e -> env, e)
-    res
-
-let iterTopLevel env li = mapTopLevel env li |> ignore<TopLevel list>
-
-let jumpKeywordToString = function
-    | JumpKeyword.Break -> "break"
-    | JumpKeyword.Continue -> "continue"
-    | JumpKeyword.Discard -> "discard"
-    | JumpKeyword.Return -> "return"
-let stringToJumpKeyword = function
-    | "break" -> JumpKeyword.Break
-    | "continue" -> JumpKeyword.Continue
-    | "discard" -> JumpKeyword.Discard
-    | "return" -> JumpKeyword.Return
-    | s -> failwith ("not a keyword: " + s)
+type Options.Options with
+    member options.visitor(?fExpr, ?fStmt) = {
+        fExpr = fExpr |> Option.defaultValue (fun _ -> id)
+        fStmt = fStmt |> Option.defaultValue (fun _ -> id)
+        vars = Map.empty
+        fns = Map.empty
+        isInWritePosition = false
+        blockLevel = BlockLevel.Unknown
+        options = options
+    }
 
 let (|ResolvedVariableUse|_|) = function
     | Var v ->
