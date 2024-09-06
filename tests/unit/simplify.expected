@@ -19,3 +19,18 @@ void notMain(float x)
 {
   outputvar.xyz=vec3(92)+vec3(bar(x)+baz(x));
 }
+int foo442(float x)
+{
+  return x>=1.&&x<=8.?
+    1:
+    2;
+}
+in vec3 camPos;
+float len()
+{
+  return length(camPos);
+}
+float main450()
+{
+  return len()+len();
+}
