@@ -84,10 +84,11 @@ type Analyzer(options: Options.Options) =
     // recalculates hasExternallyVisibleSideEffects/isVarWrite/isEverWrittenAfterDecl, for inlining
     member _.markWrites topLevel =
         let findWrites (env: MapEnv) = function
-            | ResolvedVariableUse (v, vd) as e when env.isInWritePosition ->
-                // those two are never set to false on a fresh re-analysis?
-                vd.isEverWrittenAfterDecl <- true
-                v.isVarWrite <- true
+            | ResolvedVariableUse (v, vd) as e ->
+                if env.isInWritePosition then
+                    // this is initially set to false when `resolve` creates all Declarations
+                    vd.isEverWrittenAfterDecl <- true
+                v.isVarWrite <- env.isInWritePosition
                 e
             | FunCall(Var v, args) as e ->
                 match v.Declaration with
