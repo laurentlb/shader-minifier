@@ -40,9 +40,7 @@ float fbm(vec3 p)
   p*=2.02;
   f+=.35*noise(p);
   p*=2.33;
-  f+=.225*noise(p);
-  p*=2.01;
-  return f;
+  return f+.225*noise(p);
 }
 vec2 Rot2(vec2 p,float a)
 {

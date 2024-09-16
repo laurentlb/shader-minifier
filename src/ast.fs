@@ -14,6 +14,7 @@ type Access = { // a Var in the AST can be a read, a write, both, or neither.
 } with
     override this.ToString() = (if this.isRead then "r" else "-") + (if this.isWrite then "w" else "-")
 
+// An Ident is the name of a variable, function, struct, interface block, or type used as a cast.
 type Ident(name: string) =
     let mutable newName = name
 
@@ -45,7 +46,7 @@ type Ident(name: string) =
             | _ -> failwith "not comparable"
     override this.Equals other =
         match other with
-        | :? Ident as o -> this.Name = o.Name  
+        | :? Ident as o -> this.Name = o.Name
         | _ -> false
     override this.GetHashCode() = name.GetHashCode()
     override this.ToString() = $"<{name}>"
@@ -243,7 +244,6 @@ type MapEnv private = {
     fStmt: MapEnv -> Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<(string * int), (FunctionType * Stmt) list> // This doesn't support type-based disambiguation of user-defined function overloading
-    isInWritePosition: bool // used for findWrites only
     blockLevel: BlockLevel
     options: Options.Options
 } with
@@ -263,15 +263,10 @@ type MapEnv private = {
     // Applies env.fExpr recursively on all nodes of an expression.
     member env.iterExpr e = env.mapExpr e |> ignore<Expr>
     member env.mapExpr = function
-        | FunCall(Op op as fct, first::args) when Builtin.assignOps.Contains op ->
-            let first = {env with isInWritePosition = true}.mapExpr first
-            env.fExpr env (FunCall(env.mapExpr fct, first :: List.map env.mapExpr args))
         | FunCall(fct, args) ->
-            let env = {env with isInWritePosition = false} // technically wrong (could be out/inout...), but handled in findWrites
             env.fExpr env (FunCall(env.mapExpr fct, List.map env.mapExpr args))
         | Subscript(arr, ind) ->
-            let indexEnv = {env with isInWritePosition = false}
-            env.fExpr env (Subscript(env.mapExpr arr, Option.map indexEnv.mapExpr ind))
+            env.fExpr env (Subscript(env.mapExpr arr, Option.map env.mapExpr ind))
         | Dot(e,  field) -> env.fExpr env (Dot(env.mapExpr e, field))
         | Cast(id, e) -> env.fExpr env (Cast(id, env.mapExpr e))
         | VectorExp(li) ->
@@ -369,7 +364,6 @@ type Options.Options with
         fStmt = fStmt |> Option.defaultValue (fun _ -> id)
         vars = Map.empty
         fns = Map.empty
-        isInWritePosition = false
         blockLevel = BlockLevel.Unknown
         options = options
     }

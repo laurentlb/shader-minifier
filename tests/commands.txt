@@ -16,7 +16,7 @@
 --no-remove-unused --no-inlining --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
 --no-remove-unused --hlsl --no-inlining --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
 --no-remove-unused --no-renaming --no-inlining --move-declarations --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
---no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
+--no-remove-unused --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
 --no-remove-unused --no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
 --no-remove-unused --no-renaming --format indented --no-inlining -o tests/unit/nested_if.frag.expected tests/unit/nested_if.frag
 --format indented -o tests/unit/precision.frag.expected tests/unit/precision.frag
@@ -43,6 +43,8 @@
 # Unused removal tests
 
 --no-renaming --format indented -o tests/unit/unused_removal.frag.expected tests/unit/unused_removal.frag
+--no-renaming --format indented -o tests/unit/unused_assignments.frag.expected tests/unit/unused_assignments.frag
+
 
 # Inlining unit tests
 
