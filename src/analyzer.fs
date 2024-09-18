@@ -36,10 +36,10 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
     // [B] A declaration with initialization is a "isDecl" write.                         int x = 1;
     // [C] An assignment is a write.                                                      x = 1;
     // [D] An augmented assignment is a read and then a write.                            x += 1;
-    // [E] A function name itself is neither a read nor a write.                          x();
-    // [F] A function call with an in parameter is a read.                                sin(x);
-    // [G] A function call with an out parameter is a write.                              void f(out p) { p = 1; } ... f(x);
-    // [H] A function call with an inout parameter is a read later followed by a write.   void f(inout p) { p += 1; } ... f(x);
+    // [E] A function name itself can contain a variable read                             x.length();
+    // [F] An "in" parameter in a function call is a read.                                sin(x);
+    // [G] An "out" parameter in a function call is a write.                              void f(out p) { p = 1; } ... f(x);
+    // [H] An "inout" parameter in a function call is a read later followed by a write.   void f(inout p) { p += 1; } ... f(x);
     //   Note that even when passing a global as out or inout, no aliasing happens.
     //   The function works on a local copy, and copies back the value when exiting.
     // [I] Other stray var uses are reads.
@@ -59,7 +59,7 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
                 this.visitExpr first
             )
         | FunCall(fct, args) ->
-            this.using { this.varUse with access.isWrite = false; access.isRead = false } (fun () -> // [E]
+            this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [E]
                 this.visitExpr fct
             )
             // Handle in/out/inout parameters.
@@ -71,9 +71,9 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
                     | _ -> None
                 | _ -> None
             let paramAccessList =
-                funcDecl
-                |> Option.map (fun funcDecl -> funcDecl.funcType.args |> List.map (fun (ty, _) -> ty.access))
-                |> Option.defaultWith (fun () -> args |> List.map (fun _ -> { isWrite = false; isRead = true }))
+                match funcDecl with
+                | Some funcDecl -> funcDecl.funcType.args |> List.map (fun (ty, _) -> ty.access)
+                | None -> args |> List.map (fun _ -> { isWrite = false; isRead = true })
 
             for arg, access in List.zip args paramAccessList do
                 this.using { this.varUse with access = access } (fun () -> // [F] [G] [H]
@@ -93,8 +93,8 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
         | Var _ as e -> this.onVisitVar e
         | _ -> ()
 
-    member this.visitDecl (_ty, vars) =
-        vars |> List.iter (fun (declElt: DeclElt) ->
+    member this.visitDecl (_ty, declElts) =
+        for declElt in declElts do
             // Visit the init expr first.
             this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]
                 Option.iter this.visitExpr declElt.init
@@ -105,7 +105,6 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
                     this.onVisitVar (Var declElt.name)
                 )
             )
-        )
 
     member this.visitStmt stmt =
         this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]
