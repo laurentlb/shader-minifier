@@ -35,12 +35,28 @@ type private Impl() =
     let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit .>> notFollowedBy (pchar '_')) .>> spaces
 
     let parseIdent =
-        manyChars (choice [letter; digit])
+        manyChars (choice [letter; digit; pchar '_'])
 
     let parseEndLine = manyCharsTill anyChar (followedBy newline) .>> newline
 
     // TODO: ignore the defines when status is Inactive
     // TODO: mark defines as unknown when status is Unknown
+
+    let parseLine = parse {
+        let! _ = keyword "line"
+        let! _ = parseEndLine
+        return ""
+    }
+
+    let parseExtension = parse {
+        let! _ = keyword "extension"
+        let! name = parseIdent
+        let! behavior = parseEndLine
+        return
+            match name with
+            | "GL_GOOGLE_include_directive" -> ""
+            | _ -> sprintf "#extension %s%s" name behavior
+    }
 
     let parseDefine = parse {
         let! _ = keyword "define"
@@ -128,6 +144,8 @@ type private Impl() =
     let parseOther = parseEndLine |>> (fun s -> if currentStatus() = Inactive then "" else "#" + s)
 
     let directive = pchar '#' >>. spaces >>. choice [
+        parseLine
+        parseExtension
         parseDefine
         parseElif
         parseElse
