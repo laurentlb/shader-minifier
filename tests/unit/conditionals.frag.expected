@@ -65,3 +65,19 @@ float ifStmtToExpr(float f)
      r3=sideEffect(2),sideEffect(99);
   return r+r2+r3;
 }
+uniform int A,B;
+vec4 O;
+void main()
+{
+  O=vec4(0);
+  float f=1;
+  if(B<2)
+    f=A;
+  {
+    float n=A+1;
+    if(B<1)
+      O.y=1;
+    n=f*n+n*n;
+    O.x=n;
+  }
+}
