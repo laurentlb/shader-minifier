@@ -387,20 +387,28 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     // Const variables are ignored, because they must be initialized immediately.
     let groupDeclarations stmts =
         let declarations = new Dictionary<Type, DeclElt list>()
-        let types = new Dictionary<string, Type * DeclElt>()
+        let mutable skippedDeclarations = []
         for stmt in stmts do
             match stmt with
             | Decl (ty, li) when not (List.contains "const" ty.typeQ) ->
-                for variable in li do
-                    types.[variable.name.Name] <- (ty, variable)
                 if not (declarations.ContainsKey ty) then
+                    // First time this type is encountered, we store it to merge others decl in it later.
                     declarations[ty] <- li
                 else
-                    // Remove the init of the new items; we'll use an assignment instead.
-                    let li = li |> List.map (function decl -> {decl with init = None})
-                    declarations.[ty] <- declarations.[ty] @ li
+                    // Moving a declaration that shadows a variable used in its initialization can be incorrect. See #458.
+                    let shadowingPreventsTheMove = li |> List.exists (fun d ->
+                        match d.init with
+                        | None -> false
+                        | Some expr -> Analyzer(options).varUsesInStmt (Expr expr) |> List.contains d.name)
+                    if shadowingPreventsTheMove then
+                        skippedDeclarations <- stmt :: skippedDeclarations
+                    else
+                        // Remove the init of the new items; we'll use an assignment instead.
+                        let li = li |> List.map (function decl -> {decl with init = None})
+                        declarations.[ty] <- declarations.[ty] @ li
+                        for d in li do
+                            options.trace $"{d.name.Loc}: --move-declarations of '{Printer.debugDecl d}' to the line of '{Printer.debugDecl declarations.[ty].Head}'"
             | _ -> ()
-
         let replacements = function
             | Decl (ty, _) as decl when List.contains "const" ty.typeQ ->
                 [decl]
@@ -409,7 +417,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 let decl = declarations[ty]
                 declarations.Remove ty |> ignore<bool>
                 [Decl (ty, decl)]
-            | Decl (_, li) ->
+            | Decl (_, li) as s when not (skippedDeclarations |> List.contains s) ->
                 // Replace the declarations (they were already inserted) with assignments.
                 li |> List.choose (function
                     | {name = name; init = Some init} ->

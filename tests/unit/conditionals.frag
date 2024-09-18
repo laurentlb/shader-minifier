@@ -79,3 +79,19 @@ float ifStmtToExpr(float f) {
 	}
 	return r+r2+r3;
 }
+
+// Move-declarations bug (#458)
+uniform int A;
+uniform int B;
+vec4 O;
+void main() {
+  O = vec4(0);
+  float f = 1;
+  if (B < 2) f = A;
+  {
+    float n = A + 1;
+    if (B < 1) O.y=1;
+    float f = f * n + n * n;
+    O.x=f;
+  }
+}
