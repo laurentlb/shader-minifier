@@ -59,7 +59,6 @@ const char *yx_long_way_from_home_frag =
    "i.y-=smoothstep(2.,0.,length(c.xz+vec2(1,-2)))*.2;"
    "float y=i.y;"
    "x=min(x,y);"
-   "c.xz=mod(c.xz-.5,1.)-.5;"
    "i.y-=.25;"
    "f=s<x?"
      "1:"

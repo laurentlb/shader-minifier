@@ -1,0 +1,83 @@
+#version 330
+
+int gi=0;
+void preventMergingConsecutiveAssignments()
+{
+  gi++;
+}
+void shouldRemoveAllAssignments()
+{
+  preventMergingConsecutiveAssignments();
+  preventMergingConsecutiveAssignments();
+}
+float shouldNotRemoveAnyAssignment()
+{
+  float x=gi;
+  preventMergingConsecutiveAssignments();
+  x=sin(x);
+  preventMergingConsecutiveAssignments();
+  x=cos(x);
+  preventMergingConsecutiveAssignments();
+  return x;
+}
+vec3 bewareThatAssignmentToAFieldIsNotAFullOverwrite(vec3 v)
+{
+  preventMergingConsecutiveAssignments();
+  v=vec3(.3);
+  preventMergingConsecutiveAssignments();
+  v.y=0.;
+  preventMergingConsecutiveAssignments();
+  v.x+=1.;
+  preventMergingConsecutiveAssignments();
+  v=v.yyz;
+  preventMergingConsecutiveAssignments();
+  v.x++;
+  preventMergingConsecutiveAssignments();
+  v=vec3(.5);
+  preventMergingConsecutiveAssignments();
+  return v;
+}
+void dontRemoveAssignmentsToOutParams(int i,inout int io,out int o)
+{
+  o=5;
+  io=6;
+}
+void dontRemoveUnusedAssignmentToGlobal()
+{
+  gi=8;
+  gi=9;
+}
+float removePureDeclInit()
+{
+  vec3 i;
+  preventMergingConsecutiveAssignments();
+  i=vec3(1);
+  vec3 j=vec3(gi++);
+  preventMergingConsecutiveAssignments();
+  j=vec3(1);
+  return i.x*j.y;
+}
+int onlyRemove99AndAThenReturn15()
+{
+  int a=1,b;
+  a*=a+a+a;
+  {
+    int a;
+    preventMergingConsecutiveAssignments();
+    a=2;
+    b=a*a;
+  }
+  preventMergingConsecutiveAssignments();
+  return a+a*b;
+}
+void main()
+{
+  shouldRemoveAllAssignments();
+  shouldNotRemoveAnyAssignment();
+  bewareThatAssignmentToAFieldIsNotAFullOverwrite(vec4(1).xyz);
+  int io=2,o;
+  dontRemoveAssignmentsToOutParams(gi,io,o);
+  dontRemoveUnusedAssignmentToGlobal();
+  removePureDeclInit();
+  onlyRemove99AndAThenReturn15();
+}

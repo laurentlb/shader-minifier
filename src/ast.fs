@@ -8,6 +8,13 @@ type VarScope = Global | Local | Parameter
 [<StructuredFormatDisplay("{line}:{col}")>]
 type Location = { line: int; col: int }
 
+type Access = { // a Var in the AST can be a read, a write, both, or neither.
+    isRead: bool
+    isWrite: bool // A declaration's assignment is not counted as a write.
+} with
+    override this.ToString() = (if this.isRead then "r" else "-") + (if this.isWrite then "w" else "-")
+
+// An Ident is the name of a variable, function, struct, interface block, or type used as a cast.
 type Ident(name: string) =
     let mutable newName = name
 
@@ -23,7 +30,6 @@ type Ident(name: string) =
     new(name, lineNb, colNb) as this = Ident(name) then
         this.Loc <- {line = lineNb; col = colNb}
 
-    //member val isVarRead: bool = false with get, set
     member val isVarWrite: bool = false with get, set
     member val Declaration: Declaration = Declaration.Unknown with get, set
     member this.VarDecl = match this.Declaration with
@@ -40,7 +46,7 @@ type Ident(name: string) =
             | _ -> failwith "not comparable"
     override this.Equals other =
         match other with
-        | :? Ident as o -> this.Name = o.Name  
+        | :? Ident as o -> this.Name = o.Name
         | _ -> false
     override this.GetHashCode() = name.GetHashCode()
     override this.ToString() = $"<{name}>"
@@ -78,7 +84,7 @@ and Expr =
     | Int of int64 * string
     | Float of decimal * string
     | Var of Ident // 'Var' can be an identifier referencing a variable or a function! (or a macro)
-    | Op of string
+    | Op of string // Can only occur as a FunCall's first Expr.
     | FunCall of Expr * Expr list // The first Expr of a FunCall can be: Op, Var, Subscript, or Dot.
     | Subscript of Expr * Expr option
     | Dot of Expr * string
@@ -111,6 +117,9 @@ and Type = {
     typeQ: string list // type qualifiers, e.g. const, uniform, out, inout...
     arraySizes: Expr list // e.g. [3][5]
 } with
+    member this.access = { isRead = this.isInOrInout; isWrite = this.isOutOrInout }
+    member this.isInOrInout =
+        not (this.typeQ |> List.contains "out")
     member this.isOutOrInout =
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
     member this.IsExternal =
@@ -201,7 +210,7 @@ let makeFunctionType ty name args sem =
 
 // An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
 // values). We need to provide accessors for the developer (e.g. create macros for C/C++).
-type ExportPrefix =
+type [<RequireQualifiedAccess>] ExportPrefix =
     | Variable
     | HlslFunction
 type ExportedName = {
@@ -235,14 +244,13 @@ type MapEnv private = {
     fStmt: MapEnv -> Stmt -> Stmt
     vars: Map<string, Type * DeclElt>
     fns: Map<(string * int), (FunctionType * Stmt) list> // This doesn't support type-based disambiguation of user-defined function overloading
-    isInWritePosition: bool // used for findWrites only
     blockLevel: BlockLevel
     options: Options.Options
 } with
-    member private this.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
-        let oldFnsList = (this.fns.TryFind(fct.prototype) |> Option.defaultValue [])
+    member private env.withFunction(fct: FunctionType, body, replaceMostRecentOverload) =
+        let oldFnsList = (env.fns.TryFind(fct.prototype) |> Option.defaultValue [])
         let newFnsList = (fct, body) :: (if replaceMostRecentOverload then oldFnsList.Tail else oldFnsList)
-        {this with fns = this.fns.Add(fct.prototype, newFnsList)}
+        {env with fns = env.fns.Add(fct.prototype, newFnsList)}
 
     member env.foldList fct li =
         let mutable env = env
@@ -255,15 +263,10 @@ type MapEnv private = {
     // Applies env.fExpr recursively on all nodes of an expression.
     member env.iterExpr e = env.mapExpr e |> ignore<Expr>
     member env.mapExpr = function
-        | FunCall(Op o as fct, first::args) when Builtin.assignOps.Contains o ->
-            let first = {env with isInWritePosition = true}.mapExpr first
-            env.fExpr env (FunCall(env.mapExpr fct, first :: List.map env.mapExpr args))
         | FunCall(fct, args) ->
-            let env = {env with isInWritePosition = false}
             env.fExpr env (FunCall(env.mapExpr fct, List.map env.mapExpr args))
         | Subscript(arr, ind) ->
-            let indexEnv = {env with isInWritePosition = false}
-            env.fExpr env (Subscript(env.mapExpr arr, Option.map indexEnv.mapExpr ind))
+            env.fExpr env (Subscript(env.mapExpr arr, Option.map env.mapExpr ind))
         | Dot(e,  field) -> env.fExpr env (Dot(env.mapExpr e, field))
         | Cast(id, e) -> env.fExpr env (Cast(id, env.mapExpr e))
         | VectorExp(li) ->
@@ -315,12 +318,12 @@ type MapEnv private = {
                 env, Jump (k, Option.map env.mapExpr e)
             | (Verbatim _ | Directive _) as v -> env, v
             | Switch(e, cl) ->
-                let mapLabel = function
-                    | Case e -> Case (env.mapExpr e)
-                    | Default -> Default
                 let mapCase (l, sl) =
+                    let l = match l with
+                            | Case e -> Case (env.mapExpr e)
+                            | Default -> Default
                     let _, sl = env.foldList mapStmt' sl
-                    (mapLabel l, sl)
+                    (l, sl)
                 env, Switch (env.mapExpr e, List.map mapCase cl)
         let env, res = aux stmt
         let env = {env with blockLevel = blockLevel}
@@ -361,7 +364,6 @@ type Options.Options with
         fStmt = fStmt |> Option.defaultValue (fun _ -> id)
         vars = Map.empty
         fns = Map.empty
-        isInWritePosition = false
         blockLevel = BlockLevel.Unknown
         options = options
     }

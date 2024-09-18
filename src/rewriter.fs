@@ -103,19 +103,28 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | Int (i, _) -> Some (decimal i)
         | Float (f, _) -> Some f
         | _ -> None
-    
-    // Expression that is equivalent to an assignment.
-    let (|Assignment|_|) = function
-        | FunCall (Op "=", [Var v; e]) -> Some (v, e)
-        | FunCall (Op op, [Var name; e]) when Builtin.assignOps.Contains op ->
-            let baseOp = op.TrimEnd('=')
-            if not (Builtin.augmentableOperators.Contains baseOp)
-            then None
-            else let augmentedE = FunCall (Op baseOp, [Var name; e])
-                 Some (name, augmentedE)
+
+    let rec (|VarWithPossibleField|_|) = function
+        | Var v -> Some v
+        | Dot (VarWithPossibleField v, _) -> Some v
         | _ -> None
 
-    let simplifyOperator env = function
+    // Expression that is equivalent to an assignment to a variable (or its fields).
+    let (|Assignment|_|) e =
+        let augment (op: string) name target e =
+            let baseOp = op.TrimEnd('=')
+            if not (Builtin.augmentableOperators.Contains baseOp)
+            then None // Here ++x/--x could be detected as an Assigment, but not x++/x--.
+            else let augmentedE = FunCall (Op baseOp, [Var name; e])
+                 Some (name, target, augmentedE)
+        match e with
+        | FunCall (Op "=", [Var v; e]) -> Some (v, None, e)
+        | FunCall (Op "=", [VarWithPossibleField v as target; e]) -> Some (v, Some target, e)
+        | FunCall (Op op, [Var name; e]) when Builtin.assignOps.Contains op -> augment op name None e
+        | FunCall (Op op, [VarWithPossibleField name as target; e]) when Builtin.assignOps.Contains op -> augment op name (Some target) e
+        | _ -> None
+
+    let simplifyOperator (env: MapEnv) = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
         | FunCall(Op "+", [e]) -> e
@@ -468,6 +477,128 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         // No need to search in nested for loops, because their continue wouldn't apply to this level.
         | _ -> true)
 
+    let removeUnusedAssignments blockLevel blockStmts =
+        // Control flow analysis (loop, if, switch, break, continue, return, and ternary ops) on an AST is hard.
+        // Check that the visit order of the ast strictly matches the execution order.
+        let isSingleFlow stmts =
+            let rec stmtsAreSingleFlow stmts = stmts |> List.forall (function
+                | Expr _ -> true
+                | Decl _ -> true
+                | Jump _ -> true
+                | Block stmts -> stmtsAreSingleFlow stmts
+                | If _ -> false
+                | ForD _ -> false
+                | ForE _ -> false
+                | While _ -> false
+                | DoWhile _ -> false
+                | Verbatim _ -> false
+                | Directive _ -> false
+                | Switch _-> false
+            )
+            let exprsAreSingleFlow stmts =
+                let mutable anyTernaryOp = false
+                let findTernary _ = function
+                    | FunCall(Op "?:", _) as e -> anyTernaryOp <- true; e
+                    | e -> e
+                options.visitor(findTernary).iterStmt blockLevel (Block stmts)
+                not anyTernaryOp
+            stmtsAreSingleFlow stmts && exprsAreSingleFlow stmts
+
+        // Assignments to parameters are only removed if is the entire function body is single-flow.
+        let parameterCandidates =
+            match blockLevel with
+                | BlockLevel.FunctionRoot ft when isSingleFlow blockStmts -> ft.parameters |> List.map snd
+                | _ -> []
+        // Assignments to locals are only removed if they are declared in a Block (not a ForD) that is single-flow (starting from the declaration).
+        let localCandidates =
+            let rec tails = function
+                | _ :: tail as list -> list :: tails tail
+                | [] -> []
+            blockStmts
+            |> tails
+            |> List.choose (function
+                | Decl (_, de) :: _ as stmts when isSingleFlow stmts -> Some (de, stmts)
+                | _ -> None)
+        // Assignments to globals are not removed (it requires analysis over every called function).
+
+        let identsReferToSameVar (v1: Ident) (v2: Ident) =
+            match v1.Declaration, v2.Declaration with
+            | Declaration.Variable vd1, Declaration.Variable vd2 -> LanguagePrimitives.PhysicalEquality vd1.decl.name vd2.decl.name
+            | _ -> false
+        let findAssignmentsToRemove (vars: DeclElt list) stmts =
+            if vars = [] then
+                [] // skip the entire search
+            else
+                // Assignments are represented by their variable's Ident instance.
+                let mutable alwaysOverwrittenAssignments = []
+                let mutable candidates = [] // Previously seen assignments that are unused so far.
+                let idents = vars |> List.map (fun de -> de.name)
+                let traceReadsAndWrites = false
+                let visitVar (varUse: VarUse) (var: Ident) (vd: VarDecl) =
+                    if idents |> List.exists (identsReferToSameVar vd.decl.name) then
+                        if traceReadsAndWrites then options.trace $"    {varUse} of {var.Name} at {var.Loc}"
+
+                        // Reads always occur before writes (e.g. inout).
+                        if varUse.access.isRead then
+                            // This variable is read: its latest assignment is not unused. Remove it from the candidates.
+                            match candidates |> List.tryFind (identsReferToSameVar var) with
+                            | Some lastAssignmentToVar ->
+                                candidates <- candidates |> List.where ((<>) lastAssignmentToVar)
+                            | _ -> ()
+
+                        // Note that partial writes (to a field) don't let us remove previous assignments.
+                        if varUse.access.isWrite && not varUse.isFieldAccess then
+                            // Accept current assignment candidate, as it reached unconditional overwrite without encountering a read.
+                            match candidates |> List.tryFind (identsReferToSameVar var) with
+                            | Some lastAssignmentToVar ->
+                                candidates <- candidates |> List.where ((<>) lastAssignmentToVar)
+                                options.trace $"{var.Loc}: found unused assignment to '{var.Name}' (unconditionally overwritten)"
+                                alwaysOverwrittenAssignments <- lastAssignmentToVar :: alwaysOverwrittenAssignments
+                            | _ -> ()
+
+                        if varUse.access.isWrite then
+                            // Set current write as the new current assignment candidate for removal.
+                            candidates <- var :: candidates
+
+                if traceReadsAndWrites then options.trace $"findAssignmentsToRemove: going through reads and writes:"
+                VarVisitor(visitVar).visitStmt (Block stmts)
+
+                // Current removal candidates reached end of scope without encountering a read.
+                // This might mean they're unused, but only if they're not out/inout parameters.
+                let assignmentsUnusedUntilEndOfScope = candidates |> List.filter (fun v ->
+                    match v.Declaration with
+                    | Declaration.Variable vd -> not vd.ty.isOutOrInout
+                    | _ -> true)
+                for ident in assignmentsUnusedUntilEndOfScope do
+                    options.trace $"{ident.Loc}: found unused assignment to '{ident.Name}' (last use is a write)"
+                
+                // An assignment is unused if it is not followed by a read
+                // either until it's unconditionally overwritten or until it reaches end of scope.
+                assignmentsUnusedUntilEndOfScope @ alwaysOverwrittenAssignments
+                // Note: here we return unused "out"-written arguments in addition to unused assignments. They'll be ignored.
+
+        let parametersToRemove = findAssignmentsToRemove parameterCandidates blockStmts
+        let localsToRemove = localCandidates |> List.collect (fun (declElts, stmts) -> findAssignmentsToRemove declElts stmts)
+
+        // Rewrite the AST without the assignments.
+        let isAssignmentToRemove var = [parametersToRemove; localsToRemove] |> List.concat |> List.exists (LanguagePrimitives.PhysicalEquality var)
+        let removeAssignments _ = function
+            // Augmented assignments are removed simply by preserving the augmented operator:  `a=(b+=4);b=9;`  ->  `a=(b+4);b=9;`
+            | Assignment (varWithoutFields, _, e) when isAssignmentToRemove varWithoutFields -> e
+            | e -> e
+        let removeAssignmentsToDecl _ = function
+            | Decl (ty, ds) ->
+                let ds = ds |> List.map (fun d ->
+                    // If there are side effects in the init, they must remain.
+                    if isAssignmentToRemove d.name && Effects.isPure d.init.Value
+                    then {d with init = None}
+                    else d
+                )
+                Decl (ty, ds)
+            | e -> e
+        let _, block = options.visitor(removeAssignments, removeAssignmentsToDecl).mapStmt blockLevel (Block blockStmts)
+        block.asStmtList
+
     // Reuse an existing local variable declaration that won't be used anymore, instead of introducing a new one.
     // The reused identifier gets compressed better, and the declaration is sometimes removed.
     // float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
@@ -571,11 +702,11 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | Decl (_, [declElt]), Jump(JumpKeyword.Return, Some (Var v)) // int x=f();return x;  ->  return f();
                 when v.Name = declElt.name.Name && declElt.init.IsSome ->
                     Some [Jump(JumpKeyword.Return, declElt.init)]
-            | Expr (Assignment (v1, e)), Jump(JumpKeyword.Return, Some (ResolvedVariableUse (v2, vd))) // x=f();return x;  ->  return f();
+            | Expr (Assignment (v1, None, e)), Jump(JumpKeyword.Return, Some (ResolvedVariableUse (v2, vd))) // x=f();return x;  ->  return f();
                 when v1.Name = v2.Name && vd.scope <> VarScope.Global && not (vd.ty.isOutOrInout) ->
                     Some [Jump(JumpKeyword.Return, Some e)]
             // assignment to a local immediately followed by re-assignment
-            | Expr (Assignment (name, init1)), (Expr (Assignment (name2, init2)) as assign2)
+            | Expr (Assignment (name, None, init1)), (Expr (Assignment (name2, None, init2)) as assign2)
                 when name.Name = name2.Name ->
                 match name.Declaration with
                 | Declaration.Variable decl when decl.scope = VarScope.Global ->
@@ -593,7 +724,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     | _ -> None
                 | _ -> None
             // declaration immediately followed by re-assignment
-            | Decl (ty, [declElt]), Expr (Assignment (name2, init2))
+            | Decl (ty, [declElt]), Expr (Assignment (name2, None, init2))
                 when declElt.name.Name = name2.Name ->
                     match countUsesOfIdentName init2 declElt.name.Name with
                     | 0 ->
@@ -651,6 +782,11 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         let b = replaceIfReturnsWithReturnTernary b
 
         let b =
+            if options.noRemoveUnused || hasPreprocessor
+            then b
+            else removeUnusedAssignments blockLevel b
+
+        let b =
             if optimizationPass <> OptimizationPass.Second &&
                 // We ensure control flow analysis is trivial by only doing this at the root block level.
                 (match blockLevel with BlockLevel.FunctionRoot _ -> false | _ -> true) || hasPreprocessor
@@ -705,7 +841,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             match (body1, body2) with
                 | (Expr eT, Some (Expr eF)) ->
                     let tryCollapseToAssignment : Expr -> (Ident * Expr) option = function
-                        | Assignment (name, init) -> Some (name, init)
+                        | Assignment (name, None, init) -> Some (name, init)
                         | FunCall (Op ",", list) -> // f(),c=d  ->  c=f(),d
                             match List.last list with
                             | FunCall (Op "=", [Var name; init]) ->

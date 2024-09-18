@@ -3,9 +3,154 @@
 open System.Collections.Generic
 open Ast
 
-// The module performs some static analysis on the code and stores the
-// information in the AST nodes, e.g. find which variables are modified,
-// which declarations can be inlined.
+// We can visit Var uses in evaluation order (sometimes twice: read then write),
+// and we know if they're read and/or written (by assignment operators or by in/out),
+// if it's a field access, and if it's a declaration initialization.
+
+type VarUse = {
+    access: Access
+    isFieldAccess: bool
+    isDecl: bool
+} with
+    override this.ToString() = $"{this.access}" + (if this.isFieldAccess then " field" else "") + (if this.isDecl then " decl" else " use")
+
+[<NoComparison; NoEquality>]
+type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
+
+    member this.onVisitVar = function
+        | ResolvedVariableUse (v, vd) -> onVarUse this.varUse v vd
+        | _ -> ()
+
+    member val varUse: VarUse = { access = { isWrite = false; isRead = true }; isFieldAccess = false; isDecl = false } with get, set
+
+    member this.using newContext go =
+        let old = this.varUse
+        this.varUse <- newContext
+        try
+            go()
+        finally
+            this.varUse <- old
+
+    // Vars in the AST can be a few things:
+    // [A] A declaration without initialization is neither a read nor a write.            int x;
+    // [B] A declaration with initialization is a "isDecl" write.                         int x = 1;
+    // [C] An assignment is a write.                                                      x = 1;
+    // [D] An augmented assignment is a read and then a write.                            x += 1;
+    // [E] A function name itself can contain a variable read                             x.length();
+    // [F] An "in" parameter in a function call is a read.                                sin(x);
+    // [G] An "out" parameter in a function call is a write.                              void f(out p) { p = 1; } ... f(x);
+    // [H] An "inout" parameter in a function call is a read later followed by a write.   void f(inout p) { p += 1; } ... f(x);
+    //   Note that even when passing a global as out or inout, no aliasing happens.
+    //   The function works on a local copy, and copies back the value when exiting.
+    // [I] Other stray var uses are reads.
+
+    member this.visitExpr = function
+        | FunCall(Op op as fct, first::args) when Builtin.assignOps.Contains op ->
+            let alsoReadTheVar = op <> "=" // Augmented assignment or ++ or --
+            if alsoReadTheVar then
+                // Visit the lhs of the assignment as a read. [D]
+                this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () ->
+                    this.visitExpr first
+                )
+            List.iter this.visitExpr args // visit the rhs of the assignments
+            this.visitExpr fct // visit the assignment op
+            // Visit the lhs of the assignment as a write. [C] [D]
+            this.using { this.varUse with access.isWrite = true; access.isRead = false } (fun () ->
+                this.visitExpr first
+            )
+        | FunCall(fct, args) ->
+            this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [E]
+                this.visitExpr fct
+            )
+            // Handle in/out/inout parameters.
+            let funcDecl =
+                match fct with 
+                | Var v -> 
+                    match v.Declaration with
+                    | Declaration.UserFunction funcDecl -> Some funcDecl
+                    | _ -> None
+                | _ -> None
+            let paramAccessList =
+                match funcDecl with
+                | Some funcDecl -> funcDecl.funcType.args |> List.map (fun (ty, _) -> ty.access)
+                | None -> args |> List.map (fun _ -> { isWrite = false; isRead = true })
+
+            for arg, access in List.zip args paramAccessList do
+                this.using { this.varUse with access = access } (fun () -> // [F] [G] [H]
+                    this.visitExpr arg
+                )
+        | Subscript(arr, ind) ->
+            this.visitExpr arr
+            this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]
+                Option.iter this.visitExpr ind
+            )
+        | Dot(expr, _field) ->
+            this.using { this.varUse with isFieldAccess = true } (fun () ->
+                this.visitExpr expr
+            )
+        | Cast(_, expr) -> this.visitExpr expr // The ident in a cast is not a Var.
+        | VectorExp(li) -> List.iter this.visitExpr li
+        | Var _ as e -> this.onVisitVar e
+        | _ -> ()
+
+    member this.visitDecl (_ty, declElts) =
+        for declElt in declElts do
+            // Visit the init expr first.
+            this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]
+                Option.iter this.visitExpr declElt.init
+            )
+            // Then visit the declared var (maybe as a write).
+            this.using { this.varUse with isDecl = true } (fun () ->
+                this.using { this.varUse with access.isWrite = declElt.init <> None; access.isRead = false } (fun () -> // [A] [B]
+                    this.onVisitVar (Var declElt.name)
+                )
+            )
+
+    member this.visitStmt stmt =
+        this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]
+            match stmt with
+            | Block stmts -> List.iter this.visitStmt stmts
+            | Expr e -> this.visitExpr e
+            | Decl d -> this.visitDecl d
+            | If(cond, th, el) ->
+                this.visitExpr cond
+                this.visitStmt th
+                el |> Option.iter this.visitStmt
+            | While(cond, body) ->
+                this.visitExpr cond
+                this.visitStmt body
+            | DoWhile(cond, body) ->
+                this.visitExpr cond
+                this.visitStmt body
+            | ForD(init, cond, inc, body) ->
+                this.visitDecl init
+                Option.iter this.visitExpr cond
+                Option.iter this.visitExpr inc
+                this.visitStmt body
+            | ForE(init, cond, inc, body) ->
+                Option.iter this.visitExpr init
+                Option.iter this.visitExpr cond
+                Option.iter this.visitExpr inc
+                this.visitStmt body
+            | Jump(_, e) -> Option.iter this.visitExpr e
+            | (Verbatim _ | Directive _) -> ()
+            | Switch(e, cl) ->
+                this.visitExpr e
+                let iterCase (l, sl) =
+                    match l with
+                    | Case e -> this.visitExpr e
+                    | Default -> ()
+                    List.iter this.visitStmt sl
+                List.iter iterCase cl
+        )
+
+    member this.visitTopLevels = List.iter (function
+        | TLDecl t -> this.visitDecl t
+        | Function(fct, body) ->
+            List.iter this.visitDecl fct.args
+            this.visitStmt body
+        | _ -> ())
+
 
 module Effects =
 
@@ -30,6 +175,11 @@ module Effects =
         | e -> [e]
 
     let rec isPure e = sideEffects e = []
+
+
+// The Analyzer module performs some static analysis on the code and stores the
+// information in the AST nodes, e.g. find which variables are modified,
+// which declarations can be inlined.
 
 type CallSite = {
     ident: Ident
@@ -83,24 +233,13 @@ type Analyzer(options: Options.Options) =
 
     // recalculates hasExternallyVisibleSideEffects/isVarWrite/isEverWrittenAfterDecl, for inlining
     member _.markWrites topLevel =
-        let findWrites (env: MapEnv) = function
-            | ResolvedVariableUse (v, vd) as e when env.isInWritePosition ->
-                // those two are never set to false on a fresh re-analysis?
+        let findWrites varUse (var: Ident) (vd: VarDecl) =
+            let isWriteAfterDecl = varUse.access.isWrite && not varUse.isDecl
+            if isWriteAfterDecl then
+                // this is initially set to false when `resolve` creates all Declarations
                 vd.isEverWrittenAfterDecl <- true
-                v.isVarWrite <- true
-                e
-            | FunCall(Var v, args) as e ->
-                match v.Declaration with
-                | Declaration.UserFunction funcDecl when funcDecl.funcType.hasOutOrInoutParams ->
-                    // Writes through assignOps are already handled by mapEnv,
-                    // but we also need to handle variable writes through "out" or "inout" parameters.
-                    for arg, (ty, _) in List.zip args funcDecl.funcType.args do
-                        let newEnv = if ty.isOutOrInout then {env with isInWritePosition = true} else env
-                        newEnv.iterExpr arg
-                    e
-                | _ -> e
-            | e -> e
-        options.visitor(findWrites).iterTopLevel topLevel
+            var.isVarWrite <- isWriteAfterDecl
+        VarVisitor(findWrites).visitTopLevels topLevel
 
         let findExternallyVisibleSideEffect tl =
             let mutable hasExternallyVisibleSideEffect = false
@@ -177,3 +316,4 @@ type Analyzer(options: Options.Options) =
         options.visitor(fStmt = resolveStmt).iterTopLevel topLevel
         // Then, visit all uses and associate them to their declaration.
         options.visitor(resolveExpr).iterTopLevel topLevel
+
