@@ -248,11 +248,9 @@ type FunctionInlining(options: Options.Options) =
 
     let tryMarkFunctionToInline (funcInfo: FuncInfo) (callSites: CallSite list) =
         if not funcInfo.funcType.fName.DoNotInline && verifyVarsAndParams funcInfo callSites then
-            // Mark both the call site (so that simplifyExpr can remove it) and the function (to remember to remove it).
-            // We cannot simply rely on unused functions removal, because it might be disabled through its own flag.
+            // Mark only the function's ident, not the call sites.
+            // simplifyExpr can't rely on call sites to be marked anyway, to support the function inline pragma.
             options.trace $"{funcInfo.funcType.fName.Loc}: inlining function '{Printer.debugFunc funcInfo.funcType}' into {callSites.Length} call sites"
-            for callSite in callSites do
-                callSite.ident.ToBeInlined <- true
             funcInfo.funcType.fName.ToBeInlined <- true
 
     let markInlinableFunctions code =

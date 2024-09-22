@@ -331,8 +331,13 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 else e
             | _ -> e
 
+    let isFuncDeclarationToInline (fn: Ident) =
+        match fn.Declaration with
+        | Declaration.UserFunction uf -> uf.funcType.fName.ToBeInlined
+        | _ -> false
+
     let simplifyExpr (didInline: bool ref) env = function
-        | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
+        | FunCall(Var v, passedArgs) as e when isFuncDeclarationToInline v ->
             match env.fns.TryFind (v.Name, passedArgs.Length) with
             | Some ([{args = declArgs}, body]) ->
                 if List.length declArgs <> List.length passedArgs then
@@ -976,8 +981,12 @@ let simplify (options: Options.Options) li =
             None
         | Function (ft, _) as tl ->
             match forceInlineNextFunction with
-            | Some true -> ft.fName.ToBeInlined <- true
-            | Some false -> ft.fName.DoNotInline <- true
+            | Some true ->
+                options.trace $"{ft.fName.Loc}: pragma forces inlining of '{Printer.debugFunc ft}'"
+                ft.fName.ToBeInlined <- true
+            | Some false ->
+                options.trace $"{ft.fName.Loc}: pragma prevents inlining of '{Printer.debugFunc ft}'"
+                ft.fName.DoNotInline <- true
             | None -> ()
             forceInlineNextFunction <- None
             Some tl
