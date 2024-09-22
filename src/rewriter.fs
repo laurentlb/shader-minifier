@@ -964,7 +964,20 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
             iterateSimplifyAndInline options optimizationPass (passCount + 1) li
         else li
 
-let simplify options li =
+let simplify (options: Options.Options) li =
+    let mutable forceInlineNextFunction = false
+    let processPragmas tl =
+        match tl with
+        | TLDirective ["#pragma forceInlineNextFunction"] ->
+            forceInlineNextFunction <- true
+            None
+        | Function (ft, _) as tl ->
+            if forceInlineNextFunction then
+                ft.fName.ToBeInlined <- true
+            forceInlineNextFunction <- false
+            Some tl
+        | tl -> Some tl
+    let li = li |> List.choose processPragmas
     li
     |> iterateSimplifyAndInline options OptimizationPass.First 1
     |> iterateSimplifyAndInline options OptimizationPass.Second 1
