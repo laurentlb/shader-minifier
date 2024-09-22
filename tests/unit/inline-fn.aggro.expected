@@ -86,6 +86,10 @@ float F3_PRESERVED(inout float f)
 {
   return 7.;
 }
+float PRAGMA_PRESERVED()
+{
+  return 9.;
+}
 float setup()
 {
   return shadowedVar++;
@@ -105,11 +109,11 @@ float f()
   float o,_F2=F2_PRESERVED(o);
   o=F3_PRESERVED(o);
   sep++;
-  float _P=hash33(vec3(9)).x;
+  float _P1=hash33(vec3(9)).x;
   setup();
   shadowedVar++;
   shadowedFunc++;
-  return shadowedVar+shadowedFunc+four+five+six+ten+A1_PRESERVED()+1.+_A3+_A4+(B1_PRESERVED(3.)+B1_PRESERVED(4.))+4.+C1_PRESERVED()+(3.+sin(0.))+_D1+_D2+_D3+_E1+_E2+_E3+_E4+_E5+7.+_F2+o+_P;
+  return shadowedVar+shadowedFunc+four+five+six+ten+A1_PRESERVED()+1.+_A3+_A4+(B1_PRESERVED(3.)+B1_PRESERVED(4.))+4.+C1_PRESERVED()+(3.+sin(0.))+_D1+_D2+_D3+_E1+_E2+_E3+_E4+_E5+7.+_F2+o+_P1+PRAGMA_PRESERVED();
 }
 float g()
 {

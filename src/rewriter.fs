@@ -965,16 +965,21 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
         else li
 
 let simplify (options: Options.Options) li =
-    let mutable forceInlineNextFunction = false
+    let mutable forceInlineNextFunction = None
     let processPragmas tl =
         match tl with
-        | TLDirective ["#pragma forceInlineNextFunction"] ->
-            forceInlineNextFunction <- true
+        | TLDirective ["#pragma function inline"] ->
+            forceInlineNextFunction <- Some true
+            None
+        | TLDirective ["#pragma function noinline"] ->
+            forceInlineNextFunction <- Some false
             None
         | Function (ft, _) as tl ->
-            if forceInlineNextFunction then
-                ft.fName.ToBeInlined <- true
-            forceInlineNextFunction <- false
+            match forceInlineNextFunction with
+            | Some true -> ft.fName.ToBeInlined <- true
+            | Some false -> ft.fName.DoNotInline <- true
+            | None -> ()
+            forceInlineNextFunction <- None
             Some tl
         | tl -> Some tl
     let li = li |> List.choose processPragmas
