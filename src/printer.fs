@@ -287,7 +287,7 @@ type PrinterImpl(withLocations) =
             // add a space at the end when it seems to be needed
             let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
             out "%s%s" s trailing
-        | TLDirective d -> directiveToS d
+        | TLDirective (d, _) -> directiveToS d
         | Function (fct, Block []) -> out "%s%s{}" (funToS fct) (nl 0)
         | Function (fct, (Block _ as body)) -> out "%s%s" (funToS fct) (stmtToS 0 body)
         | Function (fct, body) -> out "%s%s{%s%s}" (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
@@ -322,7 +322,7 @@ type PrinterImpl(withLocations) =
                 | TypeDecl { name = Some n } -> n.OldName
                 | TypeDecl _ -> "*type decl*" // struct or unnamed interface block
                 | Precision _ -> "*precision*"
-                | TLDirective ("#define"::_) -> "#define"
+                | TLDirective (("#define"::_), _) -> "#define"
                 | TLDirective _ -> "*directive*"
                 | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
             symbolMap.AddMapping tlString symbolName

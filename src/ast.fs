@@ -197,7 +197,7 @@ and FunctionType = {
 
 and TopLevel =
     | TLVerbatim of string
-    | TLDirective of string list
+    | TLDirective of string list * Location
     | Function of FunctionType * Stmt
     | TLDecl of Decl
     | TypeDecl of StructOrInterfaceBlock // struct declaration, or interface block that introduce a set of external global variables.
