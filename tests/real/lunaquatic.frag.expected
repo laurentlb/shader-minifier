@@ -109,11 +109,11 @@ vec3 calculateSky(vec3 ro,vec3 rd,int addPlanet)
 {
   vec3 color=max(vec3(0),(max(vec3(0),pow(dot(lightDir,rd),6.))*.7-rd.y)*mix(vec3(1,.5,0),vec3(1),min(1.,lightDir.y*1.5))+lightDir.y*3.);
   float phi=atan(rd.x,rd.z),theta=acos(rd.y/length(rd));
-  theta=smoothstep(0.,.5,norm(.5*smoothrnd(3e2*vec2(phi,theta)))+norm(.75*smoothrnd(5e2*vec2(phi,theta)))-1.25)*saturate(1.-lightDir.y*5.);
+  phi=smoothstep(0.,.5,norm(.5*smoothrnd(3e2*vec2(phi,theta)))+norm(.75*smoothrnd(5e2*vec2(phi,theta)))-1.25)*saturate(1.-lightDir.y*5.);
   if(addPlanet>0)
     {
       vec4 p=calcPlanet(ro,rd);
-      color+=theta*saturate(1.-p.w)+p.xyz;
+      color+=phi*saturate(1.-p.w)+p.xyz;
     }
   rd.xy+=ro.xy*1e-4;
   return color+(calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.1)*3.)+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.2)*5.)*.1+calculateSkySub(normalize(rd+vec3(sin(Y.z*.1),0,cos(Y.z*.1))*.4)*7.)*.1-calculateSkySub(normalize(rd+vec3(sin(Y.z*.2),0,0)*.5))*1.5)*saturate(rd.y+.5);
@@ -128,9 +128,8 @@ float isoSurface(vec3 p)
 }
 float traceIso(vec3 ro,vec3 rd,float mint,float maxt)
 {
-  float s=99.,lt,liso,exact;
-  s=(maxt-mint)/s;
-  for(float t=mint;t<maxt;t+=s)
+  float lt,liso,exact,delt=(maxt-mint)/99.;
+  for(float t=mint;t<maxt;t+=delt)
     {
       vec3 p=ro+t*rd;
       float iso=isoSurface(p);

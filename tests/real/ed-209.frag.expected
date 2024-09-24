@@ -39,14 +39,14 @@ float sdTriPrism(vec3 p)
 float sdCappedCone(vec3 p)
 {
   vec3 b=vec3(0,0,-.1),a=vec3(0);
-  float rba=.1,baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
+  float baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
     .25:
-    .35)),cay=abs(paba-.5)-.5,f=clamp((rba*(x-.25)+paba*baba)/(rba*rba+baba),0.,1.);
-  x=x-.25-f*rba;
-  rba=paba-f;
+    .35)),cay=abs(paba-.5)-.5,f=clamp((.1*(x-.25)+paba*baba)/(.01+baba),0.,1.);
+  x=x-.25-f*.1;
+  paba-=f;
   return(x<0.&&cay<0.?
     -1.:
-    1.)*sqrt(min(cax*cax+cay*cay*baba,x*x+rba*rba*baba));
+    1.)*sqrt(min(cax*cax+cay*cay*baba,x*x+paba*paba*baba));
 }
 float sdCappedCylinder(vec3 p,float h,float r)
 {

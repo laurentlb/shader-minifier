@@ -616,6 +616,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     // Reuse an existing local variable declaration that won't be used anymore, instead of introducing a new one.
     // The reused identifier gets compressed better, and the declaration is sometimes removed.
     // float d1 = f(); float d2 = g();  ->  float d1 = f(); d1 = g();
+    // We only do this when the reused declaration is at the same level as the removed declaration.
     let reuseExistingVarDecl blockLevel b =
         let tryReplaceWithPrecedingAndFollowing f (xs : Stmt list) =
             let rec go f preceding = function
@@ -801,9 +802,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             else removeUnusedAssignments blockLevel b
 
         let b =
-            if optimizationPass <> OptimizationPass.Second &&
-                // We ensure control flow analysis is trivial by only doing this at the root block level.
-                (match blockLevel with BlockLevel.FunctionRoot _ -> false | _ -> true) || hasPreprocessor
+            if optimizationPass <> OptimizationPass.Second || hasPreprocessor
             then b
             else reuseExistingVarDecl blockLevel b
 
