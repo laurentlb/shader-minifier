@@ -23,7 +23,7 @@ type Ident(name: string) =
     member this.Rename(n) = newName <- n
     member val ToBeInlined = newName.StartsWith("i_") with get, set
     // This prefix disables function inlining and variable inlining.
-    member this.DoNotInline = this.OldName.StartsWith("noinline_")
+    member val DoNotInline = newName.StartsWith("noinline_") with get, set
 
     member val Loc = {line = -1; col = -1} with get, set
 
@@ -197,7 +197,7 @@ and FunctionType = {
 
 and TopLevel =
     | TLVerbatim of string
-    | TLDirective of string list
+    | TLDirective of string list * Location
     | Function of FunctionType * Stmt
     | TLDecl of Decl
     | TypeDecl of StructOrInterfaceBlock // struct declaration, or interface block that introduce a set of external global variables.

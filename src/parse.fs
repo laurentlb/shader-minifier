@@ -371,7 +371,7 @@ type private ParseImpl(options: Options.Options) =
     let toplevel =
         let decl = declaration .>> ch ';'
         let item = choice [
-                    macro |>> Ast.TLDirective
+                    pipe2 macro getPosition (fun ss pos -> Ast.TLDirective (ss, {line = int pos.Line; col = int pos.Column}))
                     template |>> Ast.TLVerbatim
                     verbatim |>> Ast.TLVerbatim
                     attribute |>> Ast.TLVerbatim

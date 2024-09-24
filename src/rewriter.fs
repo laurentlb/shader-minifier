@@ -6,6 +6,7 @@ open Builtin
 open Ast
 open Inlining
 open Analyzer
+open System.Text.RegularExpressions
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
@@ -331,8 +332,13 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 else e
             | _ -> e
 
+    let isFuncDeclarationToInline (fn: Ident) =
+        match fn.Declaration with
+        | Declaration.UserFunction uf -> uf.funcType.fName.ToBeInlined
+        | _ -> false
+
     let simplifyExpr (didInline: bool ref) env = function
-        | FunCall(Var v, passedArgs) as e when v.ToBeInlined ->
+        | FunCall(Var v, passedArgs) as e when isFuncDeclarationToInline v ->
             match env.fns.TryFind (v.Name, passedArgs.Length) with
             | Some ([{args = declArgs}, body]) ->
                 if List.length declArgs <> List.length passedArgs then
@@ -899,7 +905,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 let li = declsNotToInline li
                 if li = [] then None else TLDecl (rwType ty, li) |> Some
             | TLVerbatim s -> TLVerbatim (stripSpaces s) |> Some
-            | TLDirective d -> TLDirective (stripDirectiveSpaces d) |> Some
+            | TLDirective (d, loc) -> TLDirective (stripDirectiveSpaces d, loc) |> Some
             | Function (fct, _) when fct.fName.ToBeInlined -> None
             | Function (fct, body) -> Function (rwFType fct, body) |> Some
             | e -> e |> Some
@@ -964,8 +970,38 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
             iterateSimplifyAndInline options optimizationPass (passCount + 1) li
         else li
 
-let simplify options li =
+let processPragmas (options: Options.Options) li =
+    let mutable forceInlineNextFunction = None
+    let warnIgnoredPragma (_, ss, loc) = options.trace $"{loc}: ignored pragma {ss}"
+    let processPragma tl =
+        match tl with
+        | TLDirective ([s], loc) when Regex.IsMatch(s, "#pragma +function +inline", RegexOptions.IgnoreCase) ->
+            forceInlineNextFunction |> Option.iter warnIgnoredPragma
+            forceInlineNextFunction <- Some (true, [s], loc)
+            None
+        | TLDirective ([s], loc) when Regex.IsMatch(s, "#pragma +function +noinline", RegexOptions.IgnoreCase) ->
+            forceInlineNextFunction |> Option.iter warnIgnoredPragma
+            forceInlineNextFunction <- Some (false, [s], loc)
+            None
+        | Function (ft, _) as tl ->
+            match forceInlineNextFunction with
+            | Some (true, _, _) ->
+                options.trace $"{ft.fName.Loc}: pragma forces inlining of '{Printer.debugFunc ft}'"
+                ft.fName.ToBeInlined <- true
+            | Some (false, _, _) ->
+                options.trace $"{ft.fName.Loc}: pragma prevents inlining of '{Printer.debugFunc ft}'"
+                ft.fName.DoNotInline <- true
+            | None -> ()
+            forceInlineNextFunction <- None
+            Some tl
+        | tl -> Some tl
+    let li = li |> List.choose processPragma
+    forceInlineNextFunction |> Option.iter warnIgnoredPragma
     li
+
+let simplify (options: Options.Options) li =
+    li
+    |> processPragmas options
     |> iterateSimplifyAndInline options OptimizationPass.First 1
     |> iterateSimplifyAndInline options OptimizationPass.Second 1
     |> RewriterImpl(options, OptimizationPass.First).Cleanup

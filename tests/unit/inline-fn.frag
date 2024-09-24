@@ -74,6 +74,11 @@ float F1_INLINED(in float f) { return 7.0; }
 float F2_PRESERVED(out float ff) { return 7.0; }
 float F3_PRESERVED(inout float f) { return 7.0; }
 
+#pragma function inline
+float PRAGMA_INLINED(float x) { return vec3(x).x; }
+#pragma function noinline
+float PRAGMA_PRESERVED(float x) { return x; }
+
 float setup() {
 	return shadowedVar++; // prevent inlining of the global shadowedVar
 }
@@ -122,6 +127,8 @@ float f() {
 	float _F3 = F3_PRESERVED(o); // not inlined
 
 	sep++;
+	float _P1 = PRAGMA_INLINED(9.0)+PRAGMA_INLINED(8.0);
+	float _P2 = PRAGMA_PRESERVED(9.0);
 
 	setup();
 	shadowedVar++;
@@ -133,7 +140,8 @@ float f() {
 		_C1+_C2+
 		_D1+_D2+_D3+
 		_E1+_E2+_E3+_E4+_E5+
-		_F1+_F2+_F3;
+		_F1+_F2+_F3+
+		_P1+_P2;
 }
 
 
