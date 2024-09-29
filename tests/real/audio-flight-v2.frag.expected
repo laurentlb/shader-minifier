@@ -115,9 +115,9 @@ vec2 map(vec3 p,float sg)
   float obj=fBox(o,vec3(.15*offWobble))-.015;
   if(obj<res.x)
     res=vec2(obj,11),g_hp=o;
-  float pid=mod(floor((q.z+3.625)/7.25),18.);
-  pid=pid<12.?
-    pid<6.?
+  float pid=floor((q.z+3.625)/7.25),trackmod=mod(pid,18.);
+  pid=trackmod<12.?
+    trackmod<6.?
       4.:
       6.:
     10.;
@@ -130,8 +130,8 @@ vec2 map(vec3 p,float sg)
   tun=floor(fs.xz)+.5;
   vec2 neighbour=tun+edge(fs.xz-tun);
   pid=floor(tun.y);
-  float height=smoothstep(.001,1.,texture(iChannel0,vec2(mod(pid,16.)*.0465,.1)).x);
-  ga=height;
+  trackmod=smoothstep(.001,1.,texture(iChannel0,vec2(mod(pid,16.)*.0465,.1)).x);
+  ga=trackmod;
   float ids=pMod(s.z,7.25);
   vec3 qid=pMod(q,7.25);
   ids=mod(ids,2.);
@@ -142,7 +142,7 @@ vec2 map(vec3 p,float sg)
         2.:
         2.:
       5.:
-    floor(height*1.45));
+    floor(trackmod*1.45));
   float d4a=length(o.xy-vec2(2.5,1.75))-.1,d4=length(o.xy-vec2(2.5,1.75))-.04+.027+.027*sin(o.z-time*4.5);
   if(d4<res.x)
     res=vec2(d4,12),g_hp=p;
@@ -154,16 +154,16 @@ vec2 map(vec3 p,float sg)
     d1.x=min(d4a,d1.x);
   if(d1.x<res.x)
     res=d1.xy,g_hp=p;
-  float me=fBox(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25)),next=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+height,.25));
-  height=min(me,next);
-  if(height<res.x)
-    res=vec2(height,4),g_hp=p;
+  float me=fBox(fs-vec3(0,0,tun.y),vec3(.05,.15+trackmod,.25)),next=fBox(fs-vec3(0,0,neighbour.y),vec3(.05,.001+trackmod,.25));
+  trackmod=min(me,next);
+  if(trackmod<res.x)
+    res=vec2(trackmod,4),g_hp=p;
   if(sg==1.)
     beams+=1e-4/(3e-6+d4*d4);
   if(sg==1.&&ids<1.)
     flight+=.00025/(1e-7+d4a*d4a);
   if(sg==1.&&pid<.1)
-    glow+=.00015/(2e-6+height*height);
+    glow+=.00015/(2e-6+trackmod*trackmod);
   if(sg==1.&&tm<13.25)
     objglow+=5e-4/(5e-4+obj*obj);
   return res;

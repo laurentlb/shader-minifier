@@ -10,12 +10,12 @@ pub const HEART_FRAG: &'static [u8] = b"\
  void main()\
  {\
    vec2 f=(2.*gl_FragCoord.xy-y)/y.y;\
-   float u=mod(v,2.)/2.,a=pow(u,.2)*.5+.5;\
-   a-=a*.2*sin(u*6.2831*5.)*exp(-u*6.);\
+   float g=mod(v,2.)/2.,a=pow(g,.2)*.5+.5;\
+   a-=a*.2*sin(g*6.2831*5.)*exp(-g*6.);\
    f*=vec2(.5,1.5)+a*vec2(.5,-.5);\
-   a=atan(f.x,f.y)/3.141593;\
-   u=length(f);\
-   a=abs(a);\
-   a=(13.*a-22.*a*a+10.*a*a*a)/(6.-5.*a);\
-   gl_FragColor=vec4(step(u,a)*pow(1.-u/a,.25),0,0,1);\
+   g=atan(f.x,f.y)/3.141593;\
+   a=length(f);\
+   g=abs(g);\
+   g=(13.*g-22.*g*g+10.*g*g*g)/(6.-5.*g);\
+   gl_FragColor=vec4(step(a,g)*pow(1.-a/g,.25),0,0,1);\
  }\0";

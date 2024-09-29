@@ -47,7 +47,7 @@ vec2 map(vec3 p)
   tun.x++;
   vec3 fs=p-vec3(2.85,0,0);
   tun=floor(fs.xz)+.5;
-  float height=smoothstep(.001,1.,.0465),me=dot(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25)),next=dot(fs-vec3(0,0,tun.y),vec3(.05,.001+height,.25));
-  height=min(me,next);
+  float height=smoothstep(.001,1.,.0465);
+  height=min(dot(fs-vec3(0,0,tun.y),vec3(.05,.15+height,.25)),dot(fs-vec3(0,0,tun.y),vec3(.05,.001+height,.25)));
   return vec2(height*height);
 }

@@ -83,8 +83,7 @@ vec4 leavesTexture(vec3 p,vec3 nor)
 vec4 fruitTexture(vec3 p,vec3 nor,float i)
 {
   float rand=texCube(iChannel2,p*.1,nor).x;
-  p=mix(vec3(0,1,0),vec3(1,abs(dot(nor,normalize(vec3(.8,.1,.1))))*rand,0),i/10.);
-  return vec4(p,.5);
+  return vec4(mix(vec3(0,1,0),vec3(1,abs(dot(nor,normalize(vec3(.8,.1,.1))))*rand,0),i/10.),.5);
 }
 float distanceRayPoint(vec3 ro,vec3 rd,vec3 p,out float h)
 {

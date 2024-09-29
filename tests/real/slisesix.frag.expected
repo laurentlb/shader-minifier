@@ -53,27 +53,26 @@ float bicho(vec3 x,float mindist)
   x.x*=fax;
   x.y*=.8+.2*sa;
   x.z*=fax;
-  r2=dot(x,x);
-  fax=sqrt(r2);
-  r2=(1.-smoothstep(0.,.75,fax))*.4;
-  sa=sin(r2);
-  r2=cos(r2);
-  x.xy=mat2(r2,sa,-sa,r2)*x.xy;
-  r2=1e5;
-  sa=.05+sqrt(dot(x.xz,x.xz));
-  float ca=.46625-6.*sa*exp2(-10.*sa);
+  r2=sqrt(dot(x,x));
+  sa=(1.-smoothstep(0.,.75,r2))*.4;
+  fax=sin(sa);
+  sa=cos(sa);
+  x.xy=mat2(sa,fax,-fax,sa)*x.xy;
+  sa=1e5;
+  fax=.05+sqrt(dot(x.xz,x.xz));
+  float ca=.46625-6.*fax*exp2(-10.*fax);
   for(int j=1;j<7;j++)
     {
-      float an=6.2831/7.*float(j),aa=an+.4*sa*noise3f(vec3(4.*sa,2.5,an))+.29,rc=cos(aa);
+      float an=6.2831/7.*float(j),aa=an+.4*fax*noise3f(vec3(4.*fax,2.5,an))+.29,rc=cos(aa);
       an=sin(aa);
       vec3 q=vec3(x.x*rc-x.z*an,x.y+ca,x.x*an+x.z*rc);
       an=dot(q.yz,q.yz);
-      if(q.x>0.&&q.x<1.5&&an<r2)
-        r2=an;
+      if(q.x>0.&&q.x<1.5&&an<sa)
+        sa=an;
     }
-  ca=sqrt(r2)-.045;
-  r2=clamp(fax*3.,0.,1.);
-  return ca*r2+(fax-.3)*(1.-r2);
+  ca=sqrt(sa)-.045;
+  sa=clamp(r2*3.,0.,1.);
+  return ca*sa+(r2-.3)*(1.-sa);
 }
 float map(vec3 pos,out int sid,out int submat)
 {

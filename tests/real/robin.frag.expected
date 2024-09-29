@@ -231,10 +231,8 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   zoomTurn.y=smoothstep(6.,0.,t)+smoothstep(39.,40.,t);
   vec3 cameraPos=CameraPath(gTime*.2);
   cameraPos.z+=zoomTurn.y*8.;
-  vec3 camTarget=vec3(Noise(gTime*1.9-30.)*.5-.25,Noise(gTime*2.)*.5-.3,0);
-  camTarget=normalize(camTarget-cameraPos);
-  vec3 cu=normalize(cross(camTarget,vec3(0,1,0)));
-  camTarget=normalize(uv.x*cu+uv.y*cross(cu,camTarget)+(1.-zoomTurn.y*.4)*camTarget);
+  vec3 camTarget=vec3(Noise(gTime*1.9-30.)*.5-.25,Noise(gTime*2.)*.5-.3,0),cw=normalize(camTarget-cameraPos),cu=normalize(cross(cw,vec3(0,1,0)));
+  camTarget=normalize(uv.x*cu+uv.y*cross(cu,cw)+(1.-zoomTurn.y*.4)*cw);
   animParts.x=Noise(gTime*2.)+1.;
   animParts.y=(NoiseSlope(gTime*1.2+sin(gTime*.3)*.7+.7,.05)-.5)*1.5;
   animParts.z=NoiseSlope(gTime*.4-33.,.05)*.5;
@@ -251,7 +249,7 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
   zoomTurn.x=smoothstep(.4,.8,t);
   if(mod(gTime*2.,30.)>=15.)
     zoomTurn.x=1.-zoomTurn.x;
-  cu=vec3(0);
+  cw=vec3(0);
   for(int i=0;i<2;i++)
     dStack[i]=vec4(-20),aStack[i]=vec4(0);
   jump=Scene(cameraPos,camTarget,fragCoord);
@@ -262,11 +260,11 @@ void mainImage(out vec4 fragColor,vec2 fragCoord)
         if(d<0.)
           continue;
         vec3 pos=cameraPos+camTarget*d,normal=normalize(vec3(Map(pos+vec3(.01,0,0))-Map(pos-vec3(.01,0,0)),Map(pos+vec3(0,.01,0))-Map(pos-vec3(0,.01,0)),Map(pos+vec3(0,0,.01))-Map(pos-vec3(0,0,.01)))),alb=Colour(pos,normal,specular);
-        cu+=DoLighting(alb,pos,normal,camTarget,d,specular)*aStack[s][i];
+        cw+=DoLighting(alb,pos,normal,camTarget,d,specular)*aStack[s][i];
       }
   t=smoothstep(1.9,0.,zoomTurn.y);
   camTarget=mix(CubeMap(iChannel2,camTarget,128.),CubeMap(iChannel3,camTarget,64.)*.7,t);
-  cu+=camTarget*camTarget*SUN_COLOUR*(1.-jump);
-  cu=PostEffects(cu,xy)*smoothstep(0.,2.,iTime);
-  fragColor=vec4(cu,1);
+  cw+=camTarget*camTarget*SUN_COLOUR*(1.-jump);
+  cw=PostEffects(cw,xy)*smoothstep(0.,2.,iTime);
+  fragColor=vec4(cw,1);
 }
