@@ -100,6 +100,10 @@ and Expr =
 and TypeSpec =
     | TypeName of string
     | TypeBlock of StructOrInterfaceBlock
+with override t.ToString() =
+        match t with
+        | TypeName n -> n
+        | TypeBlock b -> b.ToString()
 
 // An interface block followed by an instance name (in a TLDecl), like structs, declares an instance.
 // An interface block without an instance name (in a TypeDecl), unlike structs, introduces a set of external global variables.
