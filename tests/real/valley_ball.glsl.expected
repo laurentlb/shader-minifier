@@ -8,7 +8,7 @@ vec3 spherePos,lightDir,lightColor,waterColor,ro,rd,interlacing;
 float sphereRadius,gf_DetailLevel,pi,eps,bigeps;
 float rnd(vec2 x)
 {
-  int n=int(x.x*40.+x.y*6400.);
+  int n=int(x.x*40.+x.y*64e2);
   n^=n<<13;
   return 1.-float(n*(n*n*15731+789221)+1376312589&2147483647)/1073741824.;
 }
