@@ -161,9 +161,9 @@ vec2 map(vec3 p,float sg)
   if(sg==1.)
     beams+=1e-4/(3e-6+d4*d4);
   if(sg==1.&&ids<1.)
-    flight+=.00025/(1e-7+d4a*d4a);
+    flight+=25e-5/(1e-7+d4a*d4a);
   if(sg==1.&&pid<.1)
-    glow+=.00015/(2e-6+trackmod*trackmod);
+    glow+=15e-5/(2e-6+trackmod*trackmod);
   if(sg==1.&&tm<13.25)
     objglow+=5e-4/(5e-4+obj*obj);
   return res;
@@ -249,7 +249,7 @@ void mainImage(out vec4 O,vec2 F)
         }
       else
          C=C+abs(glow*.7)*hsv2rgb(vec3(s_hp.z*.01,.8,.6))+abs(objglow*.65)*vec3(1);
-      C=mix(C,FC,1.-exp(-7.5e-5*t.x*t.x*t.x))+abs(beams*.65)*hsv2rgb(vec3(s_hp.z*.025,.8,.6))+abs(flight*.75)*vec3(.5,1,.2);
+      C=mix(C,FC,1.-exp(-75e-6*t.x*t.x*t.x))+abs(beams*.65)*hsv2rgb(vec3(s_hp.z*.025,.8,.6))+abs(flight*.75)*vec3(.5,1,.2);
     }
   crop=1./R.x;
   float d1=fBox2(uv+vec2(-.485,.2675),vec2(.005))-.002;

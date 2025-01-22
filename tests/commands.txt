@@ -39,6 +39,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/reuse-var.frag.expected tests/unit/reuse-var.frag
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/struct_inheritance.hlsl.expected tests/unit/struct_inheritance.hlsl
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/templates.hlsl.expected tests/unit/templates.hlsl
+--no-remove-unused --no-renaming --format indented -o tests/unit/decimals.frag.expected tests/unit/decimals.frag
 
 # Unused removal tests
 
