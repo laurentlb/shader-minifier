@@ -1,3 +1,3 @@
 #! /bin/bash
 
-dotnet build shader-minifier.sln
+dotnet build "Shader Minifier.sln"

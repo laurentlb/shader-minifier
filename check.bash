@@ -1,3 +1,3 @@
 #! /bin/bash
 
-dotnet run --project Checker/
+dotnet run --project Checker/ --skip-glslang-compile
