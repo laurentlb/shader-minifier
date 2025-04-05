@@ -6,7 +6,7 @@ layout(local_size_x=8,local_size_y=8)in;
 uniform layout(binding=0,r32ui) coherent restrict uimage2D d0;
 uniform layout(binding=1,rgba8) coherent writeonly restrict image2D outtex;
 uniform layout(binding=0) sampler2D lt;
-float time=float(m)/44100.;
+float time=float(m)/441e2;
 int IH(int a)
 {
   a=a^61^a>>16;
@@ -97,7 +97,7 @@ void main()
           if(s<.93)
             p.xy=(mat3(.860671,-.402177,0,.401487,.860992,0,.108537,.075138,1)*vec3(p.xy,1)).xy;
           else if(s<.95)
-            p.xy=(mat3(.094957,.237023,0,-.000995,.002036,0,-.746911,.047343,1)*vec3(p.xy,1)).xy;
+            p.xy=(mat3(.094957,.237023,0,-995e-6,.002036,0,-.746911,.047343,1)*vec3(p.xy,1)).xy;
           else if(s<.98)
             p.xy=(mat3(.150288,0,0,0,.146854,0,-.563199,.032007,1)*vec3(p.xy,1)).xy;
           else

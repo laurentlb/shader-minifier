@@ -91,6 +91,8 @@ type PrinterImpl(withLocations) =
                    elif Regex.Match(str1, "^\\d+$").Success then str1 + "."
                    else str1
         let str2 = a.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
+        let parts = Regex.Match(str2, @"([^.]*)\.?([^e]*)e(.*)").Groups
+        let str2 = sprintf "%s%se%d" parts[1].Value parts[2].Value ((int parts[3].Value) - parts[2].Value.Length)
         let str = [str1; str2] |> List.minBy(fun x -> x.Length)
         
         let sign = if f < 0.M then "-" else ""

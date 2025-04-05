@@ -86,7 +86,7 @@ float WaveCrests(vec3 ipos,vec2 fragCoord)
   ipos.y=-.05*iTime;
   for(int i=6;i<16;i++)
     ipos=(ipos.yzx+ipos.zyx*vec3(1,-1,1))/sqrt(2.),f=f*1.5+abs(Noise(ipos).x-.5)*2.,ipos*=2.;
-  f/=1500.;
+  f/=15e2;
   f-=Noise(ivec2(fragCoord.xy)).x*.01;
   return pow(smoothstep(.4,-.1,f),6.);
 }
