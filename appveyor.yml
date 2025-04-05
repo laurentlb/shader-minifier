@@ -4,7 +4,7 @@ branches:
   - master
 image: Visual Studio 2022
 configuration: Debug
-platform: x64
+platform: Any CPU
 before_build:
 - cmd: nuget restore
 build_script:
