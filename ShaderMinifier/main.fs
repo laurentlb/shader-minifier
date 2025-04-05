@@ -4,7 +4,7 @@ open ShaderMinifier
 open System.IO
 
 let readFile file =
-    let stream =
+    use stream =
         if file = "" then new StreamReader(System.Console.OpenStandardInput())
         else new StreamReader(file)
     stream.ReadToEnd()
@@ -25,7 +25,11 @@ let run (options: Options.Options) filenames =
     try
         minifyFiles options filenames out
         0
-    with exn ->
+    with
+    | :? System.IO.IOException as ex ->
+        printfn "Error: %s" ex.Message
+        1
+    | exn ->
         printfn "%s" (exn.ToString())
         1
 

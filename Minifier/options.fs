@@ -4,7 +4,7 @@ open System.IO
 open Argu
 open System
 
-let version = "1.3.6" // Shader Minifier version
+let version = "1.4.0" // Shader Minifier version
 let debugMode = false
 
 type OutputFormat =
@@ -22,6 +22,7 @@ type FieldSet =
     | STPQ
 
 type CliArguments =
+    | [<CustomCommandLine("--version")>] Version
     | [<CustomCommandLine("-o")>] OutputName of string
     | [<CustomCommandLine("-v")>] Verbose
     | [<CustomCommandLine("--debug")>] Debug
@@ -62,8 +63,10 @@ type CliArguments =
             | Preprocess -> "Evaluate some of the file preprocessor directives"
             | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
             | Filenames _ -> "List of files to minify"
+            | Version -> "Display the version and exit"
 
 type Options = {
+    version: bool
     outputName: string
     outputFormat: OutputFormat
     verbose: bool
@@ -100,6 +103,7 @@ let private argParser = lazy (
 let private initPrivate argv =
     let args = argParser.Value.Parse(argv)
     let options = {
+        version = args.Contains Version
         outputName = args.GetResult(OutputName, defaultValue = "shader_code.h");
         outputFormat = args.GetResult(FormatArg, defaultValue = CVariables);
         verbose = args.Contains(Verbose)
@@ -136,6 +140,8 @@ let init argv =
 
 let initFiles argv =
     let options, filenames = initPrivate argv
+    if options.version then
+        failwithf "%s" helpTextMessage
     if filenames.Length = 0 then
         failwith (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
     options, filenames
