@@ -381,6 +381,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         | FunCall(Var var, [e; Number 1.M]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x
 
+        | FunCall (Dot (Var var, "length"), []) as e ->
+            match var.VarDecl with
+            | Some vd ->
+                match vd.ty.arraySizes with
+                | [Int _ as n] -> n
+                | _ -> e
+            | _ -> e
+
         // pi is acos(-1), pi/2 is acos(0)
         | Float(f, _) when Decimal.Round(f, 8) = 3.14159265M -> FunCall(Var (Ident "acos"), [Float (-1.M, "")])
         | Float(f, _) when Decimal.Round(f, 8) = 6.28318531M -> FunCall(Op "*", [Float (2.M, ""); FunCall(Var (Ident "acos"), [Float (-1.M, "")])])

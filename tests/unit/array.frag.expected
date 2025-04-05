@@ -24,6 +24,11 @@ const char *array_frag =
    "return func_bank(test)[0]==5&&func_bank(test)[1]==7?"
      "x:"
      "x*x;"
+ "}"
+ "out vec4 fragColor;"
+ "void main()"
+ "{"
+   "fragColor=vec4(4);"
  "}";
 
 #endif // ARRAY_FRAG_EXPECTED_
