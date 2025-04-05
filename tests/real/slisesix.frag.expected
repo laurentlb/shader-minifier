@@ -175,9 +175,9 @@ void main()
       float llig=dot(lig,lig);
       lig*=inversesqrt(llig);
       float dif=dot(nor,lig);
-      dif=2.5*exp2(-1.75*llig)*clamp(matID==4?
+      dif=clamp(matID==4?
         .5+.5*dif:
-        .1+.9*dif,0.,1.);
+        .1+.9*dif,0.,1.)*(2.5*exp2(-1.75*llig));
       llig=(nor[0]+nor[1])*.075;
       if(matID==0)
         {
