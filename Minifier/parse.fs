@@ -378,7 +378,7 @@ type private ParseImpl(options: Options.Options) =
                     attempt decl |>> Ast.TLDecl
                     structDecl
                     attempt interfaceBlock
-                    loneLayoutQualifier |>> Ast.TLVerbatim
+                    attempt loneLayoutQualifier |>> Ast.TLVerbatim
                     precision
                     pfunction
         ]
