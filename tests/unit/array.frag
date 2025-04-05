@@ -31,3 +31,9 @@ float f(float x)
     return func_bank(test)[0] == 5 && func_bank(test)[1] == 7
 		? x : x*x;
 }
+
+out vec4 fragColor;
+void main() {
+  float[4] array = float[](1.,2.,3.,4.);
+  fragColor = vec4(array.length());
+}
