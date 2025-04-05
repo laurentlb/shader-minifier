@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="builtin.fs" />
+    <Compile Include="options.fs" />
+    <Compile Include="ast.fs" />
+    <Compile Include="printer.fs" />
+    <Compile Include="formatter.fs" />
+    <Compile Include="analyzer.fs" />
+    <Compile Include="inlining.fs" />
+    <Compile Include="renamer.fs" />
+    <Compile Include="rewriter.fs" />
+    <Compile Include="preprocessor.fs" />
+    <Compile Include="parse.fs" />
+    <Compile Include="api.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Argu">
+      <HintPath>..\lib\Argu.dll</HintPath>
+    </Reference>
+    <Reference Include="FParsec">
+      <HintPath>..\lib\FParsec.dll</HintPath>
+    </Reference>
+    <Reference Include="FParsecCS">
+      <HintPath>..\lib\FParsecCS.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\lib\FSharp.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

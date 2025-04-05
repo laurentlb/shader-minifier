@@ -1,29 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <StartWorkingDirectory>..</StartWorkingDirectory>
-    <StartArguments>--update-golden</StartArguments>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="compression_test.fs" />
     <Compile Include="main.fs" />
-    <None Include="../lib/Compressor.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Argu">
       <HintPath>..\lib\Argu.dll</HintPath>
     </Reference>
+    <Reference Include="FParsec">
+      <HintPath>..\lib\FParsec.dll</HintPath>
+    </Reference>
+    <Reference Include="FParsecCS">
+      <HintPath>..\lib\FParsecCS.dll</HintPath>
+    </Reference>
     <Reference Include="FSharp.Core">
       <HintPath>..\lib\FSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenTK">
-      <HintPath>..\lib\OpenTK.dll</HintPath>
     </Reference>
   </ItemGroup>
 
