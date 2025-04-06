@@ -391,16 +391,16 @@ type private RenamerImpl(options: Options.Options) =
         let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
-
+        let allowOverloading = not options.noOverloading
         let mutable env =
             if Array.length shaders > 1 then
                 // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
                 let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
                 let contextTable = computeContextTable text
-                Env.Create(names, true, multiFileRenaming contextTable exportsRenames, shadowVariables)
+                Env.Create(names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
             else
                 let contextTable = computeContextTable text
-                Env.Create(names, true, optimizeContext contextTable, shadowVariables)
+                Env.Create(names, allowOverloading, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames.Value <- exportedNames
         renameAsts shaders env

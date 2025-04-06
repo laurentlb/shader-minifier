@@ -97,14 +97,14 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: Shader Minifier [--help] [-o <string>] [-v] [--hlsl]
+USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl]
                        [--format <text|indented|c-variables|c-array|js|nasm|rust>]
                        [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
-                       [--no-remove-unused]
-                       [--move-declarations] [<filename>...]
+                       [--no-remove-unused] [--no-overloading] [--move-declarations]
+                       [--preprocess] [--export-kkp-symbol-maps] [<filename>...]
 
 FILENAMES:
 
@@ -112,32 +112,33 @@ FILENAMES:
 
 OPTIONS:
 
+    --version             Display the version and exit
     -o <string>           Set the output filename (default is shader_code.h)
     -v                    Verbose, display additional information
+    --debug               Debug, display more additional information
     --hlsl                Use HLSL (default is GLSL)
     --format <text|indented|c-variables|c-array|js|nasm|rust>
-                          Choose to format the output (use 'text' if you want
-                          just the shader)
+                          Choose to format the output (use 'text' if you want just
+                          the shader)
     --field-names <rgba|xyzw|stpq>
-                          Choose the field names for vectors: 'rgba', 'xyzw',
-                          or 'stpq'
+                          Choose the field names for vectors: 'rgba', 'xyzw', or
+                          'stpq'
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
-    --no-inlining         Do not automatically inline variables, functions
-                          and arguments
-    --aggressive-inlining Aggressively inline constants. This can reduce output
-                          size due to better constant folding. It can also
-                          increase output size due to repeated inlined
-                          constants, but this increased redundancy can be
-                          beneficial to compression, leading to a smaller final
-                          compressed size anyway. Does nothing if inlining is
-                          disabled.
+    --no-inlining         Do not automatically inline variables and functions
+    --aggressive-inlining Aggressively inline constants. This can reduce output size
+                          due to better constant folding. It can also increase
+                          output size due to repeated inlined constants, but this
+                          increased redundancy can be beneficial to compression,
+                          leading to a smaller final compressed size anyway. Does
+                          nothing if inlining is disabled.
     --no-renaming         Do not rename anything
     --no-renaming-list <string>
                           Comma-separated list of functions to preserve
     --no-sequence         Do not use the comma operator trick
     --no-remove-unused    Do not remove unused code
+    --no-overloading      When renaming functions, do not introduce new overloads
     --move-declarations   Move declarations to group them
     --preprocess          Evaluate some of the file preprocessor directives
     --export-kkp-symbol-maps
@@ -274,13 +275,17 @@ layout(local_size_x = 32) in;
 
 ### Overloading
 
-At this time, do not use overloaded functions (two functions with the same name
-but different arguments) in the input. The output probably won't compile.
+When renaming functions, Shader Minifier will try to introduce as much
+overloading as possible. This reduces the number of identifiers used by the
+shader and makes it more compression-friendly.
 
-On the other hand, Shader Minifier will aggressively use function overloading in
-the output. If two functions have a different number of arguments, they may have
-the same name in the output. This reduces the number of identifiers used by the
-shader and make it more compression friendly.
+Shader Minifier works best when the input code doesn't use function overloading
+(two functions with the same name and different arguments). Function overloading
+might confuse the analysis and lead to an output that doesn't compile. Use the
+flag `--no-overloading` if you don't want Shader Minifier to introduce function
+overloading, it's probably safer. Please also file issues related to function
+overloading, as we don't have enough test coverage at the moment.
+
 
 ### kkpView symbol maps
 

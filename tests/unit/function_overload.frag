@@ -8,6 +8,12 @@ int sum3(int x, int y, int z) { return sum2(x, y) + z; }
 
 int sum4(int x, int y, int z, int w) { return sum3(x, y, z) + w; }
 
+int sum5(vec2 v2) { return length(v2); }
+
+int sum6(vec3 v3) { return length(v3); }
+
+int sum7(int x, vec2 v2) { return length(v2) + x; }
+
 int mult1(int x) { return x; }
 
 int mult2(int x, int y) { return mult1(x) * y; }

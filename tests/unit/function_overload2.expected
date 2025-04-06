@@ -3,13 +3,25 @@
 # define FUNCTION_OVERLOAD2_EXPECTED_
 
 const char *function_overload_frag =
- "int H(int H,int G,int F,int E)"
+ "int h(int l,int h,int K,int J)"
  "{"
-   "return H+G+F+E;"
+   "return l+h+K+J;"
  "}"
- "int H(int H,int G,int F)"
+ "int h(vec2 l)"
  "{"
-   "return H*G*F;"
+   "return length(l);"
+ "}"
+ "int h(vec3 l)"
+ "{"
+   "return length(l);"
+ "}"
+ "int h(int l,vec2 i)"
+ "{"
+   "return length(i)+l;"
+ "}"
+ "int h(int t,int l,int i)"
+ "{"
+   "return t*l*i;"
  "}";
 
 #endif // FUNCTION_OVERLOAD2_EXPECTED_

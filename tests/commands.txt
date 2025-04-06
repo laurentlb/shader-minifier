@@ -87,6 +87,7 @@
 -o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
 --no-remove-unused --no-inlining -o tests/unit/function_overload.expected tests/unit/function_overload.frag
+--no-remove-unused --no-inlining --no-overloading -o tests/unit/function_overload.no.expected tests/unit/function_overload.frag
 --no-remove-unused -o tests/unit/function_overload2.expected tests/unit/function_overload.frag
 -o tests/unit/overload.expected tests/unit/overload.frag
 --no-remove-unused -o tests/unit/externals.expected tests/unit/externals.frag
