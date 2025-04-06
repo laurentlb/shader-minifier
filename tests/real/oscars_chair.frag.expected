@@ -146,7 +146,7 @@ const char *oscars_chair_frag =
              "gl_FragColor.w=y<=81?"
                "(w-15)/6:"
                "w/15;"
-           "u=pow(.003+smoothstep(0,2,abs(y-60))*smoothstep(0,3,abs(y-112))*(1-(pow(abs(v.x*2-1),4)+pow(abs(v.y*2-1)*2.5,4))*.4)*u*40,vec3(1,1.1,1.2));"
+           "u=pow(.003+u*(smoothstep(0,2,abs(y-60))*smoothstep(0,3,abs(y-112))*(1-(pow(abs(v.x*2-1),4)+pow(abs(v.y*2-1)*2.5,4))*.4))*40,vec3(1,1.1,1.2));"
            "e+=u/(u+.4)*1.1;"
          "}"
        "m=0;"
