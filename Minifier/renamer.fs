@@ -11,14 +11,14 @@ open Ast
 type private Env = {
     // Map from an old variable name to the new one.
     varRenames: Map<string, string>
-    // Map from a new function name and function arity to the old name.
-    funRenames: Map<string, Map<int, string>>
+    // Map from a new function name and function signature to the old name.
+    funRenames: Map<string, Map<string, string>>
     // List of names that are still available.
     availableNames: string list
 
     exportedNames: Ast.ExportedName list ref
 
-    // Whether multiple functions can have the same name (but different arity).
+    // Whether multiple functions can have the same name (but different signature).
     allowOverloading: bool
     // Function that decides a name (and returns the modified Env).
     newName: Env -> Ident -> Env
@@ -182,17 +182,19 @@ type private RenamerImpl(options: Options.Options) =
         if not id.IsUniqueId then
             env.exportedNames.Value <- {prefix = prefix; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
 
-    let renFunction env nbArgs (id: Ident) =
-        // we're looking for a function name, already used before,
-        // but not with the same number of arg, and which is not in options.noRenamingList.
-        let isFunctionNameAvailableForThisArity (x: KeyValuePair<string, Map<int,string>>) =
-            not (x.Value.ContainsKey nbArgs || List.contains x.Key options.noRenamingList)
+    let renFunction env (args: Decl list) (id: Ident) =
+        let signature = String.concat "," [for ty, _ in args -> ty.name.ToString()]
 
-        match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisArity with
+        // we're looking for a function name, already used before,
+        // but not with the same signature, and which is not in options.noRenamingList.
+        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<string,string>>) =
+            not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
+
+        match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisSignature with
         | Some res when env.allowOverloading ->
-            // overload an existing function name used with a different arity
+            // overload an existing function name used with a different signature
             let newName = res.Key
-            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(nbArgs, id.Name))
+            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(signature, id.Name))
             let env = env.Update(env.varRenames.Add(id.Name, newName), funRenames, env.availableNames)
             id.Rename(newName)
             env
@@ -200,7 +202,7 @@ type private RenamerImpl(options: Options.Options) =
             // find a new function name
             let prevName = id.Name
             let env = env.newName env id
-            let funRenames = env.funRenames.Add (id.Name, Map.empty.Add(nbArgs, prevName))
+            let funRenames = env.funRenames.Add (id.Name, Map.empty.Add(signature, prevName))
             let env = env.Update(env.varRenames, funRenames, env.availableNames)
             env
 
@@ -212,10 +214,10 @@ type private RenamerImpl(options: Options.Options) =
         else
             match env.varRenames.TryFind(f.fName.Name) with
             | Some name ->
-                f.fName.Rename(name)
+                f.fName.Rename(name) // bug, may cause conflicts
                 env
             | None ->
-                let newEnv = renFunction env (List.length f.args) f.fName
+                let newEnv = renFunction env f.args f.fName
                 if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
@@ -389,16 +391,16 @@ type private RenamerImpl(options: Options.Options) =
         let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
-
+        let allowOverloading = not options.noOverloading
         let mutable env =
             if Array.length shaders > 1 then
                 // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
                 let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
                 let contextTable = computeContextTable text
-                Env.Create(names, true, multiFileRenaming contextTable exportsRenames, shadowVariables)
+                Env.Create(names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
             else
                 let contextTable = computeContextTable text
-                Env.Create(names, true, optimizeContext contextTable, shadowVariables)
+                Env.Create(names, allowOverloading, optimizeContext contextTable, shadowVariables)
         env <- dontRenameList env options.noRenamingList
         env.exportedNames.Value <- exportedNames
         renameAsts shaders env

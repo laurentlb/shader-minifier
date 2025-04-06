@@ -37,6 +37,7 @@ type CliArguments =
     | [<CustomCommandLine("--no-renaming-list")>] NoRenamingList of string
     | [<CustomCommandLine("--no-sequence")>] NoSequence
     | [<CustomCommandLine("--no-remove-unused")>] NoRemoveUnused
+    | [<CustomCommandLine("--no-overloading")>] NoOverloading
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
     | [<CustomCommandLine("--preprocess")>] Preprocess
     | [<CustomCommandLine("--export-kkp-symbol-maps")>] ExportKkpSymbolMaps
@@ -58,6 +59,7 @@ type CliArguments =
             | NoRenaming -> "Do not rename anything"
             | NoRenamingList _ -> "Comma-separated list of functions to preserve"
             | NoSequence -> "Do not use the comma operator trick"
+            | NoOverloading -> "When renaming functions, do not introduce new overloads"
             | NoRemoveUnused -> "Do not remove unused code"
             | MoveDeclarations -> "Move declarations to group them"
             | Preprocess -> "Evaluate some of the file preprocessor directives"
@@ -76,6 +78,7 @@ type Options = {
     preserveAllGlobals: bool
     hlsl: bool
     noInlining: bool
+    noOverloading: bool
     aggroInlining: bool
     noSequence: bool
     noRenaming: bool
@@ -115,6 +118,7 @@ let private initPrivate argv =
         preserveAllGlobals = args.Contains(PreserveAllGlobals)
         hlsl = args.Contains(Hlsl)
         noInlining = args.Contains(NoInlining)
+        noOverloading = args.Contains(NoOverloading)
         aggroInlining = args.Contains(AggroInlining) && not (args.Contains(NoInlining))
         noSequence = args.Contains(NoSequence)
         noRenaming = args.Contains(NoRenaming)
