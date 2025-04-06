@@ -21,3 +21,7 @@ int mult1(int x) { return x; }
 int mult2(int x, int y) { return mult1(x) * y; }
 
 int mult3(int x, int y, int z) { return mult2(x, y) * z; }
+
+void mult7(const int x, vec2 v2) {}
+
+int mult8(float x, in vec2 v2) { return 0; }
