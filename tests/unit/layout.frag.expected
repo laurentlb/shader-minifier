@@ -1,0 +1,4 @@
+#version 330
+
+layout(location=1)out vec4 f_color2;
+layout(location=0)out vec4 f_color;

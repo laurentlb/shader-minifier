@@ -1,5 +1,8 @@
 #version 330
 
+// #486
+layout(       location   =  1  )     out vec4 f_color2;
+
 // #17
 layout(location=0) out vec4 f_color;
 //subroutine float functionType(int i);

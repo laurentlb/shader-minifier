@@ -83,6 +83,8 @@ type PrinterImpl(withLocations) =
         List.map toS li |> String.concat ","
 
     let isIdentChar c = System.Char.IsLetterOrDigit c || c = '_'
+    let endsWithIdentChar (s: string) = s.Length > 0 && isIdentChar (s.[s.Length - 1])
+    let startsWithIdentChar (s: string) = s.Length > 0 && isIdentChar (s.[0])
 
     let floatToS f =
         let a = abs (float f)
@@ -163,8 +165,7 @@ type PrinterImpl(withLocations) =
         else s
 
     let sp2 (s: string) (s2: string) =
-        if s.Length > 0 && isIdentChar(s.[s.Length-1]) &&
-            s2.Length > 0 && isIdentChar(s2.[0]) then s + " " + s2
+        if endsWithIdentChar s && startsWithIdentChar s2 then s + " " + s2
         else s + s2
 
     // Print HLSL semantics
@@ -186,7 +187,9 @@ type PrinterImpl(withLocations) =
     and typeToS (ty: Type) =
         let get = function
             | [] -> ""
-            | li -> (String.concat " " li) + " "
+            | li ->
+                let str = List.reduce sp2 li
+                if endsWithIdentChar str then str + " " else str
         let typeSpec = typeSpecToS ty.name
         let sizes = String.Join("", [for e in ty.arraySizes -> "[" + exprToS 0 e + "]"])
         out "%s%s%s" (get ty.typeQ) typeSpec sizes
