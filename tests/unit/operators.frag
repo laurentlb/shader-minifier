@@ -68,3 +68,8 @@ float swap_op_order(float g)
 	float b = g*((g+2.)*(g+3.));
 	return a*b*g;
 }
+
+mat2 dont_swap_op_order(float g)
+{
+	return mat3x2(g) * (mat4x3(g) * mat2x4(g));
+}
