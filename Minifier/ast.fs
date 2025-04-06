@@ -111,7 +111,7 @@ with override t.ToString() =
 and StructOrInterfaceBlock = {
     prefix: string // "struct" if it's a struct, otherwise things like "uniform" or "layout(...)"
     name: Ident option // Point
-    template: string option // "<T>"
+    template: string // "<T>" or ""
     baseClass: string option // "Base"
     fields: Decl list // int x; int y; T item;
 }

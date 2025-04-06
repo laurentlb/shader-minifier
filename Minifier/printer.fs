@@ -175,7 +175,7 @@ type PrinterImpl(withLocations) =
 
     let rec blockToS (block: StructOrInterfaceBlock) =
         let name = match block.name with None -> "" | Some (s: Ident) -> " " + s.Name
-        let name = match block.template with None -> name | Some t -> name + t
+        let name = name + block.template
         let c = match block.baseClass with None -> "" | Some s -> $":{s}"
         let d = block.fields |> List.map (fun s -> declToS 0 s + ";") |> String.concat ""
         out "%s%s{%s}" (sp2 block.prefix name) c d

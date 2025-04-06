@@ -173,7 +173,7 @@ type private ParseImpl(options: Options.Options) =
                    |>> (function Some s -> $"<{s}>" | None -> "")
         let baseClassName = pipe2 (ch ':' >>. ident |>> (fun id -> id.Name)) generic (+)
                             |> opt
-        pipe4 name (opt generic) baseClassName (between (ch '{') (ch '}') decls)
+        pipe4 name generic baseClassName (between (ch '{') (ch '}') decls)
             (fun n t c d ->
                 Option.iter (fun (i:Ast.Ident) -> forbiddenNames <- i.Name::forbiddenNames) n
                 { prefix = prefix; name = n; template = t; baseClass = c; fields = d }: Ast.StructOrInterfaceBlock)
