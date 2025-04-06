@@ -176,7 +176,8 @@ type private ParseImpl(options: Options.Options) =
         pipe4 name generic baseClassName (between (ch '{') (ch '}') decls)
             (fun n t c d ->
                 Option.iter (fun (i:Ast.Ident) -> forbiddenNames <- i.Name::forbiddenNames) n
-                { prefix = prefix; name = n; template = t; baseClass = c; fields = d }: Ast.StructOrInterfaceBlock)
+                let blockType = if prefix = "struct" then Ast.Struct else Ast.InterfaceBlock prefix
+                { blockType = blockType; name = n; template = t; baseClass = c; fields = d }: Ast.StructOrInterfaceBlock)
 
     let structSpecifier = parse {
         let! str = keyword "struct"

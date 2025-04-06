@@ -109,12 +109,16 @@ with override t.ToString() =
 // An interface block without an instance name (in a TypeDecl), unlike structs, introduces a set of external global variables.
 // struct or interface block, e.g. struct Point<T> : Base { int x; int y; T item; }
 and StructOrInterfaceBlock = {
-    prefix: string // "struct" if it's a struct, otherwise things like "uniform" or "layout(...)"
+    blockType: BlockType
     name: Ident option // Point
     template: string // "<T>" or ""
     baseClass: string option // "Base"
     fields: Decl list // int x; int y; T item;
 }
+
+and BlockType =
+    | Struct
+    | InterfaceBlock of prefix: string // things like "uniform" or "layout(...)"
 
 and Type = {
     name: TypeSpec // e.g. int
