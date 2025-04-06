@@ -15,6 +15,30 @@ let private isKnownToHaveTypeFloat = function
     | ResolvedVariableUse (_, vd) -> vd.decl.name.Name = "float"
     | _ -> false
 
+let private isKnownToBeScalarOrVector = function
+    | Int _ -> true
+    | Float _ -> true
+    | Var v ->
+        match v.Declaration with
+        | Declaration.Unknown -> false
+        | Declaration.Variable vd -> vd.ty.isScalarOrVector
+        | Declaration.UserFunction funDecl -> funDecl.funcType.retType.isScalarOrVector
+        | Declaration.BuiltinFunction -> Builtin.builtinScalarTypes.Contains v.Name || Builtin.builtinVectorTypes.Contains v.Name
+        | Declaration.UnknownFunction -> false
+    | _ -> false
+
+let private isKnownToBeScalar = function
+    | Int _ -> true
+    | Float _ -> true
+    | Var v ->
+        match v.Declaration with
+        | Declaration.Unknown -> false
+        | Declaration.Variable vd -> vd.ty.isScalar
+        | Declaration.UserFunction funDecl -> funDecl.funcType.retType.isScalar
+        | Declaration.BuiltinFunction -> Builtin.builtinScalarTypes.Contains v.Name
+        | Declaration.UnknownFunction -> false
+    | _ -> false
+
 [<RequireQualifiedAccess>] 
 type private OptimizationPass =
     | First
@@ -193,11 +217,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             if (Printer.exprToS e).Length <= (Printer.exprToS div).Length then e
             else div
 
-        // Swap operands to get rid of parentheses
+        // Swap operands to get rid of parentheses.
         // x*(y*z) -> y*z*x
         | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])])
-            when Effects.isPure x && Effects.isPure y && Effects.isPure z ->
-            FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
+            when Effects.isPure x && Effects.isPure y && Effects.isPure z &&
+                // Matrix multiplication is not commutative! Except with scalars.
+                ((isKnownToBeScalarOrVector x && isKnownToBeScalarOrVector y && isKnownToBeScalarOrVector z) ||
+                 ([isKnownToBeScalar x; isKnownToBeScalar y; isKnownToBeScalar z] |> Seq.filter id |> Seq.length) >= 2) ->
+                FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
         // x+(y+z) -> x+y+z
         // x+(y-z) -> x+y-z
         | FunCall(Op "+", [NoParen x; FunCall(Op ("+"|"-") as op, [y; z])]) ->

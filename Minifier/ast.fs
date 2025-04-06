@@ -132,6 +132,10 @@ and Type = {
         match this.name with
             | TypeName n -> Builtin.builtinScalarTypes.Contains n
             | _ -> false
+    member this.isScalarOrVector =
+        match this.name with
+            | TypeName n -> Builtin.builtinScalarTypes.Contains n || Builtin.builtinVectorTypes.Contains n
+            | _ -> false
     override t.ToString() =
         let name = match t.name with
                    | TypeName n -> n

@@ -76,7 +76,7 @@ float WavesSmooth(vec3 pos)
 }
 float WaveCrests(vec3 ipos,vec2 fragCoord)
 {
-  ipos=.2*vec3(1)*ipos;
+  ipos*=.2*vec3(1);
   float f=0.;
   ipos+=iTime*vec3(0,.1,.1);
   vec3 pos2=ipos;
