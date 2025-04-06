@@ -37,7 +37,7 @@ type Ident(name: string) =
                           | _ -> None
 
     // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
-    member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
+    member this.IsUniqueId = System.Char.IsDigit this.Name[0]
 
     interface System.IComparable with
         member this.CompareTo other =
@@ -216,7 +216,7 @@ let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=ini
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
-// An ExportedName is a name that is used outside of the shader code (e.g. uniform and attribute
+// An ExportedName is a name that is used outside the shader code (e.g. uniform and attribute
 // values). We need to provide accessors for the developer (e.g. create macros for C/C++).
 type [<RequireQualifiedAccess>] ExportPrefix =
     | Variable
@@ -324,7 +324,7 @@ type MapEnv private = {
                 env, res
             | Jump(k, e) ->
                 env, Jump (k, Option.map env.mapExpr e)
-            | (Verbatim _ | Directive _) as v -> env, v
+            | Verbatim _ | Directive _ as v -> env, v
             | Switch(e, cl) ->
                 let mapCase (l, sl) =
                     let l = match l with

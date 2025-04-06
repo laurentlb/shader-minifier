@@ -2,7 +2,6 @@
 
 open System
 open System.IO
-open System.Text.RegularExpressions
 
 type private Impl(options: Options.Options, withLocations) =
 
@@ -33,7 +32,7 @@ type private Impl(options: Options.Options, withLocations) =
         for line in lines.Trim([|'\000'|]).Split([|'\000'|]) do
             // count the number of \t at the beginning of the string
             let indentLevel = line |> Seq.takeWhile (fun c -> c = '\t') |> Seq.length
-            yield new String(' ', 2 * indentLevel), line.Substring(indentLevel)
+            yield String(' ', 2 * indentLevel), line.Substring(indentLevel)
         ]
 
     let escape (str: string) =
@@ -43,7 +42,7 @@ type private Impl(options: Options.Options, withLocations) =
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
-        let macroName = Ast.mangleToAscii(System.IO.Path.GetFileName fileName).ToUpper() + "_"
+        let macroName = Ast.mangleToAscii(Path.GetFileName fileName).ToUpper() + "_"
 
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 

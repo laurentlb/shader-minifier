@@ -17,7 +17,7 @@ type VariableInlining(options: Options.Options) =
         let counts = Dictionary<VarDecl, int>()
         let collectLocalUses _ = function
             | ResolvedVariableUse (_, vd) as e ->
-                counts.[vd] <- match counts.TryGetValue(vd) with _, n -> n + 1
+                counts[vd] <- match counts.TryGetValue(vd) with _, n -> n + 1
                 e
             | e -> e
         for expr in stmtList do
@@ -47,10 +47,10 @@ type VariableInlining(options: Options.Options) =
                     // can only inline if it has a value
                     match def.init with
                     | None ->
-                        localDefs.[def.name.Name] <- (def.name, true)
+                        localDefs[def.name.Name] <- (def.name, true)
                     | Some init ->
                         let isConst = Analyzer(options).varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
-                        localDefs.[def.name.Name] <- (def.name, isConst)
+                        localDefs[def.name.Name] <- (def.name, isConst)
             | _ -> ()
         // List of all expressions under the current block, but do not look in loops.
         let mutable localExprs = []
@@ -119,7 +119,7 @@ type VariableInlining(options: Options.Options) =
     //      - the init value is a simple constant, or with aggro inlining, it uses only builtin functions and variables never written to.
     let markUnwrittenVariablesWithSimpleInit level = function
         | (ty: Type, defs) when not ty.IsExternal ->
-            for (def:DeclElt) in defs do
+            for def:DeclElt in defs do
                 if not def.name.ToBeInlined && // already done in a previous pass
                    not def.name.DoNotInline &&
                    not def.name.VarDecl.Value.isEverWrittenAfterDecl then
@@ -208,7 +208,7 @@ type FunctionInlining(options: Options.Options) =
                 | VarScope.Parameter ->
                     if vd.isEverWrittenAfterDecl then
                         paramIsWritten <- true
-                    paramUsageCounts.[v.Name] <- match paramUsageCounts.TryGetValue(v.Name) with _, n -> n + 1
+                    paramUsageCounts[v.Name] <- match paramUsageCounts.TryGetValue(v.Name) with _, n -> n + 1
                 | VarScope.Global ->
                     if callSites |> List.exists (fun callSite -> callSite.varsInScope |> List.contains v.Name) then
                         shadowedGlobal <- true
@@ -237,7 +237,7 @@ type FunctionInlining(options: Options.Options) =
                 for argIndex, argExpr in callSite.argExprs |> Seq.indexed do
                     if not (Effects.isPure argExpr) then
                         hasAnyImpureArg <- true
-                    let paramUsageCount = match paramUsageCounts.TryGetValue(paramNames.[argIndex]) with _, n -> n
+                    let paramUsageCount = match paramUsageCounts.TryGetValue(paramNames[argIndex]) with _, n -> n
                     if paramUsageCount > 1 && not (canBeDuplicated argExpr) then
                         cannotDuplicateArg <- true
 

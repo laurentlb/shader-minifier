@@ -71,7 +71,7 @@ type PrinterImpl(withLocations) =
         |> dict
 
     let idToS (id: Ident) =
-        // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
+        // In mode Unambiguous, ids contain numbers. We print a single Unicode char instead.
         if id.IsUniqueId then
             string (char (1000 + int id.Name))
         else if withLocations then
@@ -82,9 +82,9 @@ type PrinterImpl(withLocations) =
     let commaListToS toS li =
         List.map toS li |> String.concat ","
 
-    let isIdentChar c = System.Char.IsLetterOrDigit c || c = '_'
-    let endsWithIdentChar (s: string) = s.Length > 0 && isIdentChar (s.[s.Length - 1])
-    let startsWithIdentChar (s: string) = s.Length > 0 && isIdentChar (s.[0])
+    let isIdentChar c = Char.IsLetterOrDigit c || c = '_'
+    let endsWithIdentChar (s: string) = s.Length > 0 && isIdentChar s[s.Length - 1]
+    let startsWithIdentChar (s: string) = s.Length > 0 && isIdentChar s[0]
 
     let floatToS f =
         let a = abs (float f)
@@ -95,7 +95,7 @@ type PrinterImpl(withLocations) =
         let str2 = a.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
         let parts = Regex.Match(str2, @"([^.]*)\.?([^e]*)e(.*)").Groups
         let str2 = sprintf "%s%se%d" parts[1].Value parts[2].Value ((int parts[3].Value) - parts[2].Value.Length)
-        let str = [str1; str2] |> List.minBy(fun x -> x.Length)
+        let str = [str1; str2] |> List.minBy(_.Length)
         
         let sign = if f < 0.M then "-" else ""
         sign + str
@@ -118,7 +118,7 @@ type PrinterImpl(withLocations) =
         | FunCall(f, args) ->
             match f, args with
             | Op "?:", [a1; a2; a3] ->
-                let prec = precedence.["?:"]
+                let prec = precedence["?:"]
                 let res = out "%s?%s%s:%s%s" (exprToSLevel indent (prec+1) a1)
                     // The middle expression of ?: is parsed as if grouped: precedence doesn't apply to it.
                             (nl (indent+1)) (exprToSLevel (indent+1) 0 a2)
@@ -126,14 +126,14 @@ type PrinterImpl(withLocations) =
                 if prec < level then out "(%s)" res else res
             
             // Unary operators. _++ is prefix and $++ is postfix
-            | Op op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel indent precedence.[op] a1) op.[1..]
-            | Op op, [a1] -> out "%s%s" op (exprToSLevel indent precedence.["_" + op] a1)
+            | Op op, [a1] when op[0] = '$' -> out "%s%s" (exprToSLevel indent precedence[op] a1) op[1..]
+            | Op op, [a1] -> out "%s%s" op (exprToSLevel indent precedence["_" + op] a1)
 
             // Binary operators.
             | Op op, [a1; a2] ->
-                let prec = precedence.[op]
+                let prec = precedence[op]
                 let e1, e2 =
-                    if prec = precedence.["="] then // "=", "+=", or other operator with right-associativity
+                    if prec = precedence["="] then // "=", "+=", or other operator with right-associativity
                         (exprToSLevel indent (prec+1) a1), (exprToSLevel indent prec a2)
                     else
                         (exprToSLevel indent prec a1), (exprToSLevel indent (prec+1) a2)
@@ -146,22 +146,22 @@ type PrinterImpl(withLocations) =
 
             // Function calls.
             | _ -> // We set the level in case a comma operator is used in the argument list.
-                   out "%s(%s)" (exprToS indent f) (commaListToS (exprToSLevel indent (precedence.[","] + 1)) args)
+                   out "%s(%s)" (exprToS indent f) (commaListToS (exprToSLevel indent (precedence[","] + 1)) args)
         | Subscript(arr, ind) ->
             out "%s[%s]" (exprToS indent arr) (exprToSOpt indent "" ind)
         | Cast(id, e) ->
             // Cast seems to have the same precedence as unary minus
-            out "(%s)%s" id.Name (exprToSLevel indent precedence.["_-"] e)
+            out "(%s)%s" id.Name (exprToSLevel indent precedence["_-"] e)
         | VectorExp(li) ->
             // We set the level in case a comma operator is used in the argument list.
-            out "{%s}" (commaListToS (exprToSLevel indent (precedence.[","] + 1)) li)
+            out "{%s}" (commaListToS (exprToSLevel indent (precedence[","] + 1)) li)
         | Dot(e, field) ->
-            out "%s.%s" (exprToSLevel indent precedence.["."] e) field
+            out "%s.%s" (exprToSLevel indent precedence["."] e) field
         | VerbatimExp s -> s
 
     // Add a space if needed
     let sp (s: string) =
-        if s.Length > 0 && isIdentChar (s.[0]) then " " + s
+        if s.Length > 0 && isIdentChar s[0] then " " + s
         else s
 
     let sp2 (s: string) (s2: string) =
@@ -206,7 +206,7 @@ type PrinterImpl(withLocations) =
                 match decl.init with
                 | None -> ""
                 | Some i -> // We set the level in case a comma operator is used in the argument list.
-                            out "=%s" (exprToSLevel indent (precedence.[","] + 1) i)
+                            out "=%s" (exprToSLevel indent (precedence[","] + 1) i)
             out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
 
         if vars.IsEmpty then ""
@@ -266,7 +266,7 @@ type PrinterImpl(withLocations) =
         | Jump(k, Some exp) -> out "%s%s;" k.toString (exprToS indent exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
-            if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s
+            if s.Length > 0 && isIdentChar s[s.Length - 1] then s + " " else s
         | Directive d -> "\n" + directiveToS d
         | Switch(e, cl) ->
             let labelToS = function
@@ -290,7 +290,7 @@ type PrinterImpl(withLocations) =
     let topLevelToS = function
         | TLVerbatim s ->
             // add a space at the end when it seems to be needed
-            let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
+            let trailing = if s.Length > 0 && isIdentChar s[s.Length - 1] then " " else ""
             out "%s%s" s trailing
         | TLDirective (d, _) -> directiveToS d
         | Function (fct, Block []) -> out "%s%s{}" (funToS fct) (nl 0)
@@ -327,7 +327,7 @@ type PrinterImpl(withLocations) =
                 | TypeDecl { name = Some n } -> n.OldName
                 | TypeDecl _ -> "*type decl*" // struct or unnamed interface block
                 | Precision _ -> "*precision*"
-                | TLDirective (("#define"::_), _) -> "#define"
+                | TLDirective ("#define"::_, _) -> "#define"
                 | TLDirective _ -> "*directive*"
                 | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
             symbolMap.AddMapping tlString symbolName
@@ -335,12 +335,12 @@ type PrinterImpl(withLocations) =
         let bytes = symbolMap.SymFileBytes shaderSymbol minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
 
-let printIndented tl = (new PrinterImpl(false)).PrintIndented tl // Indentation is encoded using \0 and \t
+let printIndented tl = PrinterImpl(false).PrintIndented tl // Indentation is encoded using \0 and \t
 let print tl = printIndented tl |> stripIndentation
-let writeSymbols shader = (new PrinterImpl(false)).WriteSymbols shader
-let exprToS x = (new PrinterImpl(false)).ExprToS 0 x |> stripIndentation
-let typeToS ty = (new PrinterImpl(false)).TypeToS ty |> stripIndentation
-let printWithLoc tl = (new PrinterImpl(true)).PrintIndented tl
+let writeSymbols shader = PrinterImpl(false).WriteSymbols shader
+let exprToS x = PrinterImpl(false).ExprToS 0 x |> stripIndentation
+let typeToS ty = PrinterImpl(false).TypeToS ty |> stripIndentation
+let printWithLoc tl = PrinterImpl(true).PrintIndented tl
 
 let debugDecl (t: DeclElt) =
     let size = if t.size = None then "" else $"[{t.size}]"
@@ -355,4 +355,4 @@ let debugIdent (ident: Ident) =
     | Declaration.Variable rv -> debugDecl rv.decl
     | _ -> ident.OldName.ToString()
 
-let debugFunc (funcType: FunctionType) = (new PrinterImpl(false)).FunToS funcType
+let debugFunc (funcType: FunctionType) = PrinterImpl(false).FunToS funcType

@@ -3,6 +3,12 @@
 open System.Collections.Generic
 open Ast
 
+type Signature = {
+    str: string
+}
+with
+    static member Create(args: Decl list) = { str = String.concat "," [for ty, _ in args -> ty.name.ToString()] }
+
 // Environment for renamer
 // This object is useful to separate the AST walking from the renaming strategy.
 // Maybe we could use a single mutable object, instead of creating envs all the time.
@@ -12,7 +18,7 @@ type private Env = {
     // Map from an old variable name to the new one.
     varRenames: Map<string, string>
     // Map from a new function name and function signature to the old name.
-    funRenames: Map<string, Map<string, string>>
+    funRenames: Map<string, Map<Signature, string>>
     // List of names that are still available.
     availableNames: string list
 
@@ -51,9 +57,9 @@ with
 type private RenamerImpl(options: Options.Options) =
 
     let computeContextTable text =
-        let contextTable = new Dictionary<(char*char), int>()
+        let contextTable = Dictionary<(char*char), int>()
         for prev, next in Seq.pairwise text do
-            contextTable.[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
+            contextTable[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
         contextTable
 
     // /!\ This function is a performance bottleneck.
@@ -73,8 +79,8 @@ type private RenamerImpl(options: Options.Options) =
         let mutable best = -10000, ""
         // For performance, consider at most 26 candidates.
         for word: string in candidates |> Seq.take 26 do
-            let firstLetter = word.[0]
-            let lastLetter = word.[word.Length - 1]
+            let firstLetter = word[0]
+            let lastLetter = word[word.Length - 1]
             let mutable score = 0
 
             for c, _ in prevs do
@@ -99,8 +105,8 @@ type private RenamerImpl(options: Options.Options) =
 
         let best = snd best
         assert (best.Length > 0)
-        let firstLetter = best.[0]
-        let lastLetter = best.[best.Length - 1]
+        let firstLetter = best[0]
+        let lastLetter = best[best.Length - 1]
 
         // Update the context table. Due to this side-effect, variables in two identical functions
         // may get different names. Compression tests using Crinkler show that (on average) it's
@@ -109,12 +115,12 @@ type private RenamerImpl(options: Options.Options) =
         for c in allChars do
             match contextTable.TryGetValue((c, ident)), contextTable.TryGetValue((c, firstLetter)) with
             | (false, _), _ -> ()
-            | (true, n1), (false, _) -> contextTable.[(c, firstLetter)] <- n1
-            | (true, n1), (true, n2) -> contextTable.[(c, firstLetter)] <- n1 + n2
+            | (true, n1), (false, _) -> contextTable[(c, firstLetter)] <- n1
+            | (true, n1), (true, n2) -> contextTable[(c, firstLetter)] <- n1 + n2
             match contextTable.TryGetValue((ident, c)), contextTable.TryGetValue((lastLetter, c)) with
             | (false, _), _ -> ()
-            | (true, n1), (false, _) -> contextTable.[(lastLetter, c)] <- n1
-            | (true, n1), (true, n2) -> contextTable.[(lastLetter, c)] <- n1 + n2
+            | (true, n1), (false, _) -> contextTable[(lastLetter, c)] <- n1
+            | (true, n1), (true, n2) -> contextTable[(lastLetter, c)] <- n1 + n2
           
         best
 
@@ -156,7 +162,7 @@ type private RenamerImpl(options: Options.Options) =
             | false, _ ->
                 let newName = allNames.Head
                 allNames <- allNames.Tail
-                d.[id.OldName] <- newName
+                d[id.OldName] <- newName
                 env.Rename(id, newName)
 
     // Renaming safe across multiple files (e.g. uniform/in/out variables are
@@ -183,11 +189,11 @@ type private RenamerImpl(options: Options.Options) =
             env.exportedNames.Value <- {prefix = prefix; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
 
     let renFunction env (args: Decl list) (id: Ident) =
-        let signature = String.concat "," [for ty, _ in args -> ty.name.ToString()]
+        let signature = Signature.Create args
 
         // we're looking for a function name, already used before,
         // but not with the same signature, and which is not in options.noRenamingList.
-        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<string,string>>) =
+        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
             not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
 
         match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisSignature with

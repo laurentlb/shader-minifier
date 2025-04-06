@@ -1,6 +1,5 @@
 ﻿module Options
 
-open System.IO
 open Argu
 open System
 
@@ -91,7 +90,7 @@ type Options = {
 with
     member this.renameField field =
         if Builtin.isFieldSwizzle field then
-            field |> String.map (fun c -> this.canonicalFieldNames.[Builtin.swizzleIndex c])
+            field |> String.map (fun c -> this.canonicalFieldNames[Builtin.swizzleIndex c])
         else field
     member this.trace str = if this.debug then printfn "%s" str
 
