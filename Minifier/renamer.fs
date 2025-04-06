@@ -59,7 +59,7 @@ type private RenamerImpl(options: Options.Options) =
     let computeContextTable text =
         let contextTable = Dictionary<(char*char), int>()
         for prev, next in Seq.pairwise text do
-            contextTable.[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
+            contextTable[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
         contextTable
 
     // /!\ This function is a performance bottleneck.
@@ -79,8 +79,8 @@ type private RenamerImpl(options: Options.Options) =
         let mutable best = -10000, ""
         // For performance, consider at most 26 candidates.
         for word: string in candidates |> Seq.take 26 do
-            let firstLetter = word.[0]
-            let lastLetter = word.[word.Length - 1]
+            let firstLetter = word[0]
+            let lastLetter = word[word.Length - 1]
             let mutable score = 0
 
             for c, _ in prevs do
@@ -105,8 +105,8 @@ type private RenamerImpl(options: Options.Options) =
 
         let best = snd best
         assert (best.Length > 0)
-        let firstLetter = best.[0]
-        let lastLetter = best.[best.Length - 1]
+        let firstLetter = best[0]
+        let lastLetter = best[best.Length - 1]
 
         // Update the context table. Due to this side-effect, variables in two identical functions
         // may get different names. Compression tests using Crinkler show that (on average) it's
@@ -115,12 +115,12 @@ type private RenamerImpl(options: Options.Options) =
         for c in allChars do
             match contextTable.TryGetValue((c, ident)), contextTable.TryGetValue((c, firstLetter)) with
             | (false, _), _ -> ()
-            | (true, n1), (false, _) -> contextTable.[(c, firstLetter)] <- n1
-            | (true, n1), (true, n2) -> contextTable.[(c, firstLetter)] <- n1 + n2
+            | (true, n1), (false, _) -> contextTable[(c, firstLetter)] <- n1
+            | (true, n1), (true, n2) -> contextTable[(c, firstLetter)] <- n1 + n2
             match contextTable.TryGetValue((ident, c)), contextTable.TryGetValue((lastLetter, c)) with
             | (false, _), _ -> ()
-            | (true, n1), (false, _) -> contextTable.[(lastLetter, c)] <- n1
-            | (true, n1), (true, n2) -> contextTable.[(lastLetter, c)] <- n1 + n2
+            | (true, n1), (false, _) -> contextTable[(lastLetter, c)] <- n1
+            | (true, n1), (true, n2) -> contextTable[(lastLetter, c)] <- n1 + n2
           
         best
 
@@ -162,7 +162,7 @@ type private RenamerImpl(options: Options.Options) =
             | false, _ ->
                 let newName = allNames.Head
                 allNames <- allNames.Tail
-                d.[id.OldName] <- newName
+                d[id.OldName] <- newName
                 env.Rename(id, newName)
 
     // Renaming safe across multiple files (e.g. uniform/in/out variables are

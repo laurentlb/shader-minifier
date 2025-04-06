@@ -118,7 +118,7 @@ type PrinterImpl(withLocations) =
         | FunCall(f, args) ->
             match f, args with
             | Op "?:", [a1; a2; a3] ->
-                let prec = precedence.["?:"]
+                let prec = precedence["?:"]
                 let res = out "%s?%s%s:%s%s" (exprToSLevel indent (prec+1) a1)
                     // The middle expression of ?: is parsed as if grouped: precedence doesn't apply to it.
                             (nl (indent+1)) (exprToSLevel (indent+1) 0 a2)
@@ -126,14 +126,14 @@ type PrinterImpl(withLocations) =
                 if prec < level then out "(%s)" res else res
             
             // Unary operators. _++ is prefix and $++ is postfix
-            | Op op, [a1] when op.[0] = '$' -> out "%s%s" (exprToSLevel indent precedence.[op] a1) op.[1..]
-            | Op op, [a1] -> out "%s%s" op (exprToSLevel indent precedence.["_" + op] a1)
+            | Op op, [a1] when op[0] = '$' -> out "%s%s" (exprToSLevel indent precedence[op] a1) op[1..]
+            | Op op, [a1] -> out "%s%s" op (exprToSLevel indent precedence["_" + op] a1)
 
             // Binary operators.
             | Op op, [a1; a2] ->
-                let prec = precedence.[op]
+                let prec = precedence[op]
                 let e1, e2 =
-                    if prec = precedence.["="] then // "=", "+=", or other operator with right-associativity
+                    if prec = precedence["="] then // "=", "+=", or other operator with right-associativity
                         (exprToSLevel indent (prec+1) a1), (exprToSLevel indent prec a2)
                     else
                         (exprToSLevel indent prec a1), (exprToSLevel indent (prec+1) a2)
@@ -146,22 +146,22 @@ type PrinterImpl(withLocations) =
 
             // Function calls.
             | _ -> // We set the level in case a comma operator is used in the argument list.
-                   out "%s(%s)" (exprToS indent f) (commaListToS (exprToSLevel indent (precedence.[","] + 1)) args)
+                   out "%s(%s)" (exprToS indent f) (commaListToS (exprToSLevel indent (precedence[","] + 1)) args)
         | Subscript(arr, ind) ->
             out "%s[%s]" (exprToS indent arr) (exprToSOpt indent "" ind)
         | Cast(id, e) ->
             // Cast seems to have the same precedence as unary minus
-            out "(%s)%s" id.Name (exprToSLevel indent precedence.["_-"] e)
+            out "(%s)%s" id.Name (exprToSLevel indent precedence["_-"] e)
         | VectorExp(li) ->
             // We set the level in case a comma operator is used in the argument list.
-            out "{%s}" (commaListToS (exprToSLevel indent (precedence.[","] + 1)) li)
+            out "{%s}" (commaListToS (exprToSLevel indent (precedence[","] + 1)) li)
         | Dot(e, field) ->
-            out "%s.%s" (exprToSLevel indent precedence.["."] e) field
+            out "%s.%s" (exprToSLevel indent precedence["."] e) field
         | VerbatimExp s -> s
 
     // Add a space if needed
     let sp (s: string) =
-        if s.Length > 0 && isIdentChar s.[0] then " " + s
+        if s.Length > 0 && isIdentChar s[0] then " " + s
         else s
 
     let sp2 (s: string) (s2: string) =
@@ -206,7 +206,7 @@ type PrinterImpl(withLocations) =
                 match decl.init with
                 | None -> ""
                 | Some i -> // We set the level in case a comma operator is used in the argument list.
-                            out "=%s" (exprToSLevel indent (precedence.[","] + 1) i)
+                            out "=%s" (exprToSLevel indent (precedence[","] + 1) i)
             out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
 
         if vars.IsEmpty then ""
@@ -266,7 +266,7 @@ type PrinterImpl(withLocations) =
         | Jump(k, Some exp) -> out "%s%s;" k.toString (exprToS indent exp |> sp)
         | Verbatim s ->
             // add a space at end when it seems to be needed
-            if s.Length > 0 && isIdentChar s.[s.Length - 1] then s + " " else s
+            if s.Length > 0 && isIdentChar s[s.Length - 1] then s + " " else s
         | Directive d -> "\n" + directiveToS d
         | Switch(e, cl) ->
             let labelToS = function
@@ -290,7 +290,7 @@ type PrinterImpl(withLocations) =
     let topLevelToS = function
         | TLVerbatim s ->
             // add a space at the end when it seems to be needed
-            let trailing = if s.Length > 0 && isIdentChar s.[s.Length - 1] then " " else ""
+            let trailing = if s.Length > 0 && isIdentChar s[s.Length - 1] then " " else ""
             out "%s%s" s trailing
         | TLDirective (d, _) -> directiveToS d
         | Function (fct, Block []) -> out "%s%s{}" (funToS fct) (nl 0)

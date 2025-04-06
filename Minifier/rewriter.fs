@@ -277,7 +277,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
     // Simplify calls to the vec constructor.
     let simplifyVec (constr: Ident) args =
-        let vecSize = try int(constr.Name.[constr.Name.Length - 1]) - int '0' with _ -> 0
+        let vecSize = try int(constr.Name[constr.Name.Length - 1]) - int '0' with _ -> 0
 
         // Combine swizzles, e.g.
         //    vec4(v1.x, v1.z, v2.r, v2.t)  =>  vec4(v1.xz, v2.xy)
@@ -446,9 +446,9 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     else
                         // Remove the init of the new items; we'll use an assignment instead.
                         let li = li |> List.map (function decl -> {decl with init = None})
-                        declarations.[ty] <- declarations.[ty] @ li
+                        declarations[ty] <- declarations[ty] @ li
                         for d in li do
-                            options.trace $"{d.name.Loc}: --move-declarations of '{Printer.debugDecl d}' to the line of '{Printer.debugDecl declarations.[ty].Head}'"
+                            options.trace $"{d.name.Loc}: --move-declarations of '{Printer.debugDecl d}' to the line of '{Printer.debugDecl declarations[ty].Head}'"
             | _ -> ()
         let replacements = function
             | Decl (ty, _) as decl when List.contains "const" ty.typeQ ->

@@ -37,7 +37,7 @@ type Ident(name: string) =
                           | _ -> None
 
     // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
-    member this.IsUniqueId = System.Char.IsDigit this.Name.[0]
+    member this.IsUniqueId = System.Char.IsDigit this.Name[0]
 
     interface System.IComparable with
         member this.CompareTo other =
