@@ -3,6 +3,12 @@
 open System.Collections.Generic
 open Ast
 
+type Signature = {
+    str: string
+}
+with
+    static member Create(args: Decl list) = { str = String.concat "," [for ty, _ in args -> ty.name.ToString()] }
+
 // Environment for renamer
 // This object is useful to separate the AST walking from the renaming strategy.
 // Maybe we could use a single mutable object, instead of creating envs all the time.
@@ -12,7 +18,7 @@ type private Env = {
     // Map from an old variable name to the new one.
     varRenames: Map<string, string>
     // Map from a new function name and function signature to the old name.
-    funRenames: Map<string, Map<string, string>>
+    funRenames: Map<string, Map<Signature, string>>
     // List of names that are still available.
     availableNames: string list
 
@@ -51,7 +57,7 @@ with
 type private RenamerImpl(options: Options.Options) =
 
     let computeContextTable text =
-        let contextTable = new Dictionary<(char*char), int>()
+        let contextTable = Dictionary<(char*char), int>()
         for prev, next in Seq.pairwise text do
             contextTable.[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
         contextTable
@@ -183,11 +189,11 @@ type private RenamerImpl(options: Options.Options) =
             env.exportedNames.Value <- {prefix = prefix; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
 
     let renFunction env (args: Decl list) (id: Ident) =
-        let signature = String.concat "," [for ty, _ in args -> ty.name.ToString()]
+        let signature = Signature.Create args
 
         // we're looking for a function name, already used before,
         // but not with the same signature, and which is not in options.noRenamingList.
-        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<string,string>>) =
+        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
             not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
 
         match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisSignature with

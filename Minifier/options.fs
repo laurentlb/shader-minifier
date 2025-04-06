@@ -1,6 +1,5 @@
 ﻿module Options
 
-open System.IO
 open Argu
 open System
 

@@ -119,7 +119,7 @@ type VariableInlining(options: Options.Options) =
     //      - the init value is a simple constant, or with aggro inlining, it uses only builtin functions and variables never written to.
     let markUnwrittenVariablesWithSimpleInit level = function
         | (ty: Type, defs) when not ty.IsExternal ->
-            for (def:DeclElt) in defs do
+            for def:DeclElt in defs do
                 if not def.name.ToBeInlined && // already done in a previous pass
                    not def.name.DoNotInline &&
                    not def.name.VarDecl.Value.isEverWrittenAfterDecl then

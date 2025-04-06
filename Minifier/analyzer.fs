@@ -200,7 +200,7 @@ type FuncInfo = {
 
 type Analyzer(options: Options.Options) =
 
-    // findFuncInfos finds the call graph, and other related informations for function inlining.
+    // findFuncInfos finds the call graph, and other related information for function inlining.
     member _.findFuncInfos code =
         let findCallSites block = // Gets the list of call sites in this function
             let callSites = List()
@@ -295,7 +295,7 @@ type Analyzer(options: Options.Options) =
 
         let resolveDecl scope (ty, li) =
             for elt in li do
-                let varDecl = new VarDecl(ty, elt, scope)
+                let varDecl = VarDecl(ty, elt, scope)
                 elt.name.Declaration <- Declaration.Variable varDecl
 
         let resolveStmt _ = function
@@ -307,7 +307,7 @@ type Analyzer(options: Options.Options) =
             | TLDecl decl -> resolveDecl VarScope.Global decl
             | Function (funcType, _) as tl ->
                 for decl in funcType.args do resolveDecl VarScope.Parameter decl
-                funcType.fName.Declaration <- Declaration.UserFunction (new FunDecl(tl, funcType))
+                funcType.fName.Declaration <- Declaration.UserFunction (FunDecl(tl, funcType))
             | _ -> ()
 
         // First visit all declarations, creating them.

@@ -71,7 +71,7 @@ type PrinterImpl(withLocations) =
         |> dict
 
     let idToS (id: Ident) =
-        // In mode Unambiguous, ids contain numbers. We print a single unicode char instead.
+        // In mode Unambiguous, ids contain numbers. We print a single Unicode char instead.
         if id.IsUniqueId then
             string (char (1000 + int id.Name))
         else if withLocations then
@@ -82,9 +82,9 @@ type PrinterImpl(withLocations) =
     let commaListToS toS li =
         List.map toS li |> String.concat ","
 
-    let isIdentChar c = System.Char.IsLetterOrDigit c || c = '_'
-    let endsWithIdentChar (s: string) = s.Length > 0 && isIdentChar (s.[s.Length - 1])
-    let startsWithIdentChar (s: string) = s.Length > 0 && isIdentChar (s.[0])
+    let isIdentChar c = Char.IsLetterOrDigit c || c = '_'
+    let endsWithIdentChar (s: string) = s.Length > 0 && isIdentChar s[s.Length - 1]
+    let startsWithIdentChar (s: string) = s.Length > 0 && isIdentChar s[0]
 
     let floatToS f =
         let a = abs (float f)
@@ -95,7 +95,7 @@ type PrinterImpl(withLocations) =
         let str2 = a.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
         let parts = Regex.Match(str2, @"([^.]*)\.?([^e]*)e(.*)").Groups
         let str2 = sprintf "%s%se%d" parts[1].Value parts[2].Value ((int parts[3].Value) - parts[2].Value.Length)
-        let str = [str1; str2] |> List.minBy(fun x -> x.Length)
+        let str = [str1; str2] |> List.minBy(_.Length)
         
         let sign = if f < 0.M then "-" else ""
         sign + str
@@ -161,7 +161,7 @@ type PrinterImpl(withLocations) =
 
     // Add a space if needed
     let sp (s: string) =
-        if s.Length > 0 && isIdentChar (s.[0]) then " " + s
+        if s.Length > 0 && isIdentChar s.[0] then " " + s
         else s
 
     let sp2 (s: string) (s2: string) =
@@ -327,7 +327,7 @@ type PrinterImpl(withLocations) =
                 | TypeDecl { name = Some n } -> n.OldName
                 | TypeDecl _ -> "*type decl*" // struct or unnamed interface block
                 | Precision _ -> "*precision*"
-                | TLDirective (("#define"::_), _) -> "#define"
+                | TLDirective ("#define"::_, _) -> "#define"
                 | TLDirective _ -> "*directive*"
                 | TLVerbatim _ -> "*verbatim*" // HLSL attribute, //[ skipped //]
             symbolMap.AddMapping tlString symbolName
@@ -335,12 +335,12 @@ type PrinterImpl(withLocations) =
         let bytes = symbolMap.SymFileBytes shaderSymbol minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
 
-let printIndented tl = (new PrinterImpl(false)).PrintIndented tl // Indentation is encoded using \0 and \t
+let printIndented tl = PrinterImpl(false).PrintIndented tl // Indentation is encoded using \0 and \t
 let print tl = printIndented tl |> stripIndentation
-let writeSymbols shader = (new PrinterImpl(false)).WriteSymbols shader
-let exprToS x = (new PrinterImpl(false)).ExprToS 0 x |> stripIndentation
-let typeToS ty = (new PrinterImpl(false)).TypeToS ty |> stripIndentation
-let printWithLoc tl = (new PrinterImpl(true)).PrintIndented tl
+let writeSymbols shader = PrinterImpl(false).WriteSymbols shader
+let exprToS x = PrinterImpl(false).ExprToS 0 x |> stripIndentation
+let typeToS ty = PrinterImpl(false).TypeToS ty |> stripIndentation
+let printWithLoc tl = PrinterImpl(true).PrintIndented tl
 
 let debugDecl (t: DeclElt) =
     let size = if t.size = None then "" else $"[{t.size}]"
@@ -355,4 +355,4 @@ let debugIdent (ident: Ident) =
     | Declaration.Variable rv -> debugDecl rv.decl
     | _ -> ident.OldName.ToString()
 
-let debugFunc (funcType: FunctionType) = (new PrinterImpl(false)).FunToS funcType
+let debugFunc (funcType: FunctionType) = PrinterImpl(false).FunToS funcType

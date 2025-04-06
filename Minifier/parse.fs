@@ -39,7 +39,7 @@ type private ParseImpl(options: Options.Options) =
         let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
-    let opp = new OperatorPrecedenceParser<_,_,_>()
+    let opp = OperatorPrecedenceParser<_,_,_>()
     let exprNoCommaNoVerbatim = opp.ExpressionParser
     let exprNoComma = choice [exprNoCommaNoVerbatim; verbatim |>> Ast.VerbatimExp]
     let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Op ",", [acc;e])))
@@ -125,7 +125,7 @@ type private ParseImpl(options: Options.Options) =
 
     // Add all the operators in the OperatorParser
     let () =
-        // we start with operators with highest priority, then we decrement the counter.
+        // we start with operators with the highest priority, then we decrement the counter.
         let mutable precCounter = 20 // we have at most 20 different precedence levels
         let addInfix li =
             for ops, assoc in li do
@@ -248,7 +248,7 @@ type private ParseImpl(options: Options.Options) =
         tuple2 specifiedType list
     )
 
-    // eg. int foo[]   used for function arguments
+    // e.g. int foo[]   used for function arguments
     let singleDeclaration =
         let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
         pipe4 specifiedType ident (opt bracket) semantics
@@ -261,7 +261,7 @@ type private ParseImpl(options: Options.Options) =
         let s = sem |> List.map (fun s -> ":" + Printer.exprToS s) |> String.concat ""
         let! ret = blockSpecifier (Printer.typeToS ty + s)
                       |>> Ast.TypeDecl
-        // semi-colon seems to be optional in hlsl
+        // semicolon seems to be optional in hlsl
         do! if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
         return ret
     }
@@ -402,4 +402,4 @@ type private ParseImpl(options: Options.Options) =
           }
         | Failure(str, _, _) -> failwithf "Parse error: %s" str
 
-let runParser options = (new ParseImpl(options)).runParser
+let runParser options = ParseImpl(options).runParser

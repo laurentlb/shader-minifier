@@ -15,9 +15,9 @@ type private Status = Active | Inactive | Unknown
 type private Impl() =
 
     // Dict of macro name to value
-    let defines = new Dictionary<string, string>()
+    let defines = Dictionary<string, string>()
 
-    let stack = new Stack<Status>()
+    let stack = Stack<Status>()
 
     let currentStatus () =
         if stack.Count = 0 then Active
@@ -161,7 +161,7 @@ type private Impl() =
     member _.Parse = many (directive <|> parseText)
 
 let preprocess streamName content =
-    let impl = new Impl()
+    let impl = Impl()
     let res = runParserOnString impl.Parse () streamName content
     match res with
         | Success(s,_,_) ->

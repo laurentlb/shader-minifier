@@ -26,7 +26,7 @@ let run (options: Options.Options) filenames =
         minifyFiles options filenames out
         0
     with
-    | :? System.IO.IOException as ex ->
+    | :? IOException as ex ->
         printfn "Error: %s" ex.Message
         1
     | exn ->

@@ -78,8 +78,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 // This var isn't an argument to the inlined function (must be a
                 // global or similar). We need to create a brand-new ident.  This is
                 // because the renamer does its work via mutation on the ident. So
-                // if this function gets inlined in more than one place, we don't
-                // mutations to affect all of the inlined idents.
+                // if this function gets inlined in more than one place, we don't want
+                // mutations to affect all the inlined idents.
                 | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
             | ie -> ie
         options.visitor(mapInline).mapExpr bodyExpr
@@ -277,7 +277,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         e
                 with
                     // the conversion to int might fail (especially on 32-bit)
-                    | :? System.OverflowException -> e
+                    | :? OverflowException -> e
 
             | e -> e
 
@@ -340,7 +340,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     let simplifyExpr (didInline: bool ref) env = function
         | FunCall(Var v, passedArgs) as e when isFuncDeclarationToInline v ->
             match env.fns.TryFind (v.Name, passedArgs.Length) with
-            | Some ([{args = declArgs}, body]) ->
+            | Some [{args = declArgs}, body] ->
                 if List.length declArgs <> List.length passedArgs then
                     failwithf "Cannot inline function %s since it doesn't have the right number of arguments" v.Name
                 match body.asStmtList with
@@ -400,7 +400,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     // be declared at the same time, the first time a float variable is initialized.
     // Const variables are ignored, because they must be initialized immediately.
     let groupDeclarations stmts =
-        let declarations = new Dictionary<Type, DeclElt list>()
+        let declarations = Dictionary<Type, DeclElt list>()
         let mutable skippedDeclarations = []
         for stmt in stmts do
             match stmt with
@@ -635,7 +635,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 | [] -> []
             go f [] xs
         b |> tryReplaceWithPrecedingAndFollowing (function
-        | (preceding2, Decl (ty2, declElts), following2) ->
+        | preceding2, Decl (ty2, declElts), following2 ->
             let findAssignmentReplacementFor declElt2 declBefore2 declAfter2 =
                 // Collect previous declarations of the same type.
                 let localDecls = (preceding2 @ declBefore2) |> List.collect (function Decl (ty1, declElts1) when ty2 = ty1 -> declElts1 | _ -> [])
@@ -726,7 +726,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 when v.Name = declElt.name.Name && declElt.init.IsSome ->
                     Some [Jump(JumpKeyword.Return, declElt.init)]
             | Expr (Assignment (v1, None, e)), Jump(JumpKeyword.Return, Some (ResolvedVariableUse (v2, vd))) // x=f();return x;  ->  return f();
-                when v1.Name = v2.Name && vd.scope <> VarScope.Global && not (vd.ty.isOutOrInout) ->
+                when v1.Name = v2.Name && vd.scope <> VarScope.Global && not vd.ty.isOutOrInout ->
                     Some [Jump(JumpKeyword.Return, Some e)]
             // assignment to a local immediately followed by re-assignment
             | Expr (Assignment (name, None, init1)), (Expr (Assignment (name2, None, init2)) as assign2)
@@ -780,7 +780,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | Block b when hasNoDecl b -> b
             | e -> [e])
 
-        // Remove useless else after a if that returns.
+        // Remove useless else after an if that returns.
         // if(c)return a();else b();  ->  if(c)return a();b();
         let rec endsWithReturn = function
             | Jump(JumpKeyword.Return, _) -> true
@@ -866,7 +866,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         | FunCall (Op ",", list) -> // f(),c=d  ->  c=f(),d
                             match List.last list with
                             | FunCall (Op "=", [Var name; init]) ->
-                                    let mutableList = new System.Collections.Generic.List<Expr>(list)
+                                    let mutableList = List<Expr>(list)
                                     mutableList[mutableList.Count - 1] <- init
                                     Some (name, FunCall (Op ",", Seq.toList(mutableList)))
                             | _ -> None
