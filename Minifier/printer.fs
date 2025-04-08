@@ -182,7 +182,7 @@ type PrinterImpl(withLocations) =
         out "%s%s{%s}" (sp2 prefix name) c d
 
     and typeSpecToS = function
-        | TypeName s -> s
+        | TypeName s -> s.Name
         | TypeBlock block -> blockToS block
 
     and typeToS (ty: Type) =

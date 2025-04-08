@@ -203,7 +203,7 @@ type private ParseImpl(options: Options.Options) =
                       |>> (function s -> "layout(" + s + ")")
     let glslQualifier = many (glslStorage <|> glslLayout)
     let specifiedTypeGLSL =
-        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (ident |>> (fun id -> Ast.TypeName id.Name))
+        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (ident |>> Ast.TypeName)
         let arraySizes = many (between (ch '[') (ch ']') expr)
         pipe3 glslQualifier typeSpec arraySizes (fun tyQ name sizes -> Ast.makeType name tyQ sizes)
 
@@ -223,7 +223,7 @@ type private ParseImpl(options: Options.Options) =
                    |> opt
                    |>> (function Some s -> "<" + s + ">" | None -> "")
         let typeName = pipe2 (ident |>> (fun id -> id.Name)) generic (+)
-        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (typeName |>> Ast.TypeName)
+        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (typeName |>> (fun s -> Ast.TypeName (Ast.Ident s)))
         let arraySizes = many (between (ch '[') (ch ']') expr)
         pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
