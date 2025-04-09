@@ -188,44 +188,6 @@ type private RenamerImpl(options: Options.Options) =
         if not id.IsUniqueId then
             env.exportedNames.Value <- {prefix = prefix; name = id.OldName; newName = id.Name} :: env.exportedNames.Value
 
-    let renFunction env (args: Decl list) (id: Ident) =
-        let signature = Signature.Create args
-
-        // we're looking for a function name, already used before,
-        // but not with the same signature, and which is not in options.noRenamingList.
-        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
-            not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
-
-        match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisSignature with
-        | Some res when env.allowOverloading ->
-            // overload an existing function name used with a different signature
-            let newName = res.Key
-            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(signature, id.Name))
-            let env = env.Update(env.varRenames.Add(id.Name, newName), funRenames, env.availableNames)
-            id.Rename(newName)
-            env
-        | _ ->
-            // find a new function name
-            let prevName = id.Name
-            let env = env.newName env id
-            let funRenames = env.funRenames.Add (id.Name, Map.empty.Add(signature, prevName))
-            let env = env.Update(env.varRenames, funRenames, env.availableNames)
-            env
-
-    let renFctName env (f: FunctionType) =
-        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
-            env
-        elif List.contains f.fName.Name options.noRenamingList then
-            env
-        else
-            match env.varRenames.TryFind(f.fName.Name) with
-            | Some name ->
-                f.fName.Rename(name) // bug, may cause conflicts
-                env
-            | None ->
-                let newEnv = renFunction env f.args f.fName
-                if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
-                newEnv
 
     let renList env fct li =
         let mutable env = env
@@ -267,22 +229,6 @@ type private RenamerImpl(options: Options.Options) =
                     env
 
         renList env aux vars
-
-    // "Garbage collection": remove names that are not used in the block
-    // so that we can reuse them. In other words, this function allows us
-    // to shadow global variables in a function.
-    let shadowVariables (env: Env) block =
-        // Find all the variables known in varRenames that are used in the block.
-        // They should be preserved in the renaming environment.
-        let stillUsedSet =
-            [for ident in Analyzer.Analyzer(options).varUsesInStmt block -> ident.Name]
-                |> Seq.choose env.varRenames.TryFind |> set
-
-        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
-        let reusable = [for i in reusable -> i.Value]
-                        |> List.filter (fun x -> not (List.contains x options.noRenamingList))
-        let allAvailable = reusable @ env.availableNames |> List.distinct
-        env.Update(varRenames, env.funRenames, allAvailable)
 
     let rec renStmt env =
         let renOpt o = Option.iter (renExpr env) o
@@ -344,6 +290,45 @@ type private RenamerImpl(options: Options.Options) =
             // interface block without an instance name: the fields are treated as external global variables
             renList env (renDecl Level.TopLevel true) interfaceBlock.fields
 
+    let renFunction env (args: Decl list) (id: Ident) =
+        let signature = Signature.Create args
+
+        // we're looking for a function name, already used before,
+        // but not with the same signature, and which is not in options.noRenamingList.
+        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
+            not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
+
+        match env.funRenames |> Seq.tryFind isFunctionNameAvailableForThisSignature with
+        | Some res when env.allowOverloading ->
+            // overload an existing function name used with a different signature
+            let newName = res.Key
+            let funRenames = env.funRenames.Add (res.Key, res.Value.Add(signature, id.Name))
+            let env = env.Update(env.varRenames.Add(id.Name, newName), funRenames, env.availableNames)
+            id.Rename(newName)
+            env
+        | _ ->
+            // find a new function name
+            let prevName = id.Name
+            let env = env.newName env id
+            let funRenames = env.funRenames.Add (id.Name, Map.empty.Add(signature, prevName))
+            let env = env.Update(env.varRenames, funRenames, env.availableNames)
+            env
+
+    let renFctName env (f: FunctionType) =
+        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
+            env
+        elif List.contains f.fName.Name options.noRenamingList then
+            env
+        else
+            match env.varRenames.TryFind(f.fName.Name) with
+            | Some name ->
+                f.fName.Rename(name) // bug, may cause conflicts
+                env
+            | None ->
+                let newEnv = renFunction env f.args f.fName
+                if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
+                newEnv
+
     let rec renTopLevelName env = function
         | TLDecl d -> renDecl Level.TopLevel false env d
         | TypeDecl block -> renTyBlock env block
@@ -356,6 +341,22 @@ type private RenamerImpl(options: Options.Options) =
             let env = renList env (renDecl Level.InFunc false) fct.args
             renStmt env body |> ignore<Env>
         | _ -> ()
+
+    // "Garbage collection": remove names that are not used in the block
+    // so that we can reuse them. In other words, this function allows us
+    // to shadow global variables in a function.
+    let shadowVariables (env: Env) block =
+        // Find all the variables known in varRenames that are used in the block.
+        // They should be preserved in the renaming environment.
+        let stillUsedSet =
+            [for ident in Analyzer.Analyzer(options).varUsesInStmt block -> ident.Name]
+                |> Seq.choose env.varRenames.TryFind |> set
+
+        let varRenames, reusable = env.varRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
+        let reusable = [for i in reusable -> i.Value]
+                        |> List.filter (fun x -> not (List.contains x options.noRenamingList))
+        let allAvailable = reusable @ env.availableNames |> List.distinct
+        env.Update(varRenames, env.funRenames, allAvailable)
 
     // Compute list of variables names, based on frequency
     let computeListOfNames text =
