@@ -483,12 +483,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeTLDeclarations l
 
-    let rwTypeSpec = function
-        | TypeName n -> TypeName (stripSpaces n)
-        | x -> x // structs
-
     let rwType (ty: Type) =
-        makeType (rwTypeSpec ty.name) (List.map stripSpaces ty.typeQ) ty.arraySizes
+        makeType ty.name (List.map stripSpaces ty.typeQ) ty.arraySizes
 
     let rwFType fct =
         // The default for function parameters is "in", we don't need it.
