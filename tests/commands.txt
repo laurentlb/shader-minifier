@@ -41,6 +41,7 @@
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/templates.hlsl.expected tests/unit/templates.hlsl
 --no-remove-unused --no-renaming --format indented -o tests/unit/decimals.frag.expected tests/unit/decimals.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/layout.frag.expected tests/unit/layout.frag
+--no-remove-unused --format indented -o tests/unit/struct.frag.expected tests/unit/struct.frag
 
 # Unused removal tests
 

@@ -21,11 +21,11 @@ let private renList env fct li =
 // TODO: create a real class.
 [<NoComparison; NoEquality>]
 type private Env = {
-    // Map from an old variable name to the new one.
+    // Map from an old identifier name to the new one. Contains names of variables, functions and structs. (should be renamed)
     varRenames: Map<string, string>
-    // Map from a new function name and function signature to the old name.
+    // Store function signatures for overloading. Not used as a Map, should be a list of records
     funRenames: Map<string, Map<Signature, string>>
-    // List of names that are still available.
+    // List of names that are still available. Variables, functions and structs share the same name space.
     availableNames: string list
 
     exportedNames: ExportedName list ref
@@ -84,14 +84,20 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             | Var v ->
                 match env.varRenames.TryFind(v.Name) with
                 | Some name -> v.Rename(name); Var v
-                | None -> Var v
+                | None -> Var v // don't rename things we didn't see a declaration for. (builtins...)
             | e -> e
         options.visitor(mapper).iterExpr expr
 
-    let renDecl isFieldOfAnInterfaceBlockWithoutInstanceName env (ty:Type, vars) =
+    let rec renDecl isFieldOfAnInterfaceBlockWithoutInstanceName env (ty:Type, vars) =
         let renDeclElt (env: Env) (decl: DeclElt) =
+            // Rename expressions in init and size
             Option.iter (renExpr env) decl.init
             Option.iter (renExpr env) decl.size
+
+            // Rename variable type
+            let env: Env = renType env ty
+
+            // Rename declared variable
             let isExternal = (level = Level.TopLevel && (ty.IsExternal || options.hlsl)) ||
                              isFieldOfAnInterfaceBlockWithoutInstanceName
 
@@ -104,15 +110,30 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
                 env.DontRename decl.name
             else
                 match env.varRenames.TryFind(decl.name.Name) with
-                | Some name ->
-                    decl.name.Rename(name)
-                    env
-                | None ->
+                | None -> // first time we see this external: pick a new name, export it
                     let env = env.newName env decl.name
                     export env ExportPrefix.Variable decl.name
                     env
+                | Some name -> // external already declared in another file: rename consistently
+                    decl.name.Rename(name)
+                    env
 
         renList env renDeclElt vars
+
+    and renTyBlock (env: Env) = function
+        | { StructOrInterfaceBlock.blockType = Struct; name = Some structName } ->
+            // top level struct declaration, e.g. `struct foo { int a; float b; }`
+            env
+        | { StructOrInterfaceBlock.blockType = Struct; name = None } ->
+            // anonymous inline struct in a local variable declaration, e.g. `struct { int a; } s;`
+            env
+        | interfaceBlock ->
+            // interface block without an instance name: the fields are treated as external global variables
+            // e.g. uniform foo { int a; float b; }
+            renList env (renDecl true) interfaceBlock.fields
+
+    and renType (env: Env) (ty: Type) =
+        env
 
     let rec renStmt env =
         let renOpt o = Option.iter (renExpr env) o
@@ -166,17 +187,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             renList env renCase cl |> ignore<Env>
             env
 
-    // e.g. struct foo { int a; float b; }
-    //   or uniform foo { int a; float b; }
-    let renTyBlock (env: Env) = function
-        | { StructOrInterfaceBlock.blockType = Struct } -> env
-        | interfaceBlock ->
-            // interface block without an instance name: the fields are treated as external global variables
-            renList env (renDecl true) interfaceBlock.fields
-
-    let renFunction env (args: Decl list) (id: Ident) =
-        let signature = Signature.Create args
-
+    let renFunction env (signature: Signature) (id: Ident) =
         // we're looking for a function name, already used before,
         // but not with the same signature, and which is not in options.noRenamingList.
         let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
@@ -209,7 +220,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
                 f.fName.Rename(name) // bug, may cause conflicts
                 env
             | None ->
-                let newEnv = renFunction env f.args f.fName
+                let newEnv = renFunction env (Signature.Create f.args) f.fName
                 if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
@@ -222,6 +233,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
     member _.RenTopLevelBody env = function
         | Function(fct, body) ->
             let env = env.onEnterScope env body
+            let env = renType env fct.retType
             let env = renList env (renDecl false) fct.args
             renStmt env body |> ignore<Env>
         | _ -> ()
