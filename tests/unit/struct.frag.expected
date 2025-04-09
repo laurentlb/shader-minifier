@@ -1,3 +1,5 @@
+#version 460
+
 struct MarchData{float dist;vec3 col;float spec;};
 MarchData c;
 uniform MyInterfaceBlock{MarchData a;};
@@ -23,4 +25,3 @@ int r()
   return int(c.col.x+a.abc.dist);
 }
 struct{MarchData abc;} e;
-

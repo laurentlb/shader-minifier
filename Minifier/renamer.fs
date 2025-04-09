@@ -21,7 +21,7 @@ let private renList env fct li =
 // TODO: create a real class.
 [<NoComparison; NoEquality>]
 type private Env = {
-    // Map from an old identifier name to the new one. Contains names of variables, functions and structs. (should be renamed)
+    // Map from an old identifier name to the new one. Contains names of variables, functions and structs.
     identRenames: Map<string, string>
     // Store function signatures for overloading. (newName, Map(Signature, oldName)). Not accessed as a map, but with linear search.
     funOverloads: Map<string, Map<Signature, string>>

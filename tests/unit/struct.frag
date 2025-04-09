@@ -1,3 +1,4 @@
+#version 460
 // struct declaration in TypeDecl
 struct MarchData { // newName
     float dist;
