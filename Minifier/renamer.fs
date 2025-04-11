@@ -196,7 +196,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
         match env.funOverloads |> Seq.tryFind isFunctionNameAvailableForThisSignature with
         | Some res when env.allowOverloading ->
             // overload an existing function name used with a different signature
-            let newName, overloads = res.Deconstruct()
+            let newName, overloads = res.Key, res.Value
             let funOverloads = env.funOverloads.Add (newName, overloads.Add(signature, id.Name))
             let env = env.Update(env.identRenames.Add(id.Name, newName), funOverloads, env.availableNames)
             id.Rename(newName)
