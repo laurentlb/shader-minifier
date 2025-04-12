@@ -1,5 +1,6 @@
 #version 300 es
 
+precision highp float;
 float noinline_canInlineWhenResolvable()
 {
   return 11.;
