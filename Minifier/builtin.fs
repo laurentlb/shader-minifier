@@ -28,6 +28,8 @@ let builtinMatrixTypes = set([
                 yield p+"mat"+c+"x"+r
 ])
 
+let isSamplerType (name: string) = name.Contains("sampler")
+
 let builtinTypes = set [ "void" ] + builtinScalarTypes + builtinVectorTypes + builtinMatrixTypes;
 
 let implicitConversions = // (from, to)

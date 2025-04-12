@@ -83,10 +83,9 @@ uniform sampler2D samp;
 vec3 dof()
 {
   float f=10.;
-  sampler2D tex=samp;
   for(;;)
     {
-      vec3 a=texture(tex,vec2(0)).xyz;
+      vec3 a=texture(samp,vec2(0)).xyz;
       return a.zyx+a.xyz*(f*=f);
     }
 }
