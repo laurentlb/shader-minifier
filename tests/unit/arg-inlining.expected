@@ -78,7 +78,20 @@ float f()
   s+=s+noinline_cannotInlineWhenArgIsNotInlinable(s);
   return s+s+noinline_cannotInlineWhenArgIsNotInlinable(acos(s));
 }
+out vec4 fragColor;
+uniform sampler2D samp;
+vec3 dof()
+{
+  float f=10.;
+  sampler2D tex=samp;
+  for(;;)
+    {
+      vec3 a=texture(tex,vec2(0)).xyz;
+      return a.zyx+a.xyz*(f*=f);
+    }
+}
 void main()
 {
   f();
+  fragColor.xyz=dof();
 }
