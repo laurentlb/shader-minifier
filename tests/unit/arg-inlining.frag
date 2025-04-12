@@ -1,4 +1,4 @@
-#version 300
+#version 300 es
 
 // Argument inlining inlines the argument of a function call into the function body.
 
