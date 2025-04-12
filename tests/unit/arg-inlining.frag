@@ -1,3 +1,5 @@
+#version 300
+
 // Argument inlining inlines the argument of a function call into the function body.
 
 float noinline_canInlineWhenResolvable(float a) { return a+10.; }

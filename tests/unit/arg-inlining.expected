@@ -1,3 +1,5 @@
+#version 300
+
 float noinline_canInlineWhenResolvable()
 {
   return 11.;
