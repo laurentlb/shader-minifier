@@ -339,6 +339,12 @@ type ArgumentInlining(options: Options.Options) =
                 let _, body = options.visitor(applyExpr).mapStmt (BlockLevel.FunctionRoot fct) body
                 // Handle argument inlining for f. Remove the parameter from the declaration.
                 let fct = {fct with args = removeInlined f fct.args}
+                // Sampler types can be declared as globals or as function parameters but not as locals.
+                // This means we can inline them into the body of the function only if we inline them further.
+                for inl in argInlinings do
+                    match inl.varDecl.ty.name with
+                    | TypeName ident when Builtin.isSamplerType ident.Name -> inl.varDecl.decl.name.ToBeInlined <- true
+                    | _ -> ()
                 // Handle argument inlining for f. Insert in front of the body a declaration for each inlined argument.
                 let decls =
                     argInlinings
