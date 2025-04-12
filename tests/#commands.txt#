@@ -1,0 +1,119 @@
+# Test output formats
+
+--format c-variables -o tests/real/chocolux.expected tests/real/chocolux.frag
+--format text -o tests/real/clod.expected tests/real/clod.frag
+--format c-array -o tests/real/kinder_painter.expected tests/real/kinder_painter.frag
+--format js -o tests/real/disco.expected tests/real/disco.frag
+--format nasm -o tests/real/leizex.expected tests/real/leizex.frag
+--format rust -o tests/real/heart.expected tests/real/heart.frag
+--format c-variables -o "tests/unit/file name with-weird caractères.frag.c-variables.expected" "tests/unit/file name with-weird caractères.frag"
+# --format js -o "tests/unit/file name with-weird caractères.frag.js.expected" "tests/unit/file name with-weird caractères.frag"
+# --format nasm -o "tests/unit/file name with-weird caractères.frag.nasm.expected" "tests/unit/file name with-weird caractères.frag"
+# --format rust -o "tests/unit/file name with-weird caractères.frag.rust.expected" "tests/unit/file name with-weird caractères.frag"
+
+# Unit tests
+
+--no-remove-unused --no-inlining --no-renaming --format c-variables -o tests/unit/blocks.expected tests/unit/blocks.frag
+--no-remove-unused --hlsl --no-inlining --no-renaming --format c-variables -o tests/unit/geometry.hlsl.expected tests/unit/geometry.hlsl
+--no-remove-unused --no-renaming --no-inlining --move-declarations --format c-array -o tests/unit/operators.expected tests/unit/operators.frag
+--no-remove-unused --no-renaming --no-inlining --format c-array -o tests/unit/minus-zero.expected tests/unit/minus-zero.frag
+--no-remove-unused --no-renaming --format c-array --no-inlining -o tests/unit/float.frag.expected tests/unit/float.frag
+--no-remove-unused --no-renaming --format indented --no-inlining -o tests/unit/nested_if.frag.expected tests/unit/nested_if.frag
+--no-remove-unused --format indented -o tests/unit/precision.frag.expected tests/unit/precision.frag
+--no-remove-unused --format c-array --no-inlining --no-renaming -o tests/unit/verbatim.frag.expected tests/unit/verbatim.frag
+--no-remove-unused --format indented --no-renaming -o tests/unit/forward_declaration.frag.expected tests/unit/forward_declaration.frag
+--no-remove-unused --format indented --no-renaming --move-declarations -o tests/unit/conditionals.frag.expected tests/unit/conditionals.frag
+--no-renaming --no-inlining --format indented -o tests/unit/pi.frag.expected tests/unit/pi.frag
+ --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/vectors.frag.expected tests/unit/vectors.frag
+--no-renaming --format indented -o tests/unit/deadcode.frag.expected tests/unit/deadcode.frag
+--no-renaming --no-inlining --format indented -o tests/unit/augmented.frag.expected tests/unit/augmented.frag
+--no-remove-unused --no-renaming -o tests/unit/loop.frag.expected tests/unit/loop.frag
+--no-remove-unused --no-renaming -o tests/unit/array.frag.expected tests/unit/array.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/numbers.frag.expected tests/unit/numbers.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess.frag.expected tests/unit/preprocess.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess_if.frag.expected tests/unit/preprocess_if.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/shadowing.frag.expected tests/unit/shadowing.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/precedence.frag.expected tests/unit/precedence.frag
+--no-remove-unused --format indented -o tests/unit/interface_block.frag.expected tests/unit/interface_block.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/ternary.frag.expected tests/unit/ternary.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/reuse-var.frag.expected tests/unit/reuse-var.frag
+--no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/struct_inheritance.hlsl.expected tests/unit/struct_inheritance.hlsl
+--no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/templates.hlsl.expected tests/unit/templates.hlsl
+--no-remove-unused --no-renaming --format indented -o tests/unit/decimals.frag.expected tests/unit/decimals.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/layout.frag.expected tests/unit/layout.frag
+--no-remove-unused --format indented -o tests/unit/struct.frag.expected tests/unit/struct.frag
+
+# Unused removal tests
+
+--no-renaming --format indented -o tests/unit/unused_removal.frag.expected tests/unit/unused_removal.frag
+--no-renaming --format indented -o tests/unit/unused_assignments.frag.expected tests/unit/unused_assignments.frag
+
+
+# Inlining unit tests
+
+--no-remove-unused --no-renaming --format indented -o tests/unit/inline.expected tests/unit/inline.frag
+--no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline.aggro.expected tests/unit/inline.frag
+--no-remove-unused --no-renaming --format indented --no-inlining -o tests/unit/inline.no.expected tests/unit/inline.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/inline-aggro.expected tests/unit/inline-aggro.frag
+--no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-aggro.aggro.expected tests/unit/inline-aggro.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/inline-fn.expected tests/unit/inline-fn.frag
+--no-remove-unused --no-renaming --format indented --aggressive-inlining -o tests/unit/inline-fn.aggro.expected tests/unit/inline-fn.frag
+--no-remove-unused --format indented -o tests/unit/inline-fn-multiple.expected tests/unit/inline-fn-multiple.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/simplify.expected tests/unit/simplify.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frga
+--no-remove-unused --no-renaming --format indented -o tests/unit/bug321.expected tests/unit/bug321.frag
+
+# Partial renaming tests
+
+--no-remove-unused --no-renaming --format c-variables -o tests/unit/function_comma.expected tests/unit/function_comma.frag
+--preserve-externals --format c-variables -o tests/real/mandelbulb.expected tests/real/mandelbulb.frag
+--preserve-all-globals --format c-variables -o tests/real/to_the_road_of_ribbon.expected tests/real/to_the_road_of_ribbon.frag
+--no-renaming-list rotatey,main,diffdark --format c-variables -o tests/real/sult.expected tests/real/sult.frag
+--no-remove-unused --preserve-externals -o tests/unit/externals.preserved.expected tests/unit/externals.frag
+
+# Multifile tests
+
+--no-remove-unused --move-declarations --format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
+--no-remove-unused --format c-array -o tests/unit/interface-block-renaming.expected tests/unit/interface-block-renaming1.frag tests/unit/interface-block-renaming2.frag
+
+# kkp symbols tests
+
+--no-remove-unused --no-renaming --export-kkp-symbol-maps --format text -o tests/unit/symbols.frag.expected tests/unit/symbols.frag
+
+# Tests with full renaming
+
+--no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
+--hlsl -o tests/real/elevated.hlsl.expected tests/real/elevated.hlsl
+-o tests/real/yx_long_way_from_home.frag.expected tests/real/yx_long_way_from_home.frag
+-o tests/real/oscars_chair.frag.expected tests/real/oscars_chair.frag
+-o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
+--no-remove-unused --no-inlining -o tests/unit/function_overload.expected tests/unit/function_overload.frag
+--no-remove-unused --no-inlining --no-overloading -o tests/unit/function_overload.no.expected tests/unit/function_overload.frag
+--no-remove-unused -o tests/unit/function_overload2.expected tests/unit/function_overload.frag
+-o tests/unit/overload.expected tests/unit/overload.frag
+--no-remove-unused -o tests/unit/externals.expected tests/unit/externals.frag
+--no-remove-unused -o tests/unit/qualifiers.expected tests/unit/qualifiers.frag
+--no-remove-unused -o tests/unit/macros.expected --no-inlining tests/unit/macros.frag
+--no-remove-unused --format indented -o tests/unit/switch.expected tests/unit/switch.frag
+--no-remove-unused --format indented -o tests/unit/forbidden.expected tests/unit/forbidden.frag
+--format c-variables -o tests/real/heart.frag.expected tests/real/heart.frag
+
+# Other - real files, to get a bit more coverage
+--no-renaming --format indented -o tests/real/ed-209.frag.expected tests/real/ed-209.frag
+--no-renaming --format indented -o tests/real/ohanami.frag.expected tests/real/ohanami.frag
+--no-renaming --format indented -o tests/real/terrarium.frag.expected tests/real/terrarium.frag
+--no-renaming --format indented -o tests/real/monjori.frag.expected tests/real/monjori.frag
+--no-renaming --format indented -o tests/real/valley_ball.glsl.expected tests/real/valley_ball.glsl
+--no-renaming --format indented -o tests/real/slisesix.frag.expected tests/real/slisesix.frag
+--no-renaming --format indented -o tests/real/from-the-seas-to-the-stars.frag.expected tests/real/from-the-seas-to-the-stars.frag
+--no-renaming --format indented -o tests/real/lunaquatic.frag.expected tests/real/lunaquatic.frag
+--no-renaming --format indented -o tests/real/frozen-wasteland.frag.expected tests/real/frozen-wasteland.frag
+--no-renaming --format indented -o tests/real/controllable-machinery.frag.expected tests/real/controllable-machinery.frag
+--no-renaming --format indented -o tests/real/endeavour.frag.expected tests/real/endeavour.frag
+--no-renaming --format indented -o tests/real/audio-flight-v2.frag.expected tests/real/audio-flight-v2.frag
+
+--no-renaming --aggressive-inlining --format indented -o tests/real/buoy.frag.expected tests/real/buoy.frag
+--no-renaming --aggressive-inlining --format indented -o tests/real/orchard.frag.expected tests/real/orchard.frag
+--no-renaming --aggressive-inlining --format indented -o tests/real/robin.frag.expected tests/real/robin.frag
+
+-o tests/real/mouton/mouton.expected tests/real/mouton/mouton.vert tests/real/mouton/mouton.frag tests/real/mouton/fxaa.frag
