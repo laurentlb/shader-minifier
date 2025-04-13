@@ -1,46 +1,45 @@
 #version 460
 
-struct r{float A;vec3 B;float e;};
-r k;
-uniform MyInterfaceBlock{r M;};
-r i()
+struct r{float e;vec3 k;float M;};
+r i;
+uniform MyInterfaceBlock{r m;};
+r n()
 {
-  return k;
+  return i;
 }
-int i(r A)
+int n(r i)
 {
   return 1;
 }
-int m()
+int t()
 {
   r s;
-  s.A=1.;
-  s.e=s.A/2.;
-  s=r(1.,vec3(1),s.e);
-  struct{r k;} f;
-  for(r k;true;)
+  s.e=1.;
+  s.M=s.e/2.;
+  s=r(1.,vec3(1),s.M);
+  struct{r i;} f;
+  for(r i;true;)
     break;
-  for(struct{r D;} k;true;)
+  for(struct{r A;} i;true;)
     break;
-  return int(s.B.x+f.k.A+M.e);
+  return int(s.k.x+f.i.e+m.M);
 }
-struct{r I;} Q;
-float i(vec4 s)
+struct{r B;} I;
+float n(vec4 s)
 {
-  float k=s.x-4.;
-  return s.w+k*k;
+  float i=s.x-4.;
+  return s.w+i*i;
 }
-struct P{int O;int N;};
-struct L{int K;int J;int H;};
-P f;
-L s;
+struct O{int N;int L;};
+struct K{int J;int H;int G;};
+O f;
+K s;
 void main()
 {
-  f.K=1;
-  f.H=2;
-  s.K=3;
-  s.J=4;
-  s.H=5;
+  f.C=1;
+  f.A=2;
+  s.C=3;
+  s.H=4;
+  s.A=5;
 }
-struct E{int A;int B;} D;
-struct{int A;int B;};
+struct D{int C;int A;} E;

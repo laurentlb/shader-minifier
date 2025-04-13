@@ -144,13 +144,14 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             | Some name -> t.Rename(name) // the type name is a reference to a named struct being renamed
             | _ -> () // e.g. builtin type
             env
-        | TypeBlock ({ StructOrInterfaceBlock.blockType = Struct; name = None } as anonStruct) ->
-            // anonymous inline struct in a local variable declaration, e.g. `struct { int a; } s;`
+        | TypeBlock ({ StructOrInterfaceBlock.blockType = Struct } as stru) ->
+            // struct + variable declaration (top level or local, named or unnamed)
+            // e.g. `struct Foo { int a; } s;` or `struct { int a; } s;`
+            let env = match stru.name with
+                      | Some structName -> renNamedStruct env structName
+                      | _ -> env
             // This isn't actually recursive with renDecl, because "Embedded struct definitions are not allowed".
-            renList env (renDecl false None) anonStruct.fields
-        | TypeBlock { StructOrInterfaceBlock.blockType = Struct; name = Some structName } ->
-            // named struct + local variable declaration, e.g. `struct Foo { int a; } s;`
-            renNamedStruct env structName
+            renList env (renDecl false None) stru.fields
         | TypeBlock { StructOrInterfaceBlock.blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 

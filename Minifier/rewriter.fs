@@ -973,6 +973,9 @@ let reorderFunctions (options: Options.Options) code =
 
 let rec private iterateSimplifyAndInline (options: Options.Options) optimizationPass passCount li =
     let li = if not options.noRemoveUnused then RewriterImpl.RemoveUnusedFunctions options li else li
+    let li = li |> List.filter (function
+        | TypeDecl { blockType = Struct; name = None } -> false // e.g. `struct {int A;};`
+        | _ -> true)
     Analyzer(options).resolve li
     Analyzer(options).markWrites li
     if not options.noInlining then
