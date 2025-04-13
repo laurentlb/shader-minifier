@@ -7,7 +7,7 @@ r n()
 {
   return i;
 }
-int n(r i)
+int n(r B)
 {
   return 1;
 }
@@ -17,29 +17,29 @@ int t()
   s.e=1.;
   s.M=s.e/2.;
   s=r(1.,vec3(1),s.M);
-  struct{r i;} f;
-  for(r i;true;)
+  struct{r B;} L;
+  for(r L;true;)
     break;
-  for(struct{r A;} i;true;)
+  for(struct{r B;} L;true;)
     break;
-  return int(s.k.x+f.i.e+m.M);
+  return int(s.k.x+L.B.e+m.M);
 }
 struct{r B;} I;
 float n(vec4 s)
 {
-  float i=s.x-4.;
-  return s.w+i*i;
+  float L=s.x-4.;
+  return s.w+L*L;
 }
 struct O{int N;int L;};
-struct K{int J;int H;int G;};
+struct K{int N;int J;int L;};
 O f;
 K s;
 void main()
 {
-  f.C=1;
-  f.A=2;
-  s.C=3;
-  s.H=4;
-  s.A=5;
+  f.N=1;
+  f.L=2;
+  s.N=3;
+  s.J=4;
+  s.L=5;
 }
-struct D{int C;int A;} E;
+struct F{int N;int L;} E;

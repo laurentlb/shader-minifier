@@ -121,29 +121,42 @@ type private RenamerVisitor(options: Options.Options) =
                 | None -> renType env ty
 
             // Rename declared variable
-            let isFieldOfAnInterfaceBlockWithoutInstanceName =
-                match context with
-                | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) -> not hasInstanceName
-                | _ -> false
-            let isExternal = (context = TopLevelDeclaration && (ty.IsExternal || options.hlsl)) ||
-                             isFieldOfAnInterfaceBlockWithoutInstanceName
+            let processExternal() =
+                if options.preserveExternals then
+                    env.DontRename decl.name
+                else
+                    match env.identRenames.TryFind(decl.name.Name) with
+                    | None -> // first time we see this external: pick a new name, export it
+                        let env = env.newName env decl.name
+                        export env ExportPrefix.Variable decl.name
+                        env
+                    | Some name -> // external already declared in another file: rename consistently
+                        decl.name.Rename(name)
+                        env
 
-            if (context = TopLevelDeclaration && options.preserveAllGlobals) ||
-                    List.contains decl.name.Name options.noRenamingList then
-                env.DontRename decl.name
-            elif not isExternal then
-                env.newName env decl.name
-            elif options.preserveExternals then
+            if options.noRenamingList |> List.contains decl.name.Name then
                 env.DontRename decl.name
             else
-                match env.identRenames.TryFind(decl.name.Name) with
-                | None -> // first time we see this external: pick a new name, export it
-                    let env = env.newName env decl.name
-                    export env ExportPrefix.Variable decl.name
-                    env
-                | Some name -> // external already declared in another file: rename consistently
-                    decl.name.Rename(name)
-                    env
+                match context with
+                | TopLevelDeclaration when options.preserveAllGlobals ->
+                    env.DontRename decl.name
+                | TopLevelDeclaration when ty.IsExternal || options.hlsl ->
+                    processExternal()
+                | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) ->
+                    if hasInstanceName then
+                        env.newName env decl.name // we have no tests of this and it doesn't work
+                    else
+                        processExternal()
+                | Field ({ blockType = Struct }, _) -> // named or anonymous struct, with instance or not
+                    match env.identRenames.TryFind(decl.name.Name) with
+                    | None -> // first time we see this struct field: pick a new name
+                        env.newName env decl.name
+                    | Some name -> // struct field already renamed in another struct: rename consistently
+                        decl.name.Rename(name)
+                        env
+                | TopLevelDeclaration -> env.newName env decl.name
+                | FunctionArgument _ -> env.newName env decl.name
+                | LocalDeclaration -> env.newName env decl.name
 
         renList env renDeclElt vars
 
