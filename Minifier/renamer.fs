@@ -66,6 +66,12 @@ with
     member this.Update(identRenames, funOverloads, availableNames) =
         {this with identRenames = identRenames; funOverloads = funOverloads; availableNames = availableNames}
 
+type DeclarationContext =
+    | TopLevelDeclaration
+    | LocalDeclaration
+    | Field of StructOrInterfaceBlock * hasInstanceName: bool
+    | FunctionArgument of FunctionType
+
 // This visitor has three jobs:
 //  * for every identifier declaration, give it a name (stored in Env) by calling Env.newName or DontRename
 //  * for every identifier use, assign to it the stored name by calling Ident.Rename
@@ -73,7 +79,7 @@ with
 // This happens in two steps:
 //  * first pass on all top level declarations
 //  * second pass on function bodies, with reuse of unused names via shadowing (with onEnterScope)
-type private RenamerVisitor(options: Options.Options, level: Level) =
+type private RenamerVisitor(options: Options.Options) =
 
     let export env prefix (id: Ident) =
         if not id.IsUniqueId then
@@ -100,7 +106,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             let env = env.newName env structName
             env
 
-    let rec renDecl isFieldOfAnInterfaceBlockWithoutInstanceName (envForType: Env option) env (ty:Type, vars) =
+    let rec renDecl (context: DeclarationContext) (envForType: Env option) env (ty:Type, vars) =
         let renDeclElt (env: Env) (decl: DeclElt) =
             // Rename expressions in init and size
             Option.iter (renExpr env) decl.init
@@ -115,10 +121,14 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
                 | None -> renType env ty
 
             // Rename declared variable
-            let isExternal = (level = Level.TopLevel && (ty.IsExternal || options.hlsl)) ||
+            let isFieldOfAnInterfaceBlockWithoutInstanceName =
+                match context with
+                | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) -> not hasInstanceName
+                | _ -> false
+            let isExternal = (context = TopLevelDeclaration && (ty.IsExternal || options.hlsl)) ||
                              isFieldOfAnInterfaceBlockWithoutInstanceName
 
-            if (level = Level.TopLevel && options.preserveAllGlobals) ||
+            if (context = TopLevelDeclaration && options.preserveAllGlobals) ||
                     List.contains decl.name.Name options.noRenamingList then
                 env.DontRename decl.name
             elif not isExternal then
@@ -144,15 +154,15 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             | Some name -> t.Rename(name) // the type name is a reference to a named struct being renamed
             | _ -> () // e.g. builtin type
             env
-        | TypeBlock ({ StructOrInterfaceBlock.blockType = Struct } as stru) ->
+        | TypeBlock ({ blockType = Struct } as stru) ->
             // struct + variable declaration (top level or local, named or unnamed)
             // e.g. `struct Foo { int a; } s;` or `struct { int a; } s;`
             let env = match stru.name with
                       | Some structName -> renNamedStruct env structName
                       | _ -> env
             // This isn't actually recursive with renDecl, because "Embedded struct definitions are not allowed".
-            renList env (renDecl false None) stru.fields
-        | TypeBlock { StructOrInterfaceBlock.blockType = InterfaceBlock _ } ->
+            renList env (renDecl (Field (stru, true)) None) stru.fields
+        | TypeBlock { blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 
     let rec renStmt env =
@@ -160,7 +170,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
         function
         | Expr e -> renExpr env e; env
         | Decl d ->
-            renDecl false None env d
+            renDecl LocalDeclaration None env d
         | Block b ->
             renList env renStmt b |> ignore<Env>
             env
@@ -172,7 +182,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
         | ForD(init, cond, inc, body) as stmt ->
             let innerEnv = env.onEnterScope env stmt // In the for scope, we use an env that allows shadowing unused outer decls.
             let envForType = Some env // Use the inner env to rename variables, but use the outer env to rename the variable type!
-            let innerEnv = renDecl false envForType innerEnv init
+            let innerEnv = renDecl LocalDeclaration envForType innerEnv init
             renStmt innerEnv body |> ignore<Env>
             Option.iter (renExpr innerEnv) cond
             Option.iter (renExpr innerEnv) inc
@@ -244,21 +254,18 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
                 if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
-    let renInterfaceBlockWithoutInstanceName (env: Env) interfaceBlock =
-        // interface block without an instance name: the fields are treated as external global variables
-        // e.g. `uniform foo { int a; float b; }`
-        renList env (renDecl true None) interfaceBlock.fields
-
     member _.RenTopLevelName env = function
-        | TLDecl d -> renDecl false None env d
+        | TLDecl d -> renDecl TopLevelDeclaration None env d
         | Function(fct, _) -> renFunction env fct
-        | TypeDecl ({ StructOrInterfaceBlock.blockType = InterfaceBlock _ } as interfaceBlock) ->
-            renInterfaceBlockWithoutInstanceName env interfaceBlock
-        | TypeDecl ({ StructOrInterfaceBlock.blockType = Struct; name = Some structName } as namedStruct) ->
+        | TypeDecl ({ blockType = InterfaceBlock _ } as interfaceBlock) ->
+            // interface block without an instance name: the fields are treated as external global variables
+            // e.g. `uniform foo { int a; float b; }`
+            renList env (renDecl (Field (interfaceBlock, false)) None) interfaceBlock.fields
+        | TypeDecl ({ blockType = Struct; name = Some structName } as namedStruct) ->
             let env = renNamedStruct env structName
-            let env = renList env (renDecl false None) namedStruct.fields
+            let env = renList env (renDecl (Field (namedStruct, false)) None) namedStruct.fields
             env
-        | TypeDecl { StructOrInterfaceBlock.blockType = Struct; name = None } -> // e.g. `struct {int A;};`
+        | TypeDecl { blockType = Struct; name = None } -> // e.g. `struct {int A;};`
             // TIL Declaring an anonymous struct that doesn't declare a variable is legal and does nothing.
             env
         | _ -> env
@@ -271,7 +278,7 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             let envForBody = env.onEnterScope env body
             // Use the function body's env to rename arguments, but use the top level env to rename argument types!
             let envForType = Some env
-            let envForBody = renList envForBody (renDecl false envForType) fct.args
+            let envForBody = renList envForBody (renDecl (FunctionArgument fct) envForType) fct.args
             // Use the function body's env to rename in the body.
             renStmt envForBody body |> ignore<Env>
         | _ -> ()
@@ -436,8 +443,8 @@ type private RenamerImpl(options: Options.Options) =
         for shader in shaders do
             // Rename top-level and body at the same time (because the body
             // needs the environment matching the top-level).
-            env <- renList env (RenamerVisitor(options, Level.TopLevel).RenTopLevelName) shader.code
-            List.iter (RenamerVisitor(options, Level.InFunc).RenTopLevelBody env) shader.code
+            env <- renList env (RenamerVisitor(options).RenTopLevelName) shader.code
+            List.iter (RenamerVisitor(options).RenTopLevelBody env) shader.code
 
         env.exportedNames.Value
 
