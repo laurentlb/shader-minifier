@@ -49,7 +49,7 @@ int struct_uses() {
                     // struct identifier use in field in local
                     MarchData abc;
                 } s; true; ) break;
-    return int(m.col.x + s.abc.dist);
+    return int(m.col.x + s.abc.dist + march.spec);
 }
 
 // anonymous struct declaration at top level

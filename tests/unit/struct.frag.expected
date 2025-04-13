@@ -17,17 +17,16 @@ int I()
   i.e=1.;
   i.M=i.e/2.;
   i=r(1.,vec3(1),i.M);
-  struct{r B;} O;
+  struct{r O;} P;
   for(r i;true;)
     break;
-  for(struct{r P;} i;true;)
+  for(struct{r I;} i;true;)
     break;
-  return int(i.k.x+O.B.e);
+  return int(i.k.x+P.O.e+B.M);
 }
 struct{r P;} O;
 float I(vec4 i)
 {
-  float O=i.x-4.;
-  return i.w+O*O;
+  float P=i.x-4.;
+  return i.w+P*P;
 }
-
