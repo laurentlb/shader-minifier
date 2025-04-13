@@ -1,27 +1,27 @@
 #version 460
 
-struct MarchData{float dist;vec3 col;float spec;};
-MarchData c;
-uniform MyInterfaceBlock{MarchData a;};
-MarchData M()
+struct r{float dist;vec3 col;float spec;};
+r c;
+uniform MyInterfaceBlock{r e;};
+r M()
 {
   return c;
 }
-int M(MarchData a)
+int M(r c)
 {
   return 1;
 }
-int r()
+int d()
 {
-  MarchData c;
+  r c;
   c.dist=1.;
   c.spec=c.dist/2.;
-  c=MarchData(1.,vec3(1),c.spec);
-  struct{MarchData abc;} a;
-  for(MarchData c;true;)
+  c=r(1.,vec3(1),c.spec);
+  struct{r e;} k;
+  for(r c;true;)
     break;
-  for(struct{MarchData abc;} c;true;)
+  for(struct{r i;} c;true;)
     break;
-  return int(c.col.x+a.abc.dist);
+  return int(c.col.x+k.abc.dist);
 }
-struct{MarchData abc;} e;
+struct{r k;} i;

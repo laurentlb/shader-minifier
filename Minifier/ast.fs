@@ -99,7 +99,7 @@ and Expr =
 
 and TypeSpec =
     | TypeName of Ident
-    | TypeBlock of StructOrInterfaceBlock
+    | TypeBlock of StructOrInterfaceBlock // anonymous struct only. TODO: support interface blocks with an instance name
 with override t.ToString() =
         match t with
         | TypeName n -> n.ToString()
@@ -212,7 +212,7 @@ and TopLevel =
     | TLDirective of string list * Location
     | Function of FunctionType * Stmt
     | TLDecl of Decl
-    | TypeDecl of StructOrInterfaceBlock // struct declaration, or interface block that introduce a set of external global variables.
+    | TypeDecl of StructOrInterfaceBlock // named struct, or interface block that introduce a set of external global variables.
     | Precision of Type
 
 let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}
