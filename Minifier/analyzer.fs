@@ -170,7 +170,7 @@ module Effects =
             then sideEffects condExpr
             else [e] // We could apply sideEffects to thenExpr and elseExpr, but the result wouldn't necessarily have the same type...
         | FunCall(Op op, args) when not(Builtin.assignOps.Contains(op)) -> args |> List.collect sideEffects
-        | FunCall(Dot(_, field) as e, args) when field = "length" -> (e :: args) |> List.collect sideEffects
+        | FunCall(Dot(_, field) as e, args) when field.Name = "length" -> (e :: args) |> List.collect sideEffects
         | FunCall(Subscript _ as e, args) -> (e :: args) |> List.collect sideEffects
         | e -> [e]
 
@@ -223,10 +223,11 @@ type Analyzer(options: Options.Options) =
             { FuncInfo.func = func; funcType = funcType; name = name; callSites = callSites; body = block; isResolvable = isResolvable; isOverloaded = isOverloaded })
         funcInfos
 
-    member _.varUsesInStmt stmt = 
+    member _.varUsesInStmt includeFields stmt =
         let mutable idents = []
         let collectLocalUses _ = function
             | Var v as e -> idents <- v :: idents; e
+            | Dot (_, field) as e when includeFields -> idents <- field :: idents; e
             | e -> e
         options.visitor(collectLocalUses).iterStmt BlockLevel.Unknown stmt
         idents

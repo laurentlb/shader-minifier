@@ -35,7 +35,7 @@ type private ParseImpl(options: Options.Options) =
     let ident =
         let nonDigit = asciiLetter <|> pchar '_'
         let p = pipe3 getPosition nonDigit (manyChars (nonDigit <|> digit <?> "")) (
-            fun pos c s -> Ast.Ident(c.ToString() + s, int pos.Line, int pos.Column))
+            fun pos c s -> Ast.Ident(c.ToString() + s, { line = int pos.Line; col = int pos.Column }))
         let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
@@ -99,7 +99,7 @@ type private ParseImpl(options: Options.Options) =
                 (fun args fct -> Ast.FunCall(fct, args))
     let subscript = between (ch '[') (ch ']') (opt expr) |>>
                     (fun ind arr -> Ast.Subscript(arr, ind))
-    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field.Name))
+    let dot = ch '.' >>. ident |>> (fun field r -> Ast.Dot(r, field))
     let post = (dot <|> subscript <|> fcall) <?> ""
 
     let simpleExpr = pipe2 prim (many post)

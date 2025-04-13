@@ -49,7 +49,7 @@ type VariableInlining(options: Options.Options) =
                     | None ->
                         localDefs[def.name.Name] <- (def.name, true)
                     | Some init ->
-                        let isConst = Analyzer(options).varUsesInStmt (Expr init) |> Seq.forall isEffectivelyConst
+                        let isConst = Analyzer(options).varUsesInStmt false (Expr init) |> Seq.forall isEffectivelyConst
                         localDefs[def.name.Name] <- (def.name, isConst)
             | _ -> ()
         // List of all expressions under the current block, but do not look in loops.

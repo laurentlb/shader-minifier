@@ -84,6 +84,10 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
                 match env.identRenames.TryFind(v.Name) with
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v // don't rename things we didn't see a declaration for. (builtins...)
+            | Dot (_, field) as e when not (Builtin.isFieldSwizzle field.Name) ->
+                match env.identRenames.TryFind(field.Name) with
+                | Some name -> field.Rename(name); e
+                | None -> e
             | e -> e
         options.visitor(mapper).iterExpr expr
 
@@ -247,8 +251,10 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
         | Function(fct, _) -> renFunction env fct
         | TypeDecl ({ StructOrInterfaceBlock.blockType = InterfaceBlock _ } as interfaceBlock) ->
             renInterfaceBlockWithoutInstanceName env interfaceBlock
-        | TypeDecl { StructOrInterfaceBlock.blockType = Struct; name = Some structName } ->
-            renNamedStruct env structName
+        | TypeDecl ({ StructOrInterfaceBlock.blockType = Struct; name = Some structName } as namedStruct) ->
+            let env = renNamedStruct env structName
+            let env = renList env (renDecl false None) namedStruct.fields
+            env
         | TypeDecl { StructOrInterfaceBlock.blockType = Struct; name = None } ->
             failwith "Invalid: anonymous struct block declaration at top level" // only valid in a TLDecl, via renType
         | _ -> env
@@ -397,7 +403,7 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the variables known in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let stillUsedSet =
-            [for ident in Analyzer.Analyzer(options).varUsesInStmt block -> ident.Name]
+            [for ident in Analyzer.Analyzer(options).varUsesInStmt true block -> ident.Name]
                 |> Seq.choose env.identRenames.TryFind |> set
 
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)

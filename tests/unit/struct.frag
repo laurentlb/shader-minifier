@@ -57,3 +57,9 @@ struct {
     // struct identifier use in field in global struct
     MarchData abc;
 } s2;
+
+// bug test
+float v(vec4 w)
+{
+  return w.w; // don't rename field `.w`
+}

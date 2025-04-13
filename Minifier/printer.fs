@@ -156,7 +156,7 @@ type PrinterImpl(withLocations) =
             // We set the level in case a comma operator is used in the argument list.
             out "{%s}" (commaListToS (exprToSLevel indent (precedence[","] + 1)) li)
         | Dot(e, field) ->
-            out "%s.%s" (exprToSLevel indent precedence["."] e) field
+            out "%s.%s" (exprToSLevel indent precedence["."] e) field.Name
         | VerbatimExp s -> s
 
     // Add a space if needed
