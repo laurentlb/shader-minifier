@@ -14,7 +14,7 @@ type Access = { // a Var in the AST can be a read, a write, both, or neither.
 } with
     override this.ToString() = (if this.isRead then "r" else "-") + (if this.isWrite then "w" else "-")
 
-// An Ident is the name of a variable, function, struct, interface block, or type used as a cast.
+// An Ident is the name of a variable, function, struct, interface block, or type, or struct field.
 type Ident(name: string) =
     let mutable newName = name
 
@@ -27,8 +27,8 @@ type Ident(name: string) =
 
     member val Loc = {line = -1; col = -1} with get, set
 
-    new(name, lineNb, colNb) as this = Ident(name) then
-        this.Loc <- {line = lineNb; col = colNb}
+    new(name, loc) as this = Ident(name) then
+        this.Loc <- loc
 
     member val isVarWrite: bool = false with get, set
     member val Declaration: Declaration = Declaration.Unknown with get, set
@@ -87,7 +87,7 @@ and Expr =
     | Op of string // Can only occur as a FunCall's first Expr.
     | FunCall of Expr * Expr list // The first Expr of a FunCall can be: Op, Var, Subscript, or Dot.
     | Subscript of Expr * Expr option
-    | Dot of Expr * string
+    | Dot of Expr * Ident
     | Cast of Ident * Expr  // hlsl
     | VectorExp of Expr list // hlsl
     | VerbatimExp of string
@@ -99,7 +99,7 @@ and Expr =
 
 and TypeSpec =
     | TypeName of Ident
-    | TypeBlock of StructOrInterfaceBlock
+    | TypeBlock of StructOrInterfaceBlock // anonymous struct only. TODO: support interface blocks with an instance name
 with override t.ToString() =
         match t with
         | TypeName n -> n.ToString()
@@ -212,7 +212,7 @@ and TopLevel =
     | TLDirective of string list * Location
     | Function of FunctionType * Stmt
     | TLDecl of Decl
-    | TypeDecl of StructOrInterfaceBlock // struct declaration, or interface block that introduce a set of external global variables.
+    | TypeDecl of StructOrInterfaceBlock // named struct, or interface block that introduce a set of external global variables.
     | Precision of Type
 
 let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}

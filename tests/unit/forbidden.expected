@@ -1,5 +1,5 @@
-struct f{float f;};
-float L()
+struct L{float K;};
+float J()
 {
   return 42.;
 }

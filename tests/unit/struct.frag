@@ -49,7 +49,7 @@ int struct_uses() {
                     // struct identifier use in field in local
                     MarchData abc;
                 } s; true; ) break;
-    return int(m.col.x + s.abc.dist);
+    return int(m.col.x + s.abc.dist + march.spec);
 }
 
 // anonymous struct declaration at top level
@@ -57,3 +57,10 @@ struct {
     // struct identifier use in field in global struct
     MarchData abc;
 } s2;
+
+// bug test
+float v(vec4 w)
+{
+  float MarchData = w.x-4.0; // reuse type name as var
+  return w.w + MarchData*MarchData; // don't rename field `.w`
+}

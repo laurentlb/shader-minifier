@@ -104,7 +104,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 // because the renamer does its work via mutation on the ident. So
                 // if this function gets inlined in more than one place, we don't want
                 // mutations to affect all the inlined idents.
-                | None -> Var (Ident (iv.Name, iv.Loc.line, iv.Loc.col))
+                | None -> Var (Ident (iv.Name, iv.Loc))
             | ie -> ie
         options.visitor(mapInline).mapExpr bodyExpr
 
@@ -284,8 +284,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         let rec combineSwizzles = function
             | [] -> []
             | Dot (Var v1, field1) :: Dot (Var v2, field2) :: args
-                when isFieldSwizzle field1 && isFieldSwizzle field2 && v1.Name = v2.Name ->
-                    combineSwizzles (Dot (Var v1, field1 + field2) :: args)
+                when isFieldSwizzle field1.Name && isFieldSwizzle field2.Name && v1.Name = v2.Name ->
+                    combineSwizzles (Dot (Var v1, Ident(field1.Name + field2.Name, field1.Loc)) :: args)
             | e::l -> e :: combineSwizzles l
 
         // vec2(1.0, 2.0)  =>  vec2(1, 2)
@@ -320,8 +320,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         // vec3(a.x, b.xy) => vec3(a.x, b)
         let rec dropLastSwizzle n = function
-            | [Dot (expr, field) as last] when isFieldSwizzle field ->
-                match [for c in field -> swizzleIndex c] with
+            | [Dot (expr, field) as last] when isFieldSwizzle field.Name ->
+                match [for c in field.Name -> swizzleIndex c] with
                 | [0] when n = 1 -> [expr]
                 | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
                 | _ -> [last]
@@ -385,18 +385,18 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Op _, _) as op -> simplifyOperator env op
 
         | FunCall(Var dist, [arg1; arg2]) when dist.Name = "distance" ->
-            let len = Ident("length", dist.Loc.line, dist.Loc.col)
+            let len = Ident("length", dist.Loc)
             FunCall(Var len, [FunCall (Op "-", [arg1; arg2])])
 
         | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
             simplifyVec constr args
 
         | Dot(FunCall(Var constr, args), field) as e when (constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4") ->
-            let e = simplifyVecDot constr.Name args field e
+            let e = simplifyVecDot constr.Name args field.Name e
             match e with
-            | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, options.renameField field)
+            | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Ident(options.renameField field.Name, field.Loc))
             | _ -> e
-        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, options.renameField field)
+        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Ident(options.renameField field.Name, field.Loc))
 
         | ResolvedVariableUse (_, vd) as e when vd.decl.name.ToBeInlined ->
             // Replace uses of inlined variables.
@@ -408,7 +408,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         | FunCall(Var var, [e; Number 1.M]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x
 
-        | FunCall (Dot (Var var, "length"), []) as e ->
+        | FunCall (Dot (Var var, ident), []) as e when ident.Name = "length" ->
             match var.VarDecl with
             | Some vd ->
                 match vd.ty.arraySizes with
@@ -440,7 +440,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     let shadowingPreventsTheMove = li |> List.exists (fun d ->
                         match d.init with
                         | None -> false
-                        | Some expr -> Analyzer(options).varUsesInStmt (Expr expr) |> List.contains d.name)
+                        | Some expr -> Analyzer(options).identUsesInStmt IdentKind.Var (Expr expr) |> List.contains d.name)
                     if shadowingPreventsTheMove then
                         skippedDeclarations <- stmt :: skippedDeclarations
                     else
@@ -672,14 +672,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     declElt1.size = declElt2.size &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
-                    Analyzer(options).varUsesInStmt (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                    Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
                 )
 
                 match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
                     options.trace $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
-                    for v in Analyzer(options).varUsesInStmt (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
+                    for v in Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
                         if v.Name = declElt2.name.Name then
                             v.Rename(declElt1.name.Name)
                     match declElt2.init with
@@ -723,7 +723,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> true)
 
         let countUsesOfIdentName expr identName =
-            Analyzer(options).varUsesInStmt (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
+            Analyzer(options).identUsesInStmt IdentKind.Var (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
 
         let replaceUsesOfIdentByExpr expr identName replacement =
             let visitAndReplace _ = function
