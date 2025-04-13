@@ -1,32 +1,46 @@
 #version 460
 
-struct r{float e;vec3 k;float M;};
-r i;
-uniform MyInterfaceBlock{r B;};
-r t()
+struct r{float A;vec3 B;float e;};
+r k;
+uniform MyInterfaceBlock{r M;};
+r i()
 {
-  return i;
+  return k;
 }
-int t(r i)
+int i(r A)
 {
   return 1;
 }
-int I()
+int m()
 {
-  r i;
-  i.e=1.;
-  i.M=i.e/2.;
-  i=r(1.,vec3(1),i.M);
-  struct{r O;} P;
-  for(r i;true;)
+  r s;
+  s.A=1.;
+  s.e=s.A/2.;
+  s=r(1.,vec3(1),s.e);
+  struct{r k;} f;
+  for(r k;true;)
     break;
-  for(struct{r I;} i;true;)
+  for(struct{r D;} k;true;)
     break;
-  return int(i.k.x+P.O.e+B.M);
+  return int(s.B.x+f.k.A+M.e);
 }
-struct{r P;} O;
-float I(vec4 i)
+struct{r I;} Q;
+float i(vec4 s)
 {
-  float P=i.x-4.;
-  return i.w+P*P;
+  float k=s.x-4.;
+  return s.w+k*k;
 }
+struct P{int O;int N;};
+struct L{int K;int J;int H;};
+P f;
+L s;
+void main()
+{
+  f.K=1;
+  f.H=2;
+  s.K=3;
+  s.J=4;
+  s.H=5;
+}
+struct E{int A;int B;} D;
+struct{int A;int B;};

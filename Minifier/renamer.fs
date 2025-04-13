@@ -92,6 +92,14 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             | e -> e
         options.visitor(mapper).iterExpr expr
 
+    let renNamedStruct (env: Env) (structName: Ident) =
+        // top level struct declaration, e.g. `struct foo { int a; float b; }`
+        if options.noRenamingList |> List.contains structName.Name then
+            env.DontRename structName
+        else
+            let env = env.newName env structName
+            env
+
     let rec renDecl isFieldOfAnInterfaceBlockWithoutInstanceName (envForType: Env option) env (ty:Type, vars) =
         let renDeclElt (env: Env) (decl: DeclElt) =
             // Rename expressions in init and size
@@ -140,8 +148,9 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             // anonymous inline struct in a local variable declaration, e.g. `struct { int a; } s;`
             // This isn't actually recursive with renDecl, because "Embedded struct definitions are not allowed".
             renList env (renDecl false None) anonStruct.fields
-        | TypeBlock { StructOrInterfaceBlock.blockType = Struct; name = Some _ } ->
-            failwith "Unsupported: named struct declaration not at top level"
+        | TypeBlock { StructOrInterfaceBlock.blockType = Struct; name = Some structName } ->
+            // named struct + local variable declaration, e.g. `struct Foo { int a; } s;`
+            renNamedStruct env structName
         | TypeBlock { StructOrInterfaceBlock.blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 
@@ -239,14 +248,6 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
         // e.g. `uniform foo { int a; float b; }`
         renList env (renDecl true None) interfaceBlock.fields
 
-    let renNamedStruct (env: Env) (structName: Ident) =
-        // top level struct declaration, e.g. `struct foo { int a; float b; }`
-        if options.noRenamingList |> List.contains structName.Name then
-            env.DontRename structName
-        else
-            let env = env.newName env structName
-            env
-
     member _.RenTopLevelName env = function
         | TLDecl d -> renDecl false None env d
         | Function(fct, _) -> renFunction env fct
@@ -256,8 +257,9 @@ type private RenamerVisitor(options: Options.Options, level: Level) =
             let env = renNamedStruct env structName
             let env = renList env (renDecl false None) namedStruct.fields
             env
-        | TypeDecl { StructOrInterfaceBlock.blockType = Struct; name = None } ->
-            failwith "Invalid: anonymous struct block declaration at top level" // only valid in a TLDecl, via renType
+        | TypeDecl { StructOrInterfaceBlock.blockType = Struct; name = None } -> // e.g. `struct {int A;};`
+            // TIL Declaring an anonymous struct that doesn't declare a variable is legal and does nothing.
+            env
         | _ -> env
 
     member _.RenTopLevelBody env = function
