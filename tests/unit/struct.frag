@@ -61,5 +61,6 @@ struct {
 // bug test
 float v(vec4 w)
 {
-  return w.w; // don't rename field `.w`
+  float MarchData = w.x-4.0; // reuse type name as var
+  return w.w + MarchData*MarchData; // don't rename field `.w`
 }

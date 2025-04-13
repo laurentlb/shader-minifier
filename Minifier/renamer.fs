@@ -2,6 +2,7 @@
 
 open System.Collections.Generic
 open Ast
+open Analyzer
 
 type Signature = {
     str: string
@@ -403,7 +404,7 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the variables known in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let stillUsedSet =
-            [for ident in Analyzer.Analyzer(options).varUsesInStmt true block -> ident.Name]
+            [for ident in Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field) block -> ident.Name]
                 |> Seq.choose env.identRenames.TryFind |> set
 
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)

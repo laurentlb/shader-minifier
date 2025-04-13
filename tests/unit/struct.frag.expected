@@ -2,7 +2,7 @@
 
 struct r{float e;vec3 k;float M;};
 r i;
-uniform MyInterfaceBlock{r w;};
+uniform MyInterfaceBlock{r B;};
 r t()
 {
   return i;
@@ -11,21 +11,23 @@ int t(r i)
 {
   return 1;
 }
-int B()
+int I()
 {
   r i;
   i.e=1.;
   i.M=i.e/2.;
   i=r(1.,vec3(1),i.M);
-  struct{r w;} I;
+  struct{r B;} O;
   for(r i;true;)
     break;
-  for(struct{r O;} i;true;)
+  for(struct{r P;} i;true;)
     break;
-  return int(i.k.x+I.w.e);
+  return int(i.k.x+O.B.e);
 }
-struct{r I;} O;
-float B(vec4 i)
+struct{r P;} O;
+float I(vec4 i)
 {
-  return i.w;
+  float O=i.x-4.;
+  return i.w+O*O;
 }
+

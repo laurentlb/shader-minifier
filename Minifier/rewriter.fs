@@ -440,7 +440,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     let shadowingPreventsTheMove = li |> List.exists (fun d ->
                         match d.init with
                         | None -> false
-                        | Some expr -> Analyzer(options).varUsesInStmt false (Expr expr) |> List.contains d.name)
+                        | Some expr -> Analyzer(options).identUsesInStmt IdentKind.Var (Expr expr) |> List.contains d.name)
                     if shadowingPreventsTheMove then
                         skippedDeclarations <- stmt :: skippedDeclarations
                     else
@@ -672,14 +672,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     declElt1.size = declElt2.size &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
-                    Analyzer(options).varUsesInStmt false (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
+                    Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)
                 )
 
                 match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
                     options.trace $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
-                    for v in Analyzer(options).varUsesInStmt false (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
+                    for v in Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
                         if v.Name = declElt2.name.Name then
                             v.Rename(declElt1.name.Name)
                     match declElt2.init with
@@ -723,7 +723,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> true)
 
         let countUsesOfIdentName expr identName =
-            Analyzer(options).varUsesInStmt false (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
+            Analyzer(options).identUsesInStmt IdentKind.Var (Expr expr) |> List.filter (fun i -> i.Name = identName) |> List.length
 
         let replaceUsesOfIdentByExpr expr identName replacement =
             let visitAndReplace _ = function
