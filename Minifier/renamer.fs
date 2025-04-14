@@ -16,6 +16,8 @@ let private renList env fct li =
         env <- fct env i
     env
 
+type private Namespace = VarFunStruct | FieldsOfAllStruct // we consider that all fields share a common namespace.
+
 // Environment for renamer
 // This object is useful to separate the AST walking from the renaming strategy.
 // Maybe we could use a single mutable object, instead of creating envs all the time.
@@ -24,25 +26,30 @@ let private renList env fct li =
 type private Env = {
     // Map from an old identifier name to the new one. Contains names of variables, functions and structs.
     identRenames: Map<string, string>
+    // Map from an old identifier name to the new one. Contains names of fields of all structs (but not "global" interface blocks fields)
+    fieldRenames: Map<string, string>
     // Store function signatures for overloading. (newName, Map(Signature, oldName)). Not accessed as a map, but with linear search.
     funOverloads: Map<string, Map<Signature, string>>
     // List of names that are still available. Variables, functions and structs share the same name space.
     availableNames: string list
+    availableFieldNames: string list
 
     exportedNames: ExportedName list ref
 
     // Whether multiple functions can have the same name (but different signature).
     allowOverloading: bool
     // Function that decides a name (and returns the modified Env).
-    newName: Env -> Ident -> Env
+    newName: Namespace -> Env -> Ident -> Env
     // Function called when we enter a scope, to support name reuse via shadowing
     onEnterScope: Env -> Stmt -> Env
 }
 with
-    static member Create(availableNames, allowOverloading, newName, onEnterScope) = {
+    static member Create(availableNames, availableFieldNames, allowOverloading, newName, onEnterScope) = {
         identRenames = Map.empty
+        fieldRenames = Map.empty
         funOverloads = Map.empty
         availableNames = availableNames
+        availableFieldNames = availableFieldNames
         exportedNames = ref []
         allowOverloading = allowOverloading
         newName = newName
@@ -50,14 +57,21 @@ with
     }
 
     // Renames the identifier and move its new name from availableNames to identRenames.
-    member this.AddRenaming(id: Ident, newName) =
-        let prevName = id.Name
-        let names = this.availableNames |> List.except [newName]
-        id.Rename(newName)
-        {this with identRenames = this.identRenames.Add(prevName, newName); availableNames = names}
+    member this.AddRenaming(ns: Namespace, id: Ident, newName) =
+        match ns with
+        | VarFunStruct ->
+            let prevName = id.Name
+            let names = this.availableNames |> List.except [newName]
+            id.Rename(newName)
+            {this with identRenames = this.identRenames.Add(prevName, newName); availableNames = names}
+        | FieldsOfAllStruct ->
+            let prevName = id.Name
+            let names = this.availableFieldNames |> List.except [newName]
+            id.Rename(newName)
+            {this with fieldRenames = this.fieldRenames.Add(prevName, newName); availableFieldNames = names}
 
     // Decide the identifier won't be renamed, and mark its name as used.
-    member this.DontRename(id: Ident) = this.AddRenaming(id, id.Name)
+    member this.DontRename(id: Ident) = this.AddRenaming(VarFunStruct, id, id.Name)
     member this.DontRenameList(names: string seq) =
         let mutable env = this
         for name in names do env <- env.DontRename(Ident name)
@@ -66,7 +80,7 @@ with
     member this.Update(identRenames, funOverloads, availableNames) =
         {this with identRenames = identRenames; funOverloads = funOverloads; availableNames = availableNames}
 
-type DeclarationContext =
+type private DeclarationContext =
     | TopLevelDeclaration
     | LocalDeclaration
     | Field of StructOrInterfaceBlock * hasInstanceName: bool
@@ -92,7 +106,7 @@ type private RenamerVisitor(options: Options.Options) =
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v // don't rename things we didn't see a declaration for. (builtins...)
             | Dot (_, field) as e when not (Builtin.isFieldSwizzle field.Name) ->
-                match env.identRenames.TryFind(field.Name) with
+                match env.fieldRenames.TryFind(field.Name) with
                 | Some name -> field.Rename(name); e
                 | None -> e
             | e -> e
@@ -103,7 +117,7 @@ type private RenamerVisitor(options: Options.Options) =
         if options.noRenamingList |> List.contains structName.Name then
             env.DontRename structName
         else
-            let env = env.newName env structName
+            let env = env.newName VarFunStruct env structName
             env
 
     let rec renDecl (context: DeclarationContext) (envForType: Env option) env (ty:Type, vars) =
@@ -127,7 +141,7 @@ type private RenamerVisitor(options: Options.Options) =
                 else
                     match env.identRenames.TryFind(decl.name.Name) with
                     | None -> // first time we see this external: pick a new name, export it
-                        let env = env.newName env decl.name
+                        let env = env.newName VarFunStruct env decl.name
                         export env ExportPrefix.Variable decl.name
                         env
                     | Some name -> // external already declared in another file: rename consistently
@@ -144,19 +158,19 @@ type private RenamerVisitor(options: Options.Options) =
                     processExternal()
                 | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) ->
                     if hasInstanceName then
-                        env.newName env decl.name // we have no tests of this and it doesn't work
+                        env.newName VarFunStruct env decl.name // we have no tests of this and it doesn't work
                     else
                         processExternal()
                 | Field ({ blockType = Struct }, _) -> // named or anonymous struct, with instance or not
-                    match env.identRenames.TryFind(decl.name.Name) with
+                    match env.fieldRenames.TryFind(decl.name.Name) with
                     | None -> // first time we see this struct field: pick a new name
-                        env.newName env decl.name
+                        env.newName FieldsOfAllStruct env decl.name
                     | Some name -> // struct field already renamed in another struct: rename consistently
                         decl.name.Rename(name)
                         env
-                | TopLevelDeclaration -> env.newName env decl.name
-                | FunctionArgument _ -> env.newName env decl.name
-                | LocalDeclaration -> env.newName env decl.name
+                | TopLevelDeclaration -> env.newName VarFunStruct env decl.name
+                | FunctionArgument _ -> env.newName VarFunStruct env decl.name
+                | LocalDeclaration -> env.newName VarFunStruct env decl.name
 
         renList env renDeclElt vars
 
@@ -247,7 +261,7 @@ type private RenamerVisitor(options: Options.Options) =
         | _ ->
             // find a new function name
             let prevName = id.Name
-            let env = env.newName env id
+            let env = env.newName VarFunStruct env id
             let funOverloads = env.funOverloads.Add (id.Name, Map.empty.Add(signature, prevName))
             let env = env.Update(env.identRenames, funOverloads, env.availableNames)
             env
@@ -327,17 +341,17 @@ type private RenamerImpl(options: Options.Options) =
             let lastLetter = word[word.Length - 1]
             let mutable score = 0
 
-            for c, _ in prevs do
+            for c, _ in prevs do // more frequent adjacency with previous character scores better
                 match contextTable.TryGetValue((c, firstLetter)) with
                 | false, _ -> ()
                 | true, occ -> score <- score + occ
 
-            for c, _ in nexts do
+            for c, _ in nexts do // more frequent adjacency with following character scores better
                 match contextTable.TryGetValue((lastLetter, c)) with
                 | false, _ -> ()
                 | true, occ -> score <- score + occ
 
-            if word.Length > 1 then
+            if word.Length > 1 then // also use adjacency between the 2 letters of an identifier
                 score <- score - 1000 // avoid long names if there are 1-letter names available
                 match contextTable.TryGetValue((firstLetter, lastLetter)) with
                 | false, _ -> ()
@@ -371,54 +385,56 @@ type private RenamerImpl(options: Options.Options) =
 
                                     (* ** Renamer ** *)
 
-    let newUniqueId (numberOfUsedIdents: int ref) (env: Env) (id: Ident) =
+    let newUniqueId (numberOfUsedIdents: int ref) (ns: Namespace) (env: Env) (id: Ident) =
         numberOfUsedIdents.Value <- numberOfUsedIdents.Value + 1
         let newName = sprintf "%04d" numberOfUsedIdents.Value
-        env.AddRenaming(id, newName)
+        env.AddRenaming(ns, id, newName)
 
     // A renaming strategy that considers how a variable is used. It optimizes the frequency of
     // adjacent characters, which can make the output more compression-friendly. This is best
     // suited when minifying a single file.
-    let optimizeContext contextTable env (id: Ident) =
-        let cid = char (1000 + int id.Name)
-        let newName = chooseIdent contextTable cid env.availableNames
-        env.AddRenaming(id, newName)
+    let optimizeContext contextTable (ns: Namespace) env (id: Ident) =
+        match ns with
+        | VarFunStruct ->
+            let cid = char (1000 + int id.Name)
+            let newName = chooseIdent contextTable cid env.availableNames
+            env.AddRenaming(ns, id, newName)
+        | FieldsOfAllStruct ->
+            let newName = env.availableFieldNames.Head
+            env.AddRenaming(ns, id, newName)
 
     // A renaming strategy that always picks the first available name. This optimizes the
     // frequency of a few variables. It also ensures that two identical functions will use the
     // same names for local variables, which can be very important in some multifile scenarios.
-    let optimizeNameFrequency (env: Env) (id: Ident) =
+    let optimizeNameFrequency (ns: Namespace) (env: Env) (id: Ident) =
         let newName = env.availableNames.Head
-        env.AddRenaming(id, newName)
+        env.AddRenaming(ns, id, newName)
 
     // A renaming strategy that's bijective: if (and only if) two variables had the same old name,
     // they will get the same new name.
     // This leads to a slightly longer output (because lots of names are created, most of them
     // have two chars). However, this preserves similarities from the input code, so that can be
     // compression-friendly.
-    let bijectiveRenaming (allNames: string list) =
+    let bijectiveRenaming (ns: Namespace) (allNames: string list) =
         let mutable allNames = allNames
         let d = Dictionary<string, string>()
         fun (env: Env) (id: Ident) ->
             match d.TryGetValue(id.OldName) with
             | true, name ->
-                env.AddRenaming(id, name)
+                env.AddRenaming(ns, id, name)
             | false, _ ->
                 let newName = allNames.Head
                 allNames <- allNames.Tail
                 d[id.OldName] <- newName
-                env.AddRenaming(id, newName)
+                env.AddRenaming(ns, id, newName)
 
     // Renaming safe across multiple files (e.g. uniform/in/out variables are
     // renamed in a consistent way) that tries to optimize based on the context
     // and variable reuse.
-    let multiFileRenaming contextTable (exportRenames: IDictionary<string, string>) (env: Env) (id: Ident) =
+    let multiFileRenaming contextTable (exportRenames: IDictionary<string, string>) (ns: Namespace) (env: Env) (id: Ident) =
         match exportRenames.TryGetValue(id.Name) with
-            | true, newName -> env.AddRenaming(id, newName)
-            | false, _ ->
-                let cid = char (1000 + int id.Name)
-                let newName = chooseIdent contextTable cid env.availableNames
-                env.AddRenaming(id, newName)
+            | true, newName -> env.AddRenaming(ns, id, newName)
+            | false, _ -> optimizeContext contextTable ns env id
 
     // "Garbage collection": remove names that are not used in the block
     // so that we can reuse them. In other words, this function allows us
@@ -463,29 +479,36 @@ type private RenamerImpl(options: Options.Options) =
 
     let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
+        let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
         renameAsts shaders env
 
     member _.rename shaders =
+        // First we rename each identifier into a unique number, getting them out of the way
+        // for analyzing the frequency of each letter in the shader.
         let exportedNames = assignUniqueIds shaders
 
         // TODO: combine from all shaders
         let forbiddenNames = (Seq.head shaders).forbiddenNames
 
-        // Compute the list of variable names to use
+        // Then, compute the ordered list of variable names to use.
+        // Most frequent letters must be picked first because they will compress better.
         let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
+        let fieldNames = names
+
+        // Rename each identifier again, this time into valid names, according to the list
+        // and to a "context table" (frequencies of adjacent pairs of characters).
         let allowOverloading = not options.noOverloading
         let mutable env =
             if Array.length shaders > 1 then
                 // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
                 let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
                 let contextTable = computeContextTable text
-                Env.Create(names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
+                Env.Create(names, names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
             else
                 let contextTable = computeContextTable text
-                Env.Create(names, allowOverloading, optimizeContext contextTable, shadowVariables)
+                Env.Create(names, fieldNames, allowOverloading, optimizeContext contextTable, shadowVariables)
         env <- env.DontRenameList options.noRenamingList
         env.exportedNames.Value <- exportedNames
         renameAsts shaders env

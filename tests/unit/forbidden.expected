@@ -1,4 +1,4 @@
-struct L{float L;};
+struct L{float t;};
 float K()
 {
   return 42.;
