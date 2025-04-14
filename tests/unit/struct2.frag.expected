@@ -1,0 +1,15 @@
+float m,v,I,R,Q,P,O,N,x;
+struct L{vec3 t;float v;float o,c,e,a,l,f,u,i,s,r,n,m,d,I,y,x,g,_,Z,Y,X,W,V,U,T,S,R;float Q,P,O,N,M,L,K,J,H,G;vec2 F,E,D,C,B,A,z,w,q,p,k,j,h,b,aa,ab,ac,ad,ae,af;};
+struct K{vec3 t;float v;float o,c,e,a,l,f,u,i,s,r,n,m,d,I,y,x,g,_,Z,Y,X,W,V,U,T,S;float Q,P,O,N,M,L,K,J,H,G;vec2 F,E,D,C,B,A,z,w,q,p,k,j,h,b,aa,ab,ac,ad,ae,af;};
+void e(inout L v,K f)
+{
+  v.t=vec3(.36,.45,.5);
+  v.v=30.;
+  v.Z=1.;
+  f.F=vec2(f.Q,f.P);
+  f.k=f.j.yx;
+}
+void mainImage(out vec4 v,vec2 f)
+{
+  v=vec4(1);
+}
