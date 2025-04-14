@@ -202,7 +202,7 @@ type FuncInfo = {
 type IdentKind =
     | Var = 0b1
     | Field = 0b10
-    //| Type = 0b100
+    | Type = 0b100
 
 type Analyzer(options: Options.Options) =
 
@@ -235,7 +235,12 @@ type Analyzer(options: Options.Options) =
             | Var v as e when kind.HasFlag IdentKind.Var -> idents <- v :: idents; e
             | Dot (_, field) as e when kind.HasFlag IdentKind.Field -> idents <- field :: idents; e
             | e -> e
-        options.visitor(collectLocalUses).iterStmt BlockLevel.Unknown stmt
+        let collectLocalUsesInStmt _ = function
+            | Decl ({ name = TypeName typeName}, _) as e when kind.HasFlag IdentKind.Type ->
+                idents <- typeName :: idents
+                e
+            | e -> e
+        options.visitor(collectLocalUses, collectLocalUsesInStmt).iterStmt BlockLevel.Unknown stmt
         idents
 
     // recalculates hasExternallyVisibleSideEffects/isVarWrite/isEverWrittenAfterDecl, for inlining

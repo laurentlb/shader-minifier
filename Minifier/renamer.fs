@@ -443,7 +443,7 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the variables known in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let stillUsedSet =
-            [for ident in Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field) block -> ident.Name]
+            [for ident in Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field ||| IdentKind.Type) block -> ident.Name]
                 |> Seq.choose env.identRenames.TryFind |> set
 
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
