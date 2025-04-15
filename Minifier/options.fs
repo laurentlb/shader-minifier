@@ -3,7 +3,7 @@
 open Argu
 open System
 
-let version = "1.5.0" // Shader Minifier version
+let version = "1.5.1" // Shader Minifier version
 let debugMode = false
 
 type OutputFormat =
