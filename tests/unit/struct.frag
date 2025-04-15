@@ -64,3 +64,20 @@ float v(vec4 w)
   float MarchData = w.x-4.0; // reuse type name as var
   return w.w + MarchData*MarchData; // don't rename field `.w`
 }
+
+struct Foo {int A; int B;};
+struct Bar {int A; int C; int B;};
+
+Foo foo;
+Bar bar;
+
+void main() {
+    foo.A = 1;
+    foo.B = 2;
+    bar.A = 3;
+    bar.C = 4;
+    bar.B = 5;
+}
+
+struct Baz {int A; int B;} baz;
+struct {int A; int B;}; // why is this even legal

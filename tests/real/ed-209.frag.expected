@@ -6,427 +6,427 @@
 
 #define SHADOW_STEPS 30.0
 
-float stretch,gunsUp,gunsForward,edWalk,edTwist,edDown,edShoot,doorOpen,glow;
-struct MarchData{float d;vec3 mat;float specPower;};
-mat2 rot(float a)
+float v,f,m,y,x,r,z,i,a;
+struct A{float e;vec3 c;float v;};
+mat2 n(float v)
 {
-  float c=cos(a);
-  a=sin(a);
-  return mat2(c,a,-a,c);
+  float y=cos(v);
+  v=sin(v);
+  return mat2(y,v,-v,y);
 }
-float remap(float f,float in1,float in2,float out1,float out2)
+float n(float v,float y,float m,float x,float f)
 {
-  return mix(out1,out2,clamp((f-in1)/(in2-in1),0.,1.));
+  return mix(x,f,clamp((v-y)/(m-y),0.,1.));
 }
-float sdBox(vec3 p,vec3 b)
+float n(vec3 v,vec3 y)
 {
-  p=abs(p)-b;
-  return length(max(p,0.))+min(max(p.x,max(p.y,p.z)),0.);
+  v=abs(v)-y;
+  return length(max(v,0.))+min(max(v.x,max(v.y,v.z)),0.);
 }
-float sdChamferedCube(vec3 p,vec3 r)
+float s(vec3 v,vec3 f)
 {
-  float cube=sdBox(p,r);
-  p.xz*=rot(.78525);
-  r.xz*=-.18/1.41+1.41;
-  return max(cube,sdBox(p,r));
+  float m=n(v,f);
+  v.xz*=n(.78525);
+  f.xz*=-.18/1.41+1.41;
+  return max(m,n(v,f));
 }
-float sdTriPrism(vec3 p)
+float n(vec3 v)
 {
-  vec2 h=vec2(.1,.5);
-  vec3 q=abs(p);
-  return max(q.z-h.y,max(q.x*.866025+p.y*.5,-p.y)-h.x*.5);
+  vec2 m=vec2(.1,.5);
+  vec3 f=abs(v);
+  return max(f.z-m.y,max(f.x*.866025+v.y*.5,-v.y)-m.x*.5);
 }
-float sdCappedCone(vec3 p)
+float s(vec3 v)
 {
-  vec3 b=vec3(0,0,-.1),a=vec3(0);
-  float baba=dot(b-a,b-a),paba=dot(p-a,b-a)/baba,x=sqrt(dot(p-a,p-a)-paba*paba*baba),cax=max(0.,x-(paba<.5?
+  vec3 m=vec3(0,0,-.1),y=vec3(0);
+  float x=dot(m-y,m-y),f=dot(v-y,m-y)/x,z=sqrt(dot(v-y,v-y)-f*f*x),s=max(0.,z-(f<.5?
     .25:
-    .35)),cay=abs(paba-.5)-.5,f=clamp((.1*(x-.25)+paba*baba)/(.01+baba),0.,1.);
-  x=x-.25-f*.1;
-  paba-=f;
-  return(x<0.&&cay<0.?
+    .35)),c=abs(f-.5)-.5,a=clamp((.1*(z-.25)+f*x)/(.01+x),0.,1.);
+  z=z-.25-a*.1;
+  f-=a;
+  return(z<0.&&c<0.?
     -1.:
-    1.)*sqrt(min(cax*cax+cay*cay*baba,x*x+paba*paba*baba));
+    1.)*sqrt(min(s*s+c*c*x,z*z+f*f*x));
 }
-float sdCappedCylinder(vec3 p,float h,float r)
+float n(vec3 v,float m,float y)
 {
-  vec2 d=abs(vec2(length(p.xy),p.z))-vec2(h,r);
-  return min(max(d.x,d.y),0.)+length(max(d,0.));
+  vec2 f=abs(vec2(length(v.xy),v.z))-vec2(m,y);
+  return min(max(f.x,f.y),0.)+length(max(f,0.));
 }
-float sdCapsule(vec3 p,vec3 a,vec3 b)
+float n(vec3 v,vec3 m,vec3 y)
 {
-  p-=a;
-  a=b-a;
-  return length(p-a*clamp(dot(p,a)/dot(a,a),0.,1.))-.2;
+  v-=m;
+  m=y-m;
+  return length(v-m*clamp(dot(v,m)/dot(m,m),0.,1.))-.2;
 }
-float sdOctogon(vec2 p,float r)
+float n(vec2 v,float y)
 {
-  const vec3 k=vec3(-.9238795325,.3826834323,.4142135623);
-  p=abs(p);
-  p-=2.*min(dot(vec2(k),p),0.)*vec2(k);
-  p-=2.*min(dot(vec2(-k.x,k.y),p),0.)*vec2(-k.x,k.y);
-  p-=vec2(clamp(p.x,-k.z*r,k.z*r),r);
-  return length(p)*sign(p.y);
+  const vec3 m=vec3(-.9238795325,.3826834323,.4142135623);
+  v=abs(v);
+  v-=2.*min(dot(vec2(m),v),0.)*vec2(m);
+  v-=2.*min(dot(vec2(-m.x,m.y),v),0.)*vec2(-m.x,m.y);
+  v-=vec2(clamp(v.x,-m.z*y,m.z*y),y);
+  return length(v)*sign(v.y);
 }
-vec3 getRayDir(vec3 ro,vec3 lookAt,vec2 uv)
+vec3 n(vec3 v,vec3 y,vec2 m)
 {
-  ro=normalize(lookAt-ro);
-  lookAt=normalize(cross(vec3(0,1,0),ro));
-  return normalize(ro+lookAt*uv.x+cross(ro,lookAt)*uv.y);
+  v=normalize(y-v);
+  y=normalize(cross(vec3(0,1,0),v));
+  return normalize(v+y*m.x+cross(v,y)*m.y);
 }
-MarchData minResult(MarchData a,MarchData b)
+A n(A v,A y)
 {
-  return a.d<b.d?
-    a:
-    b;
+  return v.e<y.e?
+    v:
+    y;
 }
-void setBodyMaterial(inout MarchData mat)
+void n(inout A v)
 {
-  mat.mat=vec3(.36,.45,.5);
-  mat.specPower=30.;
+  v.c=vec3(.36,.45,.5);
+  v.v=30.;
 }
-float legWalkAngle(float f)
+float s(float v)
 {
-  return sin(edWalk*3.141*6.*f)*.2;
+  return sin(y*3.141*6.*v)*.2;
 }
-float edZ()
+float n()
 {
-  return mix(5.,-2.,edWalk);
+  return mix(5.,-2.,y);
 }
-float fireShock()
+float s()
 {
-  return abs(sin(edShoot*3.1415*25.));
+  return abs(sin(z*3.1415*25.));
 }
-MarchData headVisor(vec3 p,float h,float bump)
+A s(vec3 v,float m,float y)
 {
-  bump*=sin(p.x*150.)*sin(p.y*150.)*.002;
-  MarchData result;
-  result.d=sdBox(p,vec3(1,h,2));
-  result.d=max(mix(result.d,(length(p/vec3(1,.8,1))-1.)*.8,.57),-p.y)-bump;
-  result.mat=vec3(.05);
-  result.specPower=30.;
-  return result;
+  y*=sin(v.x*150.)*sin(v.y*150.)*.002;
+  A f;
+  f.e=n(v,vec3(1,m,2));
+  f.e=max(mix(f.e,(length(v/vec3(1,.8,1))-1.)*.8,.57),-v.y)-y;
+  f.c=vec3(.05);
+  f.v=30.;
+  return f;
 }
-MarchData headLower(vec3 p)
+A p(vec3 v)
 {
-  vec3 op=p;
-  MarchData r=headVisor(p*vec3(.95,-1.4,.95),1.,0.);
-  float roof=max(max(headVisor((p+vec3(0,.01,0))*vec3(.95),1.,0.).d,p.y-.35),p.y*.625-p.z-.66);
-  r.d=min(r.d,roof);
-  p.xy*=rot(.075*(gunsUp-1.)*sign(p.x));
-  p.x=abs(p.x)-1.33;
-  p.y-=.1-p.x*.1;
-  r.d=min(r.d,sdBox(p,vec3(.4,.06*(1.-p.x),.3-p.x*.2)));
-  p=op;
-  p.y=abs(abs(p.y+.147)-.0556)-.0278;
-  r.d=max(r.d,-sdBox(p+vec3(0,0,1.5),vec3(mix(.25,.55,-op.y),.015,.1)));
-  p=op;
-  p.y=abs(p.y+.16)-.06;
-  p.z-=-1.1;
-  roof=max(max(sdCappedCylinder(p.xzy,1.,.03),-sdCappedCylinder(p.xzy,.55,1.)),p.z+.2);
-  r.d=max(r.d,-roof);
-  setBodyMaterial(r);
-  return r;
+  vec3 m=v;
+  A y=s(v*vec3(.95,-1.4,.95),1.,0.);
+  float x=max(max(s((v+vec3(0,.01,0))*vec3(.95),1.,0.).e,v.y-.35),v.y*.625-v.z-.66);
+  y.e=min(y.e,x);
+  v.xy*=n(.075*(f-1.)*sign(v.x));
+  v.x=abs(v.x)-1.33;
+  v.y-=.1-v.x*.1;
+  y.e=min(y.e,n(v,vec3(.4,.06*(1.-v.x),.3-v.x*.2)));
+  v=m;
+  v.y=abs(abs(v.y+.147)-.0556)-.0278;
+  y.e=max(y.e,-n(v+vec3(0,0,1.5),vec3(mix(.25,.55,-m.y),.015,.1)));
+  v=m;
+  v.y=abs(v.y+.16)-.06;
+  v.z-=-1.1;
+  x=max(max(n(v.xzy,1.,.03),-n(v.xzy,.55,1.)),v.z+.2);
+  y.e=max(y.e,-x);
+  n(y);
+  return y;
 }
-MarchData gunPod(vec3 p)
+A t(vec3 v)
 {
-  MarchData r;
-  setBodyMaterial(r);
-  p.yz+=vec2(.1,.45);
-  vec3 pp=p;
-  pp.z=abs(pp.z)-.5;
-  r.d=sdCappedCone(pp);
-  r.d=min(r.d,sdCappedCylinder(p,.35,.4));
-  pp=vec3(p.x,.28-p.y,p.z);
-  r.d=min(r.d,sdTriPrism(pp));
-  pp=p;
-  pp.x=abs(p.x);
-  pp.xy*=rot(.78525);
-  float bump=sign(sin(pp.z*33.3))*.003;
-  bump=sdBox(pp,vec3(.1-bump,.38-bump,.34))-.02;
-  pp=p-vec3(0,0,-.6);
-  pp.x=abs(pp.x)-.1;
-  bump=min(min(min(bump,sdCappedCylinder(pp,.06,.15)),sdCappedCylinder(pp+vec3(0,.12,-.05),.06,.05)),sdBox(p+vec3(0,0,.54),vec3(.1,.06,.04)));
-  if(bump<r.d)
-    bump=max(bump,-sdCappedCylinder(pp+vec3(0,0,.1),.03,.2)),r.d=bump,r.mat=vec3(.02);
-  float fs=fireShock();
-  if(fs>.5)
+  A y;
+  n(y);
+  v.yz+=vec2(.1,.45);
+  vec3 m=v;
+  m.z=abs(m.z)-.5;
+  y.e=s(m);
+  y.e=min(y.e,n(v,.35,.4));
+  m=vec3(v.x,.28-v.y,v.z);
+  y.e=min(y.e,n(m));
+  m=v;
+  m.x=abs(v.x);
+  m.xy*=n(.78525);
+  float f=sign(sin(m.z*33.3))*.003;
+  f=n(m,vec3(.1-f,.38-f,.34))-.02;
+  m=v-vec3(0,0,-.6);
+  m.x=abs(m.x)-.1;
+  f=min(min(min(f,n(m,.06,.15)),n(m+vec3(0,.12,-.05),.06,.05)),n(v+vec3(0,0,.54),vec3(.1,.06,.04)));
+  if(f<y.e)
+    f=max(f,-n(m+vec3(0,0,.1),.03,.2)),y.e=f,y.c=vec3(.02);
+  float z=s();
+  if(z>.5)
     {
-      bump=sdCappedCylinder(pp,.01+pp.z*.05,fract(fs*3322.423)*.5+.9);
-      if(bump<r.d)
-        r.d=bump,r.mat=vec3(1),glow+=.1/(.01+bump*bump*4e2);
+      f=n(m,.01+m.z*.05,fract(z*3322.423)*.5+.9);
+      if(f<y.e)
+        y.e=f,y.c=vec3(1),a+=.1/(.01+f*f*4e2);
     }
-  return r;
+  return y;
 }
-MarchData arms(vec3 p)
+A h(vec3 v)
 {
-  MarchData r;
-  setBodyMaterial(r);
-  p.x=abs(p.x);
-  p.yz+=vec2(.24,0);
-  p.xy*=rot(.15*(gunsUp-1.));
-  const vec3 elbow=vec3(1.5,0,0),wrist=elbow-vec3(0,0,.3);
-  r.d=min(sdCapsule(p,vec3(0),elbow),sdCapsule(p,elbow,wrist));
-  p-=wrist;
-  p.z-=gunsForward*.15;
-  return minResult(r,gunPod(p));
+  A y;
+  n(y);
+  v.x=abs(v.x);
+  v.yz+=vec2(.24,0);
+  v.xy*=n(.15*(f-1.));
+  const vec3 x=vec3(1.5,0,0),a=x-vec3(0,0,.3);
+  y.e=min(n(v,vec3(0),x),n(v,x,a));
+  v-=a;
+  v.z-=m*.15;
+  return n(y,t(v));
 }
-float toe(vec3 p)
+float c(vec3 v)
 {
-  p.yz+=vec2(.1,.32);
-  return max(sdBox(p,vec3(.3+.2*(p.z-.18)-p.y*.456*.5,.3+.2*cos((p.z-.18)*3.69),.35)),.1-p.y);
+  v.yz+=vec2(.1,.32);
+  return max(n(v,vec3(.3+.2*(v.z-.18)-v.y*.456*.5,.3+.2*cos((v.z-.18)*3.69),.35)),.1-v.y);
 }
-float foot(vec3 p)
+float e(vec3 v)
 {
-  p.z+=.8;
-  p.yz*=rot(.86);
-  float d=toe(p);
-  p.xz*=rot(1.57);
-  p.x-=.43;
-  p.z=.25-abs(p.z);
-  return min(d,toe(p));
+  v.z+=.8;
+  v.yz*=n(.86);
+  float m=c(v);
+  v.xz*=n(1.57);
+  v.x-=.43;
+  v.z=.25-abs(v.z);
+  return min(m,c(v));
 }
-MarchData waist(vec3 p)
+A d(vec3 v)
 {
-  MarchData r;
-  setBodyMaterial(r);
-  p.y+=.65;
-  p.yz*=rot(-.2);
-  float legAngle=legWalkAngle(1.);
-  p.xy*=rot(legAngle*.3);
-  vec3 pp=p;
-  pp.y+=.3;
-  r.d=max(sdCappedCylinder(pp.zyx,.5,.5),p.y+.15);
-  float bump=.5-abs(sin(p.y*40.))*.03,d=sdBox(p,vec3(bump,.15,bump));
-  bump=.3-abs(sin(p.x*40.))*.03;
-  pp.y+=.18;
-  d=min(d,sdCappedCylinder(pp.zyx,bump,.75));
-  pp.x=abs(pp.x);
-  pp.yz*=rot(-.58525+legAngle*sign(p.x));
-  pp.x-=.98;
-  r.d=min(r.d,max(sdCappedCylinder(pp.zyx,.4,.24),-pp.y));
-  r.d=min(r.d,sdBox(pp,vec3(.24,.2,.14+.2*pp.y)));
-  p=pp;
-  pp.xz=abs(pp.xz)-vec2(.12,.25);
-  bump=min(sdCappedCylinder(pp.xzy,.1,.325),sdCappedCylinder(pp.xzy,.05,.5));
-  r.d=min(r.d,max(bump,pp.y));
-  p.y+=.68;
-  r.d=min(r.d,sdBox(p,vec3(sign(abs(p.y)-.04)*.005+.26,.2,.34)));
-  if(d<r.d)
-    r.d=d,r.mat=vec3(.02);
-  return r;
+  A y;
+  n(y);
+  v.y+=.65;
+  v.yz*=n(-.2);
+  float m=s(1.);
+  v.xy*=n(m*.3);
+  vec3 f=v;
+  f.y+=.3;
+  y.e=max(n(f.zyx,.5,.5),v.y+.15);
+  float x=.5-abs(sin(v.y*40.))*.03,a=n(v,vec3(x,.15,x));
+  x=.3-abs(sin(v.x*40.))*.03;
+  f.y+=.18;
+  a=min(a,n(f.zyx,x,.75));
+  f.x=abs(f.x);
+  f.yz*=n(-.58525+m*sign(v.x));
+  f.x-=.98;
+  y.e=min(y.e,max(n(f.zyx,.4,.24),-f.y));
+  y.e=min(y.e,n(f,vec3(.24,.2,.14+.2*f.y)));
+  v=f;
+  f.xz=abs(f.xz)-vec2(.12,.25);
+  x=min(n(f.xzy,.1,.325),n(f.xzy,.05,.5));
+  y.e=min(y.e,max(x,f.y));
+  v.y+=.68;
+  y.e=min(y.e,n(v,vec3(sign(abs(v.y)-.04)*.005+.26,.2,.34)));
+  if(a<y.e)
+    y.e=a,y.c=vec3(.02);
+  return y;
 }
-MarchData legs(vec3 p)
+A l(vec3 v)
 {
-  MarchData r;
-  setBodyMaterial(r);
-  float legAngle=legWalkAngle(1.);
-  p.z+=.27;
-  p.yz*=rot(legAngle*sign(p.x));
-  p.z-=.27;
-  p.y+=.65;
-  p.yz*=rot(-.2);
-  p.xy*=rot(legAngle*.3);
-  vec3 pp=p;
-  pp.x=abs(pp.x);
-  pp.y+=.48;
-  pp.yz*=rot(-.58525);
-  pp.x-=.98;
-  vec3 cp=pp;
-  p=pp;
-  pp.xz=abs(pp.xz)-vec2(.12,.25);
-  p.y+=.68;
-  p.xy=abs(p.xy)-.12;
-  legAngle=sdBox(p,vec3(.07,.05,1.2));
-  cp-=vec3(0,-.7,0);
-  r.d=sdBox(cp-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
-  cp.z+=1.;
-  r.d=min(r.d,sdChamferedCube(cp.xzy,vec2(.28-sign(abs(cp.z)-.3)*.01,.5).xyx));
-  r.d=min(r.d,foot(cp));
-  if(legAngle<r.d)
-    r.d=legAngle,r.mat=vec3(.8);
-  return r;
+  A y;
+  n(y);
+  float m=s(1.);
+  v.z+=.27;
+  v.yz*=n(m*sign(v.x));
+  v.z-=.27;
+  v.y+=.65;
+  v.yz*=n(-.2);
+  v.xy*=n(m*.3);
+  vec3 f=v;
+  f.x=abs(f.x);
+  f.y+=.48;
+  f.yz*=n(-.58525);
+  f.x-=.98;
+  vec3 x=f;
+  v=f;
+  f.xz=abs(f.xz)-vec2(.12,.25);
+  v.y+=.68;
+  v.xy=abs(v.xy)-.12;
+  m=n(v,vec3(.07,.05,1.2));
+  x-=vec3(0,-.7,0);
+  y.e=n(x-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
+  x.z+=1.;
+  y.e=min(y.e,s(x.xzy,vec2(.28-sign(abs(x.z)-.3)*.01,.5).xyx));
+  y.e=min(y.e,e(x));
+  if(m<y.e)
+    y.e=m,y.c=vec3(.8);
+  return y;
 }
-MarchData ed209(vec3 p)
+A M(vec3 y)
 {
-  p.yz+=vec2(legWalkAngle(2.)*.2+.1,-edZ());
-  MarchData r=legs(p);
-  float f=min(stretch*2.,1.);
-  p.yz-=(f<.5?
-    smoothstep(0.,.5,f):
-    1.-smoothstep(.5,1.,f)*.2)*.5;
-  gunsUp=smoothstep(0.,1.,clamp((stretch-.66)*6.,0.,1.));
-  gunsForward=smoothstep(0.,1.,clamp((stretch-.83)*6.,0.,1.))+fireShock()*.5;
-  r=minResult(r,waist(p));
-  p.yz*=rot(.1*(-edDown+legWalkAngle(2.)+smoothstep(0.,1.,clamp((stretch-.5)*6.,0.,1.))-1.));
-  p.xz*=rot(edTwist*.2);
-  r=minResult(r,headLower(p));
-  r=minResult(r,headVisor(p,.8,1.));
-  return minResult(r,arms(p));
+  y.yz+=vec2(s(2.)*.2+.1,-n());
+  A i=l(y);
+  float z=min(v*2.,1.);
+  y.yz-=(z<.5?
+    smoothstep(0.,.5,z):
+    1.-smoothstep(.5,1.,z)*.2)*.5;
+  f=smoothstep(0.,1.,clamp((v-.66)*6.,0.,1.));
+  m=smoothstep(0.,1.,clamp((v-.83)*6.,0.,1.))+s()*.5;
+  i=n(i,d(y));
+  y.yz*=n(.1*(-r+s(2.)+smoothstep(0.,1.,clamp((v-.5)*6.,0.,1.))-1.));
+  y.xz*=n(x*.2);
+  i=n(i,p(y));
+  i=n(i,s(y,.8,1.));
+  return n(i,h(y));
 }
-MarchData room(vec3 p)
+A w(vec3 v)
 {
-  MarchData r;
-  r.mat=vec3(.4);
-  r.specPower=1e7;
-  vec3 frameInner=vec3(2.8,2.6,.1);
-  vec2 xy=p.xy-vec2(0,2);
-  p.x=abs(p.x);
-  p.yz+=vec2(.5,-3.4);
-  float doorHole=sdBox(p,frameInner+vec3(0,0,1)),backWall=length(p.z-8.);
-  r.d=min(backWall,max(length(p.z),-doorHole+.1));
-  if(r.d==backWall)
-    if(min(max(min(abs(sdOctogon(xy,2.6)),abs(sdOctogon(xy,1.9))),min(.7-abs(xy.x+1.2),-xy.y)),max(abs(sdOctogon(xy,1.2)),min(xy.x,.7-abs(xy.y))))<.3)
-      r.mat=vec3(.39,.57,.71);
-  doorHole=max(sdBox(p,frameInner+vec3(.4,.4,.1)),-doorHole);
-  backWall=frameInner.x*.5;
-  p.x-=frameInner.x;
-  p.xz*=rot(doorOpen*2.1);
-  p.x+=backWall;
-  float door=sdBox(p,vec3(backWall,frameInner.yz));
-  p=abs(p)-vec3(backWall*.5,1.1,.14);
-  door=min(doorHole,max(door,-max(sdBox(p,vec3(.45,.9,.1)),-sdBox(p,vec3(.35,.8,1)))));
-  if(door<r.d)
-    r.d=door,r.mat=vec3(.02,.02,.024),r.specPower=10.;
-  return r;
+  A y;
+  y.c=vec3(.4);
+  y.v=1e7;
+  vec3 m=vec3(2.8,2.6,.1);
+  vec2 f=v.xy-vec2(0,2);
+  v.x=abs(v.x);
+  v.yz+=vec2(.5,-3.4);
+  float x=n(v,m+vec3(0,0,1)),z=length(v.z-8.);
+  y.e=min(z,max(length(v.z),-x+.1));
+  if(y.e==z)
+    if(min(max(min(abs(n(f,2.6)),abs(n(f,1.9))),min(.7-abs(f.x+1.2),-f.y)),max(abs(n(f,1.2)),min(f.x,.7-abs(f.y))))<.3)
+      y.c=vec3(.39,.57,.71);
+  x=max(n(v,m+vec3(.4,.4,.1)),-x);
+  z=m.x*.5;
+  v.x-=m.x;
+  v.xz*=n(i*2.1);
+  v.x+=z;
+  float a=n(v,vec3(z,m.yz));
+  v=abs(v)-vec3(z*.5,1.1,.14);
+  a=min(x,max(a,-max(n(v,vec3(.45,.9,.1)),-n(v,vec3(.35,.8,1)))));
+  if(a<y.e)
+    y.e=a,y.c=vec3(.02,.02,.024),y.v=10.;
+  return y;
 }
-MarchData map(vec3 p)
+A S(vec3 v)
 {
-  MarchData r=minResult(room(p),ed209(p));
-  float gnd=length(p.y+3.);
-  if(gnd<r.d)
-    r.d=gnd,r.mat=vec3(.1);
-  return r;
+  A y=n(w(v),M(v));
+  float m=length(v.y+3.);
+  if(m<y.e)
+    y.e=m,y.c=vec3(.1);
+  return y;
 }
-float calcShadow(vec3 p,vec3 lightPos)
+float M(vec3 v,vec3 y)
 {
-  lightPos=normalize(lightPos-p);
-  float res=1.,t=.1;
-  for(float i=0.;i<SHADOW_STEPS;i++)
+  y=normalize(y-v);
+  float f=1.,x=.1;
+  for(float m=0.;m<SHADOW_STEPS;m++)
     {
-      float h=map(p+lightPos*t).d;
-      res=min(res,12.*h/t);
-      t+=h;
-      if(res<.001||t>25.)
+      float a=S(v+y*x).e;
+      f=min(f,12.*a/x);
+      x+=a;
+      if(f<.001||x>25.)
         break;
     }
-  return clamp(res,0.,1.);
+  return clamp(f,0.,1.);
 }
-vec3 calcNormal(vec3 p,float t)
+vec3 M(vec3 v,float y)
 {
-  vec2 e=vec2(1,-1)*.5773*(.01*t*.33);
-  return normalize(e.xyy*map(p+e.xyy).d+e.yyx*map(p+e.yyx).d+e.yxy*map(p+e.yxy).d+e.xxx*map(p+e.xxx).d);
+  vec2 m=vec2(1,-1)*.5773*(.01*y*.33);
+  return normalize(m.xyy*S(v+m.xyy).e+m.yyx*S(v+m.yyx).e+m.yxy*S(v+m.yxy).e+m.xxx*S(v+m.xxx).e);
 }
-vec3 vignette(vec3 col,vec2 fragCoord)
+vec3 M(vec3 v,vec2 y)
 {
-  fragCoord=fragCoord.xy/iResolution.xy;
-  return col*(.5+.5*pow(16.*fragCoord.x*fragCoord.y*(1.-fragCoord.x)*(1.-fragCoord.y),.4));
+  y=y.xy/iResolution.xy;
+  return v*(.5+.5*pow(16.*y.x*y.y*(1.-y.x)*(1.-y.y),.4));
 }
-vec3 applyLighting(vec3 p,vec3 rd,float d,MarchData data)
+vec3 M(vec3 v,vec3 m,float y,A f)
 {
-  const vec3 sunPos=vec3(10,10,-10);
-  vec3 sunDir=normalize(sunPos-p),n=calcNormal(p,d);
-  d=max(0.,dot(sunDir,n));
-  d*=mix(.2,1.,calcShadow(p,sunPos));
-  sunDir=((d+max(0.,dot(-sunDir,n))*.2)*(map(p+.33*n).d/.33)+pow(max(0.,dot(rd,reflect(sunDir,n))),data.specPower)*2.)*vec3(2,1.6,1.7);
-  return mix(data.mat*sunDir,vec3(.01),smoothstep(.7,1.,1.+dot(rd,n)))*exp(-length(p)*.05);
+  const vec3 x=vec3(10,10,-10);
+  vec3 i=normalize(x-v),z=M(v,y);
+  y=max(0.,dot(i,z));
+  y*=mix(.2,1.,M(v,x));
+  i=((y+max(0.,dot(-i,z))*.2)*(S(v+.33*z).e/.33)+pow(max(0.,dot(m,reflect(i,z))),f.v)*2.)*vec3(2,1.6,1.7);
+  return mix(f.c*i,vec3(.01),smoothstep(.7,1.,1.+dot(m,z)))*exp(-length(v)*.05);
 }
-vec3 getSceneColor(vec3 ro,vec3 rd)
+vec3 S(vec3 v,vec3 y)
 {
-  vec3 p;
-  float d=.01;
-  MarchData h;
-  for(float steps=0.;steps<MAX_STEPS;steps++)
+  vec3 m;
+  float f=.01;
+  A x;
+  for(float i=0.;i<MAX_STEPS;i++)
     {
-      p=ro+rd*d;
-      h=map(p);
-      if(abs(h.d)<MIN_DIST*d)
+      m=v+y*f;
+      x=S(m);
+      if(abs(x.e)<MIN_DIST*f)
         break;
-      if(d>MAX_DIST)
+      if(f>MAX_DIST)
         return vec3(0);
-      d+=h.d;
+      f+=x.e;
     }
-  float g=glow;
-  return applyLighting(p,rd,d,h)+fireShock()*.3+g;
+  float i=a;
+  return M(m,y,f,x)+s()*.3+i;
 }
-void mainImage(out vec4 fragColor,vec2 fragCoord)
+void mainImage(out vec4 m,vec2 f)
 {
-  edWalk=1.;
-  edTwist=0.;
-  edDown=0.;
-  edShoot=0.;
-  doorOpen=1.;
-  stretch=1.;
-  vec3 ro,lookAt;
-  float startScene,endScene,time=mod(iTime,55.);
-  if(time<12.)
-    startScene=0.,endScene=12.,edWalk=0.,ro=vec3(0,-1.5,-.625),lookAt=vec3(0,-1,edZ()),doorOpen=smoothstep(0.,1.,time/5.),stretch=remap(time,7.,10.,0.,1.);
-  else if(time<25.)
+  y=1.;
+  x=0.;
+  r=0.;
+  z=0.;
+  i=1.;
+  v=1.;
+  vec3 a,c;
+  float l,d,e=mod(iTime,55.);
+  if(e<12.)
+    l=0.,d=12.,y=0.,a=vec3(0,-1.5,-.625),c=vec3(0,-1,n()),i=smoothstep(0.,1.,e/5.),v=n(e,7.,10.,0.,1.);
+  else if(e<25.)
     {
-      startScene=12.;
-      endScene=25.;
-      float t=time-startScene;
-      edWalk=smoothstep(0.,1.,remap(t,3.,8.,0.,1.));
-      ro=vec3(-.5*cos(t*.7),.5-t*.1,edZ()-3.);
-      lookAt=vec3(0,0,edZ());
+      l=12.;
+      d=25.;
+      float v=e-l;
+      y=smoothstep(0.,1.,n(v,3.,8.,0.,1.));
+      a=vec3(-.5*cos(v*.7),.5-v*.1,n()-3.);
+      c=vec3(0,0,n());
     }
-  else if(time<29.)
+  else if(e<29.)
     {
-      startScene=25.;
-      endScene=29.;
-      float t=time-startScene;
-      ro=vec3(-2,.5+t*.1,edZ()-3.);
-      lookAt=vec3(0,0,edZ());
+      l=25.;
+      d=29.;
+      float m=e-l;
+      a=vec3(-2,.5+m*.1,n()-3.);
+      c=vec3(0,0,n());
     }
-  else if(time<37.)
+  else if(e<37.)
     {
-      startScene=29.;
-      endScene=37.;
-      float t=time-startScene;
-      ro=vec3(1.5,-1.-t*.05,edZ()-5.);
-      lookAt=vec3(0,-1,edZ());
-      stretch=remap(t,2.,5.,1.,0.);
+      l=29.;
+      d=37.;
+      float m=e-l;
+      a=vec3(1.5,-1.-m*.05,n()-5.);
+      c=vec3(0,-1,n());
+      v=n(m,2.,5.,1.,0.);
     }
-  else if(time<55.)
+  else if(e<55.)
     {
-      startScene=37.;
-      endScene=55.;
-      float t=time-startScene;
-      ro=vec3(-1.8,-.5,edZ()-2.5);
-      stretch=remap(t,2.,3.,0.,1.)-remap(t,11.5,14.5,0.,1.);
-      lookAt=vec3(0,stretch*.5-.5,edZ());
-      edTwist=remap(t,3.,3.2,0.,1.)*stretch;
-      edDown=remap(t,3.2,3.4,0.,1.)*stretch;
-      edShoot=t<=9.5?
-        remap(t,4.,9.5,0.,1.):
+      l=37.;
+      d=55.;
+      float m=e-l;
+      a=vec3(-1.8,-.5,n()-2.5);
+      v=n(m,2.,3.,0.,1.)-n(m,11.5,14.5,0.,1.);
+      c=vec3(0,v*.5-.5,n());
+      x=n(m,3.,3.2,0.,1.)*v;
+      r=n(m,3.2,3.4,0.,1.)*v;
+      z=m<=9.5?
+        n(m,4.,9.5,0.,1.):
         0.;
     }
-  float dim=1.-cos(min(1.,2.*min(abs(time-startScene),abs(time-endScene)))*3.141/2.);
-  vec3 col=vec3(0);
+  float A=1.-cos(min(1.,2.*min(abs(e-l),abs(e-d)))*3.141/2.);
+  vec3 p=vec3(0);
   
 #ifdef AA
 
-  for(float dx=0.;dx<=1.;dx++)
-    for(float dy=0.;dy<=1.;dy++)
+  for(float v=0.;v<=1.;v++)
+    for(float y=0.;y<=1.;y++)
       {
-        vec2 coord=fragCoord+vec2(dx,dy)*.5;
+        vec2 m=f+vec2(v,y)*.5;
         
 #else
 
-        vec2 coord=fragCoord;
+        vec2 x=f;
         
 #endif
 
-        coord+=(fract(fireShock()*vec2(23242.2323,978.23465))-.5)*10.;
-        vec2 uv=(coord-.5*iResolution.xy)/iResolution.y;
-        col+=getSceneColor(ro,getRayDir(ro,lookAt,uv));
+        x+=(fract(s()*vec2(23242.2323,978.23465))-.5)*10.;
+        vec2 z=(x-.5*iResolution.xy)/iResolution.y;
+        p+=S(a,n(a,c,z));
         
 #ifdef AA
 
       }
-  col/=4.;
+  p/=4.;
   
 #endif
 
-  fragColor=vec4(vignette(pow(col*dim,vec3(.4545)),fragCoord),1);
+  m=vec4(M(pow(p*A,vec3(.4545)),f),1);
 }

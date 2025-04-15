@@ -1,0 +1,15 @@
+float m,v,I,R,Q,P,O,N,x;
+struct L{vec3 t;float o;float a;int l;float f;int i;float n;int v;float c;int e;float u;int s;float r;int m;float d;int I;float y;int x;float g;int _;float Z;int Y;float X;int W;float V;int U;float T;int S;float R;int Q;float P;int O;float N;int M;float L;int K;float J;int H;float G;int F;vec2 E;float D;int C;float B;int A;float z;int w;float q;int p;float k;int j;float h;int b;float aa;int ab;float ac;int ad;float ae;int af;float ag;};
+struct K{vec3 t;float o;float a;float l;int f;float i;int n;float v;int c;float e;int u;float s;int r;float m;int d;float I;int y;float x;int g;float _;int Z;float Y;int X;float W;int V;float U;int T;float P;int S;float O;int N;float M;int L;float K;int J;float H;int G;float F;vec2 E;float D;int C;float B;int A;float z;int w;float q;int p;float k;vec2 j;vec3 h;int b;float aa;int ab;float ac;int ad;float ae;int af;float ag;};
+void e(inout L f,K i)
+{
+  f.t=vec3(.36,.45,.5);
+  f.o=30.;
+  f.Z=1.;
+  i.E=vec2(i.P,i.O);
+  i.j=i.h.yx;
+}
+void mainImage(out vec4 v,vec2 i)
+{
+  v=vec4(1);
+}

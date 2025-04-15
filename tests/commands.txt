@@ -42,6 +42,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/decimals.frag.expected tests/unit/decimals.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/layout.frag.expected tests/unit/layout.frag
 --no-remove-unused --format indented -o tests/unit/struct.frag.expected tests/unit/struct.frag
+--no-remove-unused --format indented -o tests/unit/struct2.frag.expected tests/unit/struct2.frag
 
 # Unused removal tests
 
@@ -99,7 +100,7 @@
 --format c-variables -o tests/real/heart.frag.expected tests/real/heart.frag
 
 # Other - real files, to get a bit more coverage
---no-renaming --format indented -o tests/real/ed-209.frag.expected tests/real/ed-209.frag
+--format indented -o tests/real/ed-209.frag.expected tests/real/ed-209.frag
 --no-renaming --format indented -o tests/real/ohanami.frag.expected tests/real/ohanami.frag
 --no-renaming --format indented -o tests/real/terrarium.frag.expected tests/real/terrarium.frag
 --no-renaming --format indented -o tests/real/monjori.frag.expected tests/real/monjori.frag

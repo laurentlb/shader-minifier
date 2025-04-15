@@ -1,0 +1,138 @@
+
+float stretch, gunsUp, gunsForward, edWalk, edTwist, edDown, edShoot, doorOpen, glow;
+
+struct MarchData {
+    // initially this looked like `float A,Z,e,R,T,Y,u,i,o,P,m,l,k,j,h,G,f,S,d,Q,W,X,c,v,B,n,_;`
+    // but glslang has a bug and can't parse it: https://github.com/KhronosGroup/glslang/issues/3931
+    vec3 mat;
+    float specPower;
+    float A;
+    int Z;
+    float e;
+    int R;
+    float T;
+    int Y;
+    float u;
+    int i;
+    float o;
+    int P;
+    float m;
+    int l;
+    float k;
+    int j;
+    float h;
+    int G;
+    float f;
+    int S;
+    float d;
+    int Q;
+    float W;
+    int X;
+    float c;
+    int v;
+    float B;
+    int n;
+    float _;
+    int __;
+    float a1;
+    int a2;
+    float a3;
+    int a4;
+    float a5;
+    int a6;
+    float a7;
+    int a8;
+    float a9;
+    int a10;
+    vec2 a11;
+    float a12;
+    int a13;
+    float a14;
+    int a15;
+    float a16;
+    int a17;
+    float a18;
+    int a19;
+    float a20;
+    int a21;
+    float a22;
+    int a23;
+    float a24;
+    int a25;
+    float a26;
+    int a27;
+    float a28;
+    int a29;
+    float a30;
+};
+
+struct AprilData {
+    vec3 mat;
+    float specPower;
+    float A;
+    float Z;
+    int e;
+    float R;
+    int T;
+    float Y;
+    int u;
+    float i;
+    int o;
+    float P;
+    int m;
+    float l;
+    int k;
+    float j;
+    int h;
+    float G;
+    int f;
+    float S;
+    int d;
+    float Q;
+    int W;
+    float X;
+    int c;
+    float v;
+    int B;
+    float a1;
+    int n;
+    float a2;
+    int a3;
+    float a4;
+    int a5;
+    float a6;
+    int a7;
+    float a8;
+    int a9;
+    float a10;
+    vec2 a11;
+    float a12;
+    int a13;
+    float a14;
+    int a15;
+    float a16;
+    int a17;
+    float a18;
+    int a19;
+    float a20;
+    vec2 a21;
+    vec3 a22;
+    int a23;
+    float a24;
+    int a25;
+    float a26;
+    int a27;
+    float a28;
+    int a29;
+    float a30;
+};
+
+void set(inout MarchData mat, AprilData a) {
+    mat.mat = vec3(0.36, 0.45, 0.5);
+    mat.specPower = 30.0;
+    mat.d = 1.0;
+    a.a11 = vec2(a.a1, a.a2);
+    a.a21 = a.a22.yx;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) { fragColor = vec4(1.0); }
