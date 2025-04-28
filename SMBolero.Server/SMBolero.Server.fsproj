@@ -11,9 +11,9 @@
     <ProjectReference Include="..\SMBolero.Client\SMBolero.Client.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Bolero" Version="0.21.24" />
-    <PackageReference Include="Bolero.Server" Version="0.21.24" />
+    <PackageReference Include="Bolero" Version="0.24.39" />
+    <PackageReference Include="Bolero.Server" Version="0.24.39" />
     <PackageReference Include="Bolero.HotReload.Server" Version="0.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.*" />
   </ItemGroup>
 </Project>

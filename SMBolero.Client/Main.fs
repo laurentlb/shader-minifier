@@ -3,15 +3,13 @@ module SMBolero.Client.Main
 open Elmish
 open Bolero
 open Bolero.Html
-open Bolero.Remoting.Client
 open Bolero.Templating.Client
 open ShaderMinifier
 
-/// Routing endpoints definition.
 type Page =
-    | [<EndPoint "?main">] Home
-    | [<EndPoint "?flags">] FlagPage
-    | [<EndPoint "?about">] About
+    | Home
+    | FlagPage
+    | About
 
 type Flags = {
     mutable format: string
@@ -95,7 +93,19 @@ let update (jsRuntime: Microsoft.JSInterop.IJSRuntime) message model =
         { model with error = None }, Cmd.none
 
 /// Connects the routing system to the Elmish application.
-let router = Router.infer SetPage (fun model -> model.page)
+let router: Router<Page, Model, Message> =
+    { getEndPoint = fun model -> model.page
+      getRoute = function
+          | Home -> "?main"
+          | About -> "?about"
+          | FlagPage -> "?flags"
+      setRoute = function
+          | "?main" -> Some Home
+          | "?about" -> Some About
+          | "?flags" -> Some FlagPage
+          | _ -> None
+      makeMessage = SetPage
+      notFound = Some Home }
 
 type Main = Template<"wwwroot/main.html">
 
