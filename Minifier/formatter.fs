@@ -12,12 +12,12 @@ type private Impl(options: Options.Options, withLocations) =
             Printer.writeSymbols shader
 
         match options.outputFormat with
-        | Options.Text | Options.JS ->
+        | Options.Text | Options.JS | Options.Json ->
             if withLocations then
                 Printer.printWithLoc shader.code |> Printer.stripIndentation
             else
                 Printer.print shader.code
-        | Options.IndentedText | Options.CVariables | Options.CArray | Options.JS | Options.Nasm | Options.Rust ->
+        | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
             if withLocations then
                 Printer.printWithLoc shader.code
             else
@@ -149,6 +149,20 @@ type private Impl(options: Options.Options, withLocations) =
                     sprintf " %s%s\\" indent (escape line)]
             fprintfn out "%s0\";" lines
 
+    let printJsonHeader out (shaders: Ast.Shader[]) (exportedNames: Ast.ExportedName[]) =
+        let mappingsMap =
+            exportedNames
+            |> Seq.sort
+            |> Seq.map (fun name -> name.name, name.newName)
+            |> Map.ofSeq
+        let shadersMap =
+            shaders
+            |> Seq.map (fun shader -> shader.filename, minify shader)
+            |> Map.ofSeq
+        let obj =  {| mappings = mappingsMap; shaders = shadersMap |}
+
+        fprintfn out "%s" (Text.Json.JsonSerializer.Serialize obj)
+
     member this.Format out shaders exportedNames =
         match options.outputFormat with
         | Options.IndentedText -> printIndented out shaders
@@ -158,6 +172,7 @@ type private Impl(options: Options.Options, withLocations) =
         | Options.JS -> printJSHeader out shaders exportedNames
         | Options.Nasm -> printNasmHeader out shaders exportedNames
         | Options.Rust -> printRustHeader out shaders exportedNames
+        | Options.Json -> printJsonHeader out shaders exportedNames
 
 let print options =
     Impl(options, false).Format
