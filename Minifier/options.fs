@@ -14,6 +14,7 @@ type OutputFormat =
     | [<CustomCommandLine("js")>] JS
     | [<CustomCommandLine("nasm")>] Nasm
     | [<CustomCommandLine("rust")>] Rust
+    | [<CustomCommandLine("json")>] Json
 
 type FieldSet =
     | RGBA
