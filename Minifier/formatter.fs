@@ -150,18 +150,16 @@ type private Impl(options: Options.Options, withLocations) =
             fprintfn out "%s0\";" lines
 
     let printJsonHeader out (shaders: Ast.Shader[]) (exportedNames: Ast.ExportedName[]) =
-        let mappingsMap =
-            exportedNames
-            |> Seq.sort
-            |> Seq.map (fun name -> name.name, name.newName)
-            |> Map.ofSeq
-        let shadersMap =
-            shaders
-            |> Seq.map (fun shader -> shader.filename, minify shader)
-            |> Map.ofSeq
-        let obj =  {| mappings = mappingsMap; shaders = shadersMap |}
+        let printMap (map: Map<string, string>) =
+            let str = [for kvp in map -> sprintf "\"%s\":\"%s\"" kvp.Key (escape kvp.Value)] |> String.concat ","
+            sprintf "{%s}" str
 
-        fprintfn out "%s" (Text.Json.JsonSerializer.Serialize obj)
+        fprintf out "{"
+        fprintf out "\"mappings\":"
+        fprintf out "%s" (exportedNames |> Seq.map (fun value -> value.name, value.newName) |> Map.ofSeq |> printMap)
+        fprintf out ",\"shaders\":"
+        fprintf out "%s" (shaders |> Seq.map (fun shader -> shader.filename, minify shader |> escape) |> Map.ofSeq |> printMap)
+        fprintfn out "}"
 
     member this.Format out shaders exportedNames =
         match options.outputFormat with
