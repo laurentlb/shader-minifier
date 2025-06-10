@@ -669,7 +669,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     | _ -> []
 
                 let compatibleDeclElt = (localDecls @ args) |> List.tryFind (fun declElt1 ->
-                    declElt1.size = declElt2.size &&
+                    declElt1.sizes = declElt2.sizes &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
                     Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)

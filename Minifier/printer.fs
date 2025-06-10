@@ -197,18 +197,23 @@ type PrinterImpl(withLocations) =
 
     and declToS indent (ty, vars) =
         let out1 decl =
-            let size =
-                match decl.size with
-                | None -> ""
-                | Some (Int (0L, _)) -> "[]"
-                | Some n -> out "[%s]" (exprToS indent n)
+            let sizes =
+                match decl.sizes with
+                | [] -> ""
+                | sizesList ->
+                    sizesList
+                    |> List.map (fun size ->
+                        match size with
+                        | Int (0L, _) -> "[]"
+                        | _ -> out "[%s]" (exprToS indent size))
+                    |> String.concat ""
 
             let init =
                 match decl.init with
                 | None -> ""
                 | Some i -> // We set the level in case a comma operator is used in the argument list.
                             out "=%s" (exprToSLevel indent (precedence[","] + 1) i)
-            out "%s%s%s%s" (idToS decl.name) size (semToS decl.semantics) init
+            out "%s%s%s%s" (idToS decl.name) sizes (semToS decl.semantics) init
 
         if vars.IsEmpty then ""
         else out "%s %s" (typeToS ty) (vars |> commaListToS out1)
@@ -344,12 +349,12 @@ let typeToS ty = PrinterImpl(false).TypeToS ty |> stripIndentation
 let printWithLoc tl = PrinterImpl(true).PrintIndented tl
 
 let debugDecl (t: DeclElt) =
-    let size = if t.size = None then "" else $"[{t.size}]"
+    let sizes = if t.sizes.IsEmpty then "" else t.sizes |> List.map (fun size -> $"[{size}]") |> String.concat ""
     let init = match t.init with
                 | Some e -> $" = {exprToS e}"
                 | None -> ""
     let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
-    $"{t.name.OldName}{size}{init}{sem}"
+    $"{t.name.OldName}{sizes}{init}{sem}"
 
 let debugIdent (ident: Ident) =
     match ident.Declaration with
