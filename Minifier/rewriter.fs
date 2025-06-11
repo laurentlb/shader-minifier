@@ -426,6 +426,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     // Group declarations within a block. For example, all the float variables will
     // be declared at the same time, the first time a float variable is initialized.
     // Const variables are ignored, because they must be initialized immediately.
+    // Also don't merge declarations for array types, since this only works
+    // for array types of the same size(s).
     let groupDeclarations stmts =
         let declarations = Dictionary<Type, DeclElt list>()
         let mutable skippedDeclarations = []
@@ -469,17 +471,30 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         List.collect replacements stmts
 
+    // Helper for deterimining if all array dimensions in 2 
+    // declaration lists are equal.
+    let all_sizes_equal li1 li2 =
+        match li1 @ li2 with
+        | [] -> true
+        | first :: rest ->
+            let sizes = first.sizes
+            List.forall (fun decl -> decl.sizes = sizes) rest
+
     // Squeeze declarations: "float a=2.; float b;"  ->  "float a=2.,b;"
+    // Not a valid transformation for array declarations that have 
+    // different dimensions i.e. float a[4], b[7];
     let rec squeezeConsecutiveDeclarations = function
         | []-> []
-        | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
+        | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 && all_sizes_equal li1 li2 ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeConsecutiveDeclarations l
 
     // Squeeze top-level declarations, e.g. uniforms
+    // Not a valid transformation for array declarations that have 
+    // different dimensions i.e. float a[4], b[7];
     let rec squeezeTLDeclarations = function
         | [] -> []
-        | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 ->
+        | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 && all_sizes_equal li1 li2 ->
             squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeTLDeclarations l
 
