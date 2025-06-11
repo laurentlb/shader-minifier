@@ -426,8 +426,6 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     // Group declarations within a block. For example, all the float variables will
     // be declared at the same time, the first time a float variable is initialized.
     // Const variables are ignored, because they must be initialized immediately.
-    // Also don't merge declarations for array types, since this only works
-    // for array types of the same size(s).
     let groupDeclarations stmts =
         let declarations = Dictionary<Type, DeclElt list>()
         let mutable skippedDeclarations = []
