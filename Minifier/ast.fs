@@ -291,6 +291,7 @@ type MapEnv private = {
             // e.g. in `float x = x + 1`, the two `x` are not the same!
             let ret = {
                 decl with
+                    sizes=List.map env.mapExpr decl.sizes
                     init=Option.map env.mapExpr decl.init}
             let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
             env, ret
