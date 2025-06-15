@@ -150,14 +150,14 @@ and Type = {
 
 and DeclElt = {
     name: Ident // e.g. foo
-    size: Expr option // e.g. [3]
+    sizes: Expr list // e.g. [3]
     semantics: Expr list // e.g. : color
     init: Expr option // e.g. = f(x)
 } with override t.ToString() =
-        let size = if t.size = None then "" else $"[{t.size}]"
+        let sizes = if t.sizes.IsEmpty then "" else t.sizes |> List.map (fun size -> $"[{size}]") |> String.concat ""
         let init = if t.init = None then "" else $" = {t.init}"
         let sem = if t.semantics.IsEmpty then "" else $": {t.semantics}" in
-        $"{t.name}{size}{init}{sem}"
+        $"{t.name}{sizes}{init}{sem}"
 
 and Decl = Type * DeclElt list
 
@@ -216,7 +216,7 @@ and TopLevel =
     | Precision of Type
 
 let makeType name tyQ sizes = {Type.name=name; typeQ=tyQ; arraySizes=sizes}
-let makeDecl name size sem init = {name=name; size=size; semantics=sem; init=init}
+let makeDecl name sizes sem init = {name=name; sizes=sizes; semantics=sem; init=init}
 let makeFunctionType ty name args sem =
     {retType=ty; fName=name; args=args; semantics=sem}
 
@@ -291,7 +291,7 @@ type MapEnv private = {
             // e.g. in `float x = x + 1`, the two `x` are not the same!
             let ret = {
                 decl with
-                    size=Option.map env.mapExpr decl.size
+                    sizes=List.map env.mapExpr decl.sizes
                     init=Option.map env.mapExpr decl.init}
             let env = {env with vars = env.vars.Add(decl.name.Name, (ty, decl))}
             env, ret

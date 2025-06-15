@@ -469,17 +469,30 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         List.collect replacements stmts
 
+    // Helper for deterimining if all array dimensions in 2 
+    // declaration lists are equal.
+    let all_sizes_equal li1 li2 =
+        match li1 @ li2 with
+        | [] -> true
+        | first :: rest ->
+            let sizes = first.sizes
+            List.forall (fun decl -> decl.sizes = sizes) rest
+
     // Squeeze declarations: "float a=2.; float b;"  ->  "float a=2.,b;"
+    // Not a valid transformation for array declarations that have 
+    // different dimensions i.e. float a[4], b[7];
     let rec squeezeConsecutiveDeclarations = function
         | []-> []
-        | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 ->
+        | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 && all_sizes_equal li1 li2 ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeConsecutiveDeclarations l
 
     // Squeeze top-level declarations, e.g. uniforms
+    // Not a valid transformation for array declarations that have 
+    // different dimensions i.e. float a[4], b[7];
     let rec squeezeTLDeclarations = function
         | [] -> []
-        | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 ->
+        | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 && all_sizes_equal li1 li2 ->
             squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeTLDeclarations l
 
@@ -669,7 +682,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     | _ -> []
 
                 let compatibleDeclElt = (localDecls @ args) |> List.tryFind (fun declElt1 ->
-                    declElt1.size = declElt2.size &&
+                    declElt1.sizes = declElt2.sizes &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
                     Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) |> List.forall (fun i -> i.Name <> declElt1.name.Name)

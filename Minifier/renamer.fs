@@ -124,7 +124,7 @@ type private RenamerVisitor(options: Options.Options) =
         let renDeclElt (env: Env) (decl: DeclElt) =
             // Rename expressions in init and size
             Option.iter (renExpr env) decl.init
-            Option.iter (renExpr env) decl.size
+            List.iter (renExpr env) decl.sizes
 
             // Rename variable type
             let env: Env =

@@ -242,17 +242,17 @@ type private ParseImpl(options: Options.Options) =
 
     // eg. "int foo[] = exp, bar = 3"
     do declRef.Value <- (
-        let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
+        let brackets = many (between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
         let init = ch '=' >>. exprNoComma
-        let var = pipe4 ident (opt bracket) semantics (opt init) Ast.makeDecl
+        let var = pipe4 ident brackets semantics (opt init) Ast.makeDecl
         let list = sepBy1 var (ch ',')
         tuple2 specifiedType list
     )
 
     // e.g. int foo[]   used for function arguments
     let singleDeclaration =
-        let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
-        pipe4 specifiedType ident (opt bracket) semantics
+        let brackets = many (between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
+        pipe4 specifiedType ident brackets semantics
             (fun ty id brack sem -> (ty, [Ast.makeDecl id brack sem None]))
 
     // GLSL, eg. "uniform Transform { ... };"

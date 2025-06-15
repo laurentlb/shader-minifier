@@ -3,9 +3,11 @@
 int i;
 float bar(float x)
 {
-  float a=6.+x,b=34.+x,arr[2]=float[2](5.,float(float[2](7.,8.).length()));
-  x=(a*=10,a*=20,a*=30,b++,arr[1]+arr[i++]);
-  return a+b+x;
+  float a=6.+x;
+  x+=34.;
+  float arr[2]=float[2](5.,float(float[2](7.,8.).length()));
+  float m=(a*=10,a*=20,a*=30,x++,arr[1]+arr[i++]);
+  return a+x+m;
 }
 float baz(float a)
 {
