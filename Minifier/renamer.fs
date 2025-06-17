@@ -16,7 +16,7 @@ let private renList env fct li =
         env <- fct env i
     env
 
-type private Namespace = VarFunStruct | FieldsOfAllStruct // we consider that all fields share a common namespace.
+type private Namespace = VarFunStruct | FieldsOfAllStruct // we consider that all members share a common namespace.
 
 // Environment for renamer
 // This object is useful to separate the AST walking from the renaming strategy.
@@ -26,8 +26,8 @@ type private Namespace = VarFunStruct | FieldsOfAllStruct // we consider that al
 type private Env = {
     // Map from an old identifier name to the new one. Contains names of variables, functions and structs.
     identRenames: Map<string, string>
-    // Map from an old identifier name to the new one. Contains names of fields of all structs (but not "global" interface blocks fields)
-    fieldRenames: Map<string, string>
+    // Map from an old identifier name to the new one. Contains names of members of all structs (but not "global" interface blocks members)
+    memberRenames: Map<string, string>
     // Store function signatures for overloading. (newName, Map(Signature, oldName)). Not accessed as a map, but with linear search.
     funOverloads: Map<string, Map<Signature, string>>
     // List of names that are still available. Variables, functions and structs share the same name space.
@@ -46,7 +46,7 @@ type private Env = {
 with
     static member Create(availableNames, availableFieldNames, allowOverloading, newName, onEnterScope) = {
         identRenames = Map.empty
-        fieldRenames = Map.empty
+        memberRenames = Map.empty
         funOverloads = Map.empty
         availableNames = availableNames
         availableFieldNames = availableFieldNames
@@ -68,7 +68,7 @@ with
             let prevName = id.Name
             let names = this.availableFieldNames |> List.except [newName]
             id.Rename(newName)
-            {this with fieldRenames = this.fieldRenames.Add(prevName, newName); availableFieldNames = names}
+            {this with memberRenames = this.memberRenames.Add(prevName, newName); availableFieldNames = names}
 
     // Decide the identifier won't be renamed, and mark its name as used.
     member this.DontRename(id: Ident) = this.AddRenaming(VarFunStruct, id, id.Name)
@@ -106,7 +106,7 @@ type private RenamerVisitor(options: Options.Options) =
                 | Some name -> v.Rename(name); Var v
                 | None -> Var v // don't rename things we didn't see a declaration for. (builtins...)
             | Dot (_, field) as e when not (Builtin.isFieldSwizzle field.Name) ->
-                match env.fieldRenames.TryFind(field.Name) with
+                match env.memberRenames.TryFind(field.Name) with
                 | Some name -> field.Rename(name); e
                 | None -> e
             | e -> e
@@ -162,7 +162,7 @@ type private RenamerVisitor(options: Options.Options) =
                     else
                         processExternal()
                 | Field ({ blockType = Struct }, _) -> // named or anonymous struct, with instance or not
-                    match env.fieldRenames.TryFind(decl.name.Name) with
+                    match env.memberRenames.TryFind(decl.name.Name) with
                     | None -> // first time we see this struct field: pick a new name
                         env.newName FieldsOfAllStruct env decl.name
                     | Some name -> // struct field already renamed in another struct: rename consistently
@@ -173,6 +173,12 @@ type private RenamerVisitor(options: Options.Options) =
                 | LocalDeclaration -> env.newName VarFunStruct env decl.name
 
         renList env renDeclElt vars
+
+    and renStructMember stru env (structMember : StructMember) =
+      match structMember with
+      | MemberVariable decl -> renDecl (Field (stru, true)) None env decl
+      // TODO: handle struct methods in a followup
+      | _ -> env
 
     and renType (env: Env) (ty: Type) =
         match ty.name with
@@ -188,7 +194,7 @@ type private RenamerVisitor(options: Options.Options) =
                       | Some structName -> renNamedStruct env structName
                       | _ -> env
             // This isn't actually recursive with renDecl, because "Embedded struct definitions are not allowed".
-            renList env (renDecl (Field (stru, true)) None) stru.fields
+            renList env (renStructMember stru) stru.members
         | TypeBlock { blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 
@@ -285,12 +291,12 @@ type private RenamerVisitor(options: Options.Options) =
         | TLDecl d -> renDecl TopLevelDeclaration None env d
         | Function(fct, _) -> renFunction env fct
         | TypeDecl ({ blockType = InterfaceBlock _ } as interfaceBlock) ->
-            // interface block without an instance name: the fields are treated as external global variables
+            // interface block without an instance name: the members are treated as external global variables
             // e.g. `uniform foo { int a; float b; }`
-            renList env (renDecl (Field (interfaceBlock, false)) None) interfaceBlock.fields
+            renList env (renStructMember interfaceBlock) interfaceBlock.members
         | TypeDecl ({ blockType = Struct; name = Some structName } as namedStruct) ->
             let env = renNamedStruct env structName
-            let env = renList env (renDecl (Field (namedStruct, false)) None) namedStruct.fields
+            let env = renList env (renStructMember namedStruct) namedStruct.members
             env
         | TypeDecl { blockType = Struct; name = None } -> // e.g. `struct {int A;};`
             // TIL Declaring an anonymous struct that doesn't declare a variable is legal and does nothing.

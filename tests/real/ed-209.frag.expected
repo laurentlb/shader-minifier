@@ -7,7 +7,11 @@
 #define SHADOW_STEPS 30.0
 
 float v,f,m,y,x,r,z,i,a;
-struct A{float e;vec3 c;float v;};
+struct A{
+  float e;
+  vec3 c;
+  float v;
+};
 mat2 n(float v)
 {
   float y=cos(v);

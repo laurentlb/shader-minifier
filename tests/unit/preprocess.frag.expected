@@ -4,16 +4,11 @@
 
 #define foo()bar
 
-void keep_ifdef()
-{}
-void keep_nested()
-{}
-void keep_outernest()
-{}
-void keep_else()
-{}
+void keep_ifdef(){}
+void keep_nested(){}
+void keep_outernest(){}
+void keep_else(){}
 
 #undef DEF
 
-void end()
-{}
+void end(){}

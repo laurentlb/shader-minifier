@@ -2,17 +2,20 @@
 #ifndef SHADER_MINIFIER_IMPL
 #ifndef SHADER_MINIFIER_HEADER
 # define SHADER_MINIFIER_HEADER
-# define VAR_field "U"
 #endif
 
 #else // if SHADER_MINIFIER_IMPL
 
 // tests/unit/interface-block-renaming1.frag
  "#version 460\n"
- "uniform Uniform1{vec4 U;};",
+ "uniform Uniform1{"
+   "vec4 U;"
+ "};",
 
 // tests/unit/interface-block-renaming2.frag
  "#version 460\n"
- "uniform Uniform1{vec4 U;};",
+ "uniform Uniform1{"
+   "vec4 L;"
+ "};",
 
 #endif

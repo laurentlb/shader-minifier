@@ -5,7 +5,12 @@ vec3 sunLight;
 
 #define FOG_COLOUR vec3(1.,.7,.7)
 
-struct Stack{vec3 pos;float alpha;float dist;int mat;};
+struct Stack{
+  vec3 pos;
+  float alpha;
+  float dist;
+  int mat;
+};
 
 #define STACK_SIZE 8
 
