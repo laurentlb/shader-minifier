@@ -174,9 +174,9 @@ type private RenamerVisitor(options: Options.Options) =
 
         renList env renDeclElt vars
 
-    and renStructMember stru env (structMember : StructMember) =
+    and renStructMember stru hasInstanceName env (structMember : StructMember) =
       match structMember with
-      | MemberVariable decl -> renDecl (Field (stru, true)) None env decl
+      | MemberVariable decl -> renDecl (Field (stru, hasInstanceName)) None env decl
       // TODO: handle struct methods in a followup
       | _ -> env
 
@@ -194,7 +194,7 @@ type private RenamerVisitor(options: Options.Options) =
                       | Some structName -> renNamedStruct env structName
                       | _ -> env
             // This isn't actually recursive with renDecl, because "Embedded struct definitions are not allowed".
-            renList env (renStructMember stru) stru.members
+            renList env (renStructMember stru true) stru.members
         | TypeBlock { blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 
@@ -293,10 +293,10 @@ type private RenamerVisitor(options: Options.Options) =
         | TypeDecl ({ blockType = InterfaceBlock _ } as interfaceBlock) ->
             // interface block without an instance name: the members are treated as external global variables
             // e.g. `uniform foo { int a; float b; }`
-            renList env (renStructMember interfaceBlock) interfaceBlock.members
+            renList env (renStructMember interfaceBlock false) interfaceBlock.members
         | TypeDecl ({ blockType = Struct; name = Some structName } as namedStruct) ->
             let env = renNamedStruct env structName
-            let env = renList env (renStructMember namedStruct) namedStruct.members
+            let env = renList env (renStructMember namedStruct false) namedStruct.members
             env
         | TypeDecl { blockType = Struct; name = None } -> // e.g. `struct {int A;};`
             // TIL Declaring an anonymous struct that doesn't declare a variable is legal and does nothing.
