@@ -1,24 +1,24 @@
-struct G{
-  int P()
+struct SomeNamedStruct{
+  int SomeFunction()
   {
     return 5;
   };
-  float t=3.9;
-  float r=4.2;
-  float P(int M)
+  float member_x=3.9;
+  float member_y=4.2;
+  float GetX(int off)
   {
-    return t+M;
+    return member_x+off;
   };
 };
-float P(float M)
+float Foo(float x)
 {
   struct{
-    float o;
-    float P()
+    float member_p;
+    float GetP()
     {
-      return o;
+      return member_p;
     };
-  } f;
-  f.o=4;
-  return f.GetP()*M;
+  } some_anonymous_struct;
+  some_anonymous_struct.member_p=4;
+  return some_anonymous_struct.GetP()*x;
 }
