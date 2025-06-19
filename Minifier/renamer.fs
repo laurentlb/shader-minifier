@@ -177,7 +177,7 @@ type private RenamerVisitor(options: Options.Options) =
     and renStructMember stru hasInstanceName env (structMember : StructMember) =
       match structMember with
       | MemberVariable decl -> renDecl (Field (stru, hasInstanceName)) (Some env) env decl
-      | Method (func, stmt) -> 
+      | Method (func, _) -> 
         // TODO: encapsulate in rename function signature? Why is this not
         // a part of rename function?
         let env = renType env func.retType
@@ -187,9 +187,12 @@ type private RenamerVisitor(options: Options.Options) =
     and renStructMemberBody stru hasInstanceName env (structMember : StructMember) =
       match structMember with
       | MemberVariable _ -> env
-      | Method (func, stmt) -> renStmt env stmt
+      | Method (_, stmt) -> 
+        let internalEnv = {env with identRenames = Map.fold (fun acc k v -> Map.add k v acc) env.identRenames env.memberRenames}
+        let _ = renStmt internalEnv stmt
+        env
 
-    and renMembers stru hasInstanceName env =
+    and renMembers (stru : Ast.StructOrInterfaceBlock) hasInstanceName env =
         // Need to first add all declared symbols to the environment before we
         // can rename their definition bodies.
         let env = renList env (renStructMember stru hasInstanceName) stru.members

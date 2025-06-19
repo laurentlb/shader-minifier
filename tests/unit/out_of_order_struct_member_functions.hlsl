@@ -9,3 +9,7 @@ struct MyStruct {
 
     int member_var;
 };
+
+float my_other_function() {
+    return 10 + member_var;
+}

@@ -1,11 +1,15 @@
 struct Q{
-  int t;
   float P()
   {
     return O()+5;
   };
   float O()
   {
-    return 10+member_var;
+    return 10+t;
   };
+  int t;
 };
+float O()
+{
+  return 10+member_var;
+}
