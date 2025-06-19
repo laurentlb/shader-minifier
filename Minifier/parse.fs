@@ -120,6 +120,7 @@ type private ParseImpl(options: Options.Options) =
         ["&&"], Associativity.Left
         ["^^"], Associativity.Left
         ["||"], Associativity.Left
+        ["::"], Associativity.Left
         ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Associativity.Right
     ]
 

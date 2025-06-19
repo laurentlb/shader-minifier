@@ -177,8 +177,13 @@ type private RenamerVisitor(options: Options.Options) =
     and renStructMember stru hasInstanceName env (structMember : StructMember) =
       match structMember with
       | MemberVariable decl -> renDecl (Field (stru, hasInstanceName)) None env decl
-      // TODO: handle struct methods in a followup
-      | _ -> env
+      | Method (func, stmt) -> 
+        // TODO: encapsulate in rename function signature? Why is this not
+        // a part of rename function?
+        let env = renType env func.retType
+        let env = renList env (renDecl (FunctionArgument func) (Some env)) func.args
+        let env = renFunction env func
+        renStmt env stmt
 
     and renType (env: Env) (ty: Type) =
         match ty.name with
@@ -198,7 +203,7 @@ type private RenamerVisitor(options: Options.Options) =
         | TypeBlock { blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 
-    let rec renStmt env =
+    and renStmt env =
         let renOpt o = Option.iter (renExpr env) o
         function
         | Expr e -> renExpr env e; env
@@ -251,7 +256,7 @@ type private RenamerVisitor(options: Options.Options) =
             renList env renCase cl |> ignore<Env>
             env
 
-    let renFunctionWithOverloading env (signature: Signature) (id: Ident) =
+    and renFunctionWithOverloading env (signature: Signature) (id: Ident) =
         // we're looking for a function name, already used before,
         // but not with the same signature, and which is not in options.noRenamingList.
         let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
@@ -272,7 +277,7 @@ type private RenamerVisitor(options: Options.Options) =
             let env = env.Update(env.identRenames, funOverloads, env.availableNames)
             env
 
-    let renFunction env (f: FunctionType) =
+    and renFunction env (f: FunctionType) =
         if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
             env
         elif List.contains f.fName.Name options.noRenamingList then

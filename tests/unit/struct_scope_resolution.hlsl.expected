@@ -1,0 +1,14 @@
+struct N{
+  float t;
+  static N L(float M)
+  {
+    N r;
+    r.t=M*10;
+    return r;
+  };
+};
+float r(float r)
+{
+  N M=N::L(r);
+  return M.t;
+}
