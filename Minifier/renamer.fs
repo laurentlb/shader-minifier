@@ -109,10 +109,6 @@ type private RenamerVisitor(options: Options.Options) =
                 match env.memberRenames.TryFind(field.Name) with
                 | Some name -> field.Rename(name); e
                 | None -> e
-            | Dot (_, field) as e when not (Builtin.isFieldSwizzle field.Name) ->
-                match env.memberRenames.TryFind(field.Name) with
-                | Some name -> field.Rename(name); e
-                | None -> e
             | e -> e
         options.visitor(mapper).iterExpr expr
 
