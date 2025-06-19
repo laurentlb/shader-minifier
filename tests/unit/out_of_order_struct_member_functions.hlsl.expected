@@ -5,7 +5,8 @@ struct Q{
   };
   float O()
   {
-    return 10+t;
+    int O=6;
+    return 10+t+O;
   };
   int t;
 };

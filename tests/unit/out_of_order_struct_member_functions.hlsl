@@ -4,7 +4,8 @@ struct MyStruct {
     }
     
     float my_other_function() {
-        return 10 + member_var;
+        int something = 6;
+        return 10 + member_var + something;
     }
 
     int member_var;

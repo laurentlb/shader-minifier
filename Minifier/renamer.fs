@@ -184,19 +184,21 @@ type private RenamerVisitor(options: Options.Options) =
         let env = renList env (renDecl (FunctionArgument func) (Some env)) func.args
         renFunction env func
     
-    and renStructMemberBody stru hasInstanceName env (structMember : StructMember) =
+    and renStructMemberBody stru env (structMember : StructMember) =
       match structMember with
       | MemberVariable _ -> env
       | Method (_, stmt) -> 
-        let internalEnv = {env with identRenames = Map.fold (fun acc k v -> Map.add k v acc) env.identRenames env.memberRenames}
-        let _ = renStmt internalEnv stmt
+        // In order for function bodies to resolve member variables, we need to add the member identifiers to the regular identifier table. Technically this adds all stuct members which is incorrect but we would need type inference information to appropriately look up the right set of member identifiers for identifiers holding instances within the method body.
+        let methodEnv = env.onEnterScope env stmt
+        let methodEnv = {methodEnv with identRenames = Map.fold (fun acc k v -> Map.add k v acc) methodEnv.identRenames methodEnv.memberRenames}
+        renStmt methodEnv stmt |> ignore<Env>
         env
 
     and renMembers (stru : Ast.StructOrInterfaceBlock) hasInstanceName env =
         // Need to first add all declared symbols to the environment before we
         // can rename their definition bodies.
         let env = renList env (renStructMember stru hasInstanceName) stru.members
-        renList env (renStructMemberBody stru hasInstanceName) stru.members
+        renList env (renStructMemberBody stru) stru.members
 
     and renType (env: Env) (ty: Type) =
         match ty.name with
