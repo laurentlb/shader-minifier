@@ -109,6 +109,10 @@ type private RenamerVisitor(options: Options.Options) =
                 match env.memberRenames.TryFind(field.Name) with
                 | Some name -> field.Rename(name); e
                 | None -> e
+            | Dot (_, field) as e when not (Builtin.isFieldSwizzle field.Name) ->
+                match env.memberRenames.TryFind(field.Name) with
+                | Some name -> field.Rename(name); e
+                | None -> e
             | e -> e
         options.visitor(mapper).iterExpr expr
 
@@ -176,10 +180,8 @@ type private RenamerVisitor(options: Options.Options) =
 
     and renStructMember stru hasInstanceName env (structMember : StructMember) =
       match structMember with
-      | MemberVariable decl -> renDecl (Field (stru, hasInstanceName)) (Some env) env decl
+      | MemberVariable decl -> renDecl (Field (stru, hasInstanceName)) None env decl
       | Method (func, _) -> 
-        // TODO: encapsulate in rename function signature? Why is this not
-        // a part of rename function?
         let env = renType env func.retType
         let env = renList env (renDecl (FunctionArgument func) (Some env)) func.args
         renFunction env func
@@ -188,7 +190,12 @@ type private RenamerVisitor(options: Options.Options) =
       match structMember with
       | MemberVariable _ -> env
       | Method (_, stmt) -> 
-        // In order for function bodies to resolve member variables, we need to add the member identifiers to the regular identifier table. Technically this adds all stuct members which is incorrect but we would need type inference information to appropriately look up the right set of member identifiers for identifiers holding instances within the method body.
+        // In order for function bodies to resolve member variables, we need to
+        // add the member identifiers to the regular identifier table.
+        // Technically this adds all stuct members which is incorrect but we
+        // would need type inference information to appropriately look up the
+        // right set of member identifiers for identifiers holding instances
+        // within the method body.
         let methodEnv = env.onEnterScope env stmt
         let methodEnv = {methodEnv with identRenames = Map.fold (fun acc k v -> Map.add k v acc) methodEnv.identRenames methodEnv.memberRenames}
         renStmt methodEnv stmt |> ignore<Env>

@@ -62,7 +62,6 @@ type PrinterImpl(withLocations) =
         // _++ is prefix and $++ is postfix
         ["_++"; "_--"; "_+"; "_-"; "_~"; "_!"; "$++"; "$--"]
         ["."]
-        ["::"]
     ]
 
     let precedence =
