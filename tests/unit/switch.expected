@@ -45,8 +45,7 @@ float D()
       return 0.;
   }
 }
-void b()
-{}
+void b(){}
 int D(int G)
 {
   switch(G){

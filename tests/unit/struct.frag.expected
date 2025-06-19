@@ -1,8 +1,14 @@
 #version 460
 
-struct r{float t;vec3 r;float n;};
+struct r{
+  float t;
+  vec3 r;
+  float n;
+};
 r e;
-uniform MyInterfaceBlock{r k;};
+uniform MyInterfaceBlock{
+  r k;
+};
 r M()
 {
   return e;
@@ -17,21 +23,34 @@ int i()
   s.t=1.;
   s.n=s.t/2.;
   s=r(1.,vec3(1),s.n);
-  struct{r u;} e;
+  struct{
+    r u;
+  } e;
   for(r e;true;)
     break;
-  for(struct{r u;} e;true;)
+  for(struct{
+    r u;
+  } e;true;)
     break;
   return int(s.r.x+e.u.t+k.n);
 }
-struct{r u;} m;
+struct{
+  r u;
+} m;
 float M(vec4 s)
 {
   float e=s.x-4.;
   return s.w+e*e;
 }
-struct B{int i;int e;};
-struct I{int i;int c;int e;};
+struct B{
+  int i;
+  int e;
+};
+struct I{
+  int i;
+  int c;
+  int e;
+};
 B f;
 I s;
 void main()
@@ -42,4 +61,7 @@ void main()
   s.c=4;
   s.e=5;
 }
-struct O{int i;int e;} N;
+struct O{
+  int i;
+  int e;
+} N;

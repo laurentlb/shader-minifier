@@ -173,29 +173,30 @@ type PrinterImpl(withLocations) =
         let res = sem |> List.map (exprToS 0) |> String.concat ":"
         if res = "" then res else ":" + res
 
-    let rec blockToS (block: StructOrInterfaceBlock) =
+    let rec blockToS indent (block: StructOrInterfaceBlock) =
         let name = match block.name with None -> "" | Some (s: Ident) -> " " + s.Name
         let name = name + block.template
         let c = match block.baseClass with None -> "" | Some s -> $":{s}"
-        let d = block.fields |> List.map (fun s -> declToS 0 s + ";") |> String.concat ""
+        let d = block.members |> List.map (fun s -> $"{nl (indent + 1)}{structMemberToS (indent+1) s};") |> String.concat ""
+        let d' = if d = "" then "" else $"{d}{nl indent}"
         let prefix = match block.blockType with Struct -> "struct" | InterfaceBlock prefix -> prefix
-        out "%s%s{%s}" (sp2 prefix name) c d
+        $"{sp2 prefix name}{c}{{{d'}}}"
 
-    and typeSpecToS = function
+    and typeSpecToS indent = function
         | TypeName s -> s.Name
-        | TypeBlock block -> blockToS block
+        | TypeBlock block -> blockToS indent block
 
-    and typeToS (ty: Type) =
+    and typeToS indent (ty: Type) =
         let get = function
             | [] -> ""
             | li ->
                 let str = List.reduce sp2 li
                 if endsWithIdentChar str then str + " " else str
-        let typeSpec = typeSpecToS ty.name
-        let sizes = String.Join("", [for e in ty.arraySizes -> "[" + exprToS 0 e + "]"])
+        let typeSpec = typeSpecToS indent ty.name
+        let sizes = String.Join("", [for e in ty.arraySizes -> $"[{exprToS indent e}]"])
         out "%s%s%s" (get ty.typeQ) typeSpec sizes
 
-    and declToS indent (ty, vars) =
+    and declToS indent (ty : Type, vars : DeclElt list) =
         let out1 decl =
             let sizes =
                 match decl.sizes with
@@ -216,9 +217,20 @@ type PrinterImpl(withLocations) =
             out "%s%s%s%s" (idToS decl.name) sizes (semToS decl.semantics) init
 
         if vars.IsEmpty then ""
-        else out "%s %s" (typeToS ty) (vars |> commaListToS out1)
+        else $"{typeToS indent ty} {vars |> commaListToS out1}"
+    
+    and funDeclToS indent fct body =
+        match (fct, body) with
+        | fct, Block [] -> $"{funToS indent fct}{{}}"
+        | fct, (Block _ as body) -> $"{funToS indent fct}{stmtToS indent body}"
+        | fct, body -> $"{funToS indent fct}{nl indent}{{{stmtToS (indent+1) body}{nl indent}}}"
 
-    let directiveToS = function
+    and structMemberToS indent structMember =
+        match structMember with
+        | MemberVariable decl -> declToS indent decl
+        | Method (fct, body) -> funDeclToS indent fct body
+
+    and directiveToS = function
         | [dir; name; value] -> out "%s %s%s\n" dir name value
         | li -> out "%s\n" (String.concat " " li)
 
@@ -226,7 +238,7 @@ type PrinterImpl(withLocations) =
     /// Note that the function needs to be recursive to detect things like:
     ///   if(a) for(;;) if(b) {} else {}
     /// https://github.com/laurentlb/Shader_Minifier/issues/143
-    let rec hasDanglingElseProblem = function
+    and hasDanglingElseProblem = function
         | If(_, _, None) ->
             true
         | If(_, _, Some body)
@@ -238,7 +250,7 @@ type PrinterImpl(withLocations) =
         | _ ->
             false
 
-    let rec stmtToS' indent = function
+    and stmtToS' indent = function
         | Block [] -> ";"
         | Block b ->
             let body = List.map (stmtToS (indent+1)) b |> String.concat ""
@@ -290,8 +302,8 @@ type PrinterImpl(withLocations) =
     /// print indented statement
     and stmtToSInd indent i = stmtToS (indent+1) i
 
-    let funToS (f: FunctionType) =
-        out "%s %s(%s)%s" (typeToS f.retType) (idToS f.fName) (commaListToS (declToS 0) f.args) (semToS f.semantics)
+    and funToS indent (f: FunctionType) =
+        out "%s %s(%s)%s" (typeToS indent f.retType) (idToS f.fName) (commaListToS (declToS indent) f.args) (semToS f.semantics)
 
     let topLevelToS = function
         | TLVerbatim s ->
@@ -299,12 +311,10 @@ type PrinterImpl(withLocations) =
             let trailing = if s.Length > 0 && isIdentChar s[s.Length - 1] then " " else ""
             out "%s%s" s trailing
         | TLDirective (d, _) -> directiveToS d
-        | Function (fct, Block []) -> out "%s%s{}" (funToS fct) (nl 0)
-        | Function (fct, (Block _ as body)) -> out "%s%s" (funToS fct) (stmtToS 0 body)
-        | Function (fct, body) -> out "%s%s{%s%s}" (funToS fct) (nl 0) (stmtToS 1 body) (nl 0)
-        | Precision ty -> out "precision %s;" (typeToS ty);
+        | Function (fct, body) -> funDeclToS 0 fct body
+        | Precision ty -> out "precision %s;" (typeToS 0 ty);
         | TLDecl decl -> out "%s;" (declToS 0 decl)
-        | TypeDecl b -> out "%s;" (blockToS b)
+        | TypeDecl b -> out "%s;" (blockToS 0 b)
 
     let printIndented tl = 
         let mutable wasMacro = true
@@ -345,7 +355,7 @@ let printIndented tl = PrinterImpl(false).PrintIndented tl // Indentation is enc
 let print tl = printIndented tl |> stripIndentation
 let writeSymbols shader = PrinterImpl(false).WriteSymbols shader
 let exprToS x = PrinterImpl(false).ExprToS 0 x |> stripIndentation
-let typeToS ty = PrinterImpl(false).TypeToS ty |> stripIndentation
+let typeToS ty = PrinterImpl(false).TypeToS 0 ty |> stripIndentation
 let printWithLoc tl = PrinterImpl(true).PrintIndented tl
 
 let debugDecl (t: DeclElt) =
@@ -361,4 +371,4 @@ let debugIdent (ident: Ident) =
     | Declaration.Variable rv -> debugDecl rv.decl
     | _ -> ident.OldName.ToString()
 
-let debugFunc (funcType: FunctionType) = PrinterImpl(false).FunToS funcType
+let debugFunc (funcType: FunctionType) = PrinterImpl(false).FunToS 0 funcType
