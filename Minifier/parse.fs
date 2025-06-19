@@ -109,6 +109,7 @@ type private ParseImpl(options: Options.Options) =
     // Operators
 
     let precedence = [
+        ["::"], Associativity.Left
         ["*"; "/"; "%"], Associativity.Left
         ["+"; "-"], Associativity.Left
         ["<<"; ">>"], Associativity.Left
@@ -120,7 +121,6 @@ type private ParseImpl(options: Options.Options) =
         ["&&"], Associativity.Left
         ["^^"], Associativity.Left
         ["||"], Associativity.Left
-        ["::"], Associativity.Left
         ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Associativity.Right
     ]
 

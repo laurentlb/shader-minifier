@@ -48,6 +48,7 @@
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/multidimensional-array.hlsl.expected tests/unit/multidimensional-array.hlsl
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/struct_methods.hlsl.expected tests/unit/struct_methods.hlsl
 --no-remove-unused --hlsl --format indented -o tests/unit/struct_scope_resolution.hlsl.expected tests/unit/struct_scope_resolution.hlsl
+--no-remove-unused --hlsl --format indented -o tests/unit/out_of_order_struct_member_functions.hlsl.expected tests/unit/out_of_order_struct_member_functions.hlsl
 
 # Unused removal tests
 
