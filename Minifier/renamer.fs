@@ -177,8 +177,31 @@ type private RenamerVisitor(options: Options.Options) =
     and renStructMember stru hasInstanceName env (structMember : StructMember) =
       match structMember with
       | MemberVariable decl -> renDecl (Field (stru, hasInstanceName)) None env decl
-      // TODO: handle struct methods in a followup
-      | _ -> env
+      | Method (func, _) -> 
+        let env = renType env func.retType
+        let env = renList env (renDecl (FunctionArgument func) (Some env)) func.args
+        renFunction env func
+    
+    and renStructMemberBody stru env (structMember : StructMember) =
+      match structMember with
+      | MemberVariable _ -> env
+      | Method (_, stmt) -> 
+        // In order for function bodies to resolve member variables, we need to
+        // add the member identifiers to the regular identifier table.
+        // Technically this adds all stuct members which is incorrect but we
+        // would need type inference information to appropriately look up the
+        // right set of member identifiers for identifiers holding instances
+        // within the method body.
+        let methodEnv = env.onEnterScope env stmt
+        let methodEnv = {methodEnv with identRenames = Map.fold (fun acc k v -> Map.add k v acc) methodEnv.identRenames methodEnv.memberRenames}
+        renStmt methodEnv stmt |> ignore<Env>
+        env
+
+    and renMembers (stru : Ast.StructOrInterfaceBlock) hasInstanceName env =
+        // Need to first add all declared symbols to the environment before we
+        // can rename their definition bodies.
+        let env = renList env (renStructMember stru hasInstanceName) stru.members
+        renList env (renStructMemberBody stru) stru.members
 
     and renType (env: Env) (ty: Type) =
         match ty.name with
@@ -194,11 +217,11 @@ type private RenamerVisitor(options: Options.Options) =
                       | Some structName -> renNamedStruct env structName
                       | _ -> env
             // This isn't actually recursive with renDecl, because "Embedded struct definitions are not allowed".
-            renList env (renStructMember stru true) stru.members
+            renMembers stru true env
         | TypeBlock { blockType = InterfaceBlock _ } ->
             failwith "Unsupported: interface block declaration not at top level"
 
-    let rec renStmt env =
+    and renStmt env =
         let renOpt o = Option.iter (renExpr env) o
         function
         | Expr e -> renExpr env e; env
@@ -251,7 +274,7 @@ type private RenamerVisitor(options: Options.Options) =
             renList env renCase cl |> ignore<Env>
             env
 
-    let renFunctionWithOverloading env (signature: Signature) (id: Ident) =
+    and renFunctionWithOverloading env (signature: Signature) (id: Ident) =
         // we're looking for a function name, already used before,
         // but not with the same signature, and which is not in options.noRenamingList.
         let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
@@ -272,7 +295,7 @@ type private RenamerVisitor(options: Options.Options) =
             let env = env.Update(env.identRenames, funOverloads, env.availableNames)
             env
 
-    let renFunction env (f: FunctionType) =
+    and renFunction env (f: FunctionType) =
         if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
             env
         elif List.contains f.fName.Name options.noRenamingList then
@@ -293,11 +316,10 @@ type private RenamerVisitor(options: Options.Options) =
         | TypeDecl ({ blockType = InterfaceBlock _ } as interfaceBlock) ->
             // interface block without an instance name: the members are treated as external global variables
             // e.g. `uniform foo { int a; float b; }`
-            renList env (renStructMember interfaceBlock false) interfaceBlock.members
+            renMembers interfaceBlock false env
         | TypeDecl ({ blockType = Struct; name = Some structName } as namedStruct) ->
             let env = renNamedStruct env structName
-            let env = renList env (renStructMember namedStruct false) namedStruct.members
-            env
+            renMembers namedStruct false env
         | TypeDecl { blockType = Struct; name = None } -> // e.g. `struct {int A;};`
             // TIL Declaring an anonymous struct that doesn't declare a variable is legal and does nothing.
             env
