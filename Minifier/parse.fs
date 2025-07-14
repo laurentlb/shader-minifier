@@ -152,11 +152,20 @@ type private ParseImpl(options: Options.Options) =
     let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
     let statement, stmtRef = createParserForwardedToRef()
     let declaration, declRef = createParserForwardedToRef()
+    let pfunction, pfunctionRef = createParserForwardedToRef()
 
     let keyword s = attempt (pstring s .>> notFollowedBy letter .>> notFollowedBy digit .>> notFollowedBy (ch '_')) .>> ws
 
     // A type block, like struct or interface blocks
     let blockSpecifier prefix =
+        let name = opt ident
+
+        let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
+                   |> opt
+                   |>> (function Some s -> $"<{s}>" | None -> "")
+
+        let baseClassName = pipe2 (ch ':' >>. ident |>> (fun id -> id.Name)) generic (+)
+                            |> opt
 
         // Restriction on field names
         let check ((_,l) as arg : Ast.Decl) =
@@ -164,20 +173,16 @@ type private ParseImpl(options: Options.Options) =
                 if decl.name.Name <> options.renameField decl.name.Name then
                     failwithf "Record field name '%s' is not allowed by Shader Minifier,\nbecause it looks like a vec4 field name." decl.name.Name
             arg
-
-        let decls = many (declaration .>> ch ';' |>> check)
-        let name = opt ident
-
-        let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
-                   |> opt
-                   |>> (function Some s -> $"<{s}>" | None -> "")
-        let baseClassName = pipe2 (ch ':' >>. ident |>> (fun id -> id.Name)) generic (+)
-                            |> opt
-        pipe4 name generic baseClassName (between (ch '{') (ch '}') decls)
-            (fun n t c d ->
+        let structMember =
+            attempt (pfunction |>> (function Ast.Function (ft,body) -> Ast.Method(ft, body) | _ -> failwith "unexpected"))
+            <|> (declaration .>> ch ';' |>> check |>> Ast.MemberVariable)
+        let members = many structMember
+        
+        pipe4 name generic baseClassName (between (ch '{') (ch '}') members)
+            (fun n t c m ->
                 Option.iter (fun (i:Ast.Ident) -> forbiddenNames <- i.Name::forbiddenNames) n
                 let blockType = if prefix = "struct" then Ast.Struct else Ast.InterfaceBlock prefix
-                { blockType = blockType; name = n; template = t; baseClass = c; fields = d }: Ast.StructOrInterfaceBlock)
+                { blockType = blockType; name = n; template = t; baseClass = c; members = m }: Ast.StructOrInterfaceBlock)
 
     let structSpecifier = parse {
         let! str = keyword "struct"
@@ -242,17 +247,17 @@ type private ParseImpl(options: Options.Options) =
 
     // eg. "int foo[] = exp, bar = 3"
     do declRef.Value <- (
-        let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
+        let brackets = many (between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
         let init = ch '=' >>. exprNoComma
-        let var = pipe4 ident (opt bracket) semantics (opt init) Ast.makeDecl
+        let var = pipe4 ident brackets semantics (opt init) Ast.makeDecl
         let list = sepBy1 var (ch ',')
         tuple2 specifiedType list
     )
 
     // e.g. int foo[]   used for function arguments
     let singleDeclaration =
-        let bracket = between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, "")))
-        pipe4 specifiedType ident (opt bracket) semantics
+        let brackets = many (between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
+        pipe4 specifiedType ident brackets semantics
             (fun ty id brack sem -> (ty, [Ast.makeDecl id brack sem None]))
 
     // GLSL, eg. "uniform Transform { ... };"
@@ -360,7 +365,7 @@ type private ParseImpl(options: Options.Options) =
         let argList = between (ch '(') (ch ')') argList
         pipe4 specifiedType ident argList semantics Ast.makeFunctionType
 
-    let pfunction =
+    do pfunctionRef.Value <-
         pipe2 functionHeader block (fun head body -> Ast.Function(head, body))
 
     let precision =

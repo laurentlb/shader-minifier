@@ -1,0 +1,1 @@
+{"mappings":{},"shaders":{"tests/unit/file name with-weird caractères.frag":"void main(){gl_FragColor=vec4(.33,.66,.99,1);}"}}

@@ -21,7 +21,9 @@ int m1()
   if(noinline_random>3)
     return 2;
 }
-struct S{int x;};
+struct S{
+  int x;
+};
 S m2()
 {
   return S(0);

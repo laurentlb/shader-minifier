@@ -9,10 +9,14 @@
 
 // tests/unit/interface-block-renaming1.frag
  "#version 460\n"
- "uniform Uniform1{vec4 U;};",
+ "uniform Uniform1{"
+   "vec4 U;"
+ "};",
 
 // tests/unit/interface-block-renaming2.frag
  "#version 460\n"
- "uniform Uniform1{vec4 U;};",
+ "uniform Uniform1{"
+   "vec4 U;"
+ "};",
 
 #endif

@@ -1,0 +1,7 @@
+float a[4][5];
+float b[SIZE_X][SIZE_Y];
+UserT c[SIZE_X][3];
+float d[4][3],e[4][3];
+float f[5][2];
+float g[9][15];
+float h[5][2];

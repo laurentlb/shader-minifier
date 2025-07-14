@@ -6,10 +6,12 @@
 --format js -o tests/real/disco.expected tests/real/disco.frag
 --format nasm -o tests/real/leizex.expected tests/real/leizex.frag
 --format rust -o tests/real/heart.expected tests/real/heart.frag
+--format json -o tests/real/heart2.expected tests/real/heart2.frag
 --format c-variables -o "tests/unit/file name with-weird caractères.frag.c-variables.expected" "tests/unit/file name with-weird caractères.frag"
 # --format js -o "tests/unit/file name with-weird caractères.frag.js.expected" "tests/unit/file name with-weird caractères.frag"
 # --format nasm -o "tests/unit/file name with-weird caractères.frag.nasm.expected" "tests/unit/file name with-weird caractères.frag"
 # --format rust -o "tests/unit/file name with-weird caractères.frag.rust.expected" "tests/unit/file name with-weird caractères.frag"
+--format json -o "tests/unit/file name with-weird caractères.frag.json.expected" "tests/unit/file name with-weird caractères.frag"
 
 # Unit tests
 
@@ -43,6 +45,8 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/layout.frag.expected tests/unit/layout.frag
 --no-remove-unused --format indented -o tests/unit/struct.frag.expected tests/unit/struct.frag
 --no-remove-unused --format indented -o tests/unit/struct2.frag.expected tests/unit/struct2.frag
+--no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/multidimensional-array.hlsl.expected tests/unit/multidimensional-array.hlsl
+--no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/struct_methods.hlsl.expected tests/unit/struct_methods.hlsl
 
 # Unused removal tests
 
