@@ -145,7 +145,8 @@ let init argv =
 let initFiles argv =
     let options, filenames = initPrivate argv
     if options.version then
-        failwithf "%s" helpTextMessage
-    if filenames.Length = 0 then
-        failwith (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
+        printfn "%s" helpTextMessage
+    else
+        if filenames.Length = 0 then
+            failwith (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
     options, filenames

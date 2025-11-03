@@ -40,7 +40,10 @@ let main argv =
             let options, files = Options.initFiles argv
             if options.verbose then
                 printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
-            run options files
+            if options.version then
+                0
+            else
+                run options files
         with
         | :? Argu.ArguParseException as ex ->
             printfn "%s" ex.Message
