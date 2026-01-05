@@ -450,7 +450,10 @@ type private RenamerImpl(options: Options.Options) =
         // They should be preserved in the renaming environment.
         let stillUsedSet =
             [for ident in Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field ||| IdentKind.Type) block -> ident.Name]
-                |> Seq.choose env.identRenames.TryFind |> set
+                |> Seq.map (fun name -> match (env.identRenames.TryFind name) with
+                                        | Some n -> n
+                                        | None -> name
+                           ) |> set
 
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
         let reusable = [for i in reusable -> i.Value]
