@@ -865,7 +865,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         // if(a)return b;return c;  ->  return a?b:c;
         let rec replaceIfReturnsWithReturnTernary = function
             | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest 
-                when not (isStructExpr retT) ->
+                when (not (isStructExpr retT) || options.hlsl) ->
                 [Jump(JumpKeyword.Return, Some (FunCall(Op "?:", [cond; retT; retF])))]
             | stmt :: rest -> stmt :: replaceIfReturnsWithReturnTernary rest
             | stmts -> stmts
@@ -940,7 +940,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         | _ -> None
                     match (tryCollapseToAssignment eT, tryCollapseToAssignment eF) with
                         // turn if-else of assignments into assignment of ternary
-                        | Some (nameT, initT), Some (nameF, initF) when nameT.Name = nameF.Name && not (isStructVar nameT) ->
+                        | Some (nameT, initT), Some (nameF, initF) when nameT.Name = nameF.Name && (not (isStructVar nameT) || options.hlsl) ->
                             // if(c)x=y;else x=z;  ->  x=c?y:z;
                             Expr (FunCall (Op "=", [Var nameT; FunCall(Op "?:", [cond; initT; initF])]))
                         // turn if-else of expressions into ternary statement
