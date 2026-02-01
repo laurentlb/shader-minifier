@@ -674,7 +674,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | preceding2, Decl (ty2, declElts), following2 ->
             let findAssignmentReplacementFor declElt2 declBefore2 declAfter2 =
                 // Collect previous declarations of the same type.
-                let localDecls = (preceding2 @ declBefore2) |> List.collect (function Decl (ty1, declElts1) when ty2 = ty1 -> declElts1 | _ -> [])
+                let localDecls = (preceding2 @ declBefore2) |> List.collect (
+                    function Decl (ty1, declElts1) when ty2 = ty1 && not ty1.isConst -> declElts1 | _ -> [])
                 let args =
                     match blockLevel with
                     | BlockLevel.FunctionRoot fct ->

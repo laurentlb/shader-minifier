@@ -132,6 +132,7 @@ and Type = {
     member this.access = { isRead = this.isInOrInout; isWrite = this.isOutOrInout }
     member this.isInOrInout =
         not (this.typeQ |> List.contains "out")
+    member this.isConst = this.typeQ |> List.contains "const"
     member this.isOutOrInout =
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
     member this.IsExternal =
