@@ -110,6 +110,9 @@ type private Impl(options: Options.Options, withLocations) =
         |> fprintf out "%s"
 
     let printIndentedIfdef out (shaders: Ast.Shader[]) =
+        fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
+        fprintfn out ""
+        fprintfn out ""
         let mutable versline = "\n"
         [for shader in shaders do
             let lines = getLines shader
