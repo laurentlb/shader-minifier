@@ -103,11 +103,20 @@ type private Impl(options: Options.Options, withLocations) =
         let mutable linenum = 7
         for shader in shaders do
             fprintfn out "#define SHADER_STRING_%s \\" (Ast.mangleToAscii shader.mangledFilename)
-            let shaderlines = getLines shader
+            let lines = getLines shader
+            let (_,firstline) =
+                if List.isEmpty lines then ("","") else List.head lines
+            let lines =
+                if firstline.StartsWith("#version ") then
+                    fprintfn out " _SM_L \"%s\" \\" (escape firstline)
+                    linenum <- linenum + 1
+                    List.tail lines
+                else
+                    lines
             fprintfn out " _SM_L SHADER_MINIFIER_LINE(\"#line %d\")\\" linenum
-            linenum <- linenum + shaderlines.Length + 3
+            linenum <- linenum + lines.Length + 3
             let lines = String.concat Environment.NewLine [
-                for indent, line in shaderlines do
+                for indent, line in lines do
                     let le = escape line
                     sprintf " _SM_L %s\"%s\" \\" indent le ]
             fprintfn out "%s" lines
@@ -144,11 +153,20 @@ type private Impl(options: Options.Options, withLocations) =
         let mutable linenum = 7
         for shader in shaders do
             fprintfn out "%%define SHADER_STRING_%s '' \\" (Ast.mangleToAscii shader.mangledFilename)
-            let shaderlines = getLines shader
+            let lines = getLines shader
+            let (_,firstline) =
+                if List.isEmpty lines then ("","") else List.head lines
+            let lines =
+                if firstline.StartsWith("#version ") then
+                    fprintfn out " _SM_L '%s' \\" (escape firstline)
+                    linenum <- linenum + 1
+                    List.tail lines
+                else
+                    lines
             fprintfn out " _SM_L SHADER_MINIFIER_LINE('#line %d') \\" linenum
-            linenum <- linenum + shaderlines.Length + 3
+            linenum <- linenum + lines.Length + 3
             let lines = String.concat Environment.NewLine [
-                for indent, line in shaderlines do
+                for indent, line in lines do
                     let le = escape line
                     sprintf " _SM_L %s'%s' \\" indent le ]
             fprintfn out "%s" lines
