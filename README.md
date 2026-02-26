@@ -106,7 +106,8 @@ USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug]
                        [--no-renaming-list <string>] [--no-sequence]
                        [--no-remove-unused] [--no-overloading]
                        [--move-declarations] [--preprocess]
-                       [--export-kkp-symbol-maps] [<filename>...]
+                       [--export-kkp-symbol-maps] [--export-indented-text]
+                       [<filename>...]
 
 FILENAMES:
 
@@ -147,6 +148,8 @@ OPTIONS:
     --preprocess          Evaluate some of the file preprocessor directives
     --export-kkp-symbol-maps
                           Export kkpView symbol maps
+    --export-indented-text
+                          Export indented shader text
     --help                display this list of options.
 ```
 
@@ -219,6 +222,19 @@ The output may be used as a drop-in replacement for your original shaders.
 To better understand what Shader Minifier changed and get a more readable
 output, use the flags `--format indented --no-renaming`. This will add some
 indentation to the output, instead of using overly long lines.
+
+Shader Minifier can optionally export the indented shader text at the same time
+as outputting another format, using the flag `--export-indented-text`. This
+allows the indented output to be always available for inspection or for testing
+in an offline tool such as `glslang`.  The indented output filename is the
+primary output filename with the shader language specific extension appended.
+
+When multiple shaders are minified at once, each indented shader is wrapped in
+`#ifdef INCLUDE_<name>`/`#endif`. For example, a minified `vertex.glsl` may be
+validated using:
+```
+glslang -DINCLUDE_vertex_glsl shader_code.h.glsl <options>...
+```
 
 ## Concepts
 

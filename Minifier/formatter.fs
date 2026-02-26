@@ -3,6 +3,10 @@
 open System
 open System.IO
 
+type private ShaderSeparation =
+    | ShaderSeparationComment
+    | ShaderSeparationIfdef
+
 type private Impl(options: Options.Options, withLocations) =
 
     let minify shader =
@@ -92,12 +96,23 @@ type private Impl(options: Options.Options, withLocations) =
         let str = [for shader in shaders -> minify shader] |> String.concat "\n"
         fprintf out "%s" str
 
-    let printIndented out (shaders: Ast.Shader[]) =
+    let printIndented out (shaders: Ast.Shader[]) separation =
         [for shader in shaders do
-            if shaders.Length > 1 then
-                yield "// " + shader.filename + Environment.NewLine
+            let nl = Environment.NewLine
+            let (sep_begin,sep_end) =
+                if shaders.Length > 1 then
+                    match separation with
+                    | ShaderSeparationComment ->
+                        ("// " + shader.filename + nl, "")
+                    | ShaderSeparationIfdef ->
+                        let name = Ast.mangleToAscii shader.mangledFilename
+                        ("#ifdef INCLUDE_" + name + nl, "#endif")
+                else
+                    ("", "")
+            yield sep_begin
             for indent, line in getLines shader do
                 yield indent + line + Environment.NewLine
+            yield sep_end
             yield Environment.NewLine
         ]
         |> String.concat ""
@@ -159,8 +174,12 @@ type private Impl(options: Options.Options, withLocations) =
         fprintfn out "{\"mappings\":%s,\"shaders\":%s}" namesMap shadersMap
 
     member this.Format out shaders exportedNames =
+        if options.exportIndentedText && out <> stdout then
+            use out =
+                new StreamWriter(options.outputNameIndentedText) :> TextWriter
+            printIndented out shaders ShaderSeparationIfdef
         match options.outputFormat with
-        | Options.IndentedText -> printIndented out shaders
+        | Options.IndentedText -> printIndented out shaders ShaderSeparationComment
         | Options.Text -> printNoHeader out shaders
         | Options.CVariables -> printCVariables out shaders exportedNames
         | Options.CArray -> printCArray out shaders exportedNames
