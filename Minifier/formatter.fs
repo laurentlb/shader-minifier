@@ -143,16 +143,16 @@ type private Impl(options: Options.Options, withLocations) =
 
         let mutable linenum = 7
         for shader in shaders do
-            fprintfn out "%%macro SHADER_STRING_%s 0" (Ast.mangleToAscii shader.mangledFilename)
+            fprintfn out "%%define SHADER_STRING_%s '' \\" (Ast.mangleToAscii shader.mangledFilename)
             let shaderlines = getLines shader
-            fprintfn out " _SM_L SHADER_MINIFIER_LINE('#line %d')" linenum
+            fprintfn out " _SM_L SHADER_MINIFIER_LINE('#line %d') \\" linenum
             linenum <- linenum + shaderlines.Length + 3
             let lines = String.concat Environment.NewLine [
                 for indent, line in shaderlines do
                     let le = escape line
-                    sprintf " _SM_L %s'%s'" indent le ]
+                    sprintf " _SM_L %s'%s' \\" indent le ]
             fprintfn out "%s" lines
-            fprintfn out "%%endmacro"
+            fprintfn out ""
 
         for value: Ast.ExportedName in Seq.sort exportedNames do
             fprintfn out "%%define SHADER_%s_%s '%s'" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
@@ -162,7 +162,7 @@ type private Impl(options: Options.Options, withLocations) =
         fprintfn out "%%define SHADER_MINIFIER_LINE(s) ''"
         fprintfn out "%%endif"
         fprintfn out "%%ifndef _SM_L"
-        fprintfn out "%%define _SM_L db SHADER_MINIFIER_LINE(10),"
+        fprintfn out "%%define _SM_L ,SHADER_MINIFIER_LINE(10),"
         fprintfn out "%%endif"
         fprintfn out ""
         fprintfn out "%%endif ; %s" macroName
