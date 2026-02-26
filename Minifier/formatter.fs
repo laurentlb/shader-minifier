@@ -9,30 +9,36 @@ type private ShaderSeparation =
 
 type private Impl(options: Options.Options, withLocations) =
 
-    let minify shader =
+    let minifyInd shader (indented: bool) =
         if options.exportKkpSymbolMaps then
             if options.outputFormat = Options.IndentedText then
                 failwith "exporting symbols is not compatible with indented mode"
             Printer.writeSymbols shader
 
-        match options.outputFormat with
-        | Options.Text | Options.JS | Options.Json ->
-            if withLocations then
-                Printer.printWithLoc shader.code |> Printer.stripIndentation
-            else
-                Printer.print shader.code
-        | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
+        if indented then
             if withLocations then
                 Printer.printWithLoc shader.code
             else
                 Printer.printIndented shader.code
+        else
+            if withLocations then
+                Printer.printWithLoc shader.code |> Printer.stripIndentation
+            else
+                Printer.print shader.code
+
+    let minify shader =
+        match options.outputFormat with
+        | Options.Text | Options.JS | Options.Json ->
+            minifyInd shader false
+        | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
+            minifyInd shader true
 
     let formatPrefix = function
         | Ast.ExportPrefix.Variable -> "var"
         | Ast.ExportPrefix.HlslFunction -> "F"
 
     let getLines shader = [
-        let lines = minify shader
+        let lines = minifyInd shader true
         for line in lines.Trim([|'\000'|]).Split([|'\000'|]) do
             // count the number of \t at the beginning of the string
             let indentLevel = line |> Seq.takeWhile (fun c -> c = '\t') |> Seq.length
