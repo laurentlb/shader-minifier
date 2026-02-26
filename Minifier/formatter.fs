@@ -142,7 +142,7 @@ type private Impl(options: Options.Options, withLocations) =
 
     let printNasmMacros out (shaders: Ast.Shader[]) exportedNames =
         let escape (str: string) =
-            str.Replace("\"", "\\\"").Replace("\n", "', 10, \\\n       '")
+            str.Replace("\n", "', 10, \\\n       '")
 
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
