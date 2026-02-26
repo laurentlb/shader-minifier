@@ -11,10 +11,10 @@ type OutputFormat =
     | [<CustomCommandLine("indented")>] IndentedText
     | [<CustomCommandLine("c-variables")>] CVariables
     | [<CustomCommandLine("c-array")>] CArray
-    | [<CustomCommandLine("c-xdefine")>] CXDefine
+    | [<CustomCommandLine("c-macros")>] CMacros
     | [<CustomCommandLine("js")>] JS
     | [<CustomCommandLine("nasm")>] Nasm
-    | [<CustomCommandLine("nasm-xdefine")>] NasmXDefine
+    | [<CustomCommandLine("nasm-macros")>] NasmMacros
     | [<CustomCommandLine("rust")>] Rust
     | [<CustomCommandLine("json")>] Json
 

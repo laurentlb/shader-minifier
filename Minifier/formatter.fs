@@ -17,7 +17,7 @@ type private Impl(options: Options.Options, withLocations) =
                 Printer.printWithLoc shader.code |> Printer.stripIndentation
             else
                 Printer.print shader.code
-        | Options.IndentedText | Options.CVariables | Options.CArray | Options.CXDefine | Options.NasmXDefine | Options.Nasm | Options.Rust ->
+        | Options.IndentedText | Options.CVariables | Options.CArray | Options.CMacros | Options.NasmMacros | Options.Nasm | Options.Rust ->
             if withLocations then
                 Printer.printWithLoc shader.code
             else
@@ -88,7 +88,7 @@ type private Impl(options: Options.Options, withLocations) =
 
         fprintfn out "#endif"
 
-    let printCXDefine out (shaders: Ast.Shader[]) exportedNames =
+    let printCMacros out (shaders: Ast.Shader[]) exportedNames =
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
@@ -104,13 +104,12 @@ type private Impl(options: Options.Options, withLocations) =
         for shader in shaders do
             fprintfn out "#define SHADER_STRING_%s \\" (Ast.mangleToAscii shader.mangledFilename)
             let shaderlines = getLines shader
-            fprintfn out "  X(\"#line %d\",\"\")\\" linenum
+            fprintfn out " _SM_L SHADER_MINIFIER_LINE(\"#line %d\")\\" linenum
             linenum <- linenum + shaderlines.Length + 3
             let lines = String.concat Environment.NewLine [
                 for indent, line in shaderlines do
                     let le = escape line
-                    let js = max 0 (64 - (le.Length + indent.Length))
-                    sprintf "  X(\"%s\",    \"%s\"%*c)\\" indent le js ' ']
+                    sprintf " _SM_L %s\"%s\" \\" indent le ]
             fprintfn out "%s" lines
             fprintfn out ""
 
@@ -118,9 +117,16 @@ type private Impl(options: Options.Options, withLocations) =
             fprintfn out "#define SHADER_%s_%s \"%s\"" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
         fprintfn out ""
 
+        fprintfn out "#ifndef SHADER_MINIFIER_LINE"
+        fprintfn out "#define SHADER_MINIFIER_LINE(s)"
+        fprintfn out "#endif"
+        fprintfn out "#ifndef _SM_L"
+        fprintfn out "#define _SM_L SHADER_MINIFIER_LINE(\"\\n\")"
+        fprintfn out "#endif"
+        fprintfn out ""
         fprintfn out "#endif // %s" macroName
 
-    let printNasmXDefine out (shaders: Ast.Shader[]) exportedNames =
+    let printNasmMacros out (shaders: Ast.Shader[]) exportedNames =
         let escape (str: string) =
             str.Replace("\"", "\\\"").Replace("\n", "', 10, '")
 
@@ -139,13 +145,12 @@ type private Impl(options: Options.Options, withLocations) =
         for shader in shaders do
             fprintfn out "%%macro SHADER_STRING_%s 0" (Ast.mangleToAscii shader.mangledFilename)
             let shaderlines = getLines shader
-            fprintfn out "  X('#line %d','')" linenum
+            fprintfn out " _SM_L SHADER_MINIFIER_LINE('#line %d')" linenum
             linenum <- linenum + shaderlines.Length + 3
             let lines = String.concat Environment.NewLine [
                 for indent, line in shaderlines do
                     let le = escape line
-                    let js = max 0 (64 - (le.Length + indent.Length))
-                    sprintf "  X('%s',{   '%s'%*c})" indent le js ' ']
+                    sprintf " _SM_L %s'%s'" indent le ]
             fprintfn out "%s" lines
             fprintfn out "%%endmacro"
 
@@ -153,6 +158,13 @@ type private Impl(options: Options.Options, withLocations) =
             fprintfn out "%%define SHADER_%s_%s '%s'" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
         fprintfn out ""
 
+        fprintfn out "%%ifndef SHADER_MINIFIER_LINE"
+        fprintfn out "%%define SHADER_MINIFIER_LINE(s) ''"
+        fprintfn out "%%endif"
+        fprintfn out "%%ifndef _SM_L"
+        fprintfn out "%%define _SM_L db SHADER_MINIFIER_LINE(10),"
+        fprintfn out "%%endif"
+        fprintfn out ""
         fprintfn out "%%endif ; %s" macroName
 
     let printNoHeader out (shaders: Ast.Shader[]) =
@@ -231,10 +243,10 @@ type private Impl(options: Options.Options, withLocations) =
         | Options.Text -> printNoHeader out shaders
         | Options.CVariables -> printCVariables out shaders exportedNames
         | Options.CArray -> printCArray out shaders exportedNames
-        | Options.CXDefine -> printCXDefine out shaders exportedNames
+        | Options.CMacros -> printCMacros out shaders exportedNames
         | Options.JS -> printJSHeader out shaders exportedNames
         | Options.Nasm -> printNasmHeader out shaders exportedNames
-        | Options.NasmXDefine -> printNasmXDefine out shaders exportedNames
+        | Options.NasmMacros -> printNasmMacros out shaders exportedNames
         | Options.Rust -> printRustHeader out shaders exportedNames
         | Options.Json -> printJsonHeader out shaders exportedNames
 
