@@ -2,6 +2,7 @@
 
 open System
 open System.IO
+open System.Linq
 
 type private Impl(options: Options.Options, withLocations) =
 
@@ -89,6 +90,9 @@ type private Impl(options: Options.Options, withLocations) =
         fprintfn out "#endif"
 
     let printCMacros out (shaders: Ast.Shader[]) exportedNames =
+        let escape (str: string) =
+            str.Replace("\"", "\\\"").Replace("\n", "\\n\" \\\n       \"")
+
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
             else Path.GetFileName options.outputName
@@ -106,20 +110,21 @@ type private Impl(options: Options.Options, withLocations) =
             let lines = getLines shader
             let (_,firstline) =
                 if List.isEmpty lines then ("","") else List.head lines
-            let lines =
+            let (wrlines,lines) =
                 if firstline.StartsWith("#version ") then
-                    fprintfn out " _SM_L \"%s\" \\" (escape firstline)
-                    linenum <- linenum + 1
-                    List.tail lines
+                    (sprintf " _SM_L \"%s\" \\\n" (escape firstline), List.tail lines)
                 else
-                    lines
-            fprintfn out " _SM_L SHADER_MINIFIER_LINE(\"#line %d\")\\" linenum
-            linenum <- linenum + lines.Length + 3
-            let lines = String.concat Environment.NewLine [
+                    ("", lines)
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n')
+            let wrlines = String.concat "" [
+                yield sprintf " _SM_L SHADER_MINIFIER_LINE(\"#line %d\") \\\n" linenum
                 for indent, line in lines do
                     let le = escape line
-                    sprintf " _SM_L %s\"%s\" \\" indent le ]
-            fprintfn out "%s" lines
+                    yield sprintf " _SM_L %s\"%s\" \\\n" indent le
+                ]
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n') + 2
             fprintfn out ""
 
         for value: Ast.ExportedName in Seq.sort exportedNames do
@@ -137,7 +142,7 @@ type private Impl(options: Options.Options, withLocations) =
 
     let printNasmMacros out (shaders: Ast.Shader[]) exportedNames =
         let escape (str: string) =
-            str.Replace("\"", "\\\"").Replace("\n", "', 10, '")
+            str.Replace("\"", "\\\"").Replace("\n", "', 10, \\\n       '")
 
         let fileName =
             if options.outputName = "" || options.outputName = "-" then "shader_code.h"
@@ -156,20 +161,21 @@ type private Impl(options: Options.Options, withLocations) =
             let lines = getLines shader
             let (_,firstline) =
                 if List.isEmpty lines then ("","") else List.head lines
-            let lines =
+            let (wrlines,lines) =
                 if firstline.StartsWith("#version ") then
-                    fprintfn out " _SM_L '%s' \\" (escape firstline)
-                    linenum <- linenum + 1
-                    List.tail lines
+                    (sprintf " _SM_L '%s' \\\n" (escape firstline), List.tail lines)
                 else
-                    lines
-            fprintfn out " _SM_L SHADER_MINIFIER_LINE('#line %d') \\" linenum
-            linenum <- linenum + lines.Length + 3
-            let lines = String.concat Environment.NewLine [
+                    ("", lines)
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n')
+            let wrlines = String.concat "" [
+                yield sprintf " _SM_L SHADER_MINIFIER_LINE('#line %d') \\\n" linenum
                 for indent, line in lines do
                     let le = escape line
-                    sprintf " _SM_L %s'%s' \\" indent le ]
-            fprintfn out "%s" lines
+                    yield sprintf " _SM_L %s'%s' \\\n" indent le
+                ]
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n') + 2
             fprintfn out ""
 
         for value: Ast.ExportedName in Seq.sort exportedNames do
