@@ -3,10 +3,6 @@
 open System
 open System.IO
 
-type private ShaderSeparation =
-    | ShaderSeparationComment
-    | ShaderSeparationIfdef
-
 type private Impl(options: Options.Options, withLocations) =
 
     let minifyInd shader (indented: bool) =
@@ -102,24 +98,40 @@ type private Impl(options: Options.Options, withLocations) =
         let str = [for shader in shaders -> minify shader] |> String.concat "\n"
         fprintf out "%s" str
 
-    let printIndented out (shaders: Ast.Shader[]) separation =
+    let printIndented out (shaders: Ast.Shader[]) =
         [for shader in shaders do
-            let nl = Environment.NewLine
-            let (sep_begin,sep_end) =
-                if shaders.Length > 1 then
-                    match separation with
-                    | ShaderSeparationComment ->
-                        ("// " + shader.filename + nl, "")
-                    | ShaderSeparationIfdef ->
-                        let name = Ast.mangleToAscii shader.mangledFilename
-                        ("#ifdef INCLUDE_" + name + nl, "#endif")
-                else
-                    ("", "")
-            yield sep_begin
+            if shaders.Length > 1 then
+                yield "// " + shader.filename + Environment.NewLine
             for indent, line in getLines shader do
                 yield indent + line + Environment.NewLine
-            yield sep_end
             yield Environment.NewLine
+        ]
+        |> String.concat ""
+        |> fprintf out "%s"
+
+    let printIndentedIfdef out (shaders: Ast.Shader[]) =
+        let mutable versline = "\n"
+        [for shader in shaders do
+            let lines = getLines shader
+            if versline = "\n" then
+                let (_,firstline) =
+                    if List.isEmpty lines then ("","") else List.head lines
+                if firstline.StartsWith("#version ") then
+                    versline <- firstline
+                yield versline + Environment.NewLine
+            if versline = "\n" then
+                versline <- "//#version"
+            let (sep_begin,sep_end) =
+                if shaders.Length > 1 then
+                    let name = Ast.mangleToAscii shader.mangledFilename
+                    ("#ifdef INCLUDE_" + name, "#endif // " + name)
+                else
+                    ("", "")
+            yield sep_begin + Environment.NewLine
+            for indent, line in lines do
+                let line = if line = versline then "\n" else line
+                yield indent + line + Environment.NewLine
+            yield sep_end + Environment.NewLine + Environment.NewLine
         ]
         |> String.concat ""
         |> fprintf out "%s"
@@ -183,9 +195,9 @@ type private Impl(options: Options.Options, withLocations) =
         if options.exportIndentedText && out <> stdout then
             use out =
                 new StreamWriter(options.outputNameIndentedText) :> TextWriter
-            printIndented out shaders ShaderSeparationIfdef
+            printIndentedIfdef out shaders
         match options.outputFormat with
-        | Options.IndentedText -> printIndented out shaders ShaderSeparationComment
+        | Options.IndentedText -> printIndented out shaders
         | Options.Text -> printNoHeader out shaders
         | Options.CVariables -> printCVariables out shaders exportedNames
         | Options.CArray -> printCArray out shaders exportedNames
