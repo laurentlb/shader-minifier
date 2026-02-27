@@ -111,19 +111,9 @@ type private Impl(options: Options.Options, withLocations) =
 
     let printIndentedIfdef out (shaders: Ast.Shader[]) =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
-        fprintfn out ""
-        fprintfn out ""
-        let mutable versline = "\n"
+        fprintf out "\n\n\n\n"
         [for shader in shaders do
             let lines = getLines shader
-            if versline = "\n" then
-                let (_,firstline) =
-                    if List.isEmpty lines then ("","") else List.head lines
-                if firstline.StartsWith("#version ") then
-                    versline <- firstline
-                yield versline + Environment.NewLine
-            if versline = "\n" then
-                versline <- "//#version"
             let (sep_begin,sep_end) =
                 if shaders.Length > 1 then
                     let name = Ast.mangleToAscii shader.mangledFilename
@@ -132,7 +122,11 @@ type private Impl(options: Options.Options, withLocations) =
                     ("", "")
             yield sep_begin + Environment.NewLine
             for indent, line in lines do
-                let line = if line = versline then "\n" else line
+                let line =
+                    if shaders.Length > 1 && line.StartsWith("#version ") then
+                        "// " + line
+                    else
+                        line
                 yield indent + line + Environment.NewLine
             yield sep_end + Environment.NewLine + Environment.NewLine
         ]
