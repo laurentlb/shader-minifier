@@ -19,7 +19,7 @@ let private renList env fct li =
 type private Namespace = VarFunStruct | FieldsOfAllStruct // we consider that all members share a common namespace.
 
 // Environment for renamer
-// This object is useful to separate the AST walking from the renaming strategy.
+// This stores the mappings of old names to new names during the renaming visit of the AST.
 // Maybe we could use a single mutable object, instead of creating envs all the time.
 // TODO: create a real class.
 [<NoComparison; NoEquality>]
@@ -35,25 +35,15 @@ type private Env = {
     availableFieldNames: string list
 
     exportedNames: ExportedName list ref
-
-    // Whether multiple functions can have the same name (but different signature).
-    allowOverloading: bool
-    // Function that decides a name (and returns the modified Env).
-    newName: Namespace -> Env -> Ident -> Env
-    // Function called when we enter a scope, to support name reuse via shadowing
-    onEnterScope: Env -> Stmt -> Env
 }
 with
-    static member Create(availableNames, availableFieldNames, allowOverloading, newName, onEnterScope) = {
+    static member Create(availableNames, availableFieldNames) = {
         identRenames = Map.empty
         memberRenames = Map.empty
         funOverloads = Map.empty
         availableNames = availableNames
         availableFieldNames = availableFieldNames
         exportedNames = ref []
-        allowOverloading = allowOverloading
-        newName = newName
-        onEnterScope = onEnterScope
     }
 
     // Renames the identifier and move its new name from availableNames to identRenames.
@@ -86,6 +76,15 @@ type private DeclarationContext =
     | Field of StructOrInterfaceBlock * hasInstanceName: bool
     | FunctionArgument of FunctionType
 
+type private Renamer = {
+    // Function that decides a name (and returns the modified Env).
+    newName: Namespace -> Env -> Ident -> Env
+    // Function called when we enter a scope, to support name reuse via shadowing
+    onEnterScope: Env -> Stmt -> Env
+    // Whether multiple functions can have the same name (but different signature) in the output.
+    allowOverloading: bool
+}
+
 // This visitor has three jobs:
 //  * for every identifier declaration, give it a name (stored in Env) by calling Env.newName or DontRename
 //  * for every identifier use, assign to it the stored name by calling Ident.Rename
@@ -93,7 +92,7 @@ type private DeclarationContext =
 // This happens in two steps:
 //  * first pass on all top level declarations
 //  * second pass on function bodies, with reuse of unused names via shadowing (with onEnterScope)
-type private RenamerVisitor(options: Options.Options) =
+type private RenamerVisitor(options: Options.Options, renamer: Renamer) =
 
     let export env prefix (id: Ident) =
         if not id.IsUniqueId then
@@ -117,7 +116,7 @@ type private RenamerVisitor(options: Options.Options) =
         if options.noRenamingList |> List.contains structName.Name then
             env.DontRename structName
         else
-            let env = env.newName VarFunStruct env structName
+            let env = renamer.newName VarFunStruct env structName
             env
 
     let rec renDecl (context: DeclarationContext) (envForType: Env option) env (ty:Type, vars) =
@@ -141,13 +140,12 @@ type private RenamerVisitor(options: Options.Options) =
                 else
                     match env.identRenames.TryFind(decl.name.Name) with
                     | None -> // first time we see this external: pick a new name, export it
-                        let env = env.newName VarFunStruct env decl.name
+                        let env = renamer.newName VarFunStruct env decl.name
                         export env ExportPrefix.Variable decl.name
                         env
                     | Some name -> // external already declared in another file: rename consistently
                         decl.name.Rename(name)
                         env
-
             if options.noRenamingList |> List.contains decl.name.Name then
                 env.DontRename decl.name
             else
@@ -158,19 +156,19 @@ type private RenamerVisitor(options: Options.Options) =
                     processExternal()
                 | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) ->
                     if hasInstanceName then
-                        env.newName VarFunStruct env decl.name // we have no tests of this and it doesn't work
+                        renamer.newName VarFunStruct env decl.name // we have no tests of this and it doesn't work
                     else
                         processExternal()
                 | Field ({ blockType = Struct }, _) -> // named or anonymous struct, with instance or not
                     match env.memberRenames.TryFind(decl.name.Name) with
                     | None -> // first time we see this struct field: pick a new name
-                        env.newName FieldsOfAllStruct env decl.name
+                        renamer.newName FieldsOfAllStruct env decl.name
                     | Some name -> // struct field already renamed in another struct: rename consistently
                         decl.name.Rename(name)
                         env
-                | TopLevelDeclaration -> env.newName VarFunStruct env decl.name
-                | FunctionArgument _ -> env.newName VarFunStruct env decl.name
-                | LocalDeclaration -> env.newName VarFunStruct env decl.name
+                | TopLevelDeclaration -> renamer.newName VarFunStruct env decl.name
+                | FunctionArgument _ -> renamer.newName VarFunStruct env decl.name
+                | LocalDeclaration -> renamer.newName VarFunStruct env decl.name
 
         renList env renDeclElt vars
 
@@ -208,12 +206,12 @@ type private RenamerVisitor(options: Options.Options) =
             renList env renStmt b |> ignore<Env>
             env
         | If(cond, th, el) ->
-            renStmt (env.onEnterScope env th) th |> ignore<Env>
-            Option.iter (fun el -> renStmt (env.onEnterScope env el) el |> ignore<Env>) el
+            renStmt (renamer.onEnterScope env th) th |> ignore<Env>
+            Option.iter (fun el -> renStmt (renamer.onEnterScope env el) el |> ignore<Env>) el
             renExpr env cond
             env
         | ForD(init, cond, inc, body) as stmt ->
-            let innerEnv = env.onEnterScope env stmt // In the for scope, we use an env that allows shadowing unused outer decls.
+            let innerEnv = renamer.onEnterScope env stmt // In the for scope, we use an env that allows shadowing unused outer decls.
             let envForType = Some env // Use the inner env to rename variables, but use the outer env to rename the variable type!
             let innerEnv = renDecl LocalDeclaration envForType innerEnv init
             renStmt innerEnv body |> ignore<Env>
@@ -222,19 +220,19 @@ type private RenamerVisitor(options: Options.Options) =
             if options.hlsl then innerEnv
             else env
         | ForE(init, cond, inc, body) as stmt ->
-            let innerEnv = env.onEnterScope env stmt
+            let innerEnv = renamer.onEnterScope env stmt
             renOpt init
             renOpt cond
             renOpt inc
             renStmt innerEnv body |> ignore<Env>
             env
         | While(cond, body) as stmt ->
-            let innerEnv = env.onEnterScope env stmt
+            let innerEnv = renamer.onEnterScope env stmt
             renExpr innerEnv cond
             renStmt innerEnv body |> ignore<Env>
             env
         | DoWhile(cond, body) as stmt ->
-            let innerEnv = env.onEnterScope env stmt
+            let innerEnv = renamer.onEnterScope env stmt
             renExpr innerEnv cond
             renStmt innerEnv body |> ignore<Env>
             env
@@ -257,7 +255,7 @@ type private RenamerVisitor(options: Options.Options) =
         let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
             not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
         match env.funOverloads |> Seq.tryFind isFunctionNameAvailableForThisSignature with
-        | Some res when env.allowOverloading ->
+        | Some res when renamer.allowOverloading ->
             // overload an existing function name used with a different signature
             let newName, overloads = res.Key, res.Value
             let funOverloads = env.funOverloads.Add (newName, overloads.Add(signature, id.Name))
@@ -267,7 +265,7 @@ type private RenamerVisitor(options: Options.Options) =
         | _ ->
             // find a new function name
             let prevName = id.Name
-            let env = env.newName VarFunStruct env id
+            let env = renamer.newName VarFunStruct env id
             let funOverloads = env.funOverloads.Add (id.Name, Map.empty.Add(signature, prevName))
             let env = env.Update(env.identRenames, funOverloads, env.availableNames)
             env
@@ -308,7 +306,7 @@ type private RenamerVisitor(options: Options.Options) =
             // Use the top level env to rename the return type.
             let env = renType env fct.retType
             // In the function body, we use an env that allows shadowing unused outer decls.
-            let envForBody = env.onEnterScope env body
+            let envForBody = renamer.onEnterScope env body
             // Use the function body's env to rename arguments, but use the top level env to rename argument types!
             let envForType = Some env
             let envForBody = renList envForBody (renDecl (FunctionArgument fct) envForType) fct.args
@@ -473,20 +471,25 @@ type private RenamerImpl(options: Options.Options) =
                     yield c1.ToString() + c2.ToString()
         ]
 
-    let renameAsts shaders env =
+    let renameAsts shaders env (renamerVisitor: RenamerVisitor) =
         let mutable env = env
         for shader in shaders do
             // Rename top-level and body at the same time (because the body
             // needs the environment matching the top-level).
-            env <- renList env (RenamerVisitor(options).RenTopLevelName) shader.code
-            List.iter (RenamerVisitor(options).RenTopLevelBody env) shader.code
+            env <- renList env (renamerVisitor.RenTopLevelName) shader.code
+            List.iter (renamerVisitor.RenTopLevelBody env) shader.code
 
         env.exportedNames.Value
 
     let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
-        renameAsts shaders env
+        let renamerVisitor = RenamerVisitor(options, {
+            allowOverloading = false
+            onEnterScope = fun env _ -> env
+            newName = newUniqueId numberOfUsedIdents
+        })
+        let env = Env.Create([], [])
+        renameAsts shaders env renamerVisitor
 
     member _.rename shaders =
         // First we rename each identifier into a unique number, getting them out of the way
@@ -505,18 +508,21 @@ type private RenamerImpl(options: Options.Options) =
 
         // Rename each identifier again, this time into valid names, according to the list
         // and to a "context table" (frequencies of adjacent pairs of characters).
-        let allowOverloading = not options.noOverloading
-        let mutable env =
-            if Array.length shaders > 1 then
-                // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
-                let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
-                let contextTable = computeContextTable text
-                Env.Create(names, names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
-            else
-                let contextTable = computeContextTable text
-                Env.Create(names, fieldNames, allowOverloading, optimizeContext contextTable, shadowVariables)
+        let renamerVisitor = RenamerVisitor(options, {
+            allowOverloading = not options.noOverloading
+            onEnterScope = shadowVariables
+            newName =
+                if Array.length shaders > 1 then
+                    let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
+                    let contextTable = computeContextTable text
+                    multiFileRenaming contextTable exportsRenames
+                else
+                    let contextTable = computeContextTable text
+                    optimizeContext contextTable
+        })
+        let mutable env = Env.Create(names, fieldNames)
         env <- env.DontRenameList options.noRenamingList
         env.exportedNames.Value <- exportedNames
-        renameAsts shaders env
+        renameAsts shaders env renamerVisitor
 
 let rename options = RenamerImpl(options).rename
