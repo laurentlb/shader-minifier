@@ -95,7 +95,7 @@ type private Impl(options: Options.Options, withLocations) =
     let printIndented out (shaders: Ast.Shader[]) =
         [for shader in shaders do
             if shaders.Length > 1 then
-                yield "// " + shader.filename
+                yield "// " + shader.filename + Environment.NewLine
             for indent, line in getLines shader do
                 yield indent + line + Environment.NewLine
             yield Environment.NewLine
