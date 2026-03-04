@@ -85,7 +85,7 @@ let mathsFunctions = set([
 let vectorFunctions = set([
     "cross"; "distance"; "dot"; "equal"; "faceforward"; "length"; "normalize";
     "notEqual"; "reflect"; "refract"])
-let textureFunctions = set(["texture"; "textureLod"; "texture2D"])
+let textureFunctions = set(["texture"; "textureLod"; "texture2D"; "texelFetch"; "textureLodOffset"])
 
 let pureBuiltinFunctions =
     trigonometryFunctions +
