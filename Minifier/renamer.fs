@@ -214,8 +214,8 @@ type private RenamerVisitor(options: Options.Options) =
             env
         | ForD(init, cond, inc, body) as stmt ->
             let innerEnv = env.onEnterScope env stmt // In the for scope, we use an env that allows shadowing unused outer decls.
-            let envForType = Some env // Use the inner env to rename variables, but use the outer env to rename the variable type!
-            let innerEnv = renDecl LocalDeclaration envForType innerEnv init
+            let envForType = Some env // Use the outer env to rename the init variable's type! In the inner env the type name might have been removed.
+            let innerEnv = renDecl LocalDeclaration envForType innerEnv init // Use the inner env to rename the init variable.
             renStmt innerEnv body |> ignore<Env>
             Option.iter (renExpr innerEnv) cond
             Option.iter (renExpr innerEnv) inc
@@ -309,9 +309,10 @@ type private RenamerVisitor(options: Options.Options) =
             let env = renType env fct.retType
             // In the function body, we use an env that allows shadowing unused outer decls.
             let envForBody = env.onEnterScope env body
-            // Use the function body's env to rename arguments, but use the top level env to rename argument types!
-            let envForType = Some env
+            // Use the function body's env to rename arguments (they can shadow unused top level names).
+            let envForType = Some env // Use the top level env to rename the argument types! (In the body env the type names might have been removed.)
             let envForBody = renList envForBody (renDecl (FunctionArgument fct) envForType) fct.args
+
             // Use the function body's env to rename in the body.
             renStmt envForBody body |> ignore<Env>
         | _ -> ()
@@ -442,19 +443,31 @@ type private RenamerImpl(options: Options.Options) =
             | true, newName -> env.AddRenaming(ns, id, newName)
             | false, _ -> optimizeContext contextTable ns env id
 
-    // "Garbage collection": remove names that are not used in the block
-    // so that we can reuse them. In other words, this function allows us
-    // to shadow global variables in a function.
+    // Implements name reuse via shadowing. This is called when entering a new scope (function body, if, for, while).
+    // It marks already assigned names as available again when they are not used inside the scope,
+    // so that the names can be reused and shadow the outer names, leading to better compression and shorter names.
+    // For example, this lets local variables shadow global variables when they are not used in the function.
     let shadowVariables (env: Env) block =
-        // Find all the variables known in identRenames that are used in the block.
+        // Find all the already assigned identifiers in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
+        let usedIdents = Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field ||| IdentKind.Type) block
+        let usedNames = [for ident in usedIdents -> ident.Name]
         let stillUsedSet =
-            [for ident in Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field ||| IdentKind.Type) block -> ident.Name]
-                |> Seq.map (fun name -> match (env.identRenames.TryFind name) with
-                                        | Some n -> n
-                                        | None -> name
-                           ) |> set
-
+            usedNames |> Seq.map (
+                fun name -> match (env.identRenames.TryFind name) with
+                            | Some n ->
+                                // This name is a renamable identifier (that was renamed to numbers by the first phase)
+                                // that already has an associated identRename from an outer scope. It is a use that prevents shadowing!
+                                n
+                            | None ->
+                                // This name might be a renamable identifier (that was renamed to numbers by the first phase)
+                                // that has no associated identRename yet, maybe because its declaration is inside the block.
+                                // Or it might be a non-renamable identifiers (that is external, or in no-renaming-list,
+                                // or a built-in function or type constructor).
+                                // Or it might be insidiously an identifier that is already renamed because it is instance-shared
+                                // between AST locations as a result of multi-use-site inlining. And that is a use that prevents shadowing!
+                                name
+                      ) |> set
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
         let reusable = [for i in reusable -> i.Value]
                         |> List.filter (fun x -> not (List.contains x options.noRenamingList))
