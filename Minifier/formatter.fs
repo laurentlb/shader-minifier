@@ -5,30 +5,36 @@ open System.IO
 
 type private Impl(options: Options.Options, withLocations) =
 
-    let minify shader =
+    let minifyInd shader (indented: bool) =
         if options.exportKkpSymbolMaps then
             if options.outputFormat = Options.IndentedText then
                 failwith "exporting symbols is not compatible with indented mode"
             Printer.writeSymbols shader
 
-        match options.outputFormat with
-        | Options.Text | Options.JS | Options.Json ->
-            if withLocations then
-                Printer.printWithLoc shader.code |> Printer.stripIndentation
-            else
-                Printer.print shader.code
-        | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
+        if indented then
             if withLocations then
                 Printer.printWithLoc shader.code
             else
                 Printer.printIndented shader.code
+        else
+            if withLocations then
+                Printer.printWithLoc shader.code |> Printer.stripIndentation
+            else
+                Printer.print shader.code
+
+    let minify shader =
+        match options.outputFormat with
+        | Options.Text | Options.JS | Options.Json ->
+            minifyInd shader false
+        | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
+            minifyInd shader true
 
     let formatPrefix = function
         | Ast.ExportPrefix.Variable -> "var"
         | Ast.ExportPrefix.HlslFunction -> "F"
 
     let getLines shader = [
-        let lines = minify shader
+        let lines = minifyInd shader true
         for line in lines.Trim([|'\000'|]).Split([|'\000'|]) do
             // count the number of \t at the beginning of the string
             let indentLevel = line |> Seq.takeWhile (fun c -> c = '\t') |> Seq.length
@@ -103,6 +109,30 @@ type private Impl(options: Options.Options, withLocations) =
         |> String.concat ""
         |> fprintf out "%s"
 
+    let printIndentedIfdef out (shaders: Ast.Shader[]) =
+        fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
+        fprintf out "\n\n\n\n"
+        [for shader in shaders do
+            let lines = getLines shader
+            let (sep_begin,sep_end) =
+                if shaders.Length > 1 then
+                    let name = Ast.mangleToAscii shader.mangledFilename
+                    ("#ifdef INCLUDE_" + name, "#endif // " + name)
+                else
+                    ("", "")
+            yield sep_begin + Environment.NewLine
+            for indent, line in lines do
+                let line =
+                    if shaders.Length > 1 && line.StartsWith("#version ") then
+                        "// " + line
+                    else
+                        line
+                yield indent + line + Environment.NewLine
+            yield sep_end + Environment.NewLine + Environment.NewLine
+        ]
+        |> String.concat ""
+        |> fprintf out "%s"
+
     let printJSHeader out (shaders: Ast.Shader[]) exportedNames =
         fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
 
@@ -159,6 +189,10 @@ type private Impl(options: Options.Options, withLocations) =
         fprintfn out "{\"mappings\":%s,\"shaders\":%s}" namesMap shadersMap
 
     member this.Format out shaders exportedNames =
+        if options.exportIndentedText && out <> stdout then
+            use out =
+                new StreamWriter(options.outputNameIndentedText) :> TextWriter
+            printIndentedIfdef out shaders
         match options.outputFormat with
         | Options.IndentedText -> printIndented out shaders
         | Options.Text -> printNoHeader out shaders

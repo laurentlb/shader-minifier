@@ -41,6 +41,7 @@ type CliArguments =
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
     | [<CustomCommandLine("--preprocess")>] Preprocess
     | [<CustomCommandLine("--export-kkp-symbol-maps")>] ExportKkpSymbolMaps
+    | [<CustomCommandLine("--export-indented-text")>] ExportIndentedText
     | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
@@ -64,12 +65,14 @@ type CliArguments =
             | MoveDeclarations -> "Move declarations to group them"
             | Preprocess -> "Evaluate some of the file preprocessor directives"
             | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
+            | ExportIndentedText -> "Export indented shader text"
             | Filenames _ -> "List of files to minify"
             | Version -> "Display the version and exit"
 
 type Options = {
     version: bool
     outputName: string
+    outputNameIndentedText: string
     outputFormat: OutputFormat
     verbose: bool
     debug: bool
@@ -87,6 +90,7 @@ type Options = {
     moveDeclarations: bool
     preprocess: bool
     exportKkpSymbolMaps: bool
+    exportIndentedText: bool
 }
 with
     member this.renameField field =
@@ -105,9 +109,11 @@ let private argParser = lazy (
 
 let private initPrivate argv =
     let args = argParser.Value.Parse(argv)
+    let outputName = args.GetResult(OutputName, defaultValue = "shader_code.h");
+    let hlsl = args.Contains(Hlsl)
     let options = {
         version = args.Contains Version
-        outputName = args.GetResult(OutputName, defaultValue = "shader_code.h");
+        outputName = outputName
         outputFormat = args.GetResult(FormatArg, defaultValue = CVariables);
         verbose = args.Contains(Verbose)
         debug =
@@ -116,7 +122,7 @@ let private initPrivate argv =
         canonicalFieldNames = (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
         preserveExternals = args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         preserveAllGlobals = args.Contains(PreserveAllGlobals)
-        hlsl = args.Contains(Hlsl)
+        hlsl = hlsl
         noInlining = args.Contains(NoInlining)
         noOverloading = args.Contains(NoOverloading)
         aggroInlining = args.Contains(AggroInlining) && not (args.Contains(NoInlining))
@@ -126,6 +132,10 @@ let private initPrivate argv =
         moveDeclarations = args.Contains(MoveDeclarations)
         preprocess = args.Contains(Preprocess)
         exportKkpSymbolMaps = args.Contains(ExportKkpSymbolMaps)
+        exportIndentedText = args.Contains(ExportIndentedText)
+        outputNameIndentedText =
+            let shaderext = if hlsl then ".hlsl" else ".glsl"
+            outputName + shaderext
         noRenamingList =
             let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
             [for i in opt.Split([|','|]) -> i.Trim()]

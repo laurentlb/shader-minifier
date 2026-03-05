@@ -97,14 +97,17 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl]
-                       [--format <text|indented|c-variables|c-array|js|nasm|rust>]
+USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug]
+                       [--hlsl]
+                       [--format <text|indented|c-variables|c-array|js|nasm|rust|json>]
                        [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
-                       [--no-remove-unused] [--no-overloading] [--move-declarations]
-                       [--preprocess] [--export-kkp-symbol-maps] [<filename>...]
+                       [--no-remove-unused] [--no-overloading]
+                       [--move-declarations] [--preprocess]
+                       [--export-kkp-symbol-maps] [--export-indented-text]
+                       [<filename>...]
 
 FILENAMES:
 
@@ -117,32 +120,36 @@ OPTIONS:
     -v                    Verbose, display additional information
     --debug               Debug, display more additional information
     --hlsl                Use HLSL (default is GLSL)
-    --format <text|indented|c-variables|c-array|js|nasm|rust>
-                          Choose to format the output (use 'text' if you want just
-                          the shader)
+    --format <text|indented|c-variables|c-array|js|nasm|rust|json>
+                          Choose to format the output (use 'text' if you want
+                          just the shader)
     --field-names <rgba|xyzw|stpq>
-                          Choose the field names for vectors: 'rgba', 'xyzw', or
-                          'stpq'
+                          Choose the field names for vectors: 'rgba', 'xyzw',
+                          or 'stpq'
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
     --no-inlining         Do not automatically inline variables and functions
-    --aggressive-inlining Aggressively inline constants. This can reduce output size
-                          due to better constant folding. It can also increase
-                          output size due to repeated inlined constants, but this
-                          increased redundancy can be beneficial to compression,
-                          leading to a smaller final compressed size anyway. Does
-                          nothing if inlining is disabled.
+    --aggressive-inlining Aggressively inline constants. This can reduce output
+                          size due to better constant folding. It can also
+                          increase output size due to repeated inlined
+                          constants, but this increased redundancy can be
+                          beneficial to compression, leading to a smaller final
+                          compressed size anyway. Does nothing if inlining is
+                          disabled.
     --no-renaming         Do not rename anything
     --no-renaming-list <string>
                           Comma-separated list of functions to preserve
     --no-sequence         Do not use the comma operator trick
     --no-remove-unused    Do not remove unused code
-    --no-overloading      When renaming functions, do not introduce new overloads
+    --no-overloading      When renaming functions, do not introduce new
+                          overloads
     --move-declarations   Move declarations to group them
     --preprocess          Evaluate some of the file preprocessor directives
     --export-kkp-symbol-maps
                           Export kkpView symbol maps
+    --export-indented-text
+                          Export indented shader text
     --help                display this list of options.
 ```
 
@@ -215,6 +222,19 @@ The output may be used as a drop-in replacement for your original shaders.
 To better understand what Shader Minifier changed and get a more readable
 output, use the flags `--format indented --no-renaming`. This will add some
 indentation to the output, instead of using overly long lines.
+
+Shader Minifier can optionally export the indented shader text at the same time
+as outputting another format, using the flag `--export-indented-text`. This
+allows the indented output to be always available for inspection or for testing
+in an offline tool such as `glslang`.  The indented output filename is the
+primary output filename with the shader language specific extension appended.
+
+When multiple shaders are minified at once, each indented shader is wrapped in
+`#ifdef INCLUDE_<name>`/`#endif`. For example, a minified `vertex.glsl` may be
+validated using:
+```
+glslang -DINCLUDE_vertex_glsl shader_code.h.glsl <options>...
+```
 
 ## Concepts
 
