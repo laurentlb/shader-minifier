@@ -1,0 +1,450 @@
+; Generated with Shader Minifier 1.5.1 (https://github.com/laurentlb/Shader_Minifier/)
+%ifndef NASM_MACROS_ASM_EXPECTED_
+%define NASM_MACROS_ASM_EXPECTED_
+
+%define SHADER_STRING_fxaa_frag '' \
+ _SM_L '#version 150', 10, \
+       '' \
+ _SM_L SHADER_MINIFIER_LINE('#line 9') \
+ _SM_L 'out vec4 v;' \
+ _SM_L 'const vec2 m=vec2(1920,1080);' \
+ _SM_L 'uniform sampler2D i;' \
+ _SM_L 'void main()' \
+ _SM_L '{' \
+ _SM_L   'vec2 y=1./m,f=gl_FragCoord.xy*y;' \
+ _SM_L   'vec4 x=vec4(f,f-y*.5);' \
+ _SM_L   'vec3 z=vec3(.299,.587,.114);' \
+ _SM_L   'float s=dot(textureLod(i,x.zw,0.).xyz,z),e=dot(textureLod(i,x.zw+vec2(1,0)*y.xy,0.).xyz,z),a=dot(textureLod(i,x.zw+vec2(0,1)*y.xy,0.).xyz,z),w=dot(textureLod(i,x.zw+vec2(1)*y.xy,0.).xyz,z),c=dot(textureLod(i,x.xy,0.).xyz,z);' \
+ _SM_L   'f=vec2(-s-e+a+w,s+a-e-w);' \
+ _SM_L   'float r=1./(min(abs(f.x),abs(f.y))+1./128.);' \
+ _SM_L   'f=min(vec2(8),max(vec2(-8),f*r))*y.xy;' \
+ _SM_L   'vec3 d=.5*(textureLod(i,x.xy+f*(1./3.-.5),0.).xyz+textureLod(i,x.xy+f*(2./3.-.5),0.).xyz),t=d*.5+.25*(textureLod(i,x.xy+f*-.5,0.).xyz+textureLod(i,x.xy+f*.5,0.).xyz);' \
+ _SM_L   'r=dot(t,z);' \
+ _SM_L   'v=r<min(c,min(min(s,e),min(a,w)))||r>max(c,max(max(s,e),max(a,w)))?' \
+ _SM_L     'vec4(d,1):' \
+ _SM_L     'vec4(t,1);' \
+ _SM_L '}' \
+
+%define SHADER_STRING_leizex_frag '' \
+ _SM_L SHADER_MINIFIER_LINE('#line 30') \
+ _SM_L '#extension GL_EXT_gpu_shader4:enable', 10, \
+       '' \
+ _SM_L 'uniform vec2 x;' \
+ _SM_L 'uniform float f;' \
+ _SM_L 'uniform sampler2D y,z,a,w;' \
+ _SM_L 'float t(int v)' \
+ _SM_L '{' \
+ _SM_L   'v^=v<<13;' \
+ _SM_L   'v=v*(v*v*15731+789221)+1376312589&2147483647;' \
+ _SM_L   'return float(v);' \
+ _SM_L '}' \
+ _SM_L 'float t(vec3 v,int f)' \
+ _SM_L '{' \
+ _SM_L   'ivec3 m=ivec3(floor(v));' \
+ _SM_L   'vec3 x=fract(v);' \
+ _SM_L   'x=x*x*(3.-2.*x);' \
+ _SM_L   'f+=m.x+m.y*57+113*m.z;' \
+ _SM_L   'float y=mix(mix(mix(t(f),t(f+1),x.x),mix(t(f+57),t(f+58),x.x),x.y),mix(mix(t(f+113),t(f+114),x.x),mix(t(f+170),t(f+171),x.x),x.y),x.z);' \
+ _SM_L   'return 1.-y*(1./1073741824.);' \
+ _SM_L '}' \
+ _SM_L 'vec2 t(vec3 v)' \
+ _SM_L '{' \
+ _SM_L   'ivec3 m=ivec3(floor(v));' \
+ _SM_L   'vec3 y=fract(v);' \
+ _SM_L   'vec2 x=vec2(1);' \
+ _SM_L   'for(int v=-1;v<=1;v++)' \
+ _SM_L     'for(int f=-1;f<=1;f++)' \
+ _SM_L       'for(int i=-1;i<=1;i++)' \
+ _SM_L         '{' \
+ _SM_L           'int z=m.x+i+57*(m.y+f)+113*(m.z+v);' \
+ _SM_L           'vec3 s=vec3(float(i),float(f),float(v))-y+vec3(t(z),t(z+1217),t(z+2513))/2147483647.;' \
+ _SM_L           'float a=dot(s,s);' \
+ _SM_L           'if(a<x.x)' \
+ _SM_L             'x.y=x.x,x.x=a;' \
+ _SM_L           'else if(a<x.y)' \
+ _SM_L             'x.y=a;' \
+ _SM_L         '}' \
+ _SM_L   'return.25*sqrt(x);' \
+ _SM_L '}' \
+ _SM_L 'float s(vec3 v)' \
+ _SM_L '{' \
+ _SM_L   'return.5*t(v,0)+.25*t(v*2.,0)+.125*t(v*4.,0)+.0625*t(v*8.,0);' \
+ _SM_L '}' \
+ _SM_L 'float s(vec3 v,out float x)' \
+ _SM_L '{' \
+ _SM_L   'vec3 f=mod(vec3(1024)+v,1.)-.5;' \
+ _SM_L   'float y=sqrt(dot(f,f))-.09,i=t(4.*v,0);' \
+ _SM_L   'y+=.8*i;' \
+ _SM_L   'x=clamp(-1.5*i,0.,1.);' \
+ _SM_L   'vec2 m=t(16.*v);' \
+ _SM_L   'i=clamp(m[1]-m[0],0.,1.);' \
+ _SM_L   'y-=i;' \
+ _SM_L   'x*=clamp(i*12.,0.,1.);' \
+ _SM_L   'return y;' \
+ _SM_L '}' \
+ _SM_L 'vec3 n(vec3 v)' \
+ _SM_L '{' \
+ _SM_L   'float x;' \
+ _SM_L   'vec3 f=vec3(s(v+vec3(2e-4,0,0),x)-s(v-vec3(2e-4,0,0),x),s(v+vec3(0,2e-4,0),x)-s(v-vec3(0,2e-4,0),x),s(v+vec3(0,0,2e-4),x)-s(v-vec3(0,0,2e-4),x));' \
+ _SM_L   'return normalize(f);' \
+ _SM_L '}' \
+ _SM_L 'void n(out vec3 v,out vec3 x,vec2 m)' \
+ _SM_L '{' \
+ _SM_L   'float y=f;' \
+ _SM_L   'vec2 i=m;' \
+ _SM_L   'float z=i.x*i.x*.32+i.y*i.y;' \
+ _SM_L   'i=i*(7.-sqrt(37.5-11.5*z))/(z+1.);' \
+ _SM_L   'vec3 s=vec3(0,1.5,2);' \
+ _SM_L   'x=s+vec3(-sin(6.2831853*y/20.),.75*cos(6.2831853*y/20.+.5),-cos(6.2831853*y/20.));' \
+ _SM_L   's+=.075*vec3(t(vec3(2.*y,0,.5),0),t(vec3(2.*y,.1,.4),7),t(vec3(2.*y,.2,.3),9));' \
+ _SM_L   'z=.1*t(vec3(2.*y,0,0),13);' \
+ _SM_L   's=normalize(s-x);' \
+ _SM_L   'vec3 a=normalize(cross(s,vec3(0,cos(z),sin(z))));' \
+ _SM_L   'v=normalize(i.x*a+i.y*normalize(cross(a,s))+s);' \
+ _SM_L '}' \
+ _SM_L 'vec3 n(vec3 v,vec3 f)' \
+ _SM_L '{' \
+ _SM_L   'float x=s(256.*f);' \
+ _SM_L   'return normalize(v+vec3(s(256.*(f+vec3(5e-4,0,0)))-x,s(256.*(f+vec3(0,5e-4,0)))-x,s(256.*(f+vec3(0,0,5e-4)))-x));' \
+ _SM_L '}' \
+ _SM_L 'void main()' \
+ _SM_L '{' \
+ _SM_L   'vec2 v=-1.+2.*gl_FragCoord.xy/x.xy;' \
+ _SM_L   'vec3 f,i;' \
+ _SM_L   'n(i,f,v);' \
+ _SM_L   'float y,z;' \
+ _SM_L   'vec3 m,a;' \
+ _SM_L   'for(y=.1;y<5.;)' \
+ _SM_L     '{' \
+ _SM_L       'a=f+y*i;' \
+ _SM_L       'float v=s(a,z);' \
+ _SM_L       'if(v<.001)' \
+ _SM_L         'break;' \
+ _SM_L       'y+=v*.12;' \
+ _SM_L     '}' \
+ _SM_L   'm=n(a);' \
+ _SM_L   'f=vec3(1.+.5*s(96.*a));' \
+ _SM_L   'm=n(m,.25*a);' \
+ _SM_L   'f=f*(vec3(.5,.55,.6)+vec3(.6,.5,.3)*clamp(dot(m,vec3(.8,.5,-.1)),0.,1.)*3.)*z/(1.+y)+vec3(1.06,1.14,1)*(1.-exp2(-.25*y));' \
+ _SM_L   'f=clamp((f*f+f)*.5*vec3(1,1.2,1),0.,1.)*(.5+.5*(1.-v.x)*(1.+v.x));' \
+ _SM_L   'gl_FragColor=vec4(f,1);' \
+ _SM_L '}' \
+
+%define SHADER_STRING_robin_frag '' \
+ _SM_L SHADER_MINIFIER_LINE('#line 135') \
+ _SM_L '#define SUN_COLOUR vec3(1.,.76,.6)', 10, \
+       '' \
+ _SM_L 'vec4 r,c;' \
+ _SM_L 'vec2 d;' \
+ _SM_L 'vec4 S[2],u[2];' \
+ _SM_L 'vec3 n(samplerCube v,vec3 x,float f)' \
+ _SM_L '{' \
+ _SM_L   'float m=max(max(abs(x.x),abs(x.y)),abs(x.z));' \
+ _SM_L   'f=(float(f)-1.)/float(f);' \
+ _SM_L   'if(abs(x.x)!=m)' \
+ _SM_L     'x.x*=f;' \
+ _SM_L   'if(abs(x.y)!=m)' \
+ _SM_L     'x.y*=f;' \
+ _SM_L   'if(abs(x.z)!=m)' \
+ _SM_L     'x.z*=f;' \
+ _SM_L   'return texture(v,x).xyz;' \
+ _SM_L '}' \
+ _SM_L 'float n(float v)' \
+ _SM_L '{' \
+ _SM_L   'vec2 f=fract(vec2(v*5.3983,v*5.4427));' \
+ _SM_L   'f+=dot(f.yx,f.xy+vec2(21.5351,14.3137));' \
+ _SM_L   'return fract(f.x*f.y*95.4337);' \
+ _SM_L '}' \
+ _SM_L 'float n(vec2 v)' \
+ _SM_L '{' \
+ _SM_L   'v=fract(v*vec2(5.3983,5.4427));' \
+ _SM_L   'v+=dot(v.yx,v.xy+vec2(21.5351,14.3137));' \
+ _SM_L   'return fract(v.x*v.y*95.4337);' \
+ _SM_L '}' \
+ _SM_L 'float p(vec3 v)' \
+ _SM_L '{' \
+ _SM_L   'vec3 x=floor(v),f=fract(v);' \
+ _SM_L   'f=f*f*(3.-2.*f);' \
+ _SM_L   'vec2 m=textureLod(iChannel1,(x.xy+vec2(37,17)*x.z+f.xy+.5)/256.,0.).yx;' \
+ _SM_L   'return mix(m.x,m.y,f.z);' \
+ _SM_L '}' \
+ _SM_L 'float s(vec3 v)' \
+ _SM_L '{' \
+ _SM_L   'float f=1.6*p(v);' \
+ _SM_L   'v*=2.02;' \
+ _SM_L   'f+=.35*p(v);' \
+ _SM_L   'v*=2.33;' \
+ _SM_L   'return f+.225*p(v);' \
+ _SM_L '}' \
+ _SM_L 'vec2 n(vec2 y,float v)' \
+ _SM_L '{' \
+ _SM_L   'float x=sin(v);' \
+ _SM_L   'v=cos(v);' \
+ _SM_L   'return mat2(v,x,-x,v)*y;' \
+ _SM_L '}' \
+ _SM_L 'float p(float v)' \
+ _SM_L '{' \
+ _SM_L   'float f=fract(v);' \
+ _SM_L   'v=floor(v);' \
+ _SM_L   'f=f*f*(3.-2.*f);' \
+ _SM_L   'return mix(n(v),n(v+1.),f);' \
+ _SM_L '}' \
+ _SM_L 'float n(float v,float x)' \
+ _SM_L '{' \
+ _SM_L   'float f=fract(v);' \
+ _SM_L   'v=floor(v);' \
+ _SM_L   'f=smoothstep(0.,x,f);' \
+ _SM_L   'return mix(n(v),n(v+1.),f);' \
+ _SM_L '}' \
+ _SM_L 'float n(vec3 v,float x)' \
+ _SM_L '{' \
+ _SM_L   'return length(v)-x;' \
+ _SM_L '}' \
+ _SM_L 'vec3 p(vec3 v,vec3 x)' \
+ _SM_L '{' \
+ _SM_L   'vec3 f=texture(iChannel0,v.yz).xzy,y=texture(iChannel0,v.zx).xyz,z=texture(iChannel1,v.xy,2.).yyy;' \
+ _SM_L   'return(f*abs(x.x)+y*abs(x.y)+z*abs(x.z))/(abs(x.x)+abs(x.y)+abs(x.z))*.9;' \
+ _SM_L '}' \
+ _SM_L 'float n(vec3 v,vec2 x)' \
+ _SM_L '{' \
+ _SM_L   'x=abs(vec2(length(v.xz),v.y))-x;' \
+ _SM_L   'return min(max(x.x,x.y),0.)+length(max(x,0.));' \
+ _SM_L '}' \
+ _SM_L 'float n(vec3 v,vec3 f,vec3 m,float y,float x)' \
+ _SM_L '{' \
+ _SM_L   'v-=f;' \
+ _SM_L   'f=m-f;' \
+ _SM_L   'float z=clamp(dot(v,f)/dot(f,f),0.,1.);' \
+ _SM_L   'return length(v-f*z)-y+x*z;' \
+ _SM_L '}' \
+ _SM_L 'float s(vec3 v,vec3 x)' \
+ _SM_L '{' \
+ _SM_L   'return length(max(abs(v)-x,0.))-.3;' \
+ _SM_L '}' \
+ _SM_L 'float n(float v,float f,float x)' \
+ _SM_L '{' \
+ _SM_L   'float y=clamp(.5+.5*(f-v)/x,0.,1.);' \
+ _SM_L   'return mix(f,v,y)-x*y*(1.-y);' \
+ _SM_L '}' \
+ _SM_L 'vec3 n(vec3 v,vec3 x,out float f)' \
+ _SM_L '{' \
+ _SM_L   'vec3 m=v;' \
+ _SM_L   'v.xz=n(v.xz,d.x);' \
+ _SM_L   'vec3 i=v;' \
+ _SM_L   'v.y-=c.z;' \
+ _SM_L   'v.yz=n(v.yz,c.x);' \
+ _SM_L   'vec3 y=p(v*.5,x).zxy*.45;' \
+ _SM_L   'f=0.;' \
+ _SM_L   'float z=n(s(v-vec3(0,-1.4,-.3),vec3(.3+.1*r.x,0,.1+.3*r.x)),n(v-vec3(0,-.25,0),1.33),2.2);' \
+ _SM_L   'vec3 a=v;' \
+ _SM_L   'a.x=abs(a.x);' \
+ _SM_L   'z=n(z,n(a,vec3(1.5,-.2,1.7),vec3(1.5,-1,-1.6),.3,.3),.4);' \
+ _SM_L   'vec3 t=vec3(.4,.32,.2)*texture(iChannel1,a.zy*vec2(.05,.3)).x;' \
+ _SM_L   'y=mix(t*t,y,clamp(n(a,vec3(1.3,.2,.2),vec3(1.5+c.y,-1,-1.6),.4,.4),0.,1.));' \
+ _SM_L   't=vec3(.4)*texture(iChannel1,v.zy*vec2(.05,.3)).x;' \
+ _SM_L   'y=mix(t*t,y,clamp(n(a,vec3(.1,-.5,-1.5),vec3(.15,-1.2,-8),.2,.2),0.,1.));' \
+ _SM_L   'a=v;' \
+ _SM_L   'a.xy=n(a.xy,r.y);' \
+ _SM_L   'a.zy=n(a.zy,r.z);' \
+ _SM_L   'z=n(z,n(a-vec3(0,1,1.4),.8),1.);' \
+ _SM_L   'float w=min(n(v-vec3(0,-.9,2.1),1.5),n(a-vec3(0,.5,1.9),1.2));' \
+ _SM_L   'w+=s(v*20.)*.2;' \
+ _SM_L   'w=max(w,-n(a-vec3(0,2,1.2),1.1));' \
+ _SM_L   'y=mix(y,vec3(.4,.1,0)*(.8+s(v*12.)*.2),clamp((z-w)*3.-(1.-step(-3.,i.y))*3.,0.,1.));' \
+ _SM_L   'if(z>n(a-vec3(0,.9,2.5),vec3(0,0,-.4),vec3(0,r.w*.2,.4),.15,.1))' \
+ _SM_L     'f=.2,y=vec3(.02,.01,0);' \
+ _SM_L   'a.x=abs(a.x);' \
+ _SM_L   'if(n(a-vec3(.35,1.1,2.05),.11)<z)' \
+ _SM_L     'y=vec3(0),f=.25;' \
+ _SM_L   't=mix(vec3(.2),vec3(.05,.04,0),s(m*2.)*.5);' \
+ _SM_L   't=mix(t,vec3(.05),abs(sin(length(m.xz-vec2(.2,.4))*34.))*abs(x.y));' \
+ _SM_L   'y=mix(t,y,step(-3.4,m.y));' \
+ _SM_L   'i.y-=c.w;' \
+ _SM_L   'i.x=abs(i.x);' \
+ _SM_L   'w=1.-clamp(n(i,vec3(.5,-2.-c.z,-.5),vec3(.8,-3.5,.6),.53,.03)+(1.-step(-3.5,i.y))*50.,0.,1.);' \
+ _SM_L   'y=mix(y,vec3(.05,.02,.02),w);' \
+ _SM_L   'f=mix(f,.1,w);' \
+ _SM_L   'return y;' \
+ _SM_L '}' \
+ _SM_L 'float e(vec3 v)' \
+ _SM_L '{' \
+ _SM_L   'float f;' \
+ _SM_L   'vec3 x=v;' \
+ _SM_L   'v.xz=n(v.xz,d.x);' \
+ _SM_L   'vec3 i=v;' \
+ _SM_L   'v.y-=c.z;' \
+ _SM_L   'v.yz=n(v.yz,c.x);' \
+ _SM_L   'f=n(s(v-vec3(0,-1.4,-.3),vec3(.3+.1*r.x,0,.1+.3*r.x)),n(v-vec3(0,-.25,0),1.33),2.2);' \
+ _SM_L   'vec3 y=v;' \
+ _SM_L   'y.x=abs(y.x);' \
+ _SM_L   'f=n(n(f,n(y,vec3(1.3,.2,.2),vec3(1.5+c.y,-.5,-1.6),.2,.2),.4),n(y,vec3(.6,-.5,-1.5),vec3(.15,-1.2,-8),.2,.2),2.4);' \
+ _SM_L   'v.xy=n(v.xy,r.y);' \
+ _SM_L   'v.zy=n(v.zy,r.z);' \
+ _SM_L   'f=n(n(n(f,n(v-vec3(0,1,1.4),.8),1.),n(v-vec3(0,1,2.5),vec3(0,0,-.4),vec3(0,r.w*.2,.15),.1,.096),.2),n(v-vec3(0,1.05,2.5),vec3(0,-r.w*.25,-1.5),vec3(0,-r.w,.16),.1,.1),.05);' \
+ _SM_L   'v.x=abs(v.x);' \
+ _SM_L   'f=min(f,n(v-vec3(.35,1.1,2.05),.11));' \
+ _SM_L   'f=min(f,n(x-vec3(.2,-12,.4),vec2(1.8,8.5)-s(x*5.)*.1));' \
+ _SM_L   'i.x=abs(i.x);' \
+ _SM_L   'i.y-=c.w;' \
+ _SM_L   'return min(min(min(min(f,n(i,vec3(.5,-2.+c.z+c.w,-.5),vec3(.8,-3.5,.5),.09,.1)),n(i,vec3(.8,-3.5,.5),vec3(.8,-3.5,1.2),.04,.04)),n(i,vec3(.8,-3.5,.5),vec3(1.4,-3.5,.8),.04,.04)),n(i,vec3(.8,-3.5,.5),vec3(.1,-3.5,.8),.04,.04));' \
+ _SM_L '}' \
+ _SM_L 'float e(vec3 v,vec3 x)' \
+ _SM_L '{' \
+ _SM_L   'float f=1.,y=.01,m;' \
+ _SM_L   'for(int r=0;r<8;r++)' \
+ _SM_L     'm=e(v+x*y),f=min(2.5*m/y,f),y+=m*.5+.05;' \
+ _SM_L   'return max(f,0.);' \
+ _SM_L '}' \
+ _SM_L 'vec3 e(vec3 v,vec3 f,vec3 x,vec3 i,float y,float z)' \
+ _SM_L '{' \
+ _SM_L   'vec3 m=normalize(vec3(-.1,.4,.3));' \
+ _SM_L   'float a=e(f,m);' \
+ _SM_L   'vec3 w=v*SUN_COLOUR*max(dot(m,x),0.)*a+v*n(iChannel3,x,64.)*.5;' \
+ _SM_L   'x=reflect(i,x);' \
+ _SM_L   'return w+max(dot(m,x),0.)*SUN_COLOUR*texture(iChannel3,x).xyz*z*a;' \
+ _SM_L '}' \
+ _SM_L 'vec3 e(vec3 v,float x)' \
+ _SM_L '{' \
+ _SM_L   'vec2 f=vec2(.01,0);' \
+ _SM_L   'return normalize(vec3(e(v+f.xyy)-e(v-f.xyy),e(v+f.yxy)-e(v-f.yxy),e(v+f.yyx)-e(v-f.yyx)));' \
+ _SM_L '}' \
+ _SM_L 'float e(float v)' \
+ _SM_L '{' \
+ _SM_L   'return v*.012;' \
+ _SM_L '}' \
+ _SM_L 'float e(vec3 v,vec3 y,vec2 x)' \
+ _SM_L '{' \
+ _SM_L   'float f=2.+.1*n(x.xy*fract(iTime)),i=0.;' \
+ _SM_L   'vec3 m=vec3(0);' \
+ _SM_L   'int a=0;' \
+ _SM_L   'for(int x=0;x<40;x++)' \
+ _SM_L     '{' \
+ _SM_L       'if(a==8||i>=1.||f>45.)' \
+ _SM_L         'break;' \
+ _SM_L       'm=v+f*y;' \
+ _SM_L       'float z=e(f),s=e(m);' \
+ _SM_L       'if(s<z)' \
+ _SM_L         '{' \
+ _SM_L           'float v=max((1.-i)*min((z-s)/z,1.),0.);' \
+ _SM_L           'S[1].yzw=S[1].xyz;' \
+ _SM_L           'S[1].x=S[0].w;' \
+ _SM_L           'S[0].yzw=S[0].xyz;' \
+ _SM_L           'S[0].x=v;' \
+ _SM_L           'u[1].yzw=u[1].xyz;' \
+ _SM_L           'u[1].x=u[0].w;' \
+ _SM_L           'u[0].yzw=u[0].xyz;' \
+ _SM_L           'u[0].x=f;' \
+ _SM_L           'i+=v;' \
+ _SM_L           'a++;' \
+ _SM_L         '}' \
+ _SM_L       'f+=s*.8;' \
+ _SM_L     '}' \
+ _SM_L   'return clamp(i,0.,1.);' \
+ _SM_L '}' \
+ _SM_L 'vec3 e(vec3 v,vec2 x)' \
+ _SM_L '{' \
+ _SM_L   'v=sqrt(v);' \
+ _SM_L   '', 10, \
+       '#define CONTRAST 1.1', 10, \
+       '' \
+ _SM_L   '', 10, \
+       '#define SATURATION 1.2', 10, \
+       '' \
+ _SM_L   '', 10, \
+       '#define BRIGHTNESS 1.15', 10, \
+       '' \
+ _SM_L   'v=mix(vec3(.5),mix(vec3(dot(vec3(.2125,.7154,.0721),v*BRIGHTNESS)),v*BRIGHTNESS,SATURATION),CONTRAST)*(.5+.5*pow(1e2*x.x*x.y*(1.-x.x)*(1.-x.y),.4));' \
+ _SM_L   'return clamp(v,0.,1.);' \
+ _SM_L '}' \
+ _SM_L 'vec3 s(float v)' \
+ _SM_L '{' \
+ _SM_L   'v+=5.;' \
+ _SM_L   'return vec3(1.4+sin(v)*3.5,-.2,5.-sin(v)*2.5);' \
+ _SM_L '}' \
+ _SM_L 'float t(float v)' \
+ _SM_L '{' \
+ _SM_L   'float f=n(v*11.,.1)*abs(sin(v*14.))*.5;' \
+ _SM_L   'return f*smoothstep(.4,.9,n(v*.5+4.,.1));' \
+ _SM_L '}' \
+ _SM_L 'void mainImage(out vec4 v,vec2 x)' \
+ _SM_L '{' \
+ _SM_L   'float f=iTime;' \
+ _SM_L   'vec2 y=x.xy/m.xy,i=(-1.+2.*y)*vec2(m.x/m.y,1);' \
+ _SM_L   'float z=mod(f,40.);' \
+ _SM_L   'd.y=smoothstep(6.,0.,z)+smoothstep(39.,40.,z);' \
+ _SM_L   'vec3 a=s(f*.2);' \
+ _SM_L   'a.z+=d.y*8.;' \
+ _SM_L   'vec3 w=vec3(p(f*1.9-30.)*.5-.25,p(f*2.)*.5-.3,0),o=normalize(w-a),B=normalize(cross(o,vec3(0,1,0)));' \
+ _SM_L   'w=normalize(i.x*B+i.y*cross(B,o)+(1.-d.y*.4)*o);' \
+ _SM_L   'r.x=p(f*2.)+1.;' \
+ _SM_L   'r.y=(n(f*1.2+sin(f*.3)*.7+.7,.05)-.5)*1.5;' \
+ _SM_L   'r.z=n(f*.4-33.,.05)*.5;' \
+ _SM_L   'r.w=t(f)*.8+.02;' \
+ _SM_L   'c.x=sin(n(f*.5,.3)*4.14)*.25+.25;' \
+ _SM_L   'c.y=n(f*.73,.3);' \
+ _SM_L   'z=mod(f*2.,15.);' \
+ _SM_L   'c.z=-smoothstep(0.,.5,z)*smoothstep(.6,.5,z)*.5;' \
+ _SM_L   'r.z-=c.z;' \
+ _SM_L   'c.y=c.z;' \
+ _SM_L   'float l=smoothstep(.4,.6,z)*smoothstep(.8,.6,z)*.8;' \
+ _SM_L   'c.z+=l;' \
+ _SM_L   'c.w=l;' \
+ _SM_L   'd.x=smoothstep(.4,.8,z);' \
+ _SM_L   'if(mod(f*2.,30.)>=15.)' \
+ _SM_L     'd.x=1.-d.x;' \
+ _SM_L   'o=vec3(0);' \
+ _SM_L   'for(int v=0;v<2;v++)' \
+ _SM_L     'u[v]=vec4(-20),S[v]=vec4(0);' \
+ _SM_L   'l=e(a,w,x);' \
+ _SM_L   'for(int v=0;v<2;v++)' \
+ _SM_L     'for(int f=0;f<4;f++)' \
+ _SM_L       '{' \
+ _SM_L         'float x=0.,y=u[v][f];' \
+ _SM_L         'if(y<0.)' \
+ _SM_L           'continue;' \
+ _SM_L         'vec3 i=a+w*y,z=e(i,e(y)),m=n(i,z,x);' \
+ _SM_L         'o+=e(m,i,z,w,y,x)*S[v][f];' \
+ _SM_L       '}' \
+ _SM_L   'z=smoothstep(1.9,0.,d.y);' \
+ _SM_L   'w=mix(n(iChannel2,w,128.),n(iChannel3,w,64.)*.7,z);' \
+ _SM_L   'o+=w*w*SUN_COLOUR*(1.-l);' \
+ _SM_L   'o=e(o,y)*smoothstep(0.,2.,iTime);' \
+ _SM_L   'v=vec4(o,1);' \
+ _SM_L '}' \
+
+%define SHADER_STRING_heart_frag '' \
+ _SM_L SHADER_MINIFIER_LINE('#line 417') \
+ _SM_L 'uniform float f;' \
+ _SM_L 'uniform vec2 x;' \
+ _SM_L 'uniform vec4 l;' \
+ _SM_L 'void main()' \
+ _SM_L '{' \
+ _SM_L   'vec2 v=(2.*gl_FragCoord.xy-x)/x.y;' \
+ _SM_L   'float y=mod(f,2.)/2.,i=pow(y,.2)*.5+.5;' \
+ _SM_L   'i-=i*.2*sin(y*6.2831*5.)*exp(-y*6.);' \
+ _SM_L   'v*=vec2(.5,1.5)+i*vec2(.5,-.5);' \
+ _SM_L   'y=atan(v.x,v.y)/3.141593;' \
+ _SM_L   'i=length(v);' \
+ _SM_L   'y=abs(y);' \
+ _SM_L   'y=(13.*y-22.*y*y+10.*y*y*y)/(6.-5.*y);' \
+ _SM_L   'gl_FragColor=vec4(step(i,y)*pow(1.-i/y,.25),0,0,1);' \
+ _SM_L '}' \
+
+%define SHADER_VAR_fragColor 'v'
+%define SHADER_VAR_mouse 'l'
+%define SHADER_VAR_resolution 'x'
+%define SHADER_VAR_tex 'i'
+%define SHADER_VAR_tex0 'y'
+%define SHADER_VAR_tex1 'z'
+%define SHADER_VAR_tex2 'a'
+%define SHADER_VAR_tex3 'w'
+%define SHADER_VAR_time 'f'
+
+%ifndef SHADER_MINIFIER_LINE
+%define SHADER_MINIFIER_LINE(s) ''
+%endif
+%ifndef _SM_L
+%define _SM_L ,SHADER_MINIFIER_LINE(10),
+%endif
+
+%endif ; NASM_MACROS_ASM_EXPECTED_
