@@ -37,6 +37,7 @@ let testFiles = [
     "the_real_party_is_in_your_pocket.frag"
     "valley_ball.glsl"
     "yx_long_way_from_home.frag"
+    "moutard.frag"
 ]
 
 let writer = new StringWriter()
@@ -82,8 +83,11 @@ let run () =
     let multifileInputs2 = ["mouton/mouton.vert"; "mouton/mouton.frag"; "mouton/fxaa.frag"]
     let multifileOutput2 = compressionTest [|"--format"; "text"|] multifileInputs2
 
+    let multifileInputs3 = ["vestige/music.frag"; "vestige/post.frag"; "vestige/render.frag"]
+    let multifileOutput3 = compressionTest [|"--format"; "text"|] multifileInputs3
+
     // Tests for individual files.
-    let sizes = multifileOutput1 :: multifileOutput2 :: List.map compressFile testFiles
+    let sizes = multifileOutput1 :: multifileOutput2 :: multifileOutput3 :: List.map compressFile testFiles
     let minifiedSum = List.sumBy fst sizes
     let compressedSum = List.sumBy snd sizes
     log "Total: %5d => %9.3f\n" minifiedSum compressedSum
