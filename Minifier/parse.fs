@@ -4,6 +4,8 @@ open FParsec.Primitives
 open FParsec.CharParsers
 open FParsec
 
+exception ParseError of string
+
 type private ParseImpl(options: Options.Options) =
 
     let mutable forbiddenNames = []
@@ -410,6 +412,6 @@ type private ParseImpl(options: Options.Options) =
             forbiddenNames = forbiddenNames
             reorderFunctions = reorderFunctions
           }
-        | Failure(str, _, _) -> failwithf "Parse error: %s" str
+        | Failure(str, _, _) -> raise (ParseError str)
 
 let runParser options = ParseImpl(options).runParser

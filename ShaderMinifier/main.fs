@@ -19,6 +19,8 @@ let minifyFiles (options: Options.Options) filenames out =
     minifier.Format(out)
 
 let rec printError: exn -> unit = function
+    | ParseError str ->
+        fprintfn stderr "Parse error: %s" str
     | :? System.AggregateException as aggregate ->
         // as minifier can run in parallel, we may have multiple exceptions
         for innerException in aggregate.InnerExceptions do
@@ -27,8 +29,6 @@ let rec printError: exn -> unit = function
         fprintfn stderr "Error: %s" ex.Message
     | :? Argu.ArguParseException as ex ->
         fprintfn stderr "%s" ex.Message
-    | Failure s ->
-        fprintfn stderr "%s" s
     | exn ->
         // unexpected exception, print the stack trace for debugging
         fprintfn stderr "%s" (exn.ToString())
