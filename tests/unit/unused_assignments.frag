@@ -71,14 +71,15 @@ int onlyRemove99AndAThenReturn15() {
     return a+a*b;
 }
 
-mat4 bug541() {
+void bug541() {
 	int i = 1;
+	float u=.5,v=.71;
 	mat4 d=mat4(1);
 	d[i][i]=v;
 	d[i][3]=-u;
 	d[3][i]=u;
 	d[3][3]=v;
-	return d;
+	gi = int(d[1][1]);
 }
 
 void main() {
