@@ -9,10 +9,10 @@ open Ast
 
 type VarUse = {
     access: Access
-    isFieldAccess: bool
+    isPartialAccess: bool
     isDecl: bool
 } with
-    override this.ToString() = $"{this.access}" + (if this.isFieldAccess then " field" else "") + (if this.isDecl then " decl" else " use")
+    override this.ToString() = $"{this.access}" + (if this.isPartialAccess then " field" else "") + (if this.isDecl then " decl" else " use")
 
 [<NoComparison; NoEquality>]
 type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
@@ -21,7 +21,7 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
         | ResolvedVariableUse (v, vd) -> onVarUse this.varUse v vd
         | _ -> ()
 
-    member val varUse: VarUse = { access = { isWrite = false; isRead = true }; isFieldAccess = false; isDecl = false } with get, set
+    member val varUse: VarUse = { access = { isWrite = false; isRead = true }; isPartialAccess = false; isDecl = false } with get, set
 
     member this.using newContext go =
         let old = this.varUse
@@ -80,12 +80,14 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
                     this.visitExpr arg
                 )
         | Subscript(arr, ind) ->
-            this.visitExpr arr
+            this.using { this.varUse with isPartialAccess = true } (fun () ->
+                this.visitExpr arr
+            )
             this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]
                 Option.iter this.visitExpr ind
             )
         | Dot(expr, _field) ->
-            this.using { this.varUse with isFieldAccess = true } (fun () ->
+            this.using { this.varUse with isPartialAccess = true } (fun () ->
                 this.visitExpr expr
             )
         | Cast(_, expr) -> this.visitExpr expr // The ident in a cast is not a Var.

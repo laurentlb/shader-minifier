@@ -605,7 +605,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                             | _ -> ()
 
                         // Note that partial writes (to a field) don't let us remove previous assignments.
-                        if varUse.access.isWrite && not varUse.isFieldAccess then
+                        if varUse.access.isWrite && not varUse.isPartialAccess then
                             // Accept current assignment candidate, as it reached unconditional overwrite without encountering a read.
                             match candidates |> List.tryFind (identsReferToSameVar var) with
                             | Some lastAssignmentToVar ->

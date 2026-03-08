@@ -70,6 +70,15 @@ int onlyRemove99AndAThenReturn15()
   preventMergingConsecutiveAssignments();
   return a+a*b;
 }
+mat4 bug541()
+{
+  mat4 d=mat4(1);
+  d[1][1]=v;
+  d[1][3]=-u;
+  d[3][1]=u;
+  d[3][3]=v;
+  return d;
+}
 void main()
 {
   shouldRemoveAllAssignments();
@@ -80,4 +89,5 @@ void main()
   dontRemoveUnusedAssignmentToGlobal();
   removePureDeclInit();
   onlyRemove99AndAThenReturn15();
+  bug541();
 }
