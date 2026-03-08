@@ -167,4 +167,4 @@ let preprocess streamName content =
         | Success(s,_,_) ->
             // printfn "%s\n-------------------------" (String.concat "\n" s)
             String.concat "\n" s
-        | Failure(str, _, _) -> failwithf "Parse error: %s" str
+        | Failure(str, _, _) -> raise (Options.ParseError str)

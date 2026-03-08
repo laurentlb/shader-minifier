@@ -6,6 +6,8 @@ open System
 let version = "1.5.1" // Shader Minifier version
 let debugMode = false
 
+exception ParseError of string
+
 type OutputFormat =
     | [<CustomCommandLine("text")>] Text
     | [<CustomCommandLine("indented")>] IndentedText

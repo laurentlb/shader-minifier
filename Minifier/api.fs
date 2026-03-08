@@ -6,7 +6,7 @@ open System.IO
 module MinifierPatterns =
     let (|ParseError|_|) (ex: exn) =
         match ex with
-        | :? Parse.ParseError as e -> Some e.Data0
+        | :? Options.ParseError as e -> Some e.Data0
         | _ -> None
 
 type Minifier(options, files) =
