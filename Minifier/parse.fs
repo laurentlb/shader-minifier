@@ -234,7 +234,10 @@ type private ParseImpl(options: Options.Options) =
 
     let qualifier = parse {
         let! ret = if options.hlsl then hlslQualifier else glslQualifier
-        return ret
+        if ret = [] then
+            return! fail "Expected a type qualifier, but got none"
+        else
+            return ret
     }
     let specifiedType = parse {
         let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
@@ -387,9 +390,10 @@ type private ParseImpl(options: Options.Options) =
                     attempt loneLayoutQualifier |>> Ast.TLVerbatim
                     precision
                     pfunction
-        ]
+                   ] <?> "top-level declaration"
         let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> reorderFunctions <- true)
-        many ((attempt forwardDecl|>>fun _ -> None) <|> (item|>>Some)) |>> List.choose id // FIXME: use skip?
+        let skipFwd = skipMany (attempt forwardDecl)
+        many (skipFwd >>. item) .>> skipFwd
 
     let parse = ws >>. toplevel .>> eof
 
