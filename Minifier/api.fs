@@ -2,6 +2,13 @@
 
 open System.IO
 
+[<AutoOpen>]
+module MinifierPatterns =
+    let (|ParseError|_|) (ex: exn) =
+        match ex with
+        | :? Options.ParseError as e -> Some e.Data0
+        | _ -> None
+
 type Minifier(options, files) =
     let getSize (shaders: Ast.Shader[]) =
         shaders |> Seq.sumBy (fun s -> Printer.print s.code |> String.length)

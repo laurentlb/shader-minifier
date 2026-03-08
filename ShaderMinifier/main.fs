@@ -18,6 +18,21 @@ let minifyFiles (options: Options.Options) filenames out =
     let minifier = Minifier(options, files)
     minifier.Format(out)
 
+let rec printError: exn -> unit = function
+    | ParseError str ->
+        fprintfn stderr "Parse error: %s" str
+    | :? System.AggregateException as aggregate ->
+        // as minifier can run in parallel, we may have multiple exceptions
+        for innerException in aggregate.InnerExceptions do
+            printError innerException
+    | :? IOException as ex ->
+        fprintfn stderr "Error: %s" ex.Message
+    | :? Argu.ArguParseException as ex ->
+        fprintfn stderr "%s" ex.Message
+    | exn ->
+        // unexpected exception, print the stack trace for debugging
+        fprintfn stderr "%s" (exn.ToString())
+
 let run (options: Options.Options) filenames =
     use out =
         if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
@@ -26,12 +41,7 @@ let run (options: Options.Options) filenames =
         minifyFiles options filenames out
         0
     with
-    | :? IOException as ex ->
-        printfn "Error: %s" ex.Message
-        1
-    | exn ->
-        printfn "%s" (exn.ToString())
-        1
+        e -> printError e; 1
 
 [<EntryPoint>]
 let main argv =
@@ -45,11 +55,6 @@ let main argv =
             else
                 run options files
         with
-        | :? Argu.ArguParseException as ex ->
-            printfn "%s" ex.Message
-            1
-        | Failure msg ->
-            printfn "%s" msg
-            1
+            e -> printError e; 1
     if Options.debugMode then System.Console.ReadLine() |> ignore
     exit err
