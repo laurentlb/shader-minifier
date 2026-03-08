@@ -450,7 +450,7 @@ type private RenamerImpl(options: Options.Options) =
     let shadowVariables (env: Env) block =
         // Find all the already assigned identifiers in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
-        let usedIdents = Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Field ||| IdentKind.Type) block
+        let usedIdents = Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Type) block
         let usedNames = [for ident in usedIdents -> ident.Name]
         let stillUsedSet =
             usedNames |> Seq.map (
