@@ -86,6 +86,10 @@
 
 --no-remove-unused --no-renaming --export-kkp-symbol-maps --format text -o tests/unit/symbols.frag.expected tests/unit/symbols.frag
 
+# export indented tests
+
+--export-indented-text --format text -o tests/real/export-indented.expected tests/real/leizex.frag tests/real/robin.frag tests/real/mouton/fxaa.frag tests/real/heart.frag
+
 # Tests with full renaming
 
 --no-remove-unused --format c-array --no-inlining -o tests/unit/many_variables.expected tests/unit/many_variables.frag
