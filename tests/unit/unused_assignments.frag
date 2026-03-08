@@ -71,6 +71,17 @@ int onlyRemove99AndAThenReturn15() {
     return a+a*b;
 }
 
+void bug541() {
+	int i = 1;
+	float u=.5,v=.71;
+	mat4 d=mat4(1);
+	d[i][i]=v;
+	d[i][3]=-u;
+	d[3][i]=u;
+	d[3][3]=v;
+	gi = int(d[1][1]);
+}
+
 void main() {
 	shouldRemoveAllAssignments();
 	shouldNotRemoveAnyAssignment();
@@ -80,4 +91,5 @@ void main() {
 	dontRemoveUnusedAssignmentToGlobal();
 	removePureDeclInit();
 	onlyRemove99AndAThenReturn15();
+	bug541();
 }
