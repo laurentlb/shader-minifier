@@ -129,6 +129,36 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | Float (f, _) -> Some f
         | _ -> None
 
+    let isStructType (ty: Type) =
+        try
+            match ty.name with
+            | TypeBlock _ -> true
+            | TypeName n -> 
+                if isNull n.Name then false
+                else not (Builtin.builtinTypes.Contains n.Name) && not (Builtin.isSamplerType n.Name)
+        with _ -> false
+
+    let isStructVar (v: Ident) =
+        try
+            match v.Declaration with
+            | Declaration.Variable vd -> isStructType vd.ty
+            | _ -> false
+        with _ -> false
+
+    let rec isStructExpr = function
+        | ResolvedVariableUse (_, vd) -> 
+            try isStructType vd.ty with _ -> false
+        | FunCall (Var v, _) ->
+            try
+                match v.Declaration with
+                | Declaration.UserFunction fd -> isStructType fd.funcType.retType
+                | _ -> 
+                    if isNull v.Name then false
+                    else not (Builtin.builtinFunctions.Contains v.Name) && not (Builtin.builtinTypes.Contains v.Name)
+            with _ -> false
+        | FunCall (Op "?:", [_; e; _]) -> isStructExpr e
+        | _ -> false
+
     let rec (|VarWithPossibleField|_|) = function
         | Var v -> Some v
         | Dot (VarWithPossibleField v, _) -> Some v
@@ -648,7 +678,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | Decl (ty, ds) ->
                 let ds = ds |> List.map (fun d ->
                     // If there are side effects in the init, they must remain.
-                    if isAssignmentToRemove d.name && Effects.isPure d.init.Value
+                    if isAssignmentToRemove d.name && d.init.IsSome && Effects.isPure d.init.Value
                     then {d with init = None}
                     else d
                 )
@@ -835,7 +865,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         // if(a)return b;return c;  ->  return a?b:c;
         let rec replaceIfReturnsWithReturnTernary = function
-            | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest ->
+            | If (cond, Jump(JumpKeyword.Return, Some retT), None) :: Jump(JumpKeyword.Return, Some retF) :: _rest 
+                when (not (isStructExpr retT) || options.hlsl) ->
                 [Jump(JumpKeyword.Return, Some (FunCall(Op "?:", [cond; retT; retF])))]
             | stmt :: rest -> stmt :: replaceIfReturnsWithReturnTernary rest
             | stmts -> stmts
@@ -910,7 +941,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         | _ -> None
                     match (tryCollapseToAssignment eT, tryCollapseToAssignment eF) with
                         // turn if-else of assignments into assignment of ternary
-                        | Some (nameT, initT), Some (nameF, initF) when nameT.Name = nameF.Name ->
+                        | Some (nameT, initT), Some (nameF, initF) when nameT.Name = nameF.Name && (not (isStructVar nameT) || options.hlsl) ->
                             // if(c)x=y;else x=z;  ->  x=c?y:z;
                             Expr (FunCall (Op "=", [Var nameT; FunCall(Op "?:", [cond; initT; initF])]))
                         // turn if-else of expressions into ternary statement
