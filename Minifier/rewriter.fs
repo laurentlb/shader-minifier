@@ -469,30 +469,28 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         List.collect replacements stmts
 
-    // Helper for deterimining if all array dimensions in 2 
-    // declaration lists are equal.
-    let all_sizes_equal li1 li2 =
-        match li1 @ li2 with
-        | [] -> true
-        | first :: rest ->
-            let sizes = first.sizes
-            List.forall (fun decl -> decl.sizes = sizes) rest
+    // It's invalid to squeeze array declarations that have different dimensions e.g. float a[4], b[7];
+    let declsCanBeSqueezed (ty1, li1) (ty2, li2) =
+        // Helper for determining if all array dimensions in two declaration lists are equal.
+        let all_sizes_equal li1 li2 =
+            match li1 @ li2 with
+            | [] -> true
+            | first :: rest ->
+                let sizes = first.sizes
+                List.forall (fun decl -> decl.sizes = sizes) rest
+        ty1 = ty2 && all_sizes_equal li1 li2
 
     // Squeeze declarations: "float a=2.; float b;"  ->  "float a=2.,b;"
-    // Not a valid transformation for array declarations that have 
-    // different dimensions i.e. float a[4], b[7];
     let rec squeezeConsecutiveDeclarations = function
         | []-> []
-        | Decl(ty1, li1) :: Decl(ty2, li2) :: l when ty1 = ty2 && all_sizes_equal li1 li2 ->
+        | Decl(ty1, li1) :: Decl(ty2, li2) :: l when declsCanBeSqueezed (ty1, li1) (ty2, li2) ->
             squeezeConsecutiveDeclarations (Decl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeConsecutiveDeclarations l
 
     // Squeeze top-level declarations, e.g. uniforms
-    // Not a valid transformation for array declarations that have 
-    // different dimensions i.e. float a[4], b[7];
     let rec squeezeTLDeclarations = function
         | [] -> []
-        | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when ty1 = ty2 && all_sizes_equal li1 li2 ->
+        | TLDecl(ty1, li1) :: TLDecl(ty2, li2) :: l when declsCanBeSqueezed (ty1, li1) (ty2, li2) ->
             squeezeTLDeclarations (TLDecl(ty1, li1 @ li2) :: l)
         | e::l -> e :: squeezeTLDeclarations l
 
@@ -943,6 +941,35 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> true)
         if edited then removeUnusedFunctions options code else code
 
+    // Squeeze top-level declarations: `float a; float b;` -> `float a,b;`
+    let reorderAndSqueezeTLDeclarations tls =
+        let splitWhile pred list =
+            let matches = list |> List.takeWhile pred
+            let rest = list |> List.skip (matches |> List.length)
+            (matches, rest)
+        // Move declarations upwards, across other non-conflicting constructs,
+        // to make larger sets of contiguous declarations.
+        let canBeSwappedWithFollowingDeclaration = function
+            | Function _ -> true // `void f(){} int n;` -> `int n; void f(){}`
+            | TLDecl _ -> false // moving declarations among themselves requires init expr dependency analysis
+            | TLDirective _ -> false // could be a #define used by the declaration after it
+            | TypeDecl _ -> false // could be declaring the type used in a declaration after it
+            | Precision _ -> false // a precision statement affects only declarations after it
+            | TLVerbatim _ -> false // we don't know what this is. assume the worst
+        let rec moveDeclarationsUp tls =
+            let (swappables, rest) = tls |> splitWhile canBeSwappedWithFollowingDeclaration
+            let (decls, rest) = rest |> splitWhile (function TLDecl _ -> true | _ -> false)
+            match (decls @ swappables), rest with
+            | [], [] -> []
+            | [], h :: t -> h :: moveDeclarationsUp t
+            | _, _ -> decls @ swappables @ moveDeclarationsUp rest
+        let mutable tls1 = []
+        let mutable tls2 = moveDeclarationsUp tls
+        while tls1 <> tls2 do
+            tls1 <- tls2
+            tls2 <- moveDeclarationsUp tls2
+        squeezeTLDeclarations tls2
+
     let cleanup tl =
         tl |> List.choose (function
             | TLDecl (ty, li) ->
@@ -954,9 +981,9 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | Function (fct, body) -> Function (rwFType fct, body) |> Some
             | e -> e |> Some
         )
-        |> squeezeTLDeclarations
+        |> reorderAndSqueezeTLDeclarations
 
-    member _.Cleanup = cleanup 
+    member _.Cleanup = cleanup
     member _.SimplifyExpr = simplifyExpr
     member _.SimplifyStmt = simplifyStmt
     static member RemoveUnusedFunctions = removeUnusedFunctions

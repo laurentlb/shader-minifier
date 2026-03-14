@@ -2,12 +2,12 @@
 
 uniform sampler2D tex0;
 float time=gl_TexCoord[0].x-11,seed;
+vec2 t=(gl_FragCoord.xy-vec2(640,360))/640.;
+float ti,col=1e3,col2=1e3,col3=1e3;
 float rand()
 {
   return fract(sin(seed++)*43758.545);
 }
-vec2 t=(gl_FragCoord.xy-vec2(640,360))/640.;
-float ti,col=1e3,col2=1e3,col3=1e3;
 float f(vec3 p)
 {
   col3=p.y-(.5+.5*cos(p.x*2))*.1;

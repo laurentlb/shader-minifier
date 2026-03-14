@@ -1,6 +1,12 @@
 #version 420
 
 float result;
+layout(binding=0)uniform atomic_uint hydrogen;
+vec4 fragColor247,fragColor248;
+float arr[]=float[](3.4,4.2);
+uniform int time;
+flat in int sync;
+float glo;
 void main()
 {
   result=.15;
@@ -33,7 +39,6 @@ float multiPass2()
 {
   return 9.;
 }
-layout(binding=0)uniform atomic_uint hydrogen;
 uint builtin_with_or_without_side_effects(uint x)
 {
   uint not_inlined=atomicCounterIncrement(hydrogen);
@@ -54,23 +59,18 @@ int dont_inline_lvalue()
 {
   return 3;
 }
-vec4 fragColor247;
 void main247()
 {
   fragColor247=vec4(3);
 }
-vec4 fragColor248;
 void main248()
 {
   fragColor248=vec4(3);
 }
-float arr[]=float[](3.4,4.2);
 void lvalues()
 {
   arr[1]=2.;
 }
-uniform int time;
-flat in int sync;
 int dependOnConst()
 {
   return(time+sync)*2*3;
@@ -95,7 +95,6 @@ float inline_uninitialized()
   float c;
   return c;
 }
-float glo;
 float noinline_readsTheGlobal()
 {
   return glo;

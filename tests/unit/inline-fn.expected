@@ -1,3 +1,4 @@
+float globalFloat=6.,shadowedVar=0.,glob;
 float a()
 {
   return 5.;
@@ -18,7 +19,6 @@ float e()
 {
   return 84.;
 }
-float globalFloat=6.;
 float shadowedFunc(inout float notinlinable)
 {
   notinlinable=1.;
@@ -29,7 +29,6 @@ float notShadowedFunc(inout float notinlinable)
   notinlinable=2.;
   return-2.;
 }
-float shadowedVar=0.;
 float A1_PRESERVED()
 {
   return shadowedVar;
@@ -53,7 +52,6 @@ float D3_PRESERVED(float d,float dd)
 {
   return d+d;
 }
-float glob;
 float watchout(out float x)
 {
   return x=9.;

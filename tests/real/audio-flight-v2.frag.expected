@@ -14,6 +14,10 @@
 
 #define r2(a)mat2(cos(a),sin(a),-sin(a),cos(a))
 
+float time,tm,travelSpeed,glow,iqd,flight,beams,gcolor,objglow,offWobble,boxsize,ga,sa,slp;
+vec3 g_hp,s_hp;
+mat2 r4,r5;
+const vec3 cxz=vec3(3.15,4.75,3);
 float pMod(inout float p,float size)
 {
   float c=floor((p+size*.5)/size);
@@ -68,10 +72,6 @@ vec2 path(float z)
 {
   return(vec2(2.35*sin(z*.125)+2.38*cos(z*.25),3.5*cos(z*.0945))-vec2(3.2*sin(z*.19),4.31*sin(z*.125)-2.38*cos(z*.115)))*.3;
 }
-float time,tm,travelSpeed,glow,iqd,flight,beams,gcolor,objglow,offWobble,boxsize,ga,sa,slp;
-vec3 g_hp,s_hp;
-mat2 r4,r5;
-const vec3 cxz=vec3(3.15,4.75,3);
 vec2 fragtail(vec3 pos)
 {
   float ss=1.15,r=1e5;
