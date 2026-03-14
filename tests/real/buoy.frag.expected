@@ -1,6 +1,6 @@
 #define GAMMA (2.2)
 
-vec3 localRay;
+vec3 localRay,boatRight,boatUp,boatForward,boatPosition;
 void CamPolar(out vec3 pos,out vec3 ray,vec2 rotation,vec2 fragCoord)
 {
   vec2 c=vec2(cos(rotation.x),cos(rotation.y));
@@ -94,7 +94,6 @@ vec3 Sky(vec3 ray)
 {
   return vec3(.4,.45,.5);
 }
-vec3 boatRight,boatUp,boatForward,boatPosition;
 void ComputeBoatTransform()
 {
   vec3 samples[5];

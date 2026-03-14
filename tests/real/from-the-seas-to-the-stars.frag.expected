@@ -6,6 +6,11 @@ layout(local_size_x=8,local_size_y=8)in;
 
 uniform layout(binding=0,r32ui)uimage2DMS d0;
 uniform layout(binding=6,rgba8)image2D outtex;
+float zoom=.4,cameraroll=1.,cameraroll2=0;
+uvec2 coord=gl_GlobalInvocationID.xy,rstate=coord;
+vec4 w;
+vec3 col=vec3(0),p,of;
+float time,per=0.;
 float s(vec2 p)
 {
   return fract(sin(p.x+p.y*57.)*43758.5453);
@@ -28,7 +33,6 @@ vec2 disc(vec2 uv)
   float a=uv.x*acos(-1)*2;
   return vec2(cos(a),sin(a))*sqrt(uv.y);
 }
-float zoom=.4,cameraroll=1.,cameraroll2=0;
 uvec2 encrypt(uvec2 v)
 {
   uint k[4],sum=0;
@@ -75,10 +79,6 @@ float koi(vec2 t)
   oop.x+=oop.y*.6-.7;
   return min(d,max(oop.y,max(oop.x,oop.x*oop.x*4-oop.y-.3)));
 }
-uvec2 coord=gl_GlobalInvocationID.xy,rstate=coord;
-vec4 w;
-vec3 col=vec3(0),p,of;
-float time,per=0.;
 float R()
 {
   rstate=encrypt(rstate);

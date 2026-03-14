@@ -1,9 +1,9 @@
+float glob;
 float f(float g)
 {
   g=0.;
   return g+g+++ ++g;
 }
-float glob;
 float g(float f)
 {
   {
@@ -24,6 +24,7 @@ int m1()
 struct S{
   int x;
 };
+float glo;
 S m2()
 {
   return S(0);
@@ -32,7 +33,6 @@ int m4(int k)
 {
   return k;
 }
-float glo;
 void m6()
 {
   glo+=171.;
