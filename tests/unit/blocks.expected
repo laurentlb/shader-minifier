@@ -3,6 +3,7 @@
 # define BLOCKS_EXPECTED_
 
 const char *blocks_frag =
+ "int k=5;"
  "float test_if()"
  "{"
    "int foo=2;"
@@ -15,7 +16,6 @@ const char *blocks_frag =
        ".3:"
      ".4;"
  "}"
- "int k=5;"
  "float test_for()"
  "{"
    "int foo=2,n=0;"

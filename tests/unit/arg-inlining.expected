@@ -1,6 +1,8 @@
 #version 300 es
 
 precision highp float;
+out vec4 fragColor;
+uniform sampler2D samp;
 float noinline_canInlineWhenResolvable()
 {
   return 11.;
@@ -81,8 +83,6 @@ float f()
   s+=s+noinline_cannotInlineWhenArgIsNotInlinable(s);
   return s+s+noinline_cannotInlineWhenArgIsNotInlinable(acos(s));
 }
-out vec4 fragColor;
-uniform sampler2D samp;
 vec3 dof()
 {
   float f=10.;

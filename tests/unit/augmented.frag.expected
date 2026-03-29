@@ -2,11 +2,11 @@
 
 #extension GL_EXT_gpu_shader4:enable
 
+int outputvar;
 int foo(int x,int y)
 {
   return(x+x)*y>>x^y|y;
 }
-int outputvar;
 void main()
 {
   outputvar=foo(0,0);

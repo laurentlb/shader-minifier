@@ -9,15 +9,18 @@ r e;
 uniform MyInterfaceBlock{
   r k;
 };
-r M()
+struct{
+  r u;
+} M;
+r i()
 {
   return e;
 }
-int M(r M)
+int i(r M)
 {
   return 1;
 }
-int i()
+int m()
 {
   r s;
   s.t=1.;
@@ -34,10 +37,7 @@ int i()
     break;
   return int(s.r.x+e.u.t+k.n);
 }
-struct{
-  r u;
-} m;
-float M(vec4 s)
+float i(vec4 s)
 {
   float e=s.x-4.;
   return s.w+e*e;
@@ -53,6 +53,10 @@ struct I{
 };
 B f;
 I s;
+struct O{
+  int i;
+  int e;
+} N;
 void main()
 {
   f.i=1;
@@ -61,7 +65,3 @@ void main()
   s.c=4;
   s.e=5;
 }
-struct O{
-  int i;
-  int e;
-} N;

@@ -1,5 +1,7 @@
 #version 450
 
+out vec4 O;
+int k;
 float f0()
 {
   return 2.;
@@ -9,8 +11,6 @@ float f1()
   float b=1.;
   return b=2.;
 }
-out vec4 O;
-int k;
 void main()
 {
   int d=0,e=0;

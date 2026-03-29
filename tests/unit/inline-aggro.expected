@@ -1,5 +1,6 @@
 #version 150
 
+const float bar=acos(-1.),baz=2.*bar;
 float inl1()
 {
   return 126.;
@@ -24,7 +25,6 @@ float inl5()
 {
   return 579.;
 }
-const float bar=acos(-1.),baz=2.*bar;
 float inl6()
 {
   return 2.*baz;

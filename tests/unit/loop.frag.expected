@@ -3,11 +3,11 @@
 # define LOOP_FRAG_EXPECTED_
 
 const char *loop_frag =
+ "float a;"
  "float f(inout float noinlinevar)"
  "{"
    "return 0.;"
  "}"
- "float a;"
  "void main()"
  "{"
    "float c;"
