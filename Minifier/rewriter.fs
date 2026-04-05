@@ -469,7 +469,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         List.collect replacements stmts
 
-    // It's invalid to squeeze array declarations that have different dimensions e.g. float a[4], b[7];
+    // In hlsl it's invalid to squeeze array declarations that have different dimensions e.g. float a[4], b[7];
     let declsCanBeSqueezed (ty1, li1) (ty2, li2) =
         // Helper for determining if all array dimensions in two declaration lists are equal.
         let all_sizes_equal li1 li2 =
@@ -478,7 +478,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | first :: rest ->
                 let sizes = first.sizes
                 List.forall (fun decl -> decl.sizes = sizes) rest
-        ty1 = ty2 && all_sizes_equal li1 li2
+        ty1 = ty2 && (not options.hlsl || all_sizes_equal li1 li2)
 
     // Squeeze declarations: "float a=2.; float b;"  ->  "float a=2.,b;"
     let rec squeezeConsecutiveDeclarations = function
