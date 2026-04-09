@@ -2,6 +2,7 @@
 
 open System
 open System.IO
+open System.Linq
 
 type private Impl(options: Options.Options, withLocations) =
 
@@ -17,7 +18,7 @@ type private Impl(options: Options.Options, withLocations) =
                 Printer.printWithLoc shader.code |> Printer.stripIndentation
             else
                 Printer.print shader.code
-        | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
+        | Options.IndentedText | Options.CVariables | Options.CArray | Options.CMacros | Options.NasmMacros | Options.Nasm | Options.Rust ->
             if withLocations then
                 Printer.printWithLoc shader.code
             else
@@ -87,6 +88,108 @@ type private Impl(options: Options.Options, withLocations) =
             fprintfn out ""
 
         fprintfn out "#endif"
+
+    let printCMacros out (shaders: Ast.Shader[]) exportedNames =
+        let escape (str: string) =
+            str.Replace("\"", "\\\"").Replace("\n", "\\n\" \\\n       \"")
+
+        let fileName =
+            if options.outputName = "" || options.outputName = "-" then "shader_code.h"
+            else Path.GetFileName options.outputName
+        let macroName = Ast.mangleToAscii(Path.GetFileName fileName).ToUpper() + "_"
+
+        fprintfn out "// Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
+
+        fprintfn out "#ifndef %s" macroName
+        fprintfn out "#define %s" macroName
+        fprintfn out ""
+
+        let mutable linenum = 7
+        for shader in shaders do
+            fprintfn out "#define SHADER_STRING_%s \\" (Ast.mangleToAscii shader.mangledFilename)
+            let lines = getLines shader
+            let (_,firstline) =
+                if List.isEmpty lines then ("","") else List.head lines
+            let (wrlines,lines) =
+                if firstline.StartsWith("#version ") then
+                    (sprintf " _SM_L \"%s\" \\\n" (escape firstline), List.tail lines)
+                else
+                    ("", lines)
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n')
+            let wrlines = String.concat "" [
+                yield sprintf " _SM_L SHADER_MINIFIER_LINE(\"#line %d\") \\\n" linenum
+                for indent, line in lines do
+                    let le = escape line
+                    yield sprintf " _SM_L %s\"%s\" \\\n" indent le
+                ]
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n') + 2
+            fprintfn out ""
+
+        for value: Ast.ExportedName in Seq.sort exportedNames do
+            fprintfn out "#define SHADER_%s_%s \"%s\"" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
+        fprintfn out ""
+
+        fprintfn out "#ifndef SHADER_MINIFIER_LINE"
+        fprintfn out "#define SHADER_MINIFIER_LINE(s)"
+        fprintfn out "#endif"
+        fprintfn out "#ifndef _SM_L"
+        fprintfn out "#define _SM_L SHADER_MINIFIER_LINE(\"\\n\")"
+        fprintfn out "#endif"
+        fprintfn out ""
+        fprintfn out "#endif // %s" macroName
+
+    let printNasmMacros out (shaders: Ast.Shader[]) exportedNames =
+        let escape (str: string) =
+            str.Replace("\n", "', 10, \\\n       '")
+
+        let fileName =
+            if options.outputName = "" || options.outputName = "-" then "shader_code.h"
+            else Path.GetFileName options.outputName
+        let macroName = Ast.mangleToAscii(Path.GetFileName fileName).ToUpper() + "_"
+
+        fprintfn out "; Generated with Shader Minifier %s (https://github.com/laurentlb/Shader_Minifier/)" Options.version
+
+        fprintfn out "%%ifndef %s" macroName
+        fprintfn out "%%define %s" macroName
+        fprintfn out ""
+
+        let mutable linenum = 7
+        for shader in shaders do
+            fprintfn out "%%define SHADER_STRING_%s '' \\" (Ast.mangleToAscii shader.mangledFilename)
+            let lines = getLines shader
+            let (_,firstline) =
+                if List.isEmpty lines then ("","") else List.head lines
+            let (wrlines,lines) =
+                if firstline.StartsWith("#version ") then
+                    (sprintf " _SM_L '%s' \\\n" (escape firstline), List.tail lines)
+                else
+                    ("", lines)
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n')
+            let wrlines = String.concat "" [
+                yield sprintf " _SM_L SHADER_MINIFIER_LINE('#line %d') \\\n" linenum
+                for indent, line in lines do
+                    let le = escape line
+                    yield sprintf " _SM_L %s'%s' \\\n" indent le
+                ]
+            fprintf out "%s" wrlines
+            linenum <- linenum + wrlines.Count(fun c -> c = '\n') + 2
+            fprintfn out ""
+
+        for value: Ast.ExportedName in Seq.sort exportedNames do
+            fprintfn out "%%define SHADER_%s_%s '%s'" ((formatPrefix value.prefix).ToUpper()) value.name value.newName
+        fprintfn out ""
+
+        fprintfn out "%%ifndef SHADER_MINIFIER_LINE"
+        fprintfn out "%%define SHADER_MINIFIER_LINE(s) ''"
+        fprintfn out "%%endif"
+        fprintfn out "%%ifndef _SM_L"
+        fprintfn out "%%define _SM_L ,SHADER_MINIFIER_LINE(10),"
+        fprintfn out "%%endif"
+        fprintfn out ""
+        fprintfn out "%%endif ; %s" macroName
 
     let printNoHeader out (shaders: Ast.Shader[]) =
         let str = [for shader in shaders -> minify shader] |> String.concat "\n"
@@ -164,8 +267,10 @@ type private Impl(options: Options.Options, withLocations) =
         | Options.Text -> printNoHeader out shaders
         | Options.CVariables -> printCVariables out shaders exportedNames
         | Options.CArray -> printCArray out shaders exportedNames
+        | Options.CMacros -> printCMacros out shaders exportedNames
         | Options.JS -> printJSHeader out shaders exportedNames
         | Options.Nasm -> printNasmHeader out shaders exportedNames
+        | Options.NasmMacros -> printNasmMacros out shaders exportedNames
         | Options.Rust -> printRustHeader out shaders exportedNames
         | Options.Json -> printJsonHeader out shaders exportedNames
 
