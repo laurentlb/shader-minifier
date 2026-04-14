@@ -183,8 +183,18 @@ type private RenamerVisitor(options: Options.Options) =
     and renType (env: Env) (ty: Type) =
         match ty.name with
         | TypeName t ->
-            match env.identRenames.TryFind(t.Name) with
-            | Some name -> t.Rename(name) // the type name is a reference to a named struct being renamed
+            // MSL: the parser folds a trailing `&` or `*` into the type name
+            // (e.g. `thread Ray &r` becomes TypeName "Ray&"). Strip it before
+            // looking up the rename so a struct rename propagates to ref/ptr
+            // references to that struct, then re-append the suffix.
+            let suffix =
+                if t.Name.EndsWith "&" || t.Name.EndsWith "*"
+                then string t.Name.[t.Name.Length - 1] else ""
+            let baseName =
+                if suffix = "" then t.Name
+                else t.Name.Substring(0, t.Name.Length - 1)
+            match env.identRenames.TryFind baseName with
+            | Some name -> t.Rename(name + suffix) // reference to a renamed named struct
             | _ -> () // e.g. builtin type
             env
         | TypeBlock ({ blockType = Struct } as stru) ->

@@ -7,8 +7,8 @@ cd "$(dirname "$0")/../.."
 CLI=artifacts/bin/ShaderMinifier/release/ShaderMinifier.dll
 # List of shaders currently expected to pass. ref_param.metal is known to
 # fail due to an orthogonal renamer bug; re-add once that is fixed.
-PASS=(atomic const_array texture_write)
-KNOWN_FAIL=(ref_param)
+PASS=(atomic const_array texture_write ref_param)
+KNOWN_FAIL=()
 
 fails=0
 for base in "${PASS[@]}"; do
@@ -24,7 +24,7 @@ for base in "${PASS[@]}"; do
   fi
 done
 
-for base in "${KNOWN_FAIL[@]}"; do
+for base in ${KNOWN_FAIL[@]+"${KNOWN_FAIL[@]}"}; do
   src="tests/msl/${base}.metal"
   min="/tmp/${base}.min.metal"
   dotnet "$CLI" --msl --format text "$src" -o "$min" >/dev/null 2>&1
