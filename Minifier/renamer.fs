@@ -229,8 +229,14 @@ type private RenamerVisitor(options: Options.Options) =
             renStmt innerEnv body |> ignore<Env>
             Option.iter (renExpr innerEnv) cond
             Option.iter (renExpr innerEnv) inc
-            if options.cLike then innerEnv
-            else env
+            // C/C++/MSL/HLSL all scope the for-init declaration to the loop
+            // itself, same as GLSL \u2014 return the outer env either way.
+            // Previously returned innerEnv for cLike, but innerEnv carries
+            // shadowVariables's drops of outer locals that happened to be
+            // unused inside the loop; returning it permanently removed
+            // those outer names from subsequent stmts and leaked stray
+            // uniqueIds in the output.
+            env
         | ForE(init, cond, inc, body) as stmt ->
             let innerEnv = env.onEnterScope env stmt
             renOpt init
