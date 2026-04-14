@@ -323,8 +323,15 @@ type private RenamerVisitor(options: Options.Options) =
         | Function(fct, body) ->
             // Use the top level env to rename the return type.
             let env = renType env fct.retType
-            // In the function body, we use an env that allows shadowing unused outer decls.
-            let envForBody = env.onEnterScope env body
+            // Consider the function-argument declarations part of the "scope"
+            // when deciding which outer names can be shadowed. Otherwise, a
+            // struct used only in the signature (e.g. `void f(thread Ray &r)`
+            // with `struct Ray { ... }` top-level) would look unused in the
+            // body, its renamed name would be freed, and a later parameter
+            // could be allocated the same letter \u2014 producing a collision
+            // like `void f(thread A& A)` that is ambiguous in C++/MSL.
+            let scopeForShadowing = Block ((fct.args |> List.map Decl) @ [body])
+            let envForBody = env.onEnterScope env scopeForShadowing
             // Use the function body's env to rename arguments (they can shadow unused top level names).
             let envForType = Some env // Use the top level env to rename the argument types! (In the body env the type names might have been removed.)
             let envForBody = renList envForBody (renDecl (FunctionArgument fct) envForType) fct.args
@@ -467,7 +474,13 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the already assigned identifiers in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let usedIdents = Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Type) block
-        let usedNames = [for ident in usedIdents -> ident.Name]
+        // MSL: the parser folds a trailing `&`/`*` into the type name.
+        // Strip it so a reference like `thread Ray&` still counts as a use
+        // of the struct `Ray` for shadowing purposes.
+        let stripRefPtr (name: string) =
+            if name.EndsWith "&" || name.EndsWith "*"
+            then name.Substring(0, name.Length - 1) else name
+        let usedNames = [for ident in usedIdents -> stripRefPtr ident.Name]
         let stillUsedSet =
             usedNames |> Seq.map (
                 fun name -> match (env.identRenames.TryFind name) with
