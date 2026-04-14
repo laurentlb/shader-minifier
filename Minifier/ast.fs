@@ -135,15 +135,30 @@ and Type = {
     member this.isConst = this.typeQ |> List.contains "const"
     member this.isOutOrInout =
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
+        ||
+        // MSL: `thread T&` / `device T*` reference/pointer params are folded
+        // into the type name at parse time. Treat them as inout-like so
+        // writes through them aren't removed and decls aren't merged/reused.
+        (match this.name with
+         | TypeName n -> n.OldName.EndsWith("&") || n.OldName.EndsWith("*")
+         | _ -> false)
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
     member this.isScalar =
         match this.name with
-            | TypeName n -> Builtin.builtinScalarTypes.Contains n.OldName
+            | TypeName n ->
+                Builtin.builtinScalarTypes.Contains n.OldName
+                || Builtin.mslScalarTypes.Contains n.OldName
+                // `float`/`int`/etc. are in builtinScalarTypes; MSL-only scalar
+                // names (half, char, short, long, ...) live in mslScalarTypes.
             | _ -> false
     member this.isScalarOrVector =
         match this.name with
-            | TypeName n -> Builtin.builtinScalarTypes.Contains n.OldName || Builtin.builtinVectorTypes.Contains n.OldName
+            | TypeName n ->
+                Builtin.builtinScalarTypes.Contains n.OldName
+                || Builtin.builtinVectorTypes.Contains n.OldName
+                || Builtin.mslScalarTypes.Contains n.OldName
+                || Builtin.mslVectorTypes.Contains n.OldName
             | _ -> false
     override t.ToString() =
         let name = match t.name with

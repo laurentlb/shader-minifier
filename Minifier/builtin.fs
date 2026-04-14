@@ -112,9 +112,15 @@ let vectorFunctions = set([
 let textureFunctions = set(["texture"; "textureLod"; "texture2D"; "texelFetch"; "textureLodOffset"])
 
 // MSL-specific built-in functions (subset used in typical shaders).
-let mslBuiltinFunctions = set [
+// Split by purity: atomic_*_explicit that write (store, fetch_add, ...)
+// MUST NOT be in pureBuiltinFunctions, or the rewriter will drop the call
+// when it appears as an expression statement.
+let mslPureBuiltinFunctions = set [
     "saturate"; "rsqrt"; "fma"; "fmod"; "select"; "popcount"; "clz"; "ctz";
-    "as_type"; "atomic_load_explicit"; "atomic_store_explicit"; "atomic_fetch_add_explicit"
+    "as_type"; "atomic_load_explicit"
+]
+let mslImpureBuiltinFunctions = set [
+    "atomic_store_explicit"; "atomic_fetch_add_explicit"
 ]
 
 let pureBuiltinFunctions =
@@ -123,9 +129,9 @@ let pureBuiltinFunctions =
     vectorFunctions +
     castFunctions +
     textureFunctions +
-    mslBuiltinFunctions
+    mslPureBuiltinFunctions
 
-let impureBuiltinFunctions = set ["atomicCounterIncrement"]
+let impureBuiltinFunctions = set ["atomicCounterIncrement"] + mslImpureBuiltinFunctions
 
 let builtinFunctions = pureBuiltinFunctions + impureBuiltinFunctions
 

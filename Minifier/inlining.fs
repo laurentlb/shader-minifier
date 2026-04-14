@@ -78,10 +78,20 @@ type VariableInlining(options: Options.Options) =
         for def in localDefs do
             let ident, isConst = def.Value
             let varDecl = ident.VarDecl.Value
+            // cLike only: array-typed locals cannot be safely substituted at
+            // a use site in HLSL/MSL/C++ — replacing `a` with its initializer
+            // in `a[i]` yields `{..}[i]`, which those languages reject. GLSL
+            // accepts this via array-ctor folding (`float[](..)[i]`), so the
+            // inlining is a real size win there and must not be suppressed.
+            // (The unused-drop branch below is safe for all modes.)
+            let isArrayDecl =
+                options.cLike
+                && (not varDecl.ty.arraySizes.IsEmpty
+                    || not varDecl.decl.sizes.IsEmpty)
             if not ident.DoNotInline && not ident.ToBeInlined && not varDecl.isEverWrittenAfterDecl then
                 let decl = varDecl.decl
                 match localReferences.TryGetValue(varDecl), allReferences.TryGetValue(varDecl) with
-                | (_, 1), (_, 1) when isConst && decl.init <> None ->
+                | (_, 1), (_, 1) when isConst && decl.init <> None && not isArrayDecl ->
                     options.trace  $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
@@ -120,8 +130,15 @@ type VariableInlining(options: Options.Options) =
     let markUnwrittenVariablesWithSimpleInit level = function
         | (ty: Type, defs) when not ty.IsExternal ->
             for def:DeclElt in defs do
+                // cLike only: skip arrays. Substituting an array init into
+                // `a[i]` produces `{..}[i]`, which MSL/C++ reject; GLSL folds
+                // it to `float[](..)[i]` so the inlining is a real size win.
+                let isArrayDecl =
+                    options.cLike
+                    && (not ty.arraySizes.IsEmpty || not def.sizes.IsEmpty)
                 if not def.name.ToBeInlined && // already done in a previous pass
                    not def.name.DoNotInline &&
+                   not isArrayDecl &&
                    not def.name.VarDecl.Value.isEverWrittenAfterDecl then
                     match def.init with
                     | None -> ()
