@@ -319,16 +319,15 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> allArgs
 
         // vec3(a.x, b.xy) => vec3(a.x, b)
-        // Guard the single-component case on `expr` being scalar: `f().x`
-        // where f returns vec2 must NOT become `f()` because the outer
-        // constructor's arity would change (vec3(s, s, vec2) = 4 components).
-        // For multi-component swizzles we preserve the existing behavior,
-        // which relies on GLSL-style auto-widening; it can still misfire
-        // when `expr` is wider than the swizzle length.
+        // GLSL vec constructors silently truncate extra components, so dropping
+        // a trailing `.x`/`.xy`/... is safe even when the bare expression is
+        // wider than the swizzle (e.g. `vec3(1, 2, v2.x)` => `vec3(1, 2, v2)`).
+        // HLSL and MSL do not truncate, so under cLike we must guard the
+        // single-component case to only fire when `expr` is scalar.
         let rec dropLastSwizzle n = function
             | [Dot (expr, field) as last] when isFieldSwizzle field.Name ->
                 match [for c in field.Name -> swizzleIndex c] with
-                | [0] when n = 1 && isKnownToBeScalar expr -> [expr]
+                | [0] when n = 1 && (not options.cLike || isKnownToBeScalar expr) -> [expr]
                 | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
                 | _ -> [last]
             | e1 :: rest -> e1 :: dropLastSwizzle (n-1) rest
@@ -344,8 +343,14 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
     // of the same family (e.g. `half4(a,b,c,d).zx` -> `half2(c,a)`).
     let vecConstructorPrefix (vecName: string) =
         vecName.Substring(0, vecName.Length - 1)
+    // Upstream originally only simplified the GLSL float-vector constructors
+    // (`vec2`/`vec3`/`vec4`). Extending this to every name in
+    // `builtinVectorTypes` (ivec/uvec/bvec/mat) or to HLSL's `floatN` changes
+    // long-standing GLSL and HLSL output, so keep the narrow match for those
+    // modes. MSL gets the additional `halfN`/`floatN`/`intN`/... family.
     let isVecConstructorName (name: string) =
-        Builtin.builtinVectorTypes.Contains name || Builtin.mslVectorTypes.Contains name
+        name = "vec2" || name = "vec3" || name = "vec4"
+        || (options.msl && Builtin.mslVectorTypes.Contains name)
 
     let simplifyVecDot (vecName: string) args (field: string) e =
         let vecSize = vecName.ToCharArray() |> Array.last |> string |> int

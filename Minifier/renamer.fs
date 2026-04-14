@@ -329,14 +329,18 @@ type private RenamerVisitor(options: Options.Options) =
         | Function(fct, body) ->
             // Use the top level env to rename the return type.
             let env = renType env fct.retType
-            // Consider the function-argument declarations part of the "scope"
-            // when deciding which outer names can be shadowed. Otherwise, a
-            // struct used only in the signature (e.g. `void f(thread Ray &r)`
-            // with `struct Ray { ... }` top-level) would look unused in the
-            // body, its renamed name would be freed, and a later parameter
-            // could be allocated the same letter \u2014 producing a collision
-            // like `void f(thread A& A)` that is ambiguous in C++/MSL.
-            let scopeForShadowing = Block ((fct.args |> List.map Decl) @ [body])
+            // cLike only: consider the function-argument declarations part of
+            // the "scope" when deciding which outer names can be shadowed.
+            // Otherwise, a struct used only in the signature (e.g.
+            // `void f(thread Ray &r)` with `struct Ray { ... }` top-level)
+            // would look unused in the body, its renamed name would be freed,
+            // and a later parameter could be allocated the same letter —
+            // producing a collision like `void f(thread A& A)` that is
+            // ambiguous in C++/MSL. GLSL has no ref/ptr params so widening
+            // the shadowing scope would only suppress legitimate letter reuse.
+            let scopeForShadowing =
+                if options.cLike then Block ((fct.args |> List.map Decl) @ [body])
+                else body
             let envForBody = env.onEnterScope env scopeForShadowing
             // Use the function body's env to rename arguments (they can shadow unused top level names).
             let envForType = Some env // Use the top level env to rename the argument types! (In the body env the type names might have been removed.)
@@ -482,9 +486,11 @@ type private RenamerImpl(options: Options.Options) =
         let usedIdents = Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Type) block
         // MSL: the parser folds a trailing `&`/`*` into the type name.
         // Strip it so a reference like `thread Ray&` still counts as a use
-        // of the struct `Ray` for shadowing purposes.
+        // of the struct `Ray` for shadowing purposes. Only needed for cLike
+        // (HLSL/MSL) — GLSL has no ref/ptr types, and stripping would alter
+        // GLSL rename choices for no gain.
         let stripRefPtr (name: string) =
-            if name.EndsWith "&" || name.EndsWith "*"
+            if options.cLike && (name.EndsWith "&" || name.EndsWith "*")
             then name.Substring(0, name.Length - 1) else name
         let usedNames = [for ident in usedIdents -> stripRefPtr ident.Name]
         let stillUsedSet =
@@ -503,15 +509,18 @@ type private RenamerImpl(options: Options.Options) =
                                 // between AST locations as a result of multi-use-site inlining. And that is a use that prevents shadowing!
                                 name
                       ) |> set
-        // Functions live in the top-level namespace and can be called from
-        // any nested scope. The per-scope shadowing analysis only looks at
-        // Var uses in the immediate scope, so a function whose only call
-        // sits inside a nested block would otherwise have its rename
-        // dropped here \u2014 leaving later use sites unable to resolve it
-        // and emitted as stray uniqueIds (the "_cg" fallback). Keep
-        // function renames regardless of whether they show up in the
-        // immediate scope's use set.
-        let isFunctionRename shortName = env.funOverloads.ContainsKey shortName
+        // cLike only: functions live in the top-level namespace and can be
+        // called from any nested scope. The per-scope shadowing analysis
+        // only looks at Var uses in the immediate scope, so a function
+        // whose only call sits inside a nested block would otherwise have
+        // its rename dropped here — leaving later use sites unable to
+        // resolve it and emitted as stray uniqueIds (the "_cg" fallback).
+        // Keep function renames regardless of whether they show up in the
+        // immediate scope's use set. GLSL mode already handles this via the
+        // analyzer's existing use tracking, and preserving function renames
+        // globally there would prevent letter reuse and worsen compression.
+        let isFunctionRename shortName =
+            options.cLike && env.funOverloads.ContainsKey shortName
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id || isFunctionRename id)
         let reusable = [for i in reusable -> i.Value]
                         |> List.filter (fun x -> not (List.contains x options.noRenamingList))
