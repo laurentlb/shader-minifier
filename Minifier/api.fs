@@ -11,7 +11,7 @@ module MinifierPatterns =
 
 type Minifier(options, files) =
     let getSize (shaders: Ast.Shader[]) =
-        shaders |> Seq.sumBy (fun s -> Printer.print s.code |> String.length)
+        shaders |> Seq.sumBy (fun s -> Printer.print false s.code |> String.length)
 
     let minify (options: Options.Options) (files: (string*string)[]) =
         // like printfn when verbose option is set

@@ -135,15 +135,33 @@ and Type = {
     member this.isConst = this.typeQ |> List.contains "const"
     member this.isOutOrInout =
         not (Set.intersect (set this.typeQ) (set ["out"; "inout"])).IsEmpty
+        ||
+        // MSL: `thread T&` / `device T*` reference/pointer params are folded
+        // into the type name at parse time. Treat them as inout-like so
+        // writes through them aren't removed and decls aren't merged/reused.
+        (match this.name with
+         | TypeName n -> n.OldName.EndsWith("&") || n.OldName.EndsWith("*")
+         | _ -> false)
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
+    // Scalar/vector predicates check two name sets each: the GLSL/HLSL-shared
+    // set in `builtin*Types`, plus the MSL-only additions in `msl*Types`
+    // (e.g. `half`, `char`, `short`, `long` and their vector forms). Keeping
+    // them split avoids polluting the GLSL builtin tables with names that
+    // are only legal under `--msl`.
     member this.isScalar =
         match this.name with
-            | TypeName n -> Builtin.builtinScalarTypes.Contains n.OldName
+            | TypeName n ->
+                Builtin.builtinScalarTypes.Contains n.OldName
+                || Builtin.mslScalarTypes.Contains n.OldName
             | _ -> false
     member this.isScalarOrVector =
         match this.name with
-            | TypeName n -> Builtin.builtinScalarTypes.Contains n.OldName || Builtin.builtinVectorTypes.Contains n.OldName
+            | TypeName n ->
+                Builtin.builtinScalarTypes.Contains n.OldName
+                || Builtin.builtinVectorTypes.Contains n.OldName
+                || Builtin.mslScalarTypes.Contains n.OldName
+                || Builtin.mslVectorTypes.Contains n.OldName
             | _ -> false
     override t.ToString() =
         let name = match t.name with
@@ -193,7 +211,12 @@ and FunctionType = {
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
 } with
-    member this.isExternal(options: Options.Options) = options.hlsl && this.semantics <> []
+    member this.isExternal(options: Options.Options) =
+        (options.hlsl && this.semantics <> [])
+        || (options.msl &&
+            (this.semantics <> []
+             || not (Set.intersect (set this.retType.typeQ)
+                                   (set ["kernel"; "vertex"; "fragment"])).IsEmpty))
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
@@ -325,7 +348,7 @@ type MapEnv private = {
                 let env', decl = env.mapDecl init
                 let res = ForD (decl, Option.map (env'.mapExpr) cond,
                                 Option.map (env'.mapExpr) inc, snd (mapStmt' env' body))
-                if env.options.hlsl then env', res
+                if env.options.cLike then env', res
                 else env, res
             | ForE(init, cond, inc, body) ->
                 let res = ForE (Option.map env.mapExpr init, Option.map env.mapExpr cond,

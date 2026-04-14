@@ -154,7 +154,7 @@ type private RenamerVisitor(options: Options.Options) =
                 match context with
                 | TopLevelDeclaration when options.preserveAllGlobals ->
                     env.DontRename decl.name
-                | TopLevelDeclaration when ty.IsExternal || options.hlsl ->
+                | TopLevelDeclaration when ty.IsExternal || options.cLike ->
                     processExternal()
                 | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) ->
                     if hasInstanceName then
@@ -183,8 +183,18 @@ type private RenamerVisitor(options: Options.Options) =
     and renType (env: Env) (ty: Type) =
         match ty.name with
         | TypeName t ->
-            match env.identRenames.TryFind(t.Name) with
-            | Some name -> t.Rename(name) // the type name is a reference to a named struct being renamed
+            // MSL: the parser folds a trailing `&` or `*` into the type name
+            // (e.g. `thread Ray &r` becomes TypeName "Ray&"). Strip it before
+            // looking up the rename so a struct rename propagates to ref/ptr
+            // references to that struct, then re-append the suffix.
+            let suffix =
+                if t.Name.EndsWith "&" || t.Name.EndsWith "*"
+                then string t.Name.[t.Name.Length - 1] else ""
+            let baseName =
+                if suffix = "" then t.Name
+                else t.Name.Substring(0, t.Name.Length - 1)
+            match env.identRenames.TryFind baseName with
+            | Some name -> t.Rename(name + suffix) // reference to a renamed named struct
             | _ -> () // e.g. builtin type
             env
         | TypeBlock ({ blockType = Struct } as stru) ->
@@ -219,8 +229,14 @@ type private RenamerVisitor(options: Options.Options) =
             renStmt innerEnv body |> ignore<Env>
             Option.iter (renExpr innerEnv) cond
             Option.iter (renExpr innerEnv) inc
-            if options.hlsl then innerEnv
-            else env
+            // C/C++/MSL/HLSL all scope the for-init declaration to the loop
+            // itself, same as GLSL - return the outer env either way.
+            // Previously returned innerEnv for cLike, but innerEnv carries
+            // shadowVariables's drops of outer locals that happened to be
+            // unused inside the loop; returning it permanently removed
+            // those outer names from subsequent stmts and leaked stray
+            // uniqueIds in the output.
+            env
         | ForE(init, cond, inc, body) as stmt ->
             let innerEnv = env.onEnterScope env stmt
             renOpt init
@@ -273,7 +289,13 @@ type private RenamerVisitor(options: Options.Options) =
             env
 
     let renFunction env (f: FunctionType) =
-        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
+        // MSL: always preserve kernel/vertex/fragment entry-point names (the
+        // host binds pipelines by function name, so renaming is never safe).
+        let isMslEntryPoint =
+            options.msl &&
+            not (Set.intersect (set f.retType.typeQ)
+                               (set ["kernel"; "vertex"; "fragment"])).IsEmpty
+        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals || isMslEntryPoint then
             env
         elif List.contains f.fName.Name options.noRenamingList then
             env
@@ -307,8 +329,19 @@ type private RenamerVisitor(options: Options.Options) =
         | Function(fct, body) ->
             // Use the top level env to rename the return type.
             let env = renType env fct.retType
-            // In the function body, we use an env that allows shadowing unused outer decls.
-            let envForBody = env.onEnterScope env body
+            // cLike only: consider the function-argument declarations part of
+            // the "scope" when deciding which outer names can be shadowed.
+            // Otherwise, a struct used only in the signature (e.g.
+            // `void f(thread Ray &r)` with `struct Ray { ... }` top-level)
+            // would look unused in the body, its renamed name would be freed,
+            // and a later parameter could be allocated the same letter -
+            // producing a collision like `void f(thread A& A)` that is
+            // ambiguous in C++/MSL. GLSL has no ref/ptr params so widening
+            // the shadowing scope would only suppress legitimate letter reuse.
+            let scopeForShadowing =
+                if options.cLike then Block ((fct.args |> List.map Decl) @ [body])
+                else body
+            let envForBody = env.onEnterScope env scopeForShadowing
             // Use the function body's env to rename arguments (they can shadow unused top level names).
             let envForType = Some env // Use the top level env to rename the argument types! (In the body env the type names might have been removed.)
             let envForBody = renList envForBody (renDecl (FunctionArgument fct) envForType) fct.args
@@ -451,7 +484,15 @@ type private RenamerImpl(options: Options.Options) =
         // Find all the already assigned identifiers in identRenames that are used in the block.
         // They should be preserved in the renaming environment.
         let usedIdents = Analyzer(options).identUsesInStmt (IdentKind.Var ||| IdentKind.Type) block
-        let usedNames = [for ident in usedIdents -> ident.Name]
+        // MSL: the parser folds a trailing `&`/`*` into the type name.
+        // Strip it so a reference like `thread Ray&` still counts as a use
+        // of the struct `Ray` for shadowing purposes. Only needed for cLike
+        // (HLSL/MSL) - GLSL has no ref/ptr types, and stripping would alter
+        // GLSL rename choices for no gain.
+        let stripRefPtr (name: string) =
+            if options.cLike && (name.EndsWith "&" || name.EndsWith "*")
+            then name.Substring(0, name.Length - 1) else name
+        let usedNames = [for ident in usedIdents -> stripRefPtr ident.Name]
         let stillUsedSet =
             usedNames |> Seq.map (
                 fun name -> match (env.identRenames.TryFind name) with
@@ -468,7 +509,19 @@ type private RenamerImpl(options: Options.Options) =
                                 // between AST locations as a result of multi-use-site inlining. And that is a use that prevents shadowing!
                                 name
                       ) |> set
-        let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
+        // cLike only: functions live in the top-level namespace and can be
+        // called from any nested scope. The per-scope shadowing analysis
+        // only looks at Var uses in the immediate scope, so a function
+        // whose only call sits inside a nested block would otherwise have
+        // its rename dropped here - leaving later use sites unable to
+        // resolve it and emitted as stray uniqueIds (the "_cg" fallback).
+        // Keep function renames regardless of whether they show up in the
+        // immediate scope's use set. GLSL mode already handles this via the
+        // analyzer's existing use tracking, and preserving function renames
+        // globally there would prevent letter reuse and worsen compression.
+        let isFunctionRename shortName =
+            options.cLike && env.funOverloads.ContainsKey shortName
+        let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id || isFunctionRename id)
         let reusable = [for i in reusable -> i.Value]
                         |> List.filter (fun x -> not (List.contains x options.noRenamingList))
         let allAvailable = reusable @ env.availableNames |> List.distinct
@@ -514,7 +567,7 @@ type private RenamerImpl(options: Options.Options) =
 
         // Then, compute the ordered list of variable names to use.
         // Most frequent letters must be picked first because they will compress better.
-        let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
+        let text = [for shader in shaders -> Printer.print false shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
         let fieldNames = names

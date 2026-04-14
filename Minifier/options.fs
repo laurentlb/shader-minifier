@@ -29,6 +29,7 @@ type CliArguments =
     | [<CustomCommandLine("-v")>] Verbose
     | [<CustomCommandLine("--debug")>] Debug
     | [<CustomCommandLine("--hlsl")>] Hlsl
+    | [<CustomCommandLine("--msl")>] Msl
     | [<CustomCommandLine("--format")>] FormatArg of OutputFormat
     | [<CustomCommandLine("--field-names")>] FieldNames of FieldSet
     | [<CustomCommandLine("--preserve-externals")>] PreserveExternals
@@ -52,6 +53,7 @@ type CliArguments =
             | Verbose -> "Verbose, display additional information"
             | Debug -> "Debug, display more additional information"
             | Hlsl -> "Use HLSL (default is GLSL)"
+            | Msl -> "Use Metal Shading Language (default is GLSL)"
             | FormatArg _ -> "Choose to format the output (use 'text' if you want just the shader)"
             | FieldNames _ -> "Choose the field names for vectors: 'rgba', 'xyzw', or 'stpq'"
             | PreserveExternals -> "Do not rename external values (e.g. uniform)"
@@ -79,6 +81,7 @@ type Options = {
     preserveExternals: bool
     preserveAllGlobals: bool
     hlsl: bool
+    msl: bool
     noInlining: bool
     noOverloading: bool
     aggroInlining: bool
@@ -96,6 +99,10 @@ with
             field |> String.map (fun c -> this.canonicalFieldNames[Builtin.swizzleIndex c])
         else field
     member this.trace str = if this.debug then printfn "%s" str
+    // True for C-like shading languages (HLSL, MSL) that share syntactic
+    // traits not present in GLSL: templated types, optional trailing
+    // semicolons after struct/interface blocks, bracketed attributes, etc.
+    member this.cLike = this.hlsl || this.msl
 
 
 let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version
@@ -119,8 +126,13 @@ let private initPrivate argv =
         preserveExternals = args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         preserveAllGlobals = args.Contains(PreserveAllGlobals)
         hlsl = args.Contains(Hlsl)
+        msl = args.Contains(Msl)
         noInlining = args.Contains(NoInlining)
-        noOverloading = args.Contains(NoOverloading)
+        // MSL's overload rules are stricter than GLSL's (it disambiguates
+        // by argument type but not by vector-size shortening tricks), so
+        // enable NoOverloading automatically to avoid producing ambiguous
+        // calls.
+        noOverloading = args.Contains(NoOverloading) || args.Contains(Msl)
         aggroInlining = args.Contains(AggroInlining) && not (args.Contains(NoInlining))
         noSequence = args.Contains(NoSequence)
         noRenaming = args.Contains(NoRenaming)

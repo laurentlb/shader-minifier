@@ -30,7 +30,31 @@ let builtinMatrixTypes = set([
 
 let isSamplerType (name: string) = name.Contains("sampler")
 
-let builtinTypes = set [ "void" ] + builtinScalarTypes + builtinVectorTypes + builtinMatrixTypes;
+// MSL scalar types: float/half/char/short/int/uint/bool + N for vectors, MxN for matrices.
+let mslScalarTypes = set [
+    "half"; "char"; "uchar"; "short"; "ushort"; "long"; "ulong"; "size_t"; "ptrdiff_t"
+]
+let mslVectorTypes = set([
+    for p in ["float"; "half"; "char"; "uchar"; "short"; "ushort"; "int"; "uint"; "long"; "ulong"; "bool"] do
+        for n in ["2"; "3"; "4"] do
+            yield p+n
+])
+let mslMatrixTypes = set([
+    for p in ["float"; "half"] do
+        for c in ["2"; "3"; "4"] do
+            for r in ["2"; "3"; "4"] do
+                yield p+c+"x"+r
+])
+// MSL templated types (parser accepts <...> suffix, so we just list the heads).
+let mslTemplatedTypes = set [
+    "texture1d"; "texture1d_array"; "texture2d"; "texture2d_array"; "texture2d_ms";
+    "texture2d_ms_array"; "texture3d"; "texturecube"; "texturecube_array";
+    "depth2d"; "depth2d_array"; "depth2d_ms"; "depth2d_ms_array"; "depthcube"; "depthcube_array";
+    "array"; "vec"; "matrix"; "atomic"
+]
+
+let builtinTypes = set [ "void" ] + builtinScalarTypes + builtinVectorTypes + builtinMatrixTypes
+                   + mslScalarTypes + mslVectorTypes + mslMatrixTypes + mslTemplatedTypes;
 
 let implicitConversions = // (from, to)
     [
@@ -87,14 +111,27 @@ let vectorFunctions = set([
     "notEqual"; "reflect"; "refract"])
 let textureFunctions = set(["texture"; "textureLod"; "texture2D"; "texelFetch"; "textureLodOffset"])
 
+// MSL-specific built-in functions (subset used in typical shaders).
+// Split by purity: atomic_*_explicit that write (store, fetch_add, ...)
+// MUST NOT be in pureBuiltinFunctions, or the rewriter will drop the call
+// when it appears as an expression statement.
+let mslPureBuiltinFunctions = set [
+    "saturate"; "rsqrt"; "fma"; "fmod"; "select"; "popcount"; "clz"; "ctz";
+    "as_type"; "atomic_load_explicit"
+]
+let mslImpureBuiltinFunctions = set [
+    "atomic_store_explicit"; "atomic_fetch_add_explicit"
+]
+
 let pureBuiltinFunctions =
     trigonometryFunctions +
     mathsFunctions +
     vectorFunctions +
     castFunctions +
-    textureFunctions
+    textureFunctions +
+    mslPureBuiltinFunctions
 
-let impureBuiltinFunctions = set ["atomicCounterIncrement"]
+let impureBuiltinFunctions = set ["atomicCounterIncrement"] + mslImpureBuiltinFunctions
 
 let builtinFunctions = pureBuiltinFunctions + impureBuiltinFunctions
 

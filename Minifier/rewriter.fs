@@ -319,10 +319,15 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> allArgs
 
         // vec3(a.x, b.xy) => vec3(a.x, b)
+        // GLSL vec constructors silently truncate extra components, so dropping
+        // a trailing `.x`/`.xy`/... is safe even when the bare expression is
+        // wider than the swizzle (e.g. `vec3(1, 2, v2.x)` => `vec3(1, 2, v2)`).
+        // HLSL and MSL do not truncate, so under cLike we must guard the
+        // single-component case to only fire when `expr` is scalar.
         let rec dropLastSwizzle n = function
             | [Dot (expr, field) as last] when isFieldSwizzle field.Name ->
                 match [for c in field.Name -> swizzleIndex c] with
-                | [0] when n = 1 -> [expr]
+                | [0] when n = 1 && (not options.cLike || isKnownToBeScalar expr) -> [expr]
                 | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
                 | _ -> [last]
             | e1 :: rest -> e1 :: dropLastSwizzle (n-1) rest
@@ -333,8 +338,23 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         let args = dropLastSwizzle vecSize args
         FunCall (Var constr, args)
 
+    // `vec3`/`float3`/`half4` etc. all end in a single-digit size. The prefix
+    // determines the base type so we can reconstruct a smaller constructor
+    // of the same family (e.g. `half4(a,b,c,d).zx` -> `half2(c,a)`).
+    let vecConstructorPrefix (vecName: string) =
+        vecName.Substring(0, vecName.Length - 1)
+    // Upstream originally only simplified the GLSL float-vector constructors
+    // (`vec2`/`vec3`/`vec4`). Extending this to every name in
+    // `builtinVectorTypes` (ivec/uvec/bvec/mat) or to HLSL's `floatN` changes
+    // long-standing GLSL and HLSL output, so keep the narrow match for those
+    // modes. MSL gets the additional `halfN`/`floatN`/`intN`/... family.
+    let isVecConstructorName (name: string) =
+        name = "vec2" || name = "vec3" || name = "vec4"
+        || (options.msl && Builtin.mslVectorTypes.Contains name)
+
     let simplifyVecDot (vecName: string) args (field: string) e =
         let vecSize = vecName.ToCharArray() |> Array.last |> string |> int
+        let prefix = vecConstructorPrefix vecName
         if not (
             args |> Seq.forall Effects.isPure && // check that arguments can be reordered
             args |> List.length = vecSize // check that the Nth swizzle index maps to the Nth arg
@@ -354,7 +374,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     | Var _ | Int _ | Float _ -> true
                     | _ -> false
                 if repeatedIndexes |> List.forall (fun index -> isRepeatableExpr args[index]) then
-                    let constructor = Ident("vec" + string (indexes |> List.length))
+                    let constructor = Ident(prefix + string (indexes |> List.length))
                     FunCall(Var constructor, indexes |> List.map (fun index -> args[index]))
                 else e
             | _ -> e
@@ -388,10 +408,10 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             let len = Ident("length", dist.Loc)
             FunCall(Var len, [FunCall (Op "-", [arg1; arg2])])
 
-        | FunCall(Var constr, args) when constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4" ->
+        | FunCall(Var constr, args) when isVecConstructorName constr.Name ->
             simplifyVec constr args
 
-        | Dot(FunCall(Var constr, args), field) as e when (constr.Name = "vec2" || constr.Name = "vec3" || constr.Name = "vec4") ->
+        | Dot(FunCall(Var constr, args), field) as e when isVecConstructorName constr.Name ->
             let e = simplifyVecDot constr.Name args field.Name e
             match e with
             | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Ident(options.renameField field.Name, field.Loc))
@@ -408,7 +428,10 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         | FunCall(Var var, [e; Number 1.M]) when var.Name = "pow" -> e // pow(x, 1.)  ->  x
 
-        | FunCall (Dot (Var var, ident), []) as e when ident.Name = "length" ->
+        // GLSL-specific: `myArray.length()` on a sized array collapses to the size.
+        // Not valid in HLSL/MSL (C-style arrays don't expose .length(); metal::array
+        // uses .size() but our parser produces arraySizes=[] for it anyway).
+        | FunCall (Dot (Var var, ident), []) as e when ident.Name = "length" && not options.cLike ->
             match var.VarDecl with
             | Some vd ->
                 match vd.ty.arraySizes with
@@ -1023,7 +1046,7 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
         FunctionInlining(options).MarkInlinableFunctions li
         VariableInlining(options).MarkInlinableVariables li
     let didInline = ref false
-    let before = Printer.print li
+    let before = Printer.print false li
     let rewriter = RewriterImpl(options, optimizationPass)
     let li = options.visitor(rewriter.SimplifyExpr didInline, rewriter.SimplifyStmt).mapTopLevel li
 
@@ -1038,7 +1061,7 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
         options.trace $"! possible unstable loop in change detection. stopping analysis."
         li
     else
-        let after = Printer.print li
+        let after = Printer.print false li
         if after <> before then
             options.trace $"- significant changes happened: running analysis again..."
             iterateSimplifyAndInline options optimizationPass (passCount + 1) li
