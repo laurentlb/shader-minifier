@@ -319,10 +319,16 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | _ -> allArgs
 
         // vec3(a.x, b.xy) => vec3(a.x, b)
+        // Guard the single-component case on `expr` being scalar: `f().x`
+        // where f returns vec2 must NOT become `f()` because the outer
+        // constructor's arity would change (vec3(s, s, vec2) = 4 components).
+        // For multi-component swizzles we preserve the existing behavior,
+        // which relies on GLSL-style auto-widening; it can still misfire
+        // when `expr` is wider than the swizzle length.
         let rec dropLastSwizzle n = function
             | [Dot (expr, field) as last] when isFieldSwizzle field.Name ->
                 match [for c in field.Name -> swizzleIndex c] with
-                | [0] when n = 1 -> [expr]
+                | [0] when n = 1 && isKnownToBeScalar expr -> [expr]
                 | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
                 | _ -> [last]
             | e1 :: rest -> e1 :: dropLastSwizzle (n-1) rest
