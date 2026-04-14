@@ -558,7 +558,7 @@ type private RenamerImpl(options: Options.Options) =
 
         // Then, compute the ordered list of variable names to use.
         // Most frequent letters must be picked first because they will compress better.
-        let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
+        let text = [for shader in shaders -> Printer.print false shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
         let fieldNames = names

@@ -14,14 +14,14 @@ type private Impl(options: Options.Options, withLocations) =
         match options.outputFormat with
         | Options.Text | Options.JS | Options.Json ->
             if withLocations then
-                Printer.printWithLoc shader.code |> Printer.stripIndentation
+                Printer.printWithLoc options.cLike shader.code |> Printer.stripIndentation
             else
-                Printer.print shader.code
+                Printer.print options.cLike shader.code
         | Options.IndentedText | Options.CVariables | Options.CArray | Options.Nasm | Options.Rust ->
             if withLocations then
-                Printer.printWithLoc shader.code
+                Printer.printWithLoc options.cLike shader.code
             else
-                Printer.printIndented shader.code
+                Printer.printIndented options.cLike shader.code
 
     let formatPrefix = function
         | Ast.ExportPrefix.Variable -> "var"

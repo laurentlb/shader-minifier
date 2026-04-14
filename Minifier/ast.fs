@@ -144,13 +144,16 @@ and Type = {
          | _ -> false)
     member this.IsExternal =
         List.exists (fun s -> Set.contains s Builtin.externalQualifiers) this.typeQ
+    // Scalar/vector predicates check two name sets each: the GLSL/HLSL-shared
+    // set in `builtin*Types`, plus the MSL-only additions in `msl*Types`
+    // (e.g. `half`, `char`, `short`, `long` and their vector forms). Keeping
+    // them split avoids polluting the GLSL builtin tables with names that
+    // are only legal under `--msl`.
     member this.isScalar =
         match this.name with
             | TypeName n ->
                 Builtin.builtinScalarTypes.Contains n.OldName
                 || Builtin.mslScalarTypes.Contains n.OldName
-                // `float`/`int`/etc. are in builtinScalarTypes; MSL-only scalar
-                // names (half, char, short, long, ...) live in mslScalarTypes.
             | _ -> false
     member this.isScalarOrVector =
         match this.name with

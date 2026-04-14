@@ -40,7 +40,8 @@ type SymbolMap() =
 
 let stripIndentation (s: string) = s.Replace("\000", "").Replace("\t", "") // see PrinterImpl.nl
 
-type PrinterImpl(withLocations) =
+type PrinterImpl(withLocations, ?cLike) =
+    let cLike = defaultArg cLike false
 
     let out a = sprintf a
 
@@ -71,16 +72,22 @@ type PrinterImpl(withLocations) =
         |> dict
 
     let idToS (id: Ident) =
-        // In mode Unambiguous, ids contain numbers. Emit an ASCII identifier
-        // derived from the number (previously used a single high-Unicode
-        // char, which is rejected by MSL/HLSL compilers).
+        // In mode Unambiguous, ids carry a numeric placeholder rather than a
+        // real name. GLSL permits arbitrary Unicode in identifiers, so the
+        // original behavior emits a single high-Unicode char — one source
+        // char per id, friendly to downstream compression. HLSL/MSL require
+        // ASCII identifiers, so for cLike we fall back to `_<baseN>` (still
+        // short, still collision-free with user names thanks to the `_`).
         if id.IsUniqueId then
-            let rec baseN n =
-                let d = n % 26
-                let rest = n / 26
-                let s = string (char (int 'a' + d))
-                if rest = 0 then s else baseN (rest - 1) + s
-            "_" + baseN (int id.Name)
+            if cLike then
+                let rec baseN n =
+                    let d = n % 26
+                    let rest = n / 26
+                    let s = string (char (int 'a' + d))
+                    if rest = 0 then s else baseN (rest - 1) + s
+                "_" + baseN (int id.Name)
+            else
+                string (char (1000 + int id.Name))
         else if withLocations then
             out "%s@%d,%d@" id.Name id.Loc.line id.Loc.col
         else
@@ -361,12 +368,16 @@ type PrinterImpl(withLocations) =
         let bytes = symbolMap.SymFileBytes shaderSymbol minifiedShader
         System.IO.File.WriteAllBytes(shader.filename + ".sym", bytes)
 
-let printIndented tl = PrinterImpl(false).PrintIndented tl // Indentation is encoded using \0 and \t
-let print tl = printIndented tl |> stripIndentation
+// `cLike` controls how leaked uniqueId placeholders are rendered: GLSL gets
+// the original single-Unicode-char encoding, HLSL/MSL get an ASCII `_<baseN>`
+// fallback. Debug/trace entry points (exprToS, typeToS, writeSymbols,
+// debugFunc, ...) don't emit final shader output and always use cLike=false.
+let printIndented cLike tl = PrinterImpl(false, cLike).PrintIndented tl // Indentation is encoded using \0 and \t
+let print cLike tl = printIndented cLike tl |> stripIndentation
+let printWithLoc cLike tl = PrinterImpl(true, cLike).PrintIndented tl
 let writeSymbols shader = PrinterImpl(false).WriteSymbols shader
 let exprToS x = PrinterImpl(false).ExprToS 0 x |> stripIndentation
 let typeToS ty = PrinterImpl(false).TypeToS 0 ty |> stripIndentation
-let printWithLoc tl = PrinterImpl(true).PrintIndented tl
 
 let debugDecl (t: DeclElt) =
     let sizes = if t.sizes.IsEmpty then "" else t.sizes |> List.map (fun size -> $"[{size}]") |> String.concat ""

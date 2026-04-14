@@ -1041,7 +1041,7 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
         FunctionInlining(options).MarkInlinableFunctions li
         VariableInlining(options).MarkInlinableVariables li
     let didInline = ref false
-    let before = Printer.print li
+    let before = Printer.print false li
     let rewriter = RewriterImpl(options, optimizationPass)
     let li = options.visitor(rewriter.SimplifyExpr didInline, rewriter.SimplifyStmt).mapTopLevel li
 
@@ -1056,7 +1056,7 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
         options.trace $"! possible unstable loop in change detection. stopping analysis."
         li
     else
-        let after = Printer.print li
+        let after = Printer.print false li
         if after <> before then
             options.trace $"- significant changes happened: running analysis again..."
             iterateSimplifyAndInline options optimizationPass (passCount + 1) li
