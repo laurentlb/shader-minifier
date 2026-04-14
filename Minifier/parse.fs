@@ -33,10 +33,16 @@ type private ParseImpl(options: Options.Options) =
     let str s = pstring s .>> ws
 
     let ident =
+        // Some GLSL reserved words are ordinary identifiers in MSL (e.g.
+        // `sample`, `buffer`, `shared`). Whitelist them when in MSL mode.
+        let mslExceptions = set ["sample"; "buffer"; "shared"]
+        let isKeyword (name: string) =
+            if options.msl && mslExceptions.Contains(name) then false
+            else Builtin.keywords.Contains(name)
         let nonDigit = asciiLetter <|> pchar '_'
         let p = pipe3 getPosition nonDigit (manyChars (nonDigit <|> digit <?> "")) (
             fun pos c s -> Ast.Ident(c.ToString() + s, { line = int pos.Line; col = int pos.Column }))
-        let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
+        let p = p >>= (fun s -> if isKeyword s.Name then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
     let opp = OperatorPrecedenceParser<_,_,_>()
@@ -191,7 +197,7 @@ type private ParseImpl(options: Options.Options) =
     }
 
     let structDecl =
-        let semi = if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
+        let semi = if options.cLike then opt (ch ';') |>> ignore<unit option> else ch ';'
         (structSpecifier .>> semi) |>> Ast.TypeDecl
 
     // eg. "const out int", "uniform float", "int[2][3]"
@@ -223,6 +229,18 @@ type private ParseImpl(options: Options.Options) =
                       ]
                       |> List.map keyword |> choice <?> "Type qualifier"
     let hlslQualifier = many hlslStorage
+
+    // MSL storage/address-space/function qualifiers. Superset of HLSL plus
+    // Metal address spaces and entry-point decorators.
+    let mslStorage = ["const"; "constexpr"; "static"; "inline"; "extern"; "volatile"
+                      "device"; "constant"; "thread"; "threadgroup"; "threadgroup_imageblock"
+                      "ray_data"; "object_data"
+                      "kernel"; "vertex"; "fragment"; "intersection"
+                      "in"; "out"; "inout"
+                     ]
+                     |> List.map keyword |> choice <?> "Type qualifier"
+    let mslQualifier = many mslStorage
+
     let specifiedTypeHLSL =
         let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
                    |> opt
@@ -232,35 +250,104 @@ type private ParseImpl(options: Options.Options) =
         let arraySizes = many (between (ch '[') (ch ']') expr)
         pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
+    // MSL: templates can contain commas, nested <>, and "::" qualifiers
+    // (e.g. `texture2d<float, access::write>`). We capture the full content
+    // verbatim so the printer round-trips it unchanged.
+    let templateBody, templateBodyRef = createParserForwardedToRef()
+    do templateBodyRef.Value <-
+        let piece =
+            choice [
+                attempt (pstring "::")
+                between (pchar '<') (pchar '>') templateBody |>> (fun s -> "<" + s + ">")
+                many1Chars (noneOf "<>")
+            ]
+        many piece |>> String.concat ""
+    let specifiedTypeMSL =
+        let generic = between (pchar '<') (pchar '>') templateBody .>> ws
+                   |> opt
+                   |>> (function Some s -> "<" + s + ">" | None -> "")
+        // MSL identifiers can contain `::`, e.g. `metal::device_information`.
+        let qualName =
+            pipe2 (ident |>> (fun id -> id.Name))
+                  (many (pstring "::" >>. (ident |>> (fun id -> id.Name))))
+                  (fun h t -> String.concat "::" (h :: t))
+        let typeName = pipe2 qualName generic (+)
+        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (typeName |>> (fun s -> Ast.TypeName (Ast.Ident s)))
+        let arraySizes = many (between (ch '[') (ch ']') expr)
+        // Allow a trailing `&` or `*` (MSL passes references/pointers for
+        // address-space arguments). We fold it into the type name for now.
+        let refOrPtr = opt (choice [pstring "&"; pstring "*"]) .>> ws
+                       |>> (function Some s -> s | None -> "")
+        pipe4 mslQualifier typeSpec refOrPtr arraySizes
+            (fun tyQ name ptr sizes ->
+                let name =
+                    match name with
+                    | Ast.TypeName id when ptr <> "" -> Ast.TypeName (Ast.Ident (id.Name + ptr))
+                    | n -> n
+                Ast.makeType name tyQ sizes)
+
     let qualifier = parse {
-        let! ret = if options.hlsl then hlslQualifier else glslQualifier
+        let! ret =
+            if options.msl then mslQualifier
+            elif options.hlsl then hlslQualifier
+            else glslQualifier
         if ret = [] then
             return! fail "Expected a type qualifier, but got none"
         else
             return ret
     }
     let specifiedType = parse {
-        let! ret = if options.hlsl then specifiedTypeHLSL else specifiedTypeGLSL
+        let! ret =
+            if options.msl then specifiedTypeMSL
+            elif options.hlsl then specifiedTypeHLSL
+            else specifiedTypeGLSL
         return ret
     }
 
     // For HLSL, e.g. ": color"
+    // For MSL, also consume trailing [[...]] attributes attached to a
+    // parameter or member declarator, e.g. `float &t [[buffer(0)]]`.
     let semantics =
-        many (ch ':' >>. simpleExpr)
+        if options.msl then
+            let colonSem = ch ':' >>. simpleExpr
+            let attrSem =
+                attempt (pstring "[[" >>. manyCharsTill anyChar (pstring "]]")) .>> ws
+                |>> (fun s -> Ast.Var (Ast.Ident ("[[" + s + "]]")))
+            many (attrSem <|> colonSem)
+        else
+            many (ch ':' >>. simpleExpr)
+
+    // Array sizes. In MSL, `[[attr]]` is not an array size, so guard against
+    // a leading `[[`.
+    let arraySizeBrackets =
+        let singleBracket =
+            if options.msl then
+                attempt (pchar '[' >>. notFollowedBy (pchar '[')) >>. ws
+                >>. (opt expr) .>> ch ']'
+            else
+                between (ch '[') (ch ']') (opt expr)
+        many (singleBracket |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
 
     // eg. "int foo[] = exp, bar = 3"
+    // MSL also supports constructor-call init: `float3 v(1,2,3);` which we
+    // rewrite to a VectorExp (brace-init), e.g. `float3 v={1,2,3}`.
     do declRef.Value <- (
-        let brackets = many (between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
-        let init = ch '=' >>. exprNoComma
-        let var = pipe4 ident brackets semantics (opt init) Ast.makeDecl
+        let eqInit = ch '=' >>. exprNoComma
+        let ctorInit =
+            if options.msl then
+                between (ch '(') (ch ')') (sepBy1 exprNoComma (ch ','))
+                |>> Ast.VectorExp
+            else
+                pzero
+        let init = eqInit <|> ctorInit
+        let var = pipe4 ident arraySizeBrackets semantics (opt init) Ast.makeDecl
         let list = sepBy1 var (ch ',')
         tuple2 specifiedType list
     )
 
     // e.g. int foo[]   used for function arguments
     let singleDeclaration =
-        let brackets = many (between (ch '[') (ch ']') (opt expr) |>> (fun size -> defaultArg size (Ast.Int (0, ""))))
-        pipe4 specifiedType ident brackets semantics
+        pipe4 specifiedType ident arraySizeBrackets semantics
             (fun ty id brack sem -> (ty, [Ast.makeDecl id brack sem None]))
 
     // GLSL, eg. "uniform Transform { ... };"
@@ -271,7 +358,7 @@ type private ParseImpl(options: Options.Options) =
         let! ret = blockSpecifier (Printer.typeToS ty + s)
                       |>> Ast.TypeDecl
         // semicolon seems to be optional in hlsl
-        do! if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
+        do! if options.cLike then opt (ch ';') |>> ignore<unit option> else ch ';'
         return ret
     }
 
@@ -321,17 +408,35 @@ type private ParseImpl(options: Options.Options) =
         let otherDirective = line |>> (fun s -> ["#" + s])
         pchar '#' >>. (define <|> otherDirective) .>> ws
 
-    // HLSL attribute, eg. [maxvertexcount(12)]
+    // HLSL: [maxvertexcount(12)]
+    // MSL:  [[texture(0)]], [[stage_in]], [[position]]
     let attribute =
-        if options.hlsl then
+        if options.msl then
+            // Prefer `[[ ... ]]`, fall back to single-bracket for compat.
+            let doubleBracket =
+                attempt (pstring "[[" >>. manyCharsTill anyChar (pstring "]]"))
+                |>> (fun s -> "[[" + s + "]]")
+            let singleBracket =
+                pchar '[' >>. manyCharsTill anyChar (pchar ']')
+                |>> (fun s -> "[" + s + "]")
+            (doubleBracket <|> singleBracket) .>> ws
+        elif options.hlsl then
             ch '[' >>. manyCharsTill anyChar (ch ']')
                 |>> (function s -> "[" + s + "]")
         else
             pzero
 
-    // HLSL template, e.g. template<typename T>
+    // HLSL: template<typename T>
+    // MSL:  using namespace metal;   (we preserve these verbatim too)
     let template =
-        if options.hlsl then
+        if options.msl then
+            let tmpl = str "template" >>. ch '<' >>. manyCharsTill anyChar (ch '>')
+                        |>> (fun s -> $"template<{s}>")
+            let usingNs = str "using" >>. str "namespace"
+                          >>. manyCharsTill anyChar (ch ';')
+                          |>> (fun s -> "using namespace " + s.Trim() + ";")
+            attempt tmpl <|> attempt usingNs
+        elif options.hlsl then
             str "template" >>. ch '<' >>. manyCharsTill anyChar (ch '>')
                 |>> (function s -> $"template<{s}>")
         else

@@ -154,7 +154,7 @@ type private RenamerVisitor(options: Options.Options) =
                 match context with
                 | TopLevelDeclaration when options.preserveAllGlobals ->
                     env.DontRename decl.name
-                | TopLevelDeclaration when ty.IsExternal || options.hlsl ->
+                | TopLevelDeclaration when ty.IsExternal || options.cLike ->
                     processExternal()
                 | Field ({ blockType = InterfaceBlock _ }, hasInstanceName) ->
                     if hasInstanceName then
@@ -219,7 +219,7 @@ type private RenamerVisitor(options: Options.Options) =
             renStmt innerEnv body |> ignore<Env>
             Option.iter (renExpr innerEnv) cond
             Option.iter (renExpr innerEnv) inc
-            if options.hlsl then innerEnv
+            if options.cLike then innerEnv
             else env
         | ForE(init, cond, inc, body) as stmt ->
             let innerEnv = env.onEnterScope env stmt
@@ -273,7 +273,13 @@ type private RenamerVisitor(options: Options.Options) =
             env
 
     let renFunction env (f: FunctionType) =
-        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
+        // MSL: always preserve kernel/vertex/fragment entry-point names (the
+        // host binds pipelines by function name, so renaming is never safe).
+        let isMslEntryPoint =
+            options.msl &&
+            not (Set.intersect (set f.retType.typeQ)
+                               (set ["kernel"; "vertex"; "fragment"])).IsEmpty
+        if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals || isMslEntryPoint then
             env
         elif List.contains f.fName.Name options.noRenamingList then
             env

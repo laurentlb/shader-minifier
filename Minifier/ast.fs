@@ -193,7 +193,12 @@ and FunctionType = {
     args: Decl list (*args*)
     semantics: Expr list (*semantics*)
 } with
-    member this.isExternal(options: Options.Options) = options.hlsl && this.semantics <> []
+    member this.isExternal(options: Options.Options) =
+        (options.hlsl && this.semantics <> [])
+        || (options.msl &&
+            (this.semantics <> []
+             || not (Set.intersect (set this.retType.typeQ)
+                                   (set ["kernel"; "vertex"; "fragment"])).IsEmpty))
     member this.hasOutOrInoutParams =
         let typeQualifiers = set [for (ty, _) in this.args do yield! ty.typeQ]
         not (Set.intersect typeQualifiers (set ["out"; "inout"])).IsEmpty
@@ -325,7 +330,7 @@ type MapEnv private = {
                 let env', decl = env.mapDecl init
                 let res = ForD (decl, Option.map (env'.mapExpr) cond,
                                 Option.map (env'.mapExpr) inc, snd (mapStmt' env' body))
-                if env.options.hlsl then env', res
+                if env.options.cLike then env', res
                 else env, res
             | ForE(init, cond, inc, body) ->
                 let res = ForE (Option.map env.mapExpr init, Option.map env.mapExpr cond,

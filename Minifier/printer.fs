@@ -71,9 +71,16 @@ type PrinterImpl(withLocations) =
         |> dict
 
     let idToS (id: Ident) =
-        // In mode Unambiguous, ids contain numbers. We print a single Unicode char instead.
+        // In mode Unambiguous, ids contain numbers. Emit an ASCII identifier
+        // derived from the number (previously used a single high-Unicode
+        // char, which is rejected by MSL/HLSL compilers).
         if id.IsUniqueId then
-            string (char (1000 + int id.Name))
+            let rec baseN n =
+                let d = n % 26
+                let rest = n / 26
+                let s = string (char (int 'a' + d))
+                if rest = 0 then s else baseN (rest - 1) + s
+            "_" + baseN (int id.Name)
         else if withLocations then
             out "%s@%d,%d@" id.Name id.Loc.line id.Loc.col
         else
@@ -168,10 +175,13 @@ type PrinterImpl(withLocations) =
         if endsWithIdentChar s && startsWithIdentChar s2 then s + " " + s2
         else s + s2
 
-    // Print HLSL semantics
+    // Print HLSL semantics (": COLOR") and MSL attributes ("[[texture(0)]]").
+    // Attributes carry their own brackets, semantics need a leading ':'.
     let semToS sem =
-        let res = sem |> List.map (exprToS 0) |> String.concat ":"
-        if res = "" then res else ":" + res
+        let one e =
+            let s = exprToS 0 e
+            if s.StartsWith("[[") then " " + s else ":" + s
+        sem |> List.map one |> String.concat ""
 
     let rec blockToS indent (block: StructOrInterfaceBlock) =
         let name = match block.name with None -> "" | Some (s: Ident) -> " " + s.Name
