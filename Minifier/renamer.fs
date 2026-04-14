@@ -497,7 +497,16 @@ type private RenamerImpl(options: Options.Options) =
                                 // between AST locations as a result of multi-use-site inlining. And that is a use that prevents shadowing!
                                 name
                       ) |> set
-        let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
+        // Functions live in the top-level namespace and can be called from
+        // any nested scope. The per-scope shadowing analysis only looks at
+        // Var uses in the immediate scope, so a function whose only call
+        // sits inside a nested block would otherwise have its rename
+        // dropped here \u2014 leaving later use sites unable to resolve it
+        // and emitted as stray uniqueIds (the "_cg" fallback). Keep
+        // function renames regardless of whether they show up in the
+        // immediate scope's use set.
+        let isFunctionRename shortName = env.funOverloads.ContainsKey shortName
+        let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id || isFunctionRename id)
         let reusable = [for i in reusable -> i.Value]
                         |> List.filter (fun x -> not (List.contains x options.noRenamingList))
         let allAvailable = reusable @ env.availableNames |> List.distinct
