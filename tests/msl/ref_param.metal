@@ -7,7 +7,7 @@ struct Ray {
 };
 
 // Output parameter passed by thread reference. Writes through `r` must be
-// preserved by the minifier \u2014 the function's only observable behaviour
+// preserved by the minifier - the function's only observable behaviour
 // is the side effect through the ref.
 static void make_ray(thread Ray &r, float3 o, float3 d)
 {

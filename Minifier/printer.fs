@@ -74,7 +74,7 @@ type PrinterImpl(withLocations, ?cLike) =
     let idToS (id: Ident) =
         // In mode Unambiguous, ids carry a numeric placeholder rather than a
         // real name. GLSL permits arbitrary Unicode in identifiers, so the
-        // original behavior emits a single high-Unicode char — one source
+        // original behavior emits a single high-Unicode char - one source
         // char per id, friendly to downstream compression. HLSL/MSL require
         // ASCII identifiers, so for cLike we fall back to `_<baseN>` (still
         // short, still collision-free with user names thanks to the `_`).

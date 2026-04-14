@@ -230,7 +230,7 @@ type private RenamerVisitor(options: Options.Options) =
             Option.iter (renExpr innerEnv) cond
             Option.iter (renExpr innerEnv) inc
             // C/C++/MSL/HLSL all scope the for-init declaration to the loop
-            // itself, same as GLSL \u2014 return the outer env either way.
+            // itself, same as GLSL - return the outer env either way.
             // Previously returned innerEnv for cLike, but innerEnv carries
             // shadowVariables's drops of outer locals that happened to be
             // unused inside the loop; returning it permanently removed
@@ -334,7 +334,7 @@ type private RenamerVisitor(options: Options.Options) =
             // Otherwise, a struct used only in the signature (e.g.
             // `void f(thread Ray &r)` with `struct Ray { ... }` top-level)
             // would look unused in the body, its renamed name would be freed,
-            // and a later parameter could be allocated the same letter —
+            // and a later parameter could be allocated the same letter -
             // producing a collision like `void f(thread A& A)` that is
             // ambiguous in C++/MSL. GLSL has no ref/ptr params so widening
             // the shadowing scope would only suppress legitimate letter reuse.
@@ -487,7 +487,7 @@ type private RenamerImpl(options: Options.Options) =
         // MSL: the parser folds a trailing `&`/`*` into the type name.
         // Strip it so a reference like `thread Ray&` still counts as a use
         // of the struct `Ray` for shadowing purposes. Only needed for cLike
-        // (HLSL/MSL) — GLSL has no ref/ptr types, and stripping would alter
+        // (HLSL/MSL) - GLSL has no ref/ptr types, and stripping would alter
         // GLSL rename choices for no gain.
         let stripRefPtr (name: string) =
             if options.cLike && (name.EndsWith "&" || name.EndsWith "*")
@@ -513,7 +513,7 @@ type private RenamerImpl(options: Options.Options) =
         // called from any nested scope. The per-scope shadowing analysis
         // only looks at Var uses in the immediate scope, so a function
         // whose only call sits inside a nested block would otherwise have
-        // its rename dropped here — leaving later use sites unable to
+        // its rename dropped here - leaving later use sites unable to
         // resolve it and emitted as stray uniqueIds (the "_cg" fallback).
         // Keep function renames regardless of whether they show up in the
         // immediate scope's use set. GLSL mode already handles this via the

@@ -79,7 +79,7 @@ type VariableInlining(options: Options.Options) =
             let ident, isConst = def.Value
             let varDecl = ident.VarDecl.Value
             // cLike only: array-typed locals cannot be safely substituted at
-            // a use site in HLSL/MSL/C++ — replacing `a` with its initializer
+            // a use site in HLSL/MSL/C++ - replacing `a` with its initializer
             // in `a[i]` yields `{..}[i]`, which those languages reject. GLSL
             // accepts this via array-ctor folding (`float[](..)[i]`), so the
             // inlining is a real size win there and must not be suppressed.
