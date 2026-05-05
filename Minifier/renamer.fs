@@ -213,14 +213,24 @@ type private RenamerVisitor(options: Options.Options) =
             renExpr env cond
             env
         | ForD(init, cond, inc, body) as stmt ->
-            let innerEnv = env.onEnterScope env stmt // In the for scope, we use an env that allows shadowing unused outer decls.
             let envForType = Some env // Use the outer env to rename the init variable's type! In the inner env the type name might have been removed.
-            let innerEnv = renDecl LocalDeclaration envForType innerEnv init // Use the inner env to rename the init variable.
-            renStmt innerEnv body |> ignore<Env>
-            Option.iter (renExpr innerEnv) cond
-            Option.iter (renExpr innerEnv) inc
-            if options.hlsl then innerEnv
-            else env
+            if options.hlsl then
+                // In HLSL, a variable declared in a for initializer stays in scope after the loop.
+                // We therefore can't keep the "shadowing" environment after the loop, and we must
+                // ensure the initializer declaration is renamed in the outer scope.
+                let envWithInit = renDecl LocalDeclaration envForType env init
+                let innerEnv = envWithInit.onEnterScope envWithInit stmt // In the for body, allow shadowing of unused outer decls.
+                renStmt innerEnv body |> ignore<Env>
+                Option.iter (renExpr innerEnv) cond
+                Option.iter (renExpr innerEnv) inc
+                envWithInit
+            else
+                let innerEnv = env.onEnterScope env stmt // In the for scope, we use an env that allows shadowing unused outer decls.
+                let innerEnv = renDecl LocalDeclaration envForType innerEnv init // Use the inner env to rename the init variable.
+                renStmt innerEnv body |> ignore<Env>
+                Option.iter (renExpr innerEnv) cond
+                Option.iter (renExpr innerEnv) inc
+                env
         | ForE(init, cond, inc, body) as stmt ->
             let innerEnv = env.onEnterScope env stmt
             renOpt init
