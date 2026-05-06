@@ -181,6 +181,14 @@ let runCommand argv =
         let s = s.Replace("\r\n", "\n").Trim()
         versionRegex.Replace(s, "")
     let options, filenames = Minifier.ParseOptionsWithFiles(argv)
+    let options =
+        if options.exportIndentedText then
+            {options with
+                outputName = options.outputNameIndentedText ;
+                outputNameIndentedText = options.outputNameIndentedText.Replace("tests/real/","tests/out/") ;
+            }
+        else
+            options
     let expected =
         try File.ReadAllText options.outputName |> cleanString
         with _ when cliArgs.Contains(Update_Golden) -> ""
@@ -191,6 +199,11 @@ let runCommand argv =
         use out = new StringWriter()
         minifier.Format(out)
         out.ToString() |> cleanString
+    let result =
+        if options.exportIndentedText then
+            File.ReadAllText options.outputNameIndentedText |> cleanString
+        else
+            result
 
     let options = { options with outputFormat = Options.OutputFormat.IndentedText; exportKkpSymbolMaps = false}
     if filenames.Length = 1 then
