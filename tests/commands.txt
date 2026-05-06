@@ -7,6 +7,8 @@
 --format nasm -o tests/real/leizex.expected tests/real/leizex.frag
 --format rust -o tests/real/heart.expected tests/real/heart.frag
 --format json -o tests/real/heart2.expected tests/real/heart2.frag
+--format c-macros -o tests/real/c-macros.h.expected tests/real/leizex.frag tests/real/robin.frag tests/real/mouton/fxaa.frag tests/real/heart.frag
+--format nasm-macros -o tests/real/nasm-macros.asm.expected tests/real/mouton/fxaa.frag tests/real/leizex.frag tests/real/robin.frag tests/real/heart.frag
 --format c-variables -o "tests/unit/file name with-weird caractères.frag.c-variables.expected" "tests/unit/file name with-weird caractères.frag"
 # --format js -o "tests/unit/file name with-weird caractères.frag.js.expected" "tests/unit/file name with-weird caractères.frag"
 # --format nasm -o "tests/unit/file name with-weird caractères.frag.nasm.expected" "tests/unit/file name with-weird caractères.frag"

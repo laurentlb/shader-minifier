@@ -97,14 +97,16 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl]
-                       [--format <text|indented|c-variables|c-array|js|nasm|rust>]
+USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug]
+                       [--hlsl]
+                       [--format <text|indented|c-variables|c-array|c-macros|js|nasm|nasm-macros|rust|json>]
                        [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
-                       [--no-remove-unused] [--no-overloading] [--move-declarations]
-                       [--preprocess] [--export-kkp-symbol-maps] [<filename>...]
+                       [--no-remove-unused] [--no-overloading]
+                       [--move-declarations] [--preprocess]
+                       [--export-kkp-symbol-maps] [<filename>...]
 
 FILENAMES:
 
@@ -117,28 +119,30 @@ OPTIONS:
     -v                    Verbose, display additional information
     --debug               Debug, display more additional information
     --hlsl                Use HLSL (default is GLSL)
-    --format <text|indented|c-variables|c-array|js|nasm|rust>
-                          Choose to format the output (use 'text' if you want just
-                          the shader)
+    --format <text|indented|c-variables|c-array|c-macros|js|nasm|nasm-macros|rust|json>
+                          Choose to format the output (use 'text' if you want
+                          just the shader)
     --field-names <rgba|xyzw|stpq>
-                          Choose the field names for vectors: 'rgba', 'xyzw', or
-                          'stpq'
+                          Choose the field names for vectors: 'rgba', 'xyzw',
+                          or 'stpq'
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
     --no-inlining         Do not automatically inline variables and functions
-    --aggressive-inlining Aggressively inline constants. This can reduce output size
-                          due to better constant folding. It can also increase
-                          output size due to repeated inlined constants, but this
-                          increased redundancy can be beneficial to compression,
-                          leading to a smaller final compressed size anyway. Does
-                          nothing if inlining is disabled.
+    --aggressive-inlining Aggressively inline constants. This can reduce output
+                          size due to better constant folding. It can also
+                          increase output size due to repeated inlined
+                          constants, but this increased redundancy can be
+                          beneficial to compression, leading to a smaller final
+                          compressed size anyway. Does nothing if inlining is
+                          disabled.
     --no-renaming         Do not rename anything
     --no-renaming-list <string>
                           Comma-separated list of functions to preserve
     --no-sequence         Do not use the comma operator trick
     --no-remove-unused    Do not remove unused code
-    --no-overloading      When renaming functions, do not introduce new overloads
+    --no-overloading      When renaming functions, do not introduce new
+                          overloads
     --move-declarations   Move declarations to group them
     --preprocess          Evaluate some of the file preprocessor directives
     --export-kkp-symbol-maps
@@ -190,9 +194,24 @@ const char* shaderSources[] = {
 };
 ```
 
+If you need more control over how the strings are embedded in your code, use:
+
+```
+shader_minifier.exe --format c-macros *.frag -o shaders.h
+```
+
+In your C or C++ code, use the generated macros in place of string literals:
+
+```c
+#include "shaders.h"
+
+static char shader_render[] = SHADER_STRING_render_frag; // render.frag
+static char shader_post[] = SHADER_STRING_post_frag; // post.frag
+```
+
 Note that uniforms will be renamed consistently across all the files. The
-`#define` lines will tell you how they were renamed. To disable this renaming,
-use `--preserve-externals`.
+`#define SHADER_VAR_<name>` lines will tell you how they were renamed. To
+disable this renaming, use `--preserve-externals`.
 
 ### Javascript
 
@@ -215,6 +234,23 @@ The output may be used as a drop-in replacement for your original shaders.
 To better understand what Shader Minifier changed and get a more readable
 output, use the flags `--format indented --no-renaming`. This will add some
 indentation to the output, instead of using overly long lines.
+
+The `c-macros` format contains line number information that may be enabled by
+redefining a macro before referencing the `SHADER_STRING_<name>` macros:
+
+```c
+#include "shaders.h"
+
+#undef SHADER_MINIFIER_LINE
+#define SHADER_MINIFIER_LINE(s) s
+
+static char shader_render[] = SHADER_STRING_render_frag;
+static char shader_post[] = SHADER_STRING_post_frag;
+```
+
+The strings will contain line separations and `#line` directives.  If the
+graphics API shader compiler encounters an error, the line numbers in the info
+log should correspond directly to lines of `shaders.h`.
 
 ## Concepts
 
