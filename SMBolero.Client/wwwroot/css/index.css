@@ -235,6 +235,54 @@ code {
     cursor: pointer;
 }
 
+/* Minifier log, below the source/minified columns. */
+
+/* Mark the source lines only while the log is open. */
+#content:has(.trace-details[open]) .source .traced {
+    background-color: #2a2a18;
+}
+
+.trace-header {
+    font-size: 0.8em;
+    color: var(--alt-text-color);
+    margin-top: 1em;
+}
+
+.trace {
+    font-family: monospace;
+    max-height: 40vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.trace-event {
+    padding: 2px 4px;
+    border-bottom: 1px solid var(--bg-light);
+}
+
+.trace-event.clickable:hover {
+    background-color: var(--bg-light);
+}
+
+.trace-kind {
+    display: inline-block;
+    min-width: 6em;
+    font-weight: bold;
+}
+
+.trace-loc {
+    display: inline-block;
+    min-width: 5em;
+    color: var(--alt-text-color);
+}
+
+.trace-inline { color: #8c8; }
+.trace-remove { color: #e88; }
+.trace-merge { color: #8af; }
+.trace-move { color: #cc8; }
+.trace-pragma { color: #c8c; }
+.trace-info { color: #888; }
+
 .animated-icon {
     transition: transform 0.5s;
     animation: rotate 0.5s;

@@ -8,6 +8,12 @@ type VarScope = Global | Local | Parameter
 [<StructuredFormatDisplay("{line}:{col}")>]
 type Location = { line: int; col: int }
 
+type TraceKind = Options.TraceKind
+
+type Options.Options with
+    member this.trace(kind, loc: Location, message) = this.Trace(kind, loc.line, loc.col, message)
+    member this.trace(kind, message) = this.Trace(kind, -1, -1, message)
+
 type Access = { // a Var in the AST can be a read, a write, both, or neither.
     isRead: bool
     isWrite: bool // A declaration's assignment is not counted as a write.

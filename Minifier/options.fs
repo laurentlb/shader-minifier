@@ -23,6 +23,34 @@ type FieldSet =
     | XYZW
     | STPQ
 
+// The kind of transformation reported in a trace event.
+[<RequireQualifiedAccess>]
+type TraceKind =
+    | Inline // a variable, function, or expression was inlined
+    | Remove // some code was removed
+    | Merge // statements or declarations were merged
+    | Move // a declaration was moved
+    | Pragma // a pragma was applied or ignored
+    | Info // other information about the minification process
+
+type TraceEvent = {
+    kind: TraceKind
+    filename: string
+    line: int // -1 when the event is not attached to a location
+    col: int
+    message: string
+} with
+    override this.ToString() =
+        if this.line < 0 then $"{this.filename}: {this.message}"
+        else $"{this.filename}:{this.line}:{this.col}: {this.message}"
+
+// Collects the trace events of one input file.
+type TraceLog(filename: string) =
+    let events = ResizeArray<TraceEvent>()
+    member _.Filename = filename
+    member _.Add(event: TraceEvent) = lock events (fun () -> events.Add(event))
+    member _.Events = lock events (fun () -> events.ToArray())
+
 type CliArguments =
     | [<CustomCommandLine("--version")>] Version
     | [<CustomCommandLine("-o")>] OutputName of string
@@ -92,13 +120,18 @@ type Options = {
     preprocess: bool
     exportKkpSymbolMaps: bool
     readableOutput: string
+    traceLog: TraceLog // the Minifier uses a separate log for each file
 }
 with
     member this.renameField field =
         if Builtin.isFieldSwizzle field then
             field |> String.map (fun c -> this.canonicalFieldNames[Builtin.swizzleIndex c])
         else field
-    member this.trace str = if this.debug then printfn "%s" str
+    // Record a trace event. Use the Ast.Location overloads defined in ast.fs.
+    member this.Trace(kind, line, col, message) =
+        let event = { kind = kind; filename = this.traceLog.Filename; line = line; col = col; message = message }
+        this.traceLog.Add event
+        if this.debug then eprintfn "%O" event
 
 
 let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version
@@ -132,6 +165,7 @@ let private initPrivate argv =
         preprocess = args.Contains(Preprocess)
         exportKkpSymbolMaps = args.Contains(ExportKkpSymbolMaps)
         readableOutput = args.GetResult(ReadableOutput, defaultValue = "")
+        traceLog = TraceLog("")
         noRenamingList =
             let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
             [for i in opt.Split([|','|]) -> i.Trim()]

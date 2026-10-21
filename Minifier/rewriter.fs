@@ -448,7 +448,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         let li = li |> List.map (function decl -> {decl with init = None})
                         declarations[ty] <- declarations[ty] @ li
                         for d in li do
-                            options.trace $"{d.name.Loc}: --move-declarations of '{Printer.debugDecl d}' to the line of '{Printer.debugDecl declarations[ty].Head}'"
+                            options.trace(TraceKind.Move, d.name.Loc, $"--move-declarations of '{Printer.debugDecl d}' to the line of '{Printer.debugDecl declarations[ty].Head}'")
             | _ -> ()
         let replacements = function
             | Decl (ty, _) as decl when List.contains "const" ty.typeQ ->
@@ -592,7 +592,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 let traceReadsAndWrites = false
                 let visitVar (varUse: VarUse) (var: Ident) (vd: VarDecl) =
                     if idents |> List.exists (identsReferToSameVar vd.decl.name) then
-                        if traceReadsAndWrites then options.trace $"    {varUse} of {var.Name} at {var.Loc}"
+                        if traceReadsAndWrites then options.trace(TraceKind.Info, var.Loc, $"{varUse} of {var.Name}")
 
                         // Reads always occur before writes (e.g. inout).
                         if varUse.access.isRead then
@@ -608,7 +608,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                             match candidates |> List.tryFind (identsReferToSameVar var) with
                             | Some lastAssignmentToVar ->
                                 candidates <- candidates |> List.where ((<>) lastAssignmentToVar)
-                                options.trace $"{var.Loc}: found unused assignment to '{var.Name}' (unconditionally overwritten)"
+                                options.trace(TraceKind.Remove, var.Loc, $"found unused assignment to '{var.Name}' (unconditionally overwritten)")
                                 alwaysOverwrittenAssignments <- lastAssignmentToVar :: alwaysOverwrittenAssignments
                             | _ -> ()
 
@@ -616,7 +616,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                             // Set current write as the new current assignment candidate for removal.
                             candidates <- var :: candidates
 
-                if traceReadsAndWrites then options.trace $"findAssignmentsToRemove: going through reads and writes:"
+                if traceReadsAndWrites then options.trace(TraceKind.Info, "findAssignmentsToRemove: going through reads and writes:")
                 VarVisitor(visitVar).visitStmt (Block stmts)
 
                 // Current removal candidates reached end of scope without encountering a read.
@@ -626,7 +626,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     | Declaration.Variable vd -> not vd.ty.isOutOrInout
                     | _ -> true)
                 for ident in assignmentsUnusedUntilEndOfScope do
-                    options.trace $"{ident.Loc}: found unused assignment to '{ident.Name}' (last use is a write)"
+                    options.trace(TraceKind.Remove, ident.Loc, $"found unused assignment to '{ident.Name}' (last use is a write)")
                 
                 // An assignment is unused if it is not followed by a read
                 // either until it's unconditionally overwritten or until it reaches end of scope.
@@ -690,7 +690,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 match compatibleDeclElt with
                 | None -> None
                 | Some declElt1 ->
-                    options.trace $"{declElt2.name.Loc}: eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'"
+                    options.trace(TraceKind.Merge, declElt2.name.Loc, $"eliminating local variable '{declElt2.name}' by reusing existing local variable '{declElt1.name}'")
                     for v in Analyzer(options).identUsesInStmt IdentKind.Var (Block (declAfter2 @ following2)) do // Rename all uses of var2 to use var1 instead.
                         if v.Name = declElt2.name.Name then
                             v.Rename(declElt1.name.Name)
@@ -777,7 +777,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                     // Inline this single use of a used-once assignment into the immediately following re-assignment:  m=14.;m=58.-m;  ->  m=58.-14.;
                     | 1 when Effects.isPure init1 && Effects.isPure init2 -> // This is ok only if init1 is pure and the part of init2 before using m is pure.
                         let newInit2 = replaceUsesOfIdentByExpr init2 name.Name init1
-                        options.trace $"{name.Loc}: merge consecutive pure assignments to the same local '{name}'"
+                        options.trace(TraceKind.Merge, name.Loc, $"merge consecutive pure assignments to the same local '{name}'")
                         Some [Expr (FunCall (Op "=", [Var name2; newInit2]))]
                     | _ -> None
                 | _ -> None
@@ -795,7 +795,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         match declElt.init with
                         | None -> None // can't replace  float a;a=f(a);  by  float a=f(a);
                         | Some init1 -> // float m=14.;m=58.-m;  ->  float m=58.-14.;
-                            options.trace $"{declElt.name.Loc}: merge assignment with preceding local declaration '{Printer.debugDecl declElt}'"
+                            options.trace(TraceKind.Merge, declElt.name.Loc, $"merge assignment with preceding local declaration '{Printer.debugDecl declElt}'")
                             let newInit = replaceUsesOfIdentByExpr init2 declElt.name.Name init1
                             Some [Decl (ty, [{declElt with init = Some newInit}])]
                     | _ -> None
@@ -932,8 +932,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
             canBeRenamed && not isCalled && not (funcInfo.funcType.isExternal(options))
         let unused = [for funcInfo in funcInfos do if isUnused funcInfo then yield funcInfo]
-        if not unused.IsEmpty then
-            options.trace($"removing unused functions: " + String.Join(", ", unused |> List.map (fun fi -> Printer.debugFunc fi.funcType)))
+        for fi in unused do
+            options.trace(TraceKind.Remove, fi.funcType.fName.Loc, $"removing unused function '{Printer.debugFunc fi.funcType}'")
         let unused = unused |> List.map (fun fi -> fi.func) |> set
         let mutable edited = false
         let code = code |> List.filter (function
@@ -1035,18 +1035,18 @@ let rec private iterateSimplifyAndInline (options: Options.Options) optimization
     let li = if options.noInlining then li else ArgumentInlining(options).Apply didInline li
 
     if passCount > 20 then
-        options.trace $"! possible unstable loop in change detection. stopping analysis."
+        options.trace(TraceKind.Info, "possible unstable loop in change detection, stopping analysis")
         li
     else
         let after = Printer.print li
         if after <> before then
-            options.trace $"- significant changes happened: running analysis again..."
+            options.trace(TraceKind.Info, $"pass {passCount}: significant changes happened, running analysis again")
             iterateSimplifyAndInline options optimizationPass (passCount + 1) li
         else li
 
 let processPragmas (options: Options.Options) li =
     let mutable forceInlineNextFunction = None
-    let warnIgnoredPragma (_, ss, loc) = options.trace $"{loc}: ignored pragma {ss}"
+    let warnIgnoredPragma (_, ss, loc) = options.trace(TraceKind.Pragma, loc, $"ignored pragma {ss}")
     let processPragma tl =
         match tl with
         | TLDirective ([s], loc) when Regex.IsMatch(s, "#pragma +function +inline", RegexOptions.IgnoreCase) ->
@@ -1060,10 +1060,10 @@ let processPragmas (options: Options.Options) li =
         | Function (ft, _) as tl ->
             match forceInlineNextFunction with
             | Some (true, _, _) ->
-                options.trace $"{ft.fName.Loc}: pragma forces inlining of '{Printer.debugFunc ft}'"
+                options.trace(TraceKind.Pragma, ft.fName.Loc, $"pragma forces inlining of '{Printer.debugFunc ft}'")
                 ft.fName.ToBeInlined <- true
             | Some (false, _, _) ->
-                options.trace $"{ft.fName.Loc}: pragma prevents inlining of '{Printer.debugFunc ft}'"
+                options.trace(TraceKind.Pragma, ft.fName.Loc, $"pragma prevents inlining of '{Printer.debugFunc ft}'")
                 ft.fName.DoNotInline <- true
             | None -> ()
             forceInlineNextFunction <- None
