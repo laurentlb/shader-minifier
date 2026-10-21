@@ -277,6 +277,8 @@ type private ParseImpl(options: Options.Options) =
         let s = sem |> List.map (fun s -> ":" + Printer.exprToS s) |> String.concat ""
         let! ret = blockSpecifier (Printer.typeToS ty + s)
                       |>> Ast.TypeDecl
+        // The block name (e.g. "Transform") is parsed as part of the type. It's not renamed, so don't reuse it.
+        forbiddenNames <- (match ty.name with Ast.TypeName id -> [id.Name] | _ -> []) @ forbiddenNames
         // semicolon seems to be optional in hlsl
         do! if options.hlsl then opt (ch ';') |>> ignore<unit option> else ch ';'
         return ret

@@ -1,0 +1,5 @@
+#version 460
+layout(local_size_x=256) in;
+struct Part { vec2 pos; };
+layout(std430,binding=0) buffer A{Part parts[];};
+void main(){ float a = 1.; parts[gl_GlobalInvocationID.x].pos += a; }
