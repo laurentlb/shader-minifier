@@ -74,6 +74,8 @@ type CliArguments =
     | [<CustomCommandLine("--no-overloading")>] NoOverloading
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
     | [<CustomCommandLine("--preprocess")>] Preprocess
+    | [<CustomCommandLine("-D")>] Define of string
+    | [<CustomCommandLine("--preprocess-no-expand")>] PreprocessNoExpand of string
     | [<CustomCommandLine("--export-kkp-symbol-maps")>] ExportKkpSymbolMaps
     | [<CustomCommandLine("--readable-output")>] ReadableOutput of string
     | [<MainCommand>] Filenames of filename:string list
@@ -97,7 +99,9 @@ type CliArguments =
             | NoOverloading -> "When renaming functions, do not introduce new overloads"
             | NoRemoveUnused -> "Do not remove unused code"
             | MoveDeclarations -> "Move declarations to group them"
-            | Preprocess -> "Evaluate some of the file preprocessor directives"
+            | Preprocess -> "Evaluate the preprocessor directives and expand the macros"
+            | Define _ -> "With --preprocess, define a macro (e.g. -D DEBUG=0 or -D FAST)"
+            | PreprocessNoExpand _ -> "With --preprocess, comma-separated list of macros to keep (not expand)"
             | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
             | ReadableOutput _ -> "Also write the code before renaming, in indented format, to this file (same as --no-renaming --format indented)"
             | Filenames _ -> "List of files to minify"
@@ -122,6 +126,8 @@ type Options = {
     noRemoveUnused: bool
     moveDeclarations: bool
     preprocess: bool
+    preprocessDefines: (string * string) list
+    preprocessNoExpand: string list
     exportKkpSymbolMaps: bool
     readableOutput: string
     traceLog: TraceLog // the Minifier uses a separate log for each file
@@ -172,6 +178,14 @@ let private initPrivate argv =
         noRemoveUnused = args.Contains(NoRemoveUnused)
         moveDeclarations = args.Contains(MoveDeclarations)
         preprocess = args.Contains(Preprocess)
+        preprocessDefines =
+            [for d in args.GetResults(Define) ->
+                match d.IndexOf '=' with
+                | -1 -> d.Trim(), "1"
+                | i -> d.Substring(0, i).Trim(), d.Substring(i + 1)]
+        preprocessNoExpand =
+            let opt = args.GetResult(PreprocessNoExpand, defaultValue = "")
+            [for i in opt.Split([|','|]) do if i.Trim() <> "" then i.Trim()]
         exportKkpSymbolMaps = args.Contains(ExportKkpSymbolMaps)
         readableOutput = args.GetResult(ReadableOutput, defaultValue = "")
         traceLog = TraceLog("")

@@ -1,0 +1,17 @@
+#version 330
+
+#define KEEP 1
+
+#define F(x)((x)*2.)
+
+#define PAREN (3.)
+
+int kept_known_value;
+float f()
+{
+  return float(KEEP)+F(1.)+F(2.)+PAREN;
+}
+
+#undef KEEP
+
+void end(){}

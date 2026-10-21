@@ -1,0 +1,4 @@
+#version 330
+
+int kept_live,kept_after_empty_branch;
+void end(){}

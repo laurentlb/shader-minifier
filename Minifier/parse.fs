@@ -408,7 +408,7 @@ type private ParseImpl(options: Options.Options) =
         forbiddenNames <- [ "if"; "in"; "do" ]
         reorderFunctions <- false
         let content =
-            if options.preprocess then Preprocessor.preprocess streamName content else content
+            if options.preprocess then Preprocessor.preprocess options streamName content else content
         let res = runParserOnString parse () streamName content
         match res with
         | Success(r,_,_) -> {

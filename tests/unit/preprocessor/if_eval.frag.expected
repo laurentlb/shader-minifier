@@ -1,0 +1,4 @@
+#version 330
+
+int kept_not_debug,kept_and,kept_arith,kept_continuation,kept_operators,kept_ifdef,kept_if_1;
+void end(){}

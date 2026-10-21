@@ -1,0 +1,4 @@
+#version 330
+
+int a_kept,b_kept,c_kept,d_kept;
+void end(){}

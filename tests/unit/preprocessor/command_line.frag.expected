@@ -1,0 +1,7 @@
+#version 330
+
+int kept_release,kept_fast;
+float f()
+{
+  return float(1);
+}

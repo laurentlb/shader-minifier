@@ -1,0 +1,69 @@
+#version 330
+
+#ifdef GL_ES
+
+precision mediump float;
+
+#endif
+
+int kept_short_circuit;
+
+#if __VERSION__>2*100
+
+int kept_unknown_expanded;
+
+#endif
+
+#if GL_ES
+
+int unknown_elif_becomes_if;
+
+#else
+
+int unknown_else;
+
+#endif
+
+#if GL_ES
+
+int unknown_if;
+
+#else
+
+int unknown_elif_true_becomes_else;
+
+#endif
+
+#if GL_ES
+
+int nested_known_in_unknown;
+
+#endif
+
+#define MAYBE 1
+
+#if GL_ES
+
+#undef MAYBE
+
+#define MAYBE 2
+
+#define NEW
+
+#endif
+
+int use_maybe=MAYBE;
+
+#if MAYBE==2
+
+int maybe_two;
+
+#endif
+
+#ifdef NEW
+
+int maybe_new;
+
+#endif
+
+void end(){}
