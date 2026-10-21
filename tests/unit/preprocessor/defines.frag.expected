@@ -1,0 +1,43 @@
+#version 330
+
+int NN=4,V=0,self=1,A=2;
+float f_basic()
+{
+  return 3.14159*float(3);
+}
+float f_nested()
+{
+  return 6.28318;
+}
+float f_empty()
+{
+  return 1.;
+}
+int f_neg()
+{
+  return 3;
+}
+float f_number()
+{
+  return 1e3+float(3);
+}
+int f_boundaries()
+{
+  return NN+3;
+}
+int f_v1()
+{
+  return 1;
+}
+int f_v2()
+{
+  return 2;
+}
+int f_v3()
+{
+  return V;
+}
+int f_recursive()
+{
+  return self+A;
+}

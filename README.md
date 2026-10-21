@@ -104,8 +104,10 @@ USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
                        [--no-remove-unused] [--no-overloading] [--move-declarations]
-                       [--preprocess] [--export-kkp-symbol-maps]
-                       [--readable-output <string>] [<filename>...]
+                       [--preprocess] [-D <string>]
+                       [--preprocess-no-expand <string>]
+                       [--export-kkp-symbol-maps] [--readable-output <string>]
+                       [<filename>...]
 
 FILENAMES:
 
@@ -141,7 +143,13 @@ OPTIONS:
     --no-remove-unused    Do not remove unused code
     --no-overloading      When renaming functions, do not introduce new overloads
     --move-declarations   Move declarations to group them
-    --preprocess          Evaluate some of the file preprocessor directives
+    --preprocess          Evaluate the preprocessor directives and expand the
+                          macros
+    -D <string>           With --preprocess, define a macro (e.g. -D DEBUG=0 or
+                          -D FAST)
+    --preprocess-no-expand <string>
+                          With --preprocess, comma-separated list of macros to
+                          keep (not expand)
     --export-kkp-symbol-maps
                           Export kkpView symbol maps
     --readable-output <string>
@@ -261,20 +269,39 @@ output that won't compile.
 
 ### Evaluation of preprocessor directives
 
-With the flag `--preprocess`, Shader Minifier will try to evaluate some
-preprocessing directives:
+With the flag `--preprocess`, Shader Minifier runs a partial preprocessor
+before minifying the code:
 
-* `#ifdef` is evaluated based on macros defined in the file.
-* `#else` is supported.
-* Nested `#ifdef` are supported.
-* Unknown directives will be preserved.
+* Macros (`#define`) are expanded, including function-like macros, and their
+    `#define` line is removed. `#undef` is supported.
+* Conditions (`#if`, `#ifdef`, `#ifndef`, `#elif`, `#else`) are evaluated and
+    the dead code is removed. Expressions support `defined`, integer
+    arithmetic, comparisons and logical operators. As in C, an undefined macro
+    is false.
+* Use `-D NAME=VALUE` (or `-D NAME`, which means `NAME=1`) to define a macro
+    from the command-line.
+* Use `--preprocess-no-expand A,B` to keep some macros in the output (e.g.
+    macros that save bytes). Their value is still used to evaluate the
+    conditions.
 
-This is still experimental and there are some limitations:
+For example, this removes the debug code:
 
-* Macros declared with `#define` will be kept in the file, even if they are no
-    longer needed.
-* `#define` and `#undefine` that appear inside a `#if` region are not well
-    handled.
+```c
+#define DEBUG 0
+...
+#if DEBUG
+...
+#endif
+```
+
+The preprocessing is partial: macros starting with `GL_` or `__` (e.g. `GL_ES`,
+`__VERSION__`) are defined by the implementation, so their value is unknown.
+When a condition cannot be evaluated, the directive is kept in the output, and
+both branches are preprocessed. Macros that are defined or undefined in such a
+region are not expanded, and all their `#define` lines are kept.
+
+Limitations: the operators `#` and `##` are not supported, as well as variadic
+macros.
 
 ### Verbatim
 

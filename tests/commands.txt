@@ -32,8 +32,6 @@
 --no-remove-unused --no-renaming -o tests/unit/loop.frag.expected tests/unit/loop.frag
 --no-remove-unused --no-renaming -o tests/unit/array.frag.expected tests/unit/array.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/numbers.frag.expected tests/unit/numbers.frag
---preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess.frag.expected tests/unit/preprocess.frag
---preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocess_if.frag.expected tests/unit/preprocess_if.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/shadowing.frag.expected tests/unit/shadowing.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/precedence.frag.expected tests/unit/precedence.frag
 --no-remove-unused --format indented -o tests/unit/interface_block.frag.expected tests/unit/interface_block.frag
@@ -50,6 +48,20 @@
 --no-inlining --hlsl --no-renaming --format indented -o tests/unit/issue-535.hlsl.expected tests/unit/issue-535.hlsl
 --no-remove-unused --hlsl --format indented -o tests/unit/issue-559.hlsl.expected tests/unit/issue-559.hlsl
 --hlsl --format indented -o tests/unit/issue-516.hlsl.expected tests/unit/issue-516.hlsl
+
+# Preprocessor tests
+
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocessor/preprocess.frag.expected tests/unit/preprocessor/preprocess.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocessor/preprocess_if.frag.expected tests/unit/preprocessor/preprocess_if.frag
+--preprocess --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/preprocessor/defines.frag.expected tests/unit/preprocessor/defines.frag
+--preprocess --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/preprocessor/functions.frag.expected tests/unit/preprocessor/functions.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocessor/if_eval.frag.expected tests/unit/preprocessor/if_eval.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocessor/elif_else.frag.expected tests/unit/preprocessor/elif_else.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocessor/nested_dead.frag.expected tests/unit/preprocessor/nested_dead.frag
+--preprocess --no-remove-unused --no-renaming --format indented -o tests/unit/preprocessor/unknown.frag.expected tests/unit/preprocessor/unknown.frag
+--preprocess --preprocess-no-expand KEEP,F,PAREN --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/preprocessor/no_expand.frag.expected tests/unit/preprocessor/no_expand.frag
+--preprocess -D RELEASE=1 -D FAST --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/preprocessor/command_line.frag.expected tests/unit/preprocessor/command_line.frag
+--preprocess --no-remove-unused --no-renaming --no-inlining --format indented -o tests/unit/preprocessor/directives.frag.expected tests/unit/preprocessor/directives.frag
 
 # Unused removal tests
 

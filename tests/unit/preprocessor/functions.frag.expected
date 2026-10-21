@@ -1,0 +1,39 @@
+#version 330
+
+float ID=1.;
+float f_tv()
+{
+  return 2.5;
+}
+float f_nested()
+{
+  return 9.;
+}
+float f_parens()
+{
+  return min(1.,2.)+max(3.,4.);
+}
+float f_zero()
+{
+  return 0.;
+}
+float f_multiline()
+{
+  return 3.;
+}
+float f_macro_arg()
+{
+  return 25.;
+}
+float f_negate()
+{
+  return 1.;
+}
+float f_rescan()
+{
+  return 9.;
+}
+float f_no_call()
+{
+  return ID;
+}

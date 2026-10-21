@@ -1,0 +1,7 @@
+#version 330
+
+int kept_indented;
+
+#pragma optimize(on)
+
+int a=3,b=3,c=1;
