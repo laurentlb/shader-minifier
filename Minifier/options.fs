@@ -23,6 +23,10 @@ type FieldSet =
     | XYZW
     | STPQ
 
+// A position in a source file. Ast.Location is an alias of this type.
+[<StructuredFormatDisplay("{line}:{col}")>]
+type Location = { line: int; col: int }
+
 // The kind of transformation reported in a trace event.
 [<RequireQualifiedAccess>]
 type TraceKind =
@@ -36,13 +40,13 @@ type TraceKind =
 type TraceEvent = {
     kind: TraceKind
     filename: string
-    line: int // -1 when the event is not attached to a location
-    col: int
+    loc: Location option
     message: string
 } with
     override this.ToString() =
-        if this.line < 0 then $"{this.filename}: {this.message}"
-        else $"{this.filename}:{this.line}:{this.col}: {this.message}"
+        match this.loc with
+        | Some loc -> $"{this.filename}:{loc.line}:{loc.col}: {this.message}"
+        | None -> $"{this.filename}: {this.message}"
 
 // Collects the trace events of one input file.
 type TraceLog(filename: string) =
@@ -127,11 +131,16 @@ with
         if Builtin.isFieldSwizzle field then
             field |> String.map (fun c -> this.canonicalFieldNames[Builtin.swizzleIndex c])
         else field
-    // Record a trace event. Use the Ast.Location overloads defined in ast.fs.
-    member this.Trace(kind, line, col, message) =
-        let event = { kind = kind; filename = this.traceLog.Filename; line = line; col = col; message = message }
+    member private this.AddTrace(kind, loc, message) =
+        let event = { kind = kind; filename = this.traceLog.Filename; loc = loc; message = message }
         this.traceLog.Add event
         if this.debug then eprintfn "%O" event
+    // Record a trace event about the code at this location.
+    member this.trace(kind, loc: Location, message) =
+        // Identifiers created by the minifier have no location (line = -1).
+        this.AddTrace(kind, (if loc.line < 0 then None else Some loc), message)
+    // Record a trace event that is not attached to a location.
+    member this.trace(kind, message) = this.AddTrace(kind, None, message)
 
 
 let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" version

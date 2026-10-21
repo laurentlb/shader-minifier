@@ -58,7 +58,8 @@ let minify flags content =
     // Plain objects, so that they can be serialized to JavaScript.
     let traceEvents = [|
         for e in minifier.TraceEvents ->
-            {| kind = string e.kind; line = e.line; col = e.col; message = e.message |} |]
+            let loc = match e.loc with Some l -> box {| line = l.line; col = l.col |} | None -> null
+            {| kind = string e.kind; loc = loc; message = e.message |} |]
 
     out.ToString(), minifier.GetSize, withLoc.ToString(), traceEvents
 

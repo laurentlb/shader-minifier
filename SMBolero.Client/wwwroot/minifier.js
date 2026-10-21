@@ -117,12 +117,12 @@ function showTraceEvents(events) {
         kind.textContent = event.kind;
         const loc = document.createElement('span');
         loc.classList.add('trace-loc');
-        loc.textContent = event.line >= 0 ? `${event.line}:${event.col}` : '';
+        loc.textContent = event.loc ? `${event.loc.line}:${event.loc.col}` : '';
         const message = document.createElement('span');
         message.textContent = event.message;
         item.append(kind, loc, message);
 
-        const lineDiv = event.line > 0 ? sourceLines[event.line - 1] : undefined;
+        const lineDiv = event.loc ? sourceLines[event.loc.line - 1] : undefined;
         if (lineDiv) {
             lineDiv.classList.add('traced');
             lineDiv.title = (lineDiv.title ? lineDiv.title + '\n' : '') + `${event.kind}: ${event.message}`;
