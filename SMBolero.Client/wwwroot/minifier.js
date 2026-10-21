@@ -94,8 +94,9 @@ function updateShader(shaderSource, shaderMinified) {
 
 function copyBtn() {
     const minified = document.querySelector('.minified');
-    console.log("Copy", minified.textContent);
-    navigator.clipboard.writeText(minified.textContent);
+    // Each line is a separate div, so textContent would drop the newlines.
+    const text = Array.from(minified.querySelectorAll('.line'), line => line.textContent).join('\n');
+    navigator.clipboard.writeText(text);
     const icon = document.querySelector('.copy-icon');
 
     // animation
