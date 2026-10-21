@@ -48,7 +48,7 @@ type private ParseImpl(options: Options.Options) =
 
     // Primitives
     let octal =
-        let r = @"0[0-7]+"
+        let r = @"0[0-7]+(?![.\deE])" // not followed by something that makes it a float, e.g. `01.`
         let conv s = System.Convert.ToInt64(s, 8) |> (fun x -> Ast.Int(x, ""))
         let body = regex r |>> conv
         body .>> ws
