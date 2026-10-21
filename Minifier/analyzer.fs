@@ -237,9 +237,18 @@ type Analyzer(options: Options.Options) =
             | Var v as e when kind.HasFlag IdentKind.Var -> idents <- v :: idents; e
             | Dot (_, field) as e when kind.HasFlag IdentKind.Field -> idents <- field :: idents; e
             | e -> e
-        let collectLocalUsesInStmt _ = function
-            | Decl ({ name = TypeName typeName}, _) as e when kind.HasFlag IdentKind.Type ->
+        let rec collectTypeSpec = function
+            | TypeName typeName -> idents <- typeName :: idents
+            | TypeTemplate (typeName, args) ->
                 idents <- typeName :: idents
+                for arg in args do
+                    match arg with
+                    | TypeArg spec -> collectTypeSpec spec
+                    | ValueArg e -> options.visitor(collectLocalUses).iterExpr e
+            | TypeBlock _ -> ()
+        let collectLocalUsesInStmt _ = function
+            | Decl ({ name = spec }, _) as e when kind.HasFlag IdentKind.Type ->
+                collectTypeSpec spec
                 e
             | e -> e
         options.visitor(collectLocalUses, collectLocalUsesInStmt).iterStmt BlockLevel.Unknown stmt

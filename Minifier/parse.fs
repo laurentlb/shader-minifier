@@ -227,8 +227,15 @@ type private ParseImpl(options: Options.Options) =
         let generic = ch '<' >>. manyCharsTill anyChar (ch '>')
                    |> opt
                    |>> (function Some s -> "<" + s + ">" | None -> "")
-        let typeName = pipe2 (ident |>> (fun id -> id.Name)) generic (+)
-        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (typeName |>> (fun s -> Ast.TypeName (Ast.Ident s)))
+        // e.g. `float4`, `StructuredBuffer<MyStruct>`, `vector<float, 4>`, `Buffer<vector<float, 4>>`
+        let typeName, typeNameRef = createParserForwardedToRef()
+        let templateArg = (anyNumber |>> Ast.ValueArg) <|> (typeName |>> Ast.TypeArg)
+        let templateArgs = between (ch '<') (ch '>') (sepBy1 templateArg (ch ','))
+        typeNameRef.Value <- pipe2 ident (opt templateArgs) (fun id args ->
+            match args with
+            | Some args -> Ast.TypeTemplate (id, args)
+            | None -> Ast.TypeName id)
+        let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> typeName
         let arraySizes = many (between (ch '[') (ch ']') expr)
         pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
