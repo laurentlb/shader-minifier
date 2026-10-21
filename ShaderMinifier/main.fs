@@ -17,6 +17,9 @@ let minifyFiles (options: Options.Options) filenames out =
             yield filename, content |]
     let minifier = Minifier(options, files)
     minifier.Format(out)
+    if options.readableOutput <> "" then
+        use readableOut = new StreamWriter(options.readableOutput)
+        minifier.FormatReadable(readableOut)
 
 let rec printError: exn -> unit = function
     | ParseError str ->

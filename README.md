@@ -104,7 +104,8 @@ USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl
                        [--aggressive-inlining] [--no-renaming]
                        [--no-renaming-list <string>] [--no-sequence]
                        [--no-remove-unused] [--no-overloading] [--move-declarations]
-                       [--preprocess] [--export-kkp-symbol-maps] [<filename>...]
+                       [--preprocess] [--export-kkp-symbol-maps]
+                       [--readable-output <string>] [<filename>...]
 
 FILENAMES:
 
@@ -143,6 +144,10 @@ OPTIONS:
     --preprocess          Evaluate some of the file preprocessor directives
     --export-kkp-symbol-maps
                           Export kkpView symbol maps
+    --readable-output <string>
+                          Also write the code before renaming, in indented
+                          format, to this file (same as --no-renaming --format
+                          indented)
     --help                display this list of options.
 ```
 
@@ -215,6 +220,17 @@ The output may be used as a drop-in replacement for your original shaders.
 To better understand what Shader Minifier changed and get a more readable
 output, use the flags `--format indented --no-renaming`. This will add some
 indentation to the output, instead of using overly long lines.
+
+To get both outputs in a single run, use `--readable-output`. It writes the
+same code as `--format indented --no-renaming` to a second file:
+
+```
+shader_minifier.exe -o shader_code.h --readable-output shader.min.frag fragment.glsl
+```
+
+Committing that file to your repository lets you see, in each diff, how a
+source change affects the minified code (e.g. a new function call that pulls in
+many dependencies).
 
 ## Concepts
 

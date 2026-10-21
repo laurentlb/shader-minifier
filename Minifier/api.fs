@@ -37,14 +37,23 @@ type Minifier(options, files) =
         let shaders = Array.Parallel.map parseAndRewrite files
         vprintf "Rewrite tricks applied. "; printSize shaders
 
+        // The renamer modifies the AST in place, so the readable output must be printed now.
+        let readable =
+            if options.readableOutput = "" then None
+            else
+                let readableOptions = { options with outputFormat = Options.IndentedText; exportKkpSymbolMaps = false }
+                use out = new StringWriter()
+                Formatter.print readableOptions out shaders [||]
+                Some (out.ToString())
+
         if options.noRenaming then
-            shaders, [||]
+            shaders, [||], readable
         else
             let exportedNames = Renamer.rename options (Seq.toArray shaders) |> List.toArray
             vprintf "Identifiers renamed. "; printSize shaders
-            shaders, exportedNames
+            shaders, exportedNames, readable
 
-    let shaders, exportedNames = minify options files
+    let shaders, exportedNames, readable = minify options files
 
     static member ParseOptions(flags) = Options.init flags
     static member ParseOptionsWithFiles(flags) = Options.initFiles flags
@@ -56,3 +65,8 @@ type Minifier(options, files) =
     member _.Format(writer, options) =
         Formatter.print options writer shaders exportedNames
     member _.FormatWithLocations(writer) = Formatter.printWithLocations options writer shaders exportedNames
+    // The code before renaming, in indented format. Requires the readableOutput option.
+    member _.FormatReadable(writer: TextWriter) =
+        match readable with
+        | Some str -> writer.Write(str)
+        | None -> failwith "the readable output is available only with --readable-output"
