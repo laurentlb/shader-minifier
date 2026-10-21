@@ -67,6 +67,7 @@
 
 --no-renaming --format indented -o tests/unit/unused_removal.frag.expected tests/unit/unused_removal.frag
 --no-renaming --format indented -o tests/unit/unused_assignments.frag.expected tests/unit/unused_assignments.frag
+--no-renaming --format indented -o tests/unit/issue-562.frag.expected tests/unit/issue-562.frag
 
 
 # Inlining unit tests

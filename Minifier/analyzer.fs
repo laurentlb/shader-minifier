@@ -231,6 +231,16 @@ type Analyzer(options: Options.Options) =
             { FuncInfo.func = func; funcType = funcType; name = name; callSites = callSites; body = block; isResolvable = isResolvable; isOverloaded = isOverloaded })
         funcInfos
 
+    // Prototypes of the functions called from global variable initializers, e.g. `float g = f();`
+    member _.findGlobalInitCalls code =
+        let calls = HashSet()
+        let collect _ = function
+            | FunCall (Var id, argExprs) as e -> calls.Add((id.Name, argExprs.Length)) |> ignore; e
+            | e -> e
+        let globals = code |> List.filter (function TLDecl _ -> true | _ -> false)
+        options.visitor(collect).iterTopLevel globals
+        calls
+
     member _.identUsesInStmt (kind: IdentKind) stmt =
         let mutable idents = []
         let collectLocalUses _ = function

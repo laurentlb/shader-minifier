@@ -301,10 +301,13 @@ type ArgumentInlining(options: Options.Options) =
         Analyzer(options).resolve code
         Analyzer(options).markWrites code
         let funcInfos = Analyzer(options).findFuncInfos code
+        let globalInitCalls = Analyzer(options).findGlobalInitCalls code
         for funcInfo in funcInfos do
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
+            // Calls from global initializers are not in callSites, don't remove parameters of these functions.
+            let isCalledFromGlobalInit = globalInitCalls.Contains funcInfo.funcType.prototype
             // If the function is overloaded, removing a parameter could conflict with another overload.
-            if canBeRenamed && not (funcInfo.funcType.isExternal(options)) && funcInfo.isOverloaded then
+            if canBeRenamed && not (funcInfo.funcType.isExternal(options)) && funcInfo.isOverloaded && not isCalledFromGlobalInit then
                 let callSites = funcInfos |> List.collect (fun n -> n.callSites) |> List.filter (fun n -> n.prototype = funcInfo.funcType.prototype)
                 for argIndex, (_, argDecl) in List.indexed funcInfo.funcType.parameters do
                     match argDecl.name.VarDecl with

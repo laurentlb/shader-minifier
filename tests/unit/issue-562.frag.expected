@@ -1,0 +1,18 @@
+#version 300 es
+
+precision highp float;
+float f()
+{
+  return 2.;
+}
+float g(float x)
+{
+  x*=x;
+  return x+sin(x);
+}
+float a=f(),b=g(1.5);
+out vec4 o;
+void main()
+{
+  o=vec4(a,b+g(1.5),0,1);
+}

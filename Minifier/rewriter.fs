@@ -924,9 +924,10 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
     static let rec removeUnusedFunctions (options: Options.Options) code =
         let funcInfos = Analyzer(options).findFuncInfos code
+        let globalInitCalls = Analyzer(options).findGlobalInitCalls code
         let isUnused (funcInfo : FuncInfo) =
             let canBeRenamed = not (options.noRenamingList |> List.contains funcInfo.name) // noRenamingList includes "main"
-            let isCalled = funcInfos |> List.exists (fun n ->
+            let isCalled = globalInitCalls.Contains funcInfo.funcType.prototype || funcInfos |> List.exists (fun n ->
                 n.callSites
                 |> List.map (fun c -> c.prototype)
                 |> List.contains funcInfo.funcType.prototype) // when in doubt wrt overload resolution, keep the function.
@@ -956,12 +957,22 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | TypeDecl _ -> false // could be declaring the type used in a declaration after it
             | Precision _ -> false // a precision statement affects only declarations after it
             | TLVerbatim _ -> false // we don't know what this is. assume the worst
+        // A global initializer can call a function, e.g. `float f(){...} float g = f();`
+        let callsAnyFunctionOf functions decls =
+            let names = set [for f in functions do match f with Function (ft, _) -> yield ft.fName.Name | _ -> ()]
+            let mutable found = false
+            let collect _ = function
+                | FunCall (Var id, _) as e when names.Contains id.Name -> found <- true; e
+                | e -> e
+            options.visitor(collect).iterTopLevel decls
+            found
         let rec moveDeclarationsUp tls =
             let (swappables, rest) = tls |> splitWhile canBeSwappedWithFollowingDeclaration
             let (decls, rest) = rest |> splitWhile (function TLDecl _ -> true | _ -> false)
             match (decls @ swappables), rest with
             | [], [] -> []
             | [], h :: t -> h :: moveDeclarationsUp t
+            | _, _ when callsAnyFunctionOf swappables decls -> swappables @ decls @ moveDeclarationsUp rest
             | _, _ -> decls @ swappables @ moveDeclarationsUp rest
         let mutable tls1 = []
         let mutable tls2 = moveDeclarationsUp tls
