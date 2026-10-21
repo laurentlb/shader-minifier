@@ -43,6 +43,7 @@ type CliArguments =
     | [<CustomCommandLine("--move-declarations")>] MoveDeclarations
     | [<CustomCommandLine("--preprocess")>] Preprocess
     | [<CustomCommandLine("--export-kkp-symbol-maps")>] ExportKkpSymbolMaps
+    | [<CustomCommandLine("--readable-output")>] ReadableOutput of string
     | [<MainCommand>] Filenames of filename:string list
  
     interface IArgParserTemplate with
@@ -66,6 +67,7 @@ type CliArguments =
             | MoveDeclarations -> "Move declarations to group them"
             | Preprocess -> "Evaluate some of the file preprocessor directives"
             | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
+            | ReadableOutput _ -> "Also write the code before renaming, in indented format, to this file (same as --no-renaming --format indented)"
             | Filenames _ -> "List of files to minify"
             | Version -> "Display the version and exit"
 
@@ -89,6 +91,7 @@ type Options = {
     moveDeclarations: bool
     preprocess: bool
     exportKkpSymbolMaps: bool
+    readableOutput: string
 }
 with
     member this.renameField field =
@@ -128,6 +131,7 @@ let private initPrivate argv =
         moveDeclarations = args.Contains(MoveDeclarations)
         preprocess = args.Contains(Preprocess)
         exportKkpSymbolMaps = args.Contains(ExportKkpSymbolMaps)
+        readableOutput = args.GetResult(ReadableOutput, defaultValue = "")
         noRenamingList =
             let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
             [for i in opt.Split([|','|]) -> i.Trim()]

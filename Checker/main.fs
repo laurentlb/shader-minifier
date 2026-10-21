@@ -192,6 +192,21 @@ let runCommand argv =
         minifier.Format(out)
         out.ToString() |> cleanString
 
+    // --readable-output must match a separate run with --no-renaming --format indented.
+    let readableMatches =
+        let readable =
+            use out = new StringWriter()
+            Minifier({ options with readableOutput = "unused" }, files).FormatReadable(out)
+            out.ToString()
+        let noRenaming =
+            let options = { options with noRenaming = true; outputFormat = Options.OutputFormat.IndentedText; exportKkpSymbolMaps = false }
+            use out = new StringWriter()
+            Minifier(options, files).Format(out)
+            out.ToString()
+        if readable <> noRenaming then
+            printfn "Fail: --readable-output differs from --no-renaming --format indented for %A" argv
+        readable = noRenaming
+
     let options = { options with outputFormat = Options.OutputFormat.IndentedText; exportKkpSymbolMaps = false}
     if filenames.Length = 1 then
         let shader = minifier.GetShaders[0]
@@ -206,7 +221,9 @@ let runCommand argv =
         Directory.CreateDirectory outdir |> ignore
         File.WriteAllText(outdir + name + ".minind." + ext, resultindented + "\n")
 
-    if result = expected then
+    if not readableMatches then
+        1
+    elif result = expected then
         printfn "Success: %s" options.outputName
         0
     else
