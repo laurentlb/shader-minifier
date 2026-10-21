@@ -1,0 +1,36 @@
+#version 300 es
+
+precision highp float;
+out vec4 r;
+float v(vec2 v)
+{
+  return dot(v,v);
+}
+float v(vec3 v)
+{
+  return dot(v,v);
+}
+float v(vec4 v)
+{
+  return dot(v,v);
+}
+float c(float v)
+{
+  return clamp(v,0.,1.);
+}
+vec2 c(vec2 v)
+{
+  return clamp(v,0.,1.);
+}
+vec3 c(vec3 v)
+{
+  return clamp(v,0.,1.);
+}
+vec4 c(vec4 v)
+{
+  return clamp(v,0.,1.);
+}
+void main()
+{
+  r=vec4(1,c(v(gl_FragCoord.xy/5e2)),1,1);
+}

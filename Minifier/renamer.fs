@@ -93,7 +93,8 @@ type private DeclarationContext =
 // This happens in two steps:
 //  * first pass on all top level declarations
 //  * second pass on function bodies, with reuse of unused names via shadowing (with onEnterScope)
-type private RenamerVisitor(options: Options.Options) =
+// funSignatures: for each function name, the signatures of all its overloads (in all files).
+type private RenamerVisitor(options: Options.Options, funSignatures: Map<string, Set<Signature>>) =
 
     let export env prefix (id: Ident) =
         if not id.IsUniqueId then
@@ -277,16 +278,20 @@ type private RenamerVisitor(options: Options.Options) =
             renList env renCase cl |> ignore<Env>
             env
 
-    let renFunctionWithOverloading env (signature: Signature) (id: Ident) =
+    // signatures: the signatures of all the overloads of the function. They all get the same name, so they are
+    // reserved at once, otherwise a later overload could conflict with another function sharing the name.
+    let renFunctionWithOverloading env (signatures: Set<Signature>) (id: Ident) =
         // we're looking for a function name, already used before,
-        // but not with the same signature, and which is not in options.noRenamingList.
-        let isFunctionNameAvailableForThisSignature(x: KeyValuePair<string, Map<Signature,string>>) =
-            not (x.Value.ContainsKey signature || List.contains x.Key options.noRenamingList)
-        match env.funOverloads |> Seq.tryFind isFunctionNameAvailableForThisSignature with
+        // but not with the same signatures, and which is not in options.noRenamingList.
+        let isFunctionNameAvailableForTheseSignatures(x: KeyValuePair<string, Map<Signature,string>>) =
+            not (signatures |> Set.exists x.Value.ContainsKey || List.contains x.Key options.noRenamingList)
+        let addSignatures prevName overloads =
+            signatures |> Set.fold (fun (m: Map<Signature,string>) s -> m.Add(s, prevName)) overloads
+        match env.funOverloads |> Seq.tryFind isFunctionNameAvailableForTheseSignatures with
         | Some res when env.allowOverloading ->
-            // overload an existing function name used with a different signature
+            // overload an existing function name used with different signatures
             let newName, overloads = res.Key, res.Value
-            let funOverloads = env.funOverloads.Add (newName, overloads.Add(signature, id.Name))
+            let funOverloads = env.funOverloads.Add (newName, addSignatures id.Name overloads)
             let env = env.Update(env.identRenames.Add(id.Name, newName), funOverloads, env.availableNames)
             id.Rename(newName)
             env
@@ -294,7 +299,7 @@ type private RenamerVisitor(options: Options.Options) =
             // find a new function name
             let prevName = id.Name
             let env = env.newName VarFunStruct env id
-            let funOverloads = env.funOverloads.Add (id.Name, Map.empty.Add(signature, prevName))
+            let funOverloads = env.funOverloads.Add (id.Name, addSignatures prevName Map.empty)
             let env = env.Update(env.identRenames, funOverloads, env.availableNames)
             env
 
@@ -306,10 +311,14 @@ type private RenamerVisitor(options: Options.Options) =
         else
             match env.identRenames.TryFind(f.fName.Name) with
             | Some name ->
-                f.fName.Rename(name) // bug, may cause conflicts
+                f.fName.Rename(name) // another overload of the function, its signature was already reserved
                 env
             | None ->
-                let newEnv = renFunctionWithOverloading env (Signature.Create f.args) f.fName
+                let signatures =
+                    match funSignatures.TryFind f.fName.Name with
+                    | Some signatures -> signatures
+                    | None -> Set.singleton (Signature.Create f.args)
+                let newEnv = renFunctionWithOverloading env signatures f.fName
                 if f.isExternal(options) then export env ExportPrefix.HlslFunction f.fName
                 newEnv
 
@@ -516,12 +525,21 @@ type private RenamerImpl(options: Options.Options) =
         ]
 
     let renameAsts shaders env =
+        let funSignatures =
+            [for shader in shaders do
+                for tl in shader.code do
+                    match tl with
+                    | Function (ft, _) -> yield ft.fName.Name, Signature.Create ft.args
+                    | _ -> ()]
+            |> List.groupBy fst
+            |> List.map (fun (name, sigs) -> name, sigs |> List.map snd |> set)
+            |> Map.ofList
         let mutable env = env
         for shader in shaders do
             // Rename top-level and body at the same time (because the body
             // needs the environment matching the top-level).
-            env <- renList env (RenamerVisitor(options).RenTopLevelName) shader.code
-            List.iter (RenamerVisitor(options).RenTopLevelBody env) shader.code
+            env <- renList env (RenamerVisitor(options, funSignatures).RenTopLevelName) shader.code
+            List.iter (RenamerVisitor(options, funSignatures).RenTopLevelBody env) shader.code
 
         env.exportedNames.Value
 
