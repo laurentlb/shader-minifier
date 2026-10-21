@@ -69,6 +69,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/simplify.expected tests/unit/simplify.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/bug321.expected tests/unit/bug321.frag
+--no-remove-unused --no-renaming --format indented -o tests/unit/issue-522.frag.expected tests/unit/issue-522.frag
 
 # Partial renaming tests
 

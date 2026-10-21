@@ -80,8 +80,10 @@ type VariableInlining(options: Options.Options) =
             let varDecl = ident.VarDecl.Value
             if not ident.DoNotInline && not ident.ToBeInlined && not varDecl.isEverWrittenAfterDecl then
                 let decl = varDecl.decl
+                // An initializer list like `{1.,2.}` is only valid in a declaration, it can't be inlined elsewhere.
+                let isInitializerList = match decl.init with Some (VectorExp _) -> true | _ -> false
                 match localReferences.TryGetValue(varDecl), allReferences.TryGetValue(varDecl) with
-                | (_, 1), (_, 1) when isConst && decl.init <> None ->
+                | (_, 1), (_, 1) when isConst && decl.init <> None && not isInitializerList ->
                     options.trace  $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
