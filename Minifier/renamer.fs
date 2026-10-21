@@ -180,12 +180,28 @@ type private RenamerVisitor(options: Options.Options) =
       // TODO: handle struct methods in a followup
       | _ -> env
 
+    and renTypeName (env: Env) (t: Ident) =
+        match env.identRenames.TryFind(t.Name) with
+        | Some name -> t.Rename(name) // the type name is a reference to a named struct being renamed
+        | _ -> () // e.g. builtin type
+
     and renType (env: Env) (ty: Type) =
         match ty.name with
         | TypeName t ->
-            match env.identRenames.TryFind(t.Name) with
-            | Some name -> t.Rename(name) // the type name is a reference to a named struct being renamed
-            | _ -> () // e.g. builtin type
+            renTypeName env t
+            env
+        | TypeTemplate _ as spec ->
+            // e.g. `StructuredBuffer<MyStruct>` or `vector<float, N>`
+            let rec renTemplate = function
+                | TypeName t -> renTypeName env t
+                | TypeTemplate (t, args) ->
+                    renTypeName env t
+                    for arg in args do
+                        match arg with
+                        | TypeArg spec -> renTemplate spec
+                        | ValueArg e -> renExpr env e
+                | TypeBlock _ -> ()
+            renTemplate spec
             env
         | TypeBlock ({ blockType = Struct } as stru) ->
             // struct + variable declaration (top level or local, named or unnamed)

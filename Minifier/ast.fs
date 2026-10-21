@@ -100,10 +100,20 @@ and Expr =
 and TypeSpec =
     | TypeName of Ident
     | TypeBlock of StructOrInterfaceBlock // anonymous struct only. TODO: support interface blocks with an instance name
+    | TypeTemplate of Ident * TemplateArg list // hlsl, e.g. StructuredBuffer<MyStruct>, vector<float, 4>
 with override t.ToString() =
         match t with
         | TypeName n -> n.ToString()
         | TypeBlock b -> b.ToString()
+        | TypeTemplate (n, args) -> $"""{n}<{args |> List.map string |> String.concat ","}>"""
+
+and TemplateArg =
+    | TypeArg of TypeSpec
+    | ValueArg of Expr
+with override a.ToString() =
+        match a with
+        | TypeArg t -> t.ToString()
+        | ValueArg e -> e.ToString()
 
 and StructMember =
   | MemberVariable of Decl
@@ -148,7 +158,7 @@ and Type = {
     override t.ToString() =
         let name = match t.name with
                    | TypeName n -> n.OldName
-                   | TypeBlock _ -> $"{t.name}"
+                   | TypeBlock _ | TypeTemplate _ -> $"{t.name}"
         if t.typeQ.IsEmpty && t.arraySizes.IsEmpty
             then $"{name}"
             else $"<{t.typeQ} {name} {t.arraySizes}>"

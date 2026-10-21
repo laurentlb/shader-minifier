@@ -185,6 +185,12 @@ type PrinterImpl(withLocations) =
     and typeSpecToS indent = function
         | TypeName s -> s.Name
         | TypeBlock block -> blockToS indent block
+        | TypeTemplate (s, args) ->
+            let argToS = function
+                | TypeArg t -> typeSpecToS indent t
+                | ValueArg e -> exprToS indent e
+            let args = args |> List.map argToS |> String.concat ","
+            $"{s.Name}<{args}>"
 
     and typeToS indent (ty: Type) =
         let get = function
