@@ -1,0 +1,40 @@
+// tests/unit/issue-564a.frag
+#version 300 es
+
+precision highp float;
+uniform float f;
+out vec4 v;
+float e(float f)
+{
+  return f+f;
+}
+vec2 h()
+{
+  float v=3.*f;
+  return vec2(v+v,v);
+}
+void main()
+{
+  v=vec4(e(f)+e(2.*f),h(),0);
+}
+
+// tests/unit/issue-564b.frag
+#version 300 es
+
+precision highp float;
+uniform float f;
+out vec4 v;
+float e()
+{
+  float v=4.*f;
+  return v+v;
+}
+vec2 h()
+{
+  float v=5.*f;
+  return vec2(v+v,v);
+}
+void main()
+{
+  v=vec4(e(),h(),0);
+}

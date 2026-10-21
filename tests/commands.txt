@@ -84,6 +84,7 @@
 
 --no-remove-unused --move-declarations --format c-array -o tests/unit/inout.expected tests/unit/inout.frag tests/unit/inout2.frag
 --no-remove-unused --format c-array -o tests/unit/interface-block-renaming.expected tests/unit/interface-block-renaming1.frag tests/unit/interface-block-renaming2.frag
+--format indented -o tests/unit/issue-564.expected tests/unit/issue-564a.frag tests/unit/issue-564b.frag
 
 # kkp symbols tests
 
@@ -98,6 +99,7 @@
 -o tests/real/the_real_party_is_in_your_pocket.frag.expected tests/real/the_real_party_is_in_your_pocket.frag
 --no-remove-unused --no-inlining -o tests/unit/function_overload.expected tests/unit/function_overload.frag
 --no-remove-unused --no-inlining --no-overloading -o tests/unit/function_overload.no.expected tests/unit/function_overload.frag
+--format indented -o tests/unit/issue-527.frag.expected tests/unit/issue-527.frag
 --no-remove-unused -o tests/unit/function_overload2.expected tests/unit/function_overload.frag
 -o tests/unit/overload.expected tests/unit/overload.frag
 --no-remove-unused -o tests/unit/externals.expected tests/unit/externals.frag
