@@ -35,8 +35,11 @@ function addAnnotations(str, sourceMap, div, isMin) {
         const line = lines[i];
         const lineDiv = document.createElement('div');
         lineDiv.classList.add('line');
-        var html = line.replace(/\w+/g, function (match, offset) {
-            // console.log(match, i, offset);
+        // Escape HTML special characters in the same pass, so that offsets still match the source.
+        var html = line.replace(/\w+|[&<>]/g, function (match, offset) {
+            if (match === '&') return '&amp;';
+            if (match === '<') return '&lt;';
+            if (match === '>') return '&gt;';
             const hash1 = getHash(i, offset);
             if (sourceMap[hash1]) {
                 const hash2 = getHash(sourceMap[hash1].line, sourceMap[hash1].col);
