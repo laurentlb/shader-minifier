@@ -35,7 +35,7 @@ type private ParseImpl(options: Options.Options) =
     let ident =
         let nonDigit = asciiLetter <|> pchar '_'
         let p = pipe3 getPosition nonDigit (manyChars (nonDigit <|> digit <?> "")) (
-            fun pos c s -> Ast.Ident(c.ToString() + s, { line = int pos.Line; col = int pos.Column }))
+            fun pos c s -> Ast.Ident(c.ToString() + s, { Options.line = int pos.Line; Options.col = int pos.Column }))
         let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
@@ -387,7 +387,7 @@ type private ParseImpl(options: Options.Options) =
     let toplevel =
         let decl = declaration .>> ch ';'
         let item = choice [
-                    pipe2 macro getPosition (fun ss pos -> Ast.TLDirective (ss, {line = int pos.Line; col = int pos.Column}))
+                    pipe2 macro getPosition (fun ss pos -> Ast.TLDirective (ss, {Options.line = int pos.Line; Options.col = int pos.Column}))
                     template |>> Ast.TLVerbatim
                     verbatim |>> Ast.TLVerbatim
                     attribute |>> Ast.TLVerbatim

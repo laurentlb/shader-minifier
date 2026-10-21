@@ -80,7 +80,7 @@ function addHighlight(item) {
     highlights.push(item);
 }
 
-function updateShader(shaderSource, shaderMinified) {
+function updateShader(shaderSource, shaderMinified, traceEvents) {
     const source = document.querySelector('.source');
     const minified = document.querySelector('.minified');
 
@@ -93,6 +93,50 @@ function updateShader(shaderSource, shaderMinified) {
     const shaderMinified2 = extractAnnotations(shaderMinified);
     addAnnotations(shaderMinified2, min2src, minified, true);
     addAnnotations(shaderSource, src2min, source, false);
+    showTraceEvents(traceEvents || []);
+}
+
+// List what the minifier did, and mark the corresponding lines in the source view.
+function showTraceEvents(events) {
+    const source = document.querySelector('.source');
+    const sourceLines = source.querySelectorAll('.line');
+    const details = document.querySelector('.trace-details');
+    const header = document.querySelector('.trace-header');
+    const list = document.querySelector('.trace');
+    list.innerHTML = '';
+    // The log is collapsed by default, and hidden when there is nothing to show.
+    details.hidden = events.length === 0;
+    header.textContent = `Minifier log (${events.length})`;
+
+    for (const event of events) {
+        const item = document.createElement('div');
+        item.classList.add('trace-event');
+
+        const kind = document.createElement('span');
+        kind.classList.add('trace-kind', 'trace-' + event.kind.toLowerCase());
+        kind.textContent = event.kind;
+        const loc = document.createElement('span');
+        loc.classList.add('trace-loc');
+        loc.textContent = event.loc ? `${event.loc.line}:${event.loc.col}` : '';
+        const message = document.createElement('span');
+        message.textContent = event.message;
+        item.append(kind, loc, message);
+
+        const lineDiv = event.loc ? sourceLines[event.loc.line - 1] : undefined;
+        if (lineDiv) {
+            lineDiv.classList.add('traced');
+            lineDiv.title = (lineDiv.title ? lineDiv.title + '\n' : '') + `${event.kind}: ${event.message}`;
+            item.classList.add('clickable');
+            item.onclick = () => {
+                removeHighlights();
+                lineDiv.classList.add('highlight');
+                highlights.push(lineDiv);
+                // Scroll the source view only, so that the log stays visible.
+                source.scrollTop = lineDiv.offsetTop - source.offsetTop - source.clientHeight / 2;
+            };
+        }
+        list.appendChild(item);
+    }
 }
 
 function copyBtn() {

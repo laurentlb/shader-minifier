@@ -55,12 +55,18 @@ let minify flags content =
     let withLoc = new System.IO.StringWriter()
     minifier.FormatWithLocations(withLoc)
 
-    out.ToString(), minifier.GetSize, withLoc.ToString()
+    // Plain objects, so that they can be serialized to JavaScript.
+    let traceEvents = [|
+        for e in minifier.TraceEvents ->
+            let loc = match e.loc with Some l -> box {| line = l.line; col = l.col |} | None -> null
+            {| kind = string e.kind; loc = loc; message = e.message |} |]
+
+    out.ToString(), minifier.GetSize, withLoc.ToString(), traceEvents
 
 module API =
     [<Microsoft.JSInterop.JSInvokableAttribute("minify")>]
     let minify flags content =
-        let result, _, _ = minify flags content
+        let result, _, _, _ = minify flags content
         result
 
 let update (jsRuntime: Microsoft.JSInterop.IJSRuntime) message model =
@@ -77,13 +83,13 @@ let update (jsRuntime: Microsoft.JSInterop.IJSRuntime) message model =
         |]
         printfn "Minify %s" (String.concat " " allFlags)
         try
-            let out, size, withLoc = minify allFlags model.shaderInput
-            jsRuntime.InvokeAsync("updateShader", [|model.shaderInput; withLoc|]) |> ignore
+            let out, size, withLoc, traceEvents = minify allFlags model.shaderInput
+            jsRuntime.InvokeAsync("updateShader", [|box model.shaderInput; box withLoc; box traceEvents|]) |> ignore
             { model with shaderSize = size }, Cmd.none
         with
             | e ->
                 printfn "Error: %s" e.Message
-                jsRuntime.InvokeAsync("updateShader", [|model.shaderInput; e.Message|]) |> ignore
+                jsRuntime.InvokeAsync("updateShader", [|box model.shaderInput; box e.Message; box [||]|]) |> ignore
                 { model with shaderSize = 0 }, Cmd.none
     | SetShader value ->
         { model with shaderInput = value }, Cmd.none

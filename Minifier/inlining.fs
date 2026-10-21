@@ -84,14 +84,14 @@ type VariableInlining(options: Options.Options) =
                 let isInitializerList = match decl.init with Some (VectorExp _) -> true | _ -> false
                 match localReferences.TryGetValue(varDecl), allReferences.TryGetValue(varDecl) with
                 | (_, 1), (_, 1) when isConst && decl.init <> None && not isInitializerList ->
-                    options.trace  $"{ident.Loc}: inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once"
+                    options.trace(TraceKind.Inline, ident.Loc, $"inlining local variable '{Printer.debugIdent ident}' because it's safe to inline (const) and used only once")
                     ident.ToBeInlined <- true
                 | (_, 0), (_, 0) ->
                     let ok = match decl.init with
                              | Some init -> Effects.isPure init
                              | None -> true
                     if ok then
-                        options.trace $"{ident.Loc}: inlining (removing) local variable '{Printer.debugDecl decl}' because it's unused and the init is pure or missing"
+                        options.trace(TraceKind.Remove, ident.Loc, $"removing local variable '{Printer.debugDecl decl}' because it's unused and the init is pure or missing")
                         ident.ToBeInlined <- true
                 | _ -> ()
 
@@ -134,7 +134,7 @@ type VariableInlining(options: Options.Options) =
                             // Never-written locals and globals are inlined when their value is "simple enough".
                             // This can increase non-compressed size but decreases compressed size.
                             let varKind = match level with Level.TopLevel -> "global" | Level.InFunc -> "local"
-                            options.trace $"{def.name.Loc}: inlining {varKind} variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition"
+                            options.trace(TraceKind.Inline, def.name.Loc, $"inlining {varKind} variable '{Printer.debugDecl def}' because it's never written and has a 'simple' definition")
                             def.name.ToBeInlined <- true
         | _ -> ()
 
@@ -252,7 +252,7 @@ type FunctionInlining(options: Options.Options) =
         if not funcInfo.funcType.fName.DoNotInline && verifyVarsAndParams funcInfo callSites then
             // Mark only the function's ident, not the call sites.
             // simplifyExpr can't rely on call sites to be marked anyway, to support the function inline pragma.
-            options.trace $"{funcInfo.funcType.fName.Loc}: inlining function '{Printer.debugFunc funcInfo.funcType}' into {callSites.Length} call sites"
+            options.trace(TraceKind.Inline, funcInfo.funcType.fName.Loc, $"inlining function '{Printer.debugFunc funcInfo.funcType}' into {callSites.Length} call sites")
             funcInfo.funcType.fName.ToBeInlined <- true
 
     let markInlinableFunctions code =
@@ -312,7 +312,7 @@ type ArgumentInlining(options: Options.Options) =
                         let argExprs = callSites |> List.map (fun c -> c.argExprs |> List.item argIndex) |> List.distinct
                         match argExprs with
                         | [argExpr] when isInlinableExpr argExpr -> // The argExpr must always be the same at all call sites.
-                            options.trace $"{varDecl.decl.name.Loc}: inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{Printer.debugFunc funcInfo.funcType}'"
+                            options.trace(TraceKind.Inline, varDecl.decl.name.Loc, $"inlining expression '{Printer.exprToS argExpr}' into argument '{Printer.debugDecl varDecl.decl}' of '{Printer.debugFunc funcInfo.funcType}'")
                             argInlinings <- {func=funcInfo.func; argIndex=argIndex; varDecl=varDecl; argExpr=argExpr} :: argInlinings
                         | _ -> ()
                     | _ -> ()

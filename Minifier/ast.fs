@@ -5,8 +5,9 @@ open System.Text.RegularExpressions
 [<RequireQualifiedAccess>]
 type VarScope = Global | Local | Parameter
 
-[<StructuredFormatDisplay("{line}:{col}")>]
-type Location = { line: int; col: int }
+type Location = Options.Location
+
+type TraceKind = Options.TraceKind
 
 type Access = { // a Var in the AST can be a read, a write, both, or neither.
     isRead: bool
@@ -25,7 +26,7 @@ type Ident(name: string) =
     // This prefix disables function inlining and variable inlining.
     member val DoNotInline = newName.StartsWith("noinline_") with get, set
 
-    member val Loc = {line = -1; col = -1} with get, set
+    member val Loc = {Options.line = -1; Options.col = -1} with get, set
 
     new(name, loc) as this = Ident(name) then
         this.Loc <- loc
