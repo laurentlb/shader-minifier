@@ -48,6 +48,7 @@
 --no-inlining --hlsl --no-renaming --format indented -o tests/unit/issue-535.hlsl.expected tests/unit/issue-535.hlsl
 --no-remove-unused --hlsl --format indented -o tests/unit/issue-559.hlsl.expected tests/unit/issue-559.hlsl
 --hlsl --format indented -o tests/unit/issue-516.hlsl.expected tests/unit/issue-516.hlsl
+--hlsl --format indented --no-renaming-list VS -o tests/unit/issue-504.hlsl.expected tests/unit/issue-504.hlsl
 
 # Preprocessor tests
 
