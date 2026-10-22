@@ -188,14 +188,14 @@ void main()
       w.z=R();
       w.w=R();
       vec3 camtarget,campos;
-      if(time>=180+3.5)
+      if(time>=183.5)
         {
           makeBG(0.);
           p-=.8;
           p.xz*=2;
           p.y+=max(0.,p.z-3.)/2;
           col*=mix(.5,1.,cos(p.x*8)*.5+.5);
-          time-=180+3.5;
+          time-=183.5;
           col*=max(0.,1.-time/12.);
           float time2=smin(time,25.);
           w.x=R();
@@ -565,14 +565,14 @@ void main()
                 }
             }
           else
-             p+=normalize(p)*sin(clamp((time-17.5-length(p))*3.,0.,3.1415926*2))*.2;
+             p+=normalize(p)*sin(clamp((time-17.5-length(p))*3.,0.,6.2831852))*.2;
           camtarget=vec3(0,.5,0);
           campos=vec3(4.3,.8,-2.94);
         }
-      else if(time>=60+44.5)
+      else if(time>=104.5)
         {
           makeBG(.01);
-          time-=60+44.5;
+          time-=104.5;
           float t=time;
           if(R()<.1)
             t-=mod(t+R()*3,3.+R());
@@ -648,10 +648,10 @@ void main()
           }
           per=1.;
         }
-      else if(time>=60+18.5)
+      else if(time>=78.5)
         {
           makeBG(.005);
-          time-=60+18.5;
+          time-=78.5;
           w.x=R();
           w.y=R();
           w.z=R();
@@ -821,7 +821,7 @@ void main()
           if(time>=200)
             bg*=max(0.,1.-(time-200)/7.);
           c.xyz=mix(bg,c.xyz,c.w)*3*(1.-smoothstep(.2,1.,length(vec2(coord)-vec2(640,360))/880.));
-          c*=min(1.,time/20.)*smoothstep(0.,3.,abs(time-60-18.5))*smoothstep(0.,1.,abs(time-61))*smoothstep(0.,1.,abs(time-148))*smoothstep(0.,1.,abs(time-165));
+          c*=min(1.,time/20.)*smoothstep(0.,3.,abs(time-78.5))*smoothstep(0.,1.,abs(time-61))*smoothstep(0.,1.,abs(time-148))*smoothstep(0.,1.,abs(time-165));
           if(time<43)
             c*=1.-smoothstep(42,43,time);
           c.xyz=c.xyz/(c.xyz+.4)*1.3;
