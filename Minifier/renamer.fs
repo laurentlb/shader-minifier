@@ -303,9 +303,10 @@ type private RenamerVisitor(options: Options.Options, funSignatures: Map<string,
             let env = env.Update(env.identRenames, funOverloads, env.availableNames)
             env
 
-    let renFunction env (f: FunctionType) =
+    let renFunction (env: Env) (f: FunctionType) =
         if (f.isExternal(options) && options.preserveExternals) || options.preserveAllGlobals then
-            env
+            // Reserve the name, so that a local variable doesn't shadow the function (#402).
+            env.DontRename f.fName
         elif List.contains f.fName.Name options.noRenamingList then
             env
         else

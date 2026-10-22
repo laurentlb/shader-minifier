@@ -1,0 +1,15 @@
+uniform vec3 c0;
+out vec4 O;
+float o(vec3 v)
+{
+  return min(length(v)-1.,length(v)-2.);
+}
+void main()
+{
+  vec3 v=c0;
+  float c=o(v);
+  v+=c*o(v);
+  c=o(v);
+  v+=c*o(v);
+  O=vec4(v,c);
+}
