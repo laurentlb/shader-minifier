@@ -209,7 +209,8 @@ type private ParseImpl(options: Options.Options) =
     let glslQualifier = many (glslStorage <|> glslLayout)
     let specifiedTypeGLSL =
         let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> (ident |>> Ast.TypeName)
-        let arraySizes = many (between (ch '[') (ch ']') expr)
+        // e.g. `float[3]`, or `int[]` for an unsized array
+        let arraySizes = many (between (ch '[') (ch ']') (opt expr))
         pipe3 glslQualifier typeSpec arraySizes (fun tyQ name sizes -> Ast.makeType name tyQ sizes)
 
     let hlslStorage = ["extern"; "nointerpolation"; "precise"; "shared"; "groupshared"
@@ -236,7 +237,7 @@ type private ParseImpl(options: Options.Options) =
             | Some args -> Ast.TypeTemplate (id, args)
             | None -> Ast.TypeName id)
         let typeSpec = (structSpecifier |>> Ast.TypeBlock) <|> typeName
-        let arraySizes = many (between (ch '[') (ch ']') expr)
+        let arraySizes = many (between (ch '[') (ch ']') (opt expr))
         pipe4 hlslQualifier typeSpec generic arraySizes (fun tyQ name _ sizes -> Ast.makeType name tyQ sizes)
 
     let qualifier = parse {
