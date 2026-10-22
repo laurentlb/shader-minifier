@@ -1,3 +1,4 @@
+#version 330
 // Constant folding must respect int to float conversions.
 uniform int i;
 out vec4 O;

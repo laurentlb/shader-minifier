@@ -1,3 +1,5 @@
+#version 330
+
 uniform int i;
 out vec4 O;
 void main()
