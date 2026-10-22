@@ -992,7 +992,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 // reorder functions if there were forward declarations
 let reorderFunctions (options: Options.Options) code =
     if options.verbose then
-        printfn "Reordering functions because of forward declarations."
+        eprintfn "Reordering functions because of forward declarations."
     
     let rec graphReorder = function // slow, but who cares?
         | [] -> []

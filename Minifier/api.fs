@@ -14,8 +14,8 @@ type Minifier(options, files) =
         shaders |> Seq.sumBy (fun s -> Printer.print s.code |> String.length)
 
     let minify (options: Options.Options) (files: (string*string)[]) =
-        // like printfn when verbose option is set
-        let vprintf fmt = fprintf (if options.verbose then stdout else TextWriter.Null) fmt
+        // like eprintfn when verbose option is set (stdout may contain the output)
+        let vprintf fmt = fprintf (if options.verbose then stderr else TextWriter.Null) fmt
 
         let printSize (shaders: Ast.Shader[]) =
             if options.verbose then

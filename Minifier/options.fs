@@ -7,6 +7,8 @@ let version = "1.5.1" // Shader Minifier version
 let debugMode = false
 
 exception ParseError of string
+// Invalid command-line arguments (the message is shown to the user as is).
+exception UsageError of string
 
 type OutputFormat =
     | [<CustomCommandLine("text")>] Text
@@ -57,8 +59,8 @@ type TraceLog(filename: string) =
 
 type CliArguments =
     | [<CustomCommandLine("--version")>] Version
-    | [<CustomCommandLine("-o")>] OutputName of string
-    | [<CustomCommandLine("-v")>] Verbose
+    | [<CustomCommandLine("-o"); AltCommandLine("--output")>] OutputName of string
+    | [<CustomCommandLine("-v"); AltCommandLine("--verbose")>] Verbose
     | [<CustomCommandLine("--debug")>] Debug
     | [<CustomCommandLine("--hlsl")>] Hlsl
     | [<CustomCommandLine("--format")>] FormatArg of OutputFormat
@@ -83,7 +85,7 @@ type CliArguments =
     interface IArgParserTemplate with
         member s.Usage =
             match s with
-            | OutputName _ -> "Set the output filename (default is shader_code.h)"
+            | OutputName _ -> "Set the output filename (default is shader_code.h, use - for stdout)"
             | Verbose -> "Verbose, display additional information"
             | Debug -> "Debug, display more additional information"
             | Hlsl -> "Use HLSL (default is GLSL)"
@@ -94,7 +96,7 @@ type CliArguments =
             | NoInlining -> "Do not automatically inline variables and functions"
             | AggroInlining -> "Aggressively inline constants. This can reduce output size due to better constant folding. It can also increase output size due to repeated inlined constants, but this increased redundancy can be beneficial to compression, leading to a smaller final compressed size anyway. Does nothing if inlining is disabled."
             | NoRenaming -> "Do not rename anything"
-            | NoRenamingList _ -> "Comma-separated list of functions to preserve"
+            | NoRenamingList _ -> "Comma-separated list of functions to preserve, in addition to main and mainImage"
             | NoSequence -> "Do not use the comma operator trick"
             | NoOverloading -> "When renaming functions, do not introduce new overloads"
             | NoRemoveUnused -> "Do not remove unused code"
@@ -102,9 +104,9 @@ type CliArguments =
             | Preprocess -> "Evaluate the preprocessor directives and expand the macros"
             | Define _ -> "With --preprocess, define a macro (e.g. -D DEBUG=0 or -D FAST)"
             | PreprocessNoExpand _ -> "With --preprocess, comma-separated list of macros to keep (not expand)"
-            | ExportKkpSymbolMaps -> "Export kkpView symbol maps"
+            | ExportKkpSymbolMaps -> "Export kkpView symbol maps (written next to each input file, with the .sym extension)"
             | ReadableOutput _ -> "Also write the code before renaming, in indented format, to this file (same as --no-renaming --format indented)"
-            | Filenames _ -> "List of files to minify"
+            | Filenames _ -> "List of files to minify (use - for stdin)"
             | Version -> "Display the version and exit"
 
 type Options = {
@@ -153,7 +155,7 @@ let helpTextMessage = sprintf "Shader Minifier %s - https://github.com/laurentlb
 
 let private argParser = lazy (
     ArgumentParser.Create<CliArguments>(
-        programName = "Shader Minifier",
+        programName = "shader_minifier",
         helpTextMessage = helpTextMessage))
 
 let private initPrivate argv =
@@ -165,7 +167,7 @@ let private initPrivate argv =
         verbose = args.Contains(Verbose)
         debug =
             args.Contains(Debug) ||
-            Environment.GetEnvironmentVariable("MINIFIER_DEBUG", EnvironmentVariableTarget.User) = "yes"
+            Environment.GetEnvironmentVariable("MINIFIER_DEBUG") = "yes"
         canonicalFieldNames = (sprintf "%A" (args.GetResult(FieldNames, defaultValue = XYZW))).ToLower()
         preserveExternals = args.Contains(PreserveExternals) || args.Contains(PreserveAllGlobals)
         preserveAllGlobals = args.Contains(PreserveAllGlobals)
@@ -190,11 +192,16 @@ let private initPrivate argv =
         readableOutput = args.GetResult(ReadableOutput, defaultValue = "")
         traceLog = TraceLog("")
         noRenamingList =
-            let opt = args.GetResult(NoRenamingList, defaultValue = "main,mainImage")
-            [for i in opt.Split([|','|]) -> i.Trim()]
+            // The entry points are always preserved: renaming them breaks the shader.
+            let opt = args.GetResult(NoRenamingList, defaultValue = "")
+            List.distinct ["main"; "mainImage"; for i in opt.Split([|','|]) do if i.Trim() <> "" then i.Trim()]
     }
 
     let filenames = args.GetResult(Filenames, defaultValue=[]) |> List.toArray
+    // Argu accepts anything as a filename, including misspelled flags.
+    for f in filenames do
+        if f.Length > 1 && f.StartsWith "-" then
+            raise (UsageError $"Unknown option: '{f}'. Use --help to see the list of options.")
     options, filenames
 
 let flagsHelp = lazy (argParser.Value.PrintUsage(message = helpTextMessage))
@@ -211,5 +218,5 @@ let initFiles argv =
         printfn "%s" helpTextMessage
     else
         if filenames.Length = 0 then
-            failwith (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify"))
+            raise (UsageError (argParser.Value.PrintUsage(message = "Missing parameter: the list of shaders to minify")))
     options, filenames

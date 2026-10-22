@@ -5,25 +5,40 @@ open System.IO
 
 let readFile file =
     use stream =
-        if file = "" then new StreamReader(System.Console.OpenStandardInput())
+        if file = "" || file = "-" then new StreamReader(System.Console.OpenStandardInput())
         else new StreamReader(file)
     stream.ReadToEnd()
 
-let minifyFiles (options: Options.Options) filenames out =
+let writeOutput (options: Options.Options) (content: string) =
+    if Options.debugMode || options.outputName = "" || options.outputName = "-" then
+        stdout.Write(content)
+    else
+        File.WriteAllText(options.outputName, content)
+
+let minifyFiles (options: Options.Options) filenames =
     let files = [|
         for f in filenames do
             let content = readFile f
-            let filename = if f = "" then "stdin" else f
+            let filename = if f = "" || f = "-" then "stdin" else f
             yield filename, content |]
     let minifier = Minifier(options, files)
+    // Format everything in memory first, so that a failure doesn't leave a truncated output file.
+    use out = new StringWriter()
     minifier.Format(out)
-    if options.readableOutput <> "" then
-        use readableOut = new StreamWriter(options.readableOutput)
-        minifier.FormatReadable(readableOut)
+    let readable =
+        if options.readableOutput = "" then None
+        else
+            use readableOut = new StringWriter()
+            minifier.FormatReadable(readableOut)
+            Some (readableOut.ToString())
+    writeOutput options (out.ToString())
+    readable |> Option.iter (fun str -> File.WriteAllText(options.readableOutput, str))
 
 let rec printError: exn -> unit = function
     | ParseError str ->
         fprintfn stderr "Parse error: %s" str
+    | Options.UsageError str ->
+        fprintfn stderr "%s" str
     | :? System.AggregateException as aggregate ->
         // as minifier can run in parallel, we may have multiple exceptions
         for innerException in aggregate.InnerExceptions do
@@ -37,11 +52,8 @@ let rec printError: exn -> unit = function
         fprintfn stderr "%s" (exn.ToString())
 
 let run (options: Options.Options) filenames =
-    use out =
-        if Options.debugMode || options.outputName = "" || options.outputName = "-" then stdout
-        else new StreamWriter(options.outputName) :> TextWriter
     try
-        minifyFiles options filenames out
+        minifyFiles options filenames
         0
     with
         e -> printError e; 1
@@ -52,12 +64,15 @@ let main argv =
         try
             let options, files = Options.initFiles argv
             if options.verbose then
-                printfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
+                eprintfn "Shader Minifier %s - https://github.com/laurentlb/Shader_Minifier" Options.version
             if options.version then
                 0
             else
                 run options files
         with
-            e -> printError e; 1
+            | :? Argu.ArguParseException as ex when ex.ErrorCode = Argu.ErrorCode.HelpText ->
+                printfn "%s" ex.Message
+                0
+            | e -> printError e; 1
     if Options.debugMode then System.Console.ReadLine() |> ignore
     exit err

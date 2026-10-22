@@ -97,8 +97,9 @@ $ mono shader_minifier.exe  # Linux, Mac...
 ```
 
 ```
-USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl]
-                       [--format <text|indented|c-variables|c-array|js|nasm|rust>]
+USAGE: shader_minifier [--help] [--version] [-o <string>] [-v] [--debug]
+                       [--hlsl]
+                       [--format <text|indented|c-variables|c-array|js|nasm|rust|json>]
                        [--field-names <rgba|xyzw|stpq>] [--preserve-externals]
                        [--preserve-all-globals] [--no-inlining]
                        [--aggressive-inlining] [--no-renaming]
@@ -111,37 +112,41 @@ USAGE: Shader Minifier [--help] [--version] [-o <string>] [-v] [--debug] [--hlsl
 
 FILENAMES:
 
-    <filename>...         List of files to minify
+    <filename>...         List of files to minify (use - for stdin)
 
 OPTIONS:
 
     --version             Display the version and exit
-    -o <string>           Set the output filename (default is shader_code.h)
-    -v                    Verbose, display additional information
+    -o, --output <string> Set the output filename (default is shader_code.h,
+                          use - for stdout)
+    -v, --verbose         Verbose, display additional information
     --debug               Debug, display more additional information
     --hlsl                Use HLSL (default is GLSL)
-    --format <text|indented|c-variables|c-array|js|nasm|rust>
-                          Choose to format the output (use 'text' if you want just
-                          the shader)
+    --format <text|indented|c-variables|c-array|js|nasm|rust|json>
+                          Choose to format the output (use 'text' if you want
+                          just the shader)
     --field-names <rgba|xyzw|stpq>
-                          Choose the field names for vectors: 'rgba', 'xyzw', or
-                          'stpq'
+                          Choose the field names for vectors: 'rgba', 'xyzw',
+                          or 'stpq'
     --preserve-externals  Do not rename external values (e.g. uniform)
     --preserve-all-globals
                           Do not rename functions and global variables
     --no-inlining         Do not automatically inline variables and functions
-    --aggressive-inlining Aggressively inline constants. This can reduce output size
-                          due to better constant folding. It can also increase
-                          output size due to repeated inlined constants, but this
-                          increased redundancy can be beneficial to compression,
-                          leading to a smaller final compressed size anyway. Does
-                          nothing if inlining is disabled.
+    --aggressive-inlining Aggressively inline constants. This can reduce output
+                          size due to better constant folding. It can also
+                          increase output size due to repeated inlined
+                          constants, but this increased redundancy can be
+                          beneficial to compression, leading to a smaller final
+                          compressed size anyway. Does nothing if inlining is
+                          disabled.
     --no-renaming         Do not rename anything
     --no-renaming-list <string>
-                          Comma-separated list of functions to preserve
+                          Comma-separated list of functions to preserve, in
+                          addition to main and mainImage
     --no-sequence         Do not use the comma operator trick
     --no-remove-unused    Do not remove unused code
-    --no-overloading      When renaming functions, do not introduce new overloads
+    --no-overloading      When renaming functions, do not introduce new
+                          overloads
     --move-declarations   Move declarations to group them
     --preprocess          Evaluate the preprocessor directives and expand the
                           macros
@@ -151,7 +156,8 @@ OPTIONS:
                           With --preprocess, comma-separated list of macros to
                           keep (not expand)
     --export-kkp-symbol-maps
-                          Export kkpView symbol maps
+                          Export kkpView symbol maps (written next to each
+                          input file, with the .sym extension)
     --readable-output <string>
                           Also write the code before renaming, in indented
                           format, to this file (same as --no-renaming --format
@@ -161,7 +167,8 @@ OPTIONS:
 
 In short:
 
-* List the shaders you want to minify on the command-line.
+* List the shaders you want to minify on the command-line. Use `-` to read a
+  shader from stdin.
 
 * Use `-o` to choose the output file (by default, it will use `shader_code.h`).
   If you pass `-` for the output, it will be printed on stdout.
