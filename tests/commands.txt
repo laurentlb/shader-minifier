@@ -84,6 +84,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/bug321.expected tests/unit/bug321.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/issue-522.frag.expected tests/unit/issue-522.frag
 --no-renaming --format indented -o tests/unit/issue-429.frag.expected tests/unit/issue-429.frag
+--no-renaming --format indented -o tests/unit/issue-315.frag.expected tests/unit/issue-315.frag
 
 # Partial renaming tests
 

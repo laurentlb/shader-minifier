@@ -1,0 +1,9 @@
+uniform int u;
+uniform float other_value;
+out vec4 O;
+vec3 b=vec3(.5,.5,0);
+void main()
+{
+  if(other_value<1e10)
+    O=vec4(b,float(u*2)/3);
+}

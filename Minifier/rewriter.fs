@@ -433,6 +433,13 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             match vd.decl.init with
             | Some init ->
                 didInline.Value <- true
+                // `float a = 4;` has an implicit conversion, keep it when inlining: `a/8` is not `4/8` (#315).
+                let isFloat = match vd.ty.name with TypeName n -> n.Name = "float" && vd.ty.arraySizes.IsEmpty | _ -> false
+                let init =
+                    match init with
+                    | Int (i, "") when isFloat -> Float (decimal i, "")
+                    | init when isFloat && isKnownToHaveTypeInt init -> FunCall (Var (Ident "float"), [init])
+                    | init -> init
                 init |> env.mapExpr
             | _ -> e
 
