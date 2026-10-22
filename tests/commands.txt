@@ -49,6 +49,7 @@
 --no-remove-unused --hlsl --format indented -o tests/unit/issue-559.hlsl.expected tests/unit/issue-559.hlsl
 --hlsl --format indented -o tests/unit/issue-516.hlsl.expected tests/unit/issue-516.hlsl
 --hlsl --format indented --no-inlining --preserve-all-globals --no-remove-unused -o tests/unit/issue-537.hlsl.expected tests/unit/issue-537.hlsl
+--hlsl --format indented --no-renaming-list VS -o tests/unit/issue-504.hlsl.expected tests/unit/issue-504.hlsl
 
 # Preprocessor tests
 
@@ -84,6 +85,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/bug321.expected tests/unit/bug321.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/issue-522.frag.expected tests/unit/issue-522.frag
+--preserve-all-globals --format indented -o tests/unit/issue-402.frag.expected tests/unit/issue-402.frag
 
 # Partial renaming tests
 

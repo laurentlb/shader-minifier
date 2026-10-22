@@ -81,7 +81,7 @@ type private ParseImpl(options: Options.Options) =
         pipe2 n (opt suffix) (fun nb su -> addSuffix (su, nb))
 
     let vectorExp =
-        let inner = sepBy exprNoComma (ch ',')
+        let inner = sepEndBy exprNoComma (ch ',')
         between (ch '{') (ch '}') inner |>> Ast.VectorExp
 
     let prim' = choice [vectorExp; parenExp; ident |>> Ast.Var; anyNumber]
