@@ -412,7 +412,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             match var.VarDecl with
             | Some vd ->
                 match vd.ty.arraySizes with
-                | [Int _ as n] -> n
+                | [Some (Int (size, _) as n)] -> n
                 | _ -> e
             | _ -> e
 
