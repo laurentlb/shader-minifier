@@ -70,7 +70,7 @@ let private tokenize (s: string) =
                 let mutable go = true
                 while go && i < s.Length do
                     let c = s[i]
-                    if (c = '+' || c = '-') && "eEpP".Contains(s[i - 1]) then i <- i + 1
+                    if (c = '+' || c = '-') && "eEpP".IndexOf(s[i - 1]) >= 0 then i <- i + 1
                     elif isIdentChar c || c = '.' then i <- i + 1
                     else go <- false
                 Number

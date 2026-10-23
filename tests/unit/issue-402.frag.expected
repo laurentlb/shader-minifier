@@ -2,29 +2,29 @@
 
 uniform vec3 c0;
 out vec4 O;
-float o(vec3 f)
+float o(vec3 v)
 {
-  return min(length(f)-1.,length(f)-2.);
+  return min(length(v)-1.,length(v)-2.);
 }
-float a(float f)
+float a(float v)
 {
-  return f*f+c0.x;
+  return v*v+c0.x;
 }
-float b(float f)
+float b(float v)
 {
-  return sin(f)+c0.y;
+  return sin(v)+c0.y;
 }
-float c(float f)
+float c(float v)
 {
-  return cos(f)+c0.z;
+  return cos(v)+c0.z;
 }
-float e(float f)
+float e(float v)
 {
-  return fract(f)+c0.x;
+  return fract(v)+c0.x;
 }
-float f(float f)
+float f(float v)
 {
-  return abs(f)+c0.y;
+  return abs(v)+c0.y;
 }
 void main()
 {
