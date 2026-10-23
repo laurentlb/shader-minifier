@@ -138,7 +138,7 @@ and BlockType =
 and Type = {
     name: TypeSpec // e.g. int
     typeQ: string list // type qualifiers, e.g. const, uniform, out, inout...
-    arraySizes: Expr list // e.g. [3][5]
+    arraySizes: Expr option list // e.g. [3][5]
 } with
     member this.access = { isRead = this.isInOrInout; isWrite = this.isOutOrInout }
     member this.isInOrInout =

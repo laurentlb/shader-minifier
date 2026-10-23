@@ -199,7 +199,7 @@ type PrinterImpl(withLocations) =
                 let str = List.reduce sp2 li
                 if endsWithIdentChar str then str + " " else str
         let typeSpec = typeSpecToS indent ty.name
-        let sizes = String.Join("", [for e in ty.arraySizes -> $"[{exprToS indent e}]"])
+        let sizes = String.Join("", [for e in ty.arraySizes -> match e with None -> "[]" | Some expr -> $"[{exprToS indent expr}]"])
         out "%s%s%s" (get ty.typeQ) typeSpec sizes
 
     and declToS indent (ty : Type, vars : DeclElt list) =
