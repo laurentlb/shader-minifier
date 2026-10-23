@@ -1,0 +1,38 @@
+#version 330
+
+uniform vec3 c0;
+out vec4 O;
+float o(vec3 f)
+{
+  return min(length(f)-1.,length(f)-2.);
+}
+float a(float f)
+{
+  return f*f+c0.x;
+}
+float b(float f)
+{
+  return sin(f)+c0.y;
+}
+float c(float f)
+{
+  return cos(f)+c0.z;
+}
+float e(float f)
+{
+  return fract(f)+c0.x;
+}
+float f(float f)
+{
+  return abs(f)+c0.y;
+}
+void main()
+{
+  vec3 v=c0;
+  float m=o(v);
+  v+=m*o(v);
+  m=o(v);
+  v+=m*o(v);
+  float l=a(v.x),x=b(v.y),y=c(v.z),z=e(l)+f(x),J=a(y)*b(z),I=c(J)-e(l),H=f(I)+a(x);
+  O=vec4(v,m)+vec4(l,x,y,z)*J+vec4(I,H,b(H)*c(y)+e(J)-f(z),a(l+x))*b(x+y)+c(y+z);
+}
