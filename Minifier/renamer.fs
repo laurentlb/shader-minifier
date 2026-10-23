@@ -505,8 +505,9 @@ type private RenamerImpl(options: Options.Options) =
                                 name
                       ) |> set
         let identRenames, reusable = env.identRenames |> Map.partition (fun _ id -> stillUsedSet.Contains id)
-        let reusable = [for i in reusable -> i.Value]
-                        |> List.filter (fun x -> not (List.contains x options.noRenamingList))
+        // Only reuse names that were picked by the renamer. Names that were kept as-is (e.g. with
+        // --preserve-all-globals or --no-renaming-list) must not be given to other identifiers.
+        let reusable = [for KeyValue(oldName, newName) in reusable do if oldName <> newName then newName]
         let allAvailable = reusable @ env.availableNames |> List.distinct
         env.Update(identRenames, env.funOverloads, allAvailable)
 
