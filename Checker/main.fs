@@ -82,7 +82,7 @@ let canBeCompiledByGlslang lang stage (content: string) =
     let si = ProcessStartInfo()
     si.FileName <-
         if Environment.OSVersion.Platform = PlatformID.Win32NT then
-            "Checker/glslang.exe"
+            "./Checker/glslang.exe"
         else
             // must be installed externally
             "glslang"
