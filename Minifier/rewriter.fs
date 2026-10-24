@@ -15,6 +15,23 @@ let private isKnownToHaveTypeFloat = function
     | ResolvedVariableUse (_, vd) -> vd.decl.name.Name = "float"
     | _ -> false
 
+// Conservative: false when we don't know.
+let rec private isKnownToHaveTypeInt = function
+    | Int _ -> true
+    | ResolvedVariableUse (_, vd) ->
+        match vd.ty.name with
+        | TypeName n -> builtinIntTypes.Contains n.Name && vd.ty.arraySizes.IsEmpty && vd.decl.sizes.IsEmpty
+        | _ -> false
+    | FunCall (Var v, _) -> builtinIntTypes.Contains v.Name // constructor
+    | FunCall (Op ("+" | "-" | "*" | "/" | "%"), args) -> List.forall isKnownToHaveTypeInt args
+    | _ -> false
+
+// Tells if `e op n` is known to have a different type than `e`, where n is a number literal.
+// False when we don't know the type of `e`: the simplifications below still apply then.
+let private isKnownToChangeType e = function
+    | Float _ -> isKnownToHaveTypeInt e
+    | _ -> false
+
 let private isKnownToBeScalarOrVector = function
     | Int _ -> true
     | Float _ -> true
@@ -187,15 +204,27 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Op "||", [x; False]) -> x
 
         // Stupid simplifications (they can be useful to simplify rewritten code)
-        | FunCall(Op "/", [e; Number 1M]) -> e
-        | FunCall(Op "*", [e; Number 1M]) -> e
-        | FunCall(Op "*", [Number 1M; e]) -> e
+        // A float operand converts an int to float, e.g. `i*1.` is a float: keep it (#429).
+        | FunCall(Op "/", [e; Number 1M as n]) when not (isKnownToChangeType e n) -> e
+        | FunCall(Op "*", [e; Number 1M as n]) when not (isKnownToChangeType e n) -> e
+        | FunCall(Op "*", [Number 1M as n; e]) when not (isKnownToChangeType e n) -> e
         // | FunCall(Op "*", [_; Number 0M as zero]) -> zero // unsafe
         // | FunCall(Op "*", [Number 0M as zero; _]) -> zero // unsafe
-        | FunCall(Op "+", [e; Number 0M]) -> e
-        | FunCall(Op "+", [Number 0M; e]) -> e
-        | FunCall(Op "-", [e; Number 0M]) -> e
-        | FunCall(Op "-", [Number 0M; e]) -> FunCall(Op "-", [e])
+        | FunCall(Op "+", [e; Number 0M as n]) when not (isKnownToChangeType e n) -> e
+        | FunCall(Op "+", [Number 0M as n; e]) when not (isKnownToChangeType e n) -> e
+        | FunCall(Op "-", [e; Number 0M as n]) when not (isKnownToChangeType e n) -> e
+        | FunCall(Op "-", [Number 0M as n; e]) when not (isKnownToChangeType e n) -> FunCall(Op "-", [e])
+
+        // Mixed int and float constants: the int is converted to float, e.g. `487./5` is `97.4` (#429).
+        // Keep the original if it can't be folded, as `1./3` is shorter than `1./3.`.
+        | FunCall(Op ("+" | "-" | "*" | "/" as op), [Float (_, su) as f; Int (i, "")]) as e ->
+            match FunCall(Op op, [f; Float (decimal i, su)]) |> env.fExpr env with
+            | Float _ as folded -> folded
+            | _ -> e
+        | FunCall(Op ("+" | "-" | "*" | "/" as op), [Int (i, ""); Float (_, su) as f]) as e ->
+            match FunCall(Op op, [Float (decimal i, su); f]) |> env.fExpr env with
+            | Float _ as folded -> folded
+            | _ -> e
 
         // No simplification when numbers have different suffixes
         | FunCall(_, [Int (_, su1); Int (_, su2)]) as e when su1 <> su2 -> e

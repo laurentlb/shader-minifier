@@ -85,6 +85,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/arg-inlining.expected tests/unit/arg-inlining.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/bug321.expected tests/unit/bug321.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/issue-522.frag.expected tests/unit/issue-522.frag
+--no-renaming --format indented -o tests/unit/issue-429.frag.expected tests/unit/issue-429.frag
 --no-renaming --format indented -o tests/unit/issue-464.frag.expected tests/unit/issue-464.frag
 --preserve-all-globals --format indented -o tests/unit/issue-402.frag.expected tests/unit/issue-402.frag
 
