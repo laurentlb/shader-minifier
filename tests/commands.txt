@@ -146,3 +146,5 @@
 
 -o tests/real/mouton/mouton.expected tests/real/mouton/mouton.vert tests/real/mouton/mouton.frag tests/real/mouton/fxaa.frag
 --no-remove-unused --no-renaming --format indented -o tests/unit/issue-592.frag.expected tests/unit/issue-592.frag
+--format indented -o tests/unit/issue-579.frag.expected tests/unit/issue-579.frag
+--format indented -o tests/unit/issue-581.frag.expected tests/unit/issue-581.frag

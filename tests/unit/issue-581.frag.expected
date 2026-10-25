@@ -1,0 +1,14 @@
+#version 460
+
+out vec4 f;
+float v(float f)
+{
+  if(f<0.)
+    discard;
+  return f;
+}
+void main()
+{
+  float m=v(f.x);
+  f=vec4(1);
+}

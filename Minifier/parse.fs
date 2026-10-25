@@ -12,7 +12,7 @@ type private ParseImpl(options: Options.Options) =
     let commentLine = parse {
         do! skipString "//" // .>> noneOf "[")) // (pchar '[')) // <?> "comment, not verbatim code"
         do! notFollowedBy (anyOf "[]") <?> "not a verbatim code"
-        do! skipManyTill anyChar (followedBy newline) } |> attempt
+        do! skipManyTill anyChar (followedBy newline <|> eof) } |> attempt
 
     let commentBlock = parse {
         do! skipString "/*"
