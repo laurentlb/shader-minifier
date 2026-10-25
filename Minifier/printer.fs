@@ -89,13 +89,15 @@ type PrinterImpl(withLocations) =
     let floatToS f =
         let a = abs (float f)
         let str1 = a.ToString("#.################", System.Globalization.CultureInfo.InvariantCulture)
+        // Fixed notation rounds tiny values to zero: they need the scientific notation.
+        let isFixedExact = a = 0. || Regex.IsMatch(str1, "[1-9]")
         let str1 = if str1 = "" then "0."
                    elif Regex.Match(str1, "^\\d+$").Success then str1 + "."
                    else str1
         let str2 = a.ToString("0.################e0", System.Globalization.CultureInfo.InvariantCulture)
         let parts = Regex.Match(str2, @"([^.]*)\.?([^e]*)e(.*)").Groups
         let str2 = sprintf "%s%se%d" parts[1].Value parts[2].Value ((int parts[3].Value) - parts[2].Value.Length)
-        let str = [str1; str2] |> List.minBy(_.Length)
+        let str = if isFixedExact then [str1; str2] |> List.minBy(_.Length) else str2
         
         let sign = if f < 0.M then "-" else ""
         sign + str
