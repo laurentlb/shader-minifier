@@ -1,10 +1,10 @@
 #version 460
-#line 1 2
+#line 1
 
 uniform float u;
 #line 10
 out vec4 O;
-#line 20 "x.frag"
+#line 20
 void main()
 {
   O = vec4(u);
