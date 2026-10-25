@@ -401,7 +401,11 @@ type private ParseImpl(options: Options.Options) =
                    ] <?> "top-level declaration"
         let forwardDecl = functionHeader .>> ch ';' |>> (fun _ -> reorderFunctions <- true)
         let skipFwd = skipMany (attempt forwardDecl)
-        many (skipFwd >>. item) .>> skipFwd
+        // #line only changes the line numbers in the error messages, so it's dropped (like the preprocessor does).
+        // It's skipped after each item: skipping it before the item would fail at the end of the input.
+        let skipLine = attempt (pchar '#' >>. keyword "line") >>. skipManyTill anyChar newline .>> ws
+        let skipLines = skipMany skipLine
+        skipLines >>. many (skipFwd >>. item .>> skipLines) .>> skipFwd
 
     let parse = ws >>. toplevel .>> eof
 
