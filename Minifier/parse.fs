@@ -65,7 +65,13 @@ type private ParseImpl(options: Options.Options) =
         let conv s =
             let ok, res = System.Int64.TryParse(s : string)
             if ok then Ast.Int (res, "")
-            else Ast.Float (try decimal s, "" with _ -> failwith ("invalid number: " + s))
+            else
+                // decimal can't represent huge literals, and rounds some tiny ones: keep the text of these literals.
+                let style, culture = System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture
+                let v = System.Double.Parse(s, style, culture)
+                match System.Decimal.TryParse(s, style, culture) with
+                | true, d when abs (float d - v) <= 1e-15 * abs v -> Ast.Float (d, "")
+                | _ -> Ast.VerbatimExp s
         regex r .>> ws |>> conv
 
     let anyNumber =
@@ -77,6 +83,7 @@ type private ParseImpl(options: Options.Options) =
         let addSuffix = function
             | Some su, Ast.Int (i, _) -> Ast.Int (i, su)
             | Some su, Ast.Float (f,_) -> Ast.Float (f, su)
+            | Some su, Ast.VerbatimExp s -> Ast.VerbatimExp (s + su)
             | _, n -> n
         pipe2 n (opt suffix) (fun nb su -> addSuffix (su, nb))
 

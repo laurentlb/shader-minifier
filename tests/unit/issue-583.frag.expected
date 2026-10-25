@@ -1,0 +1,8 @@
+#version 460
+
+uniform float u;
+out vec4 O;
+void main()
+{
+  O=vec4(1e30,1e-30,1./max(abs(u),1e-30),1e-20f+2e30lf);
+}
