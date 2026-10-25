@@ -27,6 +27,13 @@ let builtinMatrixTypes = set([
             for r in ["2"; "3"; "4"] do
                 yield p+"mat"+c+"x"+r
 ])
+let builtinIntTypes = set([
+    yield "int"
+    yield "uint"
+    for p in ["i"; "u"] do
+        for n in ["2"; "3"; "4"] do
+            yield p+"vec"+n
+])
 
 let isSamplerType (name: string) = name.Contains("sampler")
 

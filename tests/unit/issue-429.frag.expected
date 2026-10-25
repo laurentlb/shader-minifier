@@ -1,0 +1,11 @@
+#version 330
+
+uniform int i;
+out vec4 O;
+void main()
+{
+  O.x=97.4;
+  O.y=97.4;
+  O.z=1./3;
+  O.w=float(i*1.)+(i+0.)/2;
+}
