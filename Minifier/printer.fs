@@ -126,8 +126,17 @@ type PrinterImpl(withLocations) =
                 if prec < level then out "(%s)" res else res
             
             // Unary operators. _++ is prefix and $++ is postfix
-            | Op op, [a1] when op[0] = '$' -> out "%s%s" (exprToSLevel indent precedence[op] a1) op[1..]
-            | Op op, [a1] -> out "%s%s" op (exprToSLevel indent precedence["_" + op] a1)
+            | Op op, [a1] when op[0] = '$' ->
+                let prec = precedence[op]
+                let res = out "%s%s" (exprToSLevel indent prec a1) op[1..]
+                if prec < level then out "(%s)" res else res
+            | Op op, [a1] ->
+                let prec = precedence["_" + op]
+                let e1 = exprToSLevel indent prec a1
+                // Add a space to avoid "-" to be parsed as "--", as in the binary case.
+                let op = if (op = "+" || op = "-") && e1.StartsWith(op) then op + " " else op
+                let res = out "%s%s" op e1
+                if prec < level then out "(%s)" res else res
 
             // Binary operators.
             | Op op, [a1; a2] ->
@@ -146,9 +155,9 @@ type PrinterImpl(withLocations) =
 
             // Function calls.
             | _ -> // We set the level in case a comma operator is used in the argument list.
-                   out "%s(%s)" (exprToS indent f) (commaListToS (exprToSLevel indent (precedence[","] + 1)) args)
+                   out "%s(%s)" (exprToSLevel indent precedence["."] f) (commaListToS (exprToSLevel indent (precedence[","] + 1)) args)
         | Subscript(arr, ind) ->
-            out "%s[%s]" (exprToS indent arr) (exprToSOpt indent "" ind)
+            out "%s[%s]" (exprToSLevel indent precedence["."] arr) (exprToSOpt indent "" ind)
         | Cast(id, e) ->
             // Cast seems to have the same precedence as unary minus
             out "(%s)%s" id.Name (exprToSLevel indent precedence["_-"] e)
