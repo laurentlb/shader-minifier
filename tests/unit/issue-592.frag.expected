@@ -1,0 +1,8 @@
+#version 460
+
+uniform float u;
+out vec4 O;
+void main()
+{
+  O=vec4(u);
+}
