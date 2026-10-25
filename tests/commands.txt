@@ -145,3 +145,4 @@
 --no-renaming --aggressive-inlining --format indented -o tests/real/robin.frag.expected tests/real/robin.frag
 
 -o tests/real/mouton/mouton.expected tests/real/mouton/mouton.vert tests/real/mouton/mouton.frag tests/real/mouton/fxaa.frag
+--format indented -o tests/unit/issue-579.frag.expected tests/unit/issue-579.frag
