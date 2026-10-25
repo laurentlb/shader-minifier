@@ -10,8 +10,5 @@ void main()
   vec3 B = P*P;
   vec3 C = -P;
   vec3 D = index>0 ? P : P*2.;
-  int q = index;
-  fragColor.x = float((++q)[index]);
-  fragColor.y = float((q++)[index]);
-  fragColor = vec4(A[index] + B[index] + C[index] + D[index], (P*9.).yz, (-P).x) + vec4(q,0,0,0);
+  fragColor = vec4(A[index] + B[index] + C[index] + D[index], (P*9.).yz, (-P).x);
 }

@@ -5,10 +5,7 @@ uniform int index;
 out vec4 fragColor;
 void main()
 {
-  int q=index;
-  fragColor.x=float((++q)[index]);
-  fragColor.y=float((q++)[index]);
   fragColor=vec4((P*9.)[index]+(P*P)[index]+(-P)[index]+(index>0?
     P:
-    P*2.)[index],(P*9.).yz,(-P).x)+vec4(q,0,0,0);
+    P*2.)[index],(P*9.).yz,(-P).x);
 }
