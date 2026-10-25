@@ -284,7 +284,8 @@ type Analyzer(options: Options.Options) =
                 | e -> e
             let findStmtSideEffects _ = function
                 // Side effects can hide in macros.
-                | (Verbatim _ | Directive _) as s -> hasExternallyVisibleSideEffect <- true; s
+                // discard stops the shader invocation, even if the function result is unused.
+                | (Verbatim _ | Directive _ | Jump(JumpKeyword.Discard, _)) as s -> hasExternallyVisibleSideEffect <- true; s
                 | s -> s
             options.visitor(findExprSideEffects, findStmtSideEffects).iterTopLevel [tl]
             hasExternallyVisibleSideEffect
