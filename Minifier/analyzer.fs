@@ -162,6 +162,7 @@ module Effects =
         | Float _ -> []
         | Dot(v, _)  -> sideEffects v
         | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
+        | VectorExp li -> li |> List.collect sideEffects
         | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
         | FunCall(Var fct, args) as e ->
             match fct.Declaration with

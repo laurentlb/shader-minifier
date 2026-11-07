@@ -680,7 +680,15 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                         fct.parameters |> List.choose (function ty, decl -> if not ty.isOutOrInout && ty = ty2 then Some decl else None)
                     | _ -> []
 
+                // An initializer list (`int a[] = {1,2};`) is only valid in a declaration, it can't become an assignment.
+                let isInitializerList = match declElt2.init with Some (VectorExp _) -> true | _ -> false
+                // The size of an implicitly sized array (`int a[] = int[](1,2);`) comes from its initializer,
+                // so two such arrays with the same declared type can have different sizes.
+                let isImplicitlySized =
+                    ty2.arraySizes |> List.exists Option.isNone ||
+                    declElt2.sizes |> List.exists (function Int (0L, _) -> true | _ -> false)
                 let compatibleDeclElt = (localDecls @ args) |> List.tryFind (fun declElt1 ->
+                    not isInitializerList && not isImplicitlySized &&
                     declElt1.sizes = declElt2.sizes &&
                     declElt1.semantics = declElt2.semantics &&
                     // The first variable must not be used after the second is declared.
