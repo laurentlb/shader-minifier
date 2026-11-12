@@ -301,7 +301,19 @@ type MapEnv private = {
             env.fExpr env (VectorExp(List.map env.mapExpr li))
         | e -> env.fExpr env e
 
-    member env.mapDecl (ty, vars) =
+    member env.mapDecl ((ty: Type), vars) =
+        // In HLSL, `N` in `vector<float, N>` is parsed as a type name, as we can't know if it's a variable.
+        // When it refers to a variable in scope, turn it into an expression and visit it.
+        let rec mapTypeSpec = function
+            | TypeTemplate (id, args) ->
+                TypeTemplate (id, args |> List.map (function
+                    | TypeArg (TypeName n) when env.vars.ContainsKey n.Name -> ValueArg (env.mapExpr (Var n))
+                    | TypeArg spec -> TypeArg (mapTypeSpec spec)
+                    | ValueArg e -> ValueArg (env.mapExpr e)))
+            | spec -> spec
+        let ty = match ty.name with
+                 | TypeTemplate _ -> {ty with name = mapTypeSpec ty.name}
+                 | _ -> ty
         let aux (env: MapEnv) (decl: DeclElt) =
             // First visit the initialization value, then add the decl to the env
             // e.g. in `float x = x + 1`, the two `x` are not the same!

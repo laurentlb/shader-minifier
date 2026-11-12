@@ -95,7 +95,19 @@ type VarVisitor(onVarUse: VarUse -> Ident -> VarDecl -> unit) =
         | Var _ as e -> this.onVisitVar e
         | _ -> ()
 
-    member this.visitDecl (_ty, declElts) =
+    member this.visitDecl (ty: Type, declElts) =
+        // Template value arguments are reads, e.g. `N` in `vector<float, N>`. [I]
+        let rec visitTypeSpec = function
+            | TypeTemplate (_, args) ->
+                for arg in args do
+                    match arg with
+                    | TypeArg spec -> visitTypeSpec spec
+                    | ValueArg e ->
+                        this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () ->
+                            this.visitExpr e
+                        )
+            | _ -> ()
+        visitTypeSpec ty.name
         for declElt in declElts do
             // Visit the init expr first.
             this.using { this.varUse with access.isWrite = false; access.isRead = true } (fun () -> // [I]

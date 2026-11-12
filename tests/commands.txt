@@ -151,3 +151,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/issue-592.frag.expected tests/unit/issue-592.frag
 --format indented -o tests/unit/issue-579.frag.expected tests/unit/issue-579.frag
 --format indented -o tests/unit/issue-581.frag.expected tests/unit/issue-581.frag
+
+# HLSL template arguments
+--hlsl --no-inlining --format indented -o tests/unit/template-renaming.hlsl.expected tests/unit/template-renaming.hlsl
+--hlsl --format indented -o tests/unit/template-renaming.hlsl.inlining.expected tests/unit/template-renaming.hlsl

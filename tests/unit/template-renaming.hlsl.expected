@@ -1,0 +1,20 @@
+static const int t=3;
+static const float c=2.;
+template<typename T>
+struct A{
+  T t;
+};
+float2 f(float2 c)
+{
+  const int t=2;
+  vector<float,t> f=c*2.;
+  return f*f.y;
+}
+float4 main(float4 i:SV_POSITION,float3x3 m:ROTATION):SV_TARGET
+{
+  vector<float,t> N=i.xyz*c;
+  matrix<float,t,t> T=m;
+  A<vector<float,t>> r;
+  r.t=mul(T,N);
+  return float4(r.t+N,f(i.xy).x);
+}
