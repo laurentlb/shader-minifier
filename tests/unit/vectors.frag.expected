@@ -42,3 +42,9 @@ vec2 calc(S points,float t)
   vec4 m1m2=mix(vec4(points.p1,points.cp1),vec4(points.cp1,points.cp2),t);
   return m1m2.xy;
 }
+float swizzleOfConstructor(float a,float b,int i)
+{
+  a=vec2(i,a).x;
+  return b+a;
+}
+

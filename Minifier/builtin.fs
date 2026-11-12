@@ -43,7 +43,7 @@ let implicitConversions = // (from, to)
         (["ivec2"; "uvec2"], "vec2")
         (["ivec3"; "uvec3"], "vec3")
         (["ivec4"; "uvec4"], "vec4")
-        (["ivec2"; "uvec2"; "vec2"], "dvec")
+        (["ivec2"; "uvec2"; "vec2"], "dvec2")
         (["ivec3"; "uvec3"; "vec3"], "dvec3")
         (["ivec4"; "uvec4"; "vec4"], "dvec4")
         (["mat2"], "dmat2")
@@ -78,7 +78,7 @@ let trigonometryFunctions = set([
     "acos"; "acosh"; "asin"; "asinh"; "atan"; "atanh"; "cos"; "cosh"; "degrees";
     "radians"; "sin"; "sinh"; "tan"; "tanh"])
 let mathsFunctions = set([
-    "abs"; "ceil"; "clamp"; "dFdx"; "dFdy"; "exp"; "exp2"; "floor"; "floor"; "fma";
+    "abs"; "ceil"; "clamp"; "dFdx"; "dFdy"; "exp"; "exp2"; "floor"; "fma";
     "fract"; "fwidth"; "inversesqrt"; "isinf"; "isnan"; "log"; "log2"; "max"; "min";
     "mix"; "mod"; "modf"; "noise"; "pow"; "round"; "roundEven"; "sign"; "smoothstep";
     "sqrt"; "step"; "trunc"])
