@@ -94,11 +94,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 // because the renamer does its work via mutation on the ident. So
                 // if this function gets inlined in more than one place, we don't want
                 // mutations to affect all the inlined idents.
-                // The new ident keeps the declaration, so that the rest of this pass still knows what it refers to.
-                | None ->
-                    let id = Ident (iv.Name, iv.Loc)
-                    id.Declaration <- iv.Declaration
-                    Var id
+                | None -> Var (Ident (iv.Name, iv.Loc))
             | ie -> ie
         options.visitor(mapInline).mapExpr bodyExpr
 
