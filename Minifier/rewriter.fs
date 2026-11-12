@@ -10,33 +10,23 @@ open System.Text.RegularExpressions
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
+// Best-effort type checks on an expression. They return false when the type is unknown.
 let private isKnownToHaveTypeFloat = function
     | Float _ -> true
-    | ResolvedVariableUse (_, vd) -> vd.decl.name.Name = "float"
+    | ResolvedVariableUse (_, vd) ->
+        match vd.ty.name with
+        | TypeName n -> n.OldName = "float" && vd.ty.arraySizes.IsEmpty && vd.decl.sizes.IsEmpty
+        | _ -> false
     | _ -> false
 
 let private isKnownToBeScalarOrVector = function
-    | Int _ -> true
-    | Float _ -> true
-    | Var v ->
-        match v.Declaration with
-        | Declaration.Unknown -> false
-        | Declaration.Variable vd -> vd.ty.isScalarOrVector
-        | Declaration.UserFunction funDecl -> funDecl.funcType.retType.isScalarOrVector
-        | Declaration.BuiltinFunction -> Builtin.builtinScalarTypes.Contains v.Name || Builtin.builtinVectorTypes.Contains v.Name
-        | Declaration.UnknownFunction -> false
+    | Int _ | Float _ -> true
+    | ResolvedVariableUse (_, vd) -> vd.ty.isScalarOrVector
     | _ -> false
 
 let private isKnownToBeScalar = function
-    | Int _ -> true
-    | Float _ -> true
-    | Var v ->
-        match v.Declaration with
-        | Declaration.Unknown -> false
-        | Declaration.Variable vd -> vd.ty.isScalar
-        | Declaration.UserFunction funDecl -> funDecl.funcType.retType.isScalar
-        | Declaration.BuiltinFunction -> Builtin.builtinScalarTypes.Contains v.Name
-        | Declaration.UnknownFunction -> false
+    | Int _ | Float _ -> true
+    | ResolvedVariableUse (_, vd) -> vd.ty.isScalar
     | _ -> false
 
 [<RequireQualifiedAccess>] 
@@ -104,7 +94,11 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
                 // because the renamer does its work via mutation on the ident. So
                 // if this function gets inlined in more than one place, we don't want
                 // mutations to affect all the inlined idents.
-                | None -> Var (Ident (iv.Name, iv.Loc))
+                // The new ident keeps the declaration, so that the rest of this pass still knows what it refers to.
+                | None ->
+                    let id = Ident (iv.Name, iv.Loc)
+                    id.Declaration <- iv.Declaration
+                    Var id
             | ie -> ie
         options.visitor(mapInline).mapExpr bodyExpr
 
