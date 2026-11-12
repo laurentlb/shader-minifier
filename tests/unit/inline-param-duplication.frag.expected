@@ -1,0 +1,19 @@
+#version 330
+
+uniform float u;
+float g;
+out vec4 fragColor;
+float sqGlobal(float a)
+{
+  return a*a;
+}
+float sqExpr(float a)
+{
+  return a*a;
+}
+void main()
+{
+  float x=sin(u);
+  g=cos(u);
+  fragColor=vec4(x*x+x,sqGlobal(g),sqExpr(x*3.),1);
+}

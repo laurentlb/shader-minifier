@@ -1,0 +1,39 @@
+#version 330
+
+uniform float u;
+out vec4 fragColor;
+float merge(float x)
+{
+  float a=x*2.,b,c,d,e;
+  a+=sin(a);
+  b=a*3.+cos(x);
+  vec2 v=vec2(a);
+  c=b+a;
+  d=u;
+  e=x;
+  return c+b+v.x+d*e;
+}
+float withConst(float x)
+{
+  x*=x;
+  float b;
+  const float k=2.;
+  b=x+k;
+  const float k2=3.;
+  return x*b*k2;
+}
+float shadowing(float x)
+{
+  float y=x*2.;
+  {
+    float z=y+1.;
+    x+=z;
+    float y=y*3.;
+    x+=y*z;
+  }
+  return x+y;
+}
+void main()
+{
+  fragColor=vec4(merge(u),withConst(u),shadowing(u),1);
+}

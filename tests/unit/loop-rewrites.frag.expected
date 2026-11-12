@@ -1,0 +1,95 @@
+#version 330
+
+uniform float u;
+float g;
+out vec4 fragColor;
+void s(float x)
+{
+  g+=x;
+}
+float severalStatements(float x)
+{
+  float i=0.;
+  for(;i<x;i+=1.)
+    s(i),s(i*2.);
+  return i;
+}
+float withContinue(float x)
+{
+  for(;x<10.;)
+    {
+      if(x>5.)
+        continue;
+      x+=1.;
+    }
+  return x;
+}
+float withSwitch(float x)
+{
+  for(;x<20.;x*=2.)
+    switch(int(x)){
+      case 1:
+        x+=2.;
+        break;
+      default:
+        x+=1.;
+    }
+  return x;
+}
+float withContinueInSwitch(float x)
+{
+  for(;x<20.;)
+    {
+      switch(int(x)){
+        case 1:
+          x+=2.;
+          continue;
+        default:
+          x+=1.;
+      }
+      x*=2.;
+    }
+  return x;
+}
+float singleStatement(float x)
+{
+  for(x;x<10.;x+=u)
+    ;
+  return x;
+}
+float loopBody(float x)
+{
+  for(;x<10.;)
+    for(int i=0;i<2;i++)
+      x+=u;
+  return x;
+}
+float emptyElse(float x)
+{
+  if(x>u)
+    s(1.);
+  return g;
+}
+float expressions(float x)
+{
+  float a=x+2.5;
+  x=(x,a,u);
+  return a+x;
+}
+void builtinAssignment()
+{
+  fragColor=vec4(u);
+  fragColor=vec4(g);
+}
+void builtinAssignment2()
+{
+  gl_FragDepth=u;
+  gl_FragDepth=g;
+}
+void main()
+{
+  builtinAssignment();
+  builtinAssignment2();
+  fragColor+=vec4(severalStatements(u),withContinue(u),withSwitch(u),withContinueInSwitch(u));
+  fragColor+=vec4(singleStatement(u),emptyElse(u),expressions(u),loopBody(u));
+}
