@@ -566,7 +566,8 @@ type private RenamerImpl(options: Options.Options) =
         let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
-        let fieldNames = names
+        // Fields that look like swizzles are not renamed. To avoid conflicts, other fields don't get these names.
+        let fieldNames = names |> List.filter (fun x -> not (Builtin.isFieldSwizzle x))
 
         // Rename each identifier again, this time into valid names, according to the list
         // and to a "context table" (frequencies of adjacent pairs of characters).

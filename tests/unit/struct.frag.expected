@@ -1,16 +1,16 @@
 #version 460
 
 struct r{
-  float t;
-  vec3 r;
   float n;
+  vec3 u;
+  float i;
 };
 r e;
 uniform MyInterfaceBlock{
   r k;
 };
 struct{
-  r u;
+  r e;
 } M;
 r i()
 {
@@ -23,19 +23,19 @@ int i(r M)
 int m()
 {
   r s;
-  s.t=1.;
-  s.n=s.t/2.;
-  s=r(1.,vec3(1),s.n);
+  s.n=1.;
+  s.i=s.n/2.;
+  s=r(1.,vec3(1),s.i);
   struct{
-    r u;
+    r e;
   } e;
   for(r e;true;)
     break;
   for(struct{
-    r u;
+    r e;
   } e;true;)
     break;
-  return int(s.r.x+e.u.t+k.n);
+  return int(s.u.x+e.e.n+k.i);
 }
 float i(vec4 s)
 {
@@ -43,25 +43,25 @@ float i(vec4 s)
   return s.w+e*e;
 }
 struct B{
-  int i;
-  int e;
+  int c;
+  int o;
 };
 struct I{
-  int i;
   int c;
-  int e;
+  int f;
+  int o;
 };
 B f;
 I s;
 struct O{
-  int i;
-  int e;
+  int c;
+  int o;
 } N;
 void main()
 {
-  f.i=1;
-  f.e=2;
-  s.i=3;
-  s.c=4;
-  s.e=5;
+  f.c=1;
+  f.o=2;
+  s.c=3;
+  s.f=4;
+  s.o=5;
 }

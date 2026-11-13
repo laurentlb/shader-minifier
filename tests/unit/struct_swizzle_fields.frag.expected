@@ -1,9 +1,9 @@
 struct Q{
   float xy;
-  float t;
+  float o;
   float zw;
 };
 float n(Q n)
 {
-  return(n.zw-n.xy)*n.t;
+  return(n.zw-n.xy)*n.o;
 }
