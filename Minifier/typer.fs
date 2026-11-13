@@ -56,8 +56,9 @@ let private ofType (ty: Type) =
 let private ofVarDecl (vd: VarDecl) =
     if vd.decl.sizes.IsEmpty then ofType vd.ty else Ty.Unknown
 
-// The argument types for which builtin functions are typed.
-// With an int argument, the result can be a float, e.g. `sin(1)`.
+// Matches a float or double type, scalar or vector.
+// Builtin function calls are typed only when their arguments match this pattern:
+// with an int argument, the result can be a float, e.g. `sin(1)`.
 let private (|FloatingPoint|_|) = function
     | Ty.Scalar (Prim.Float | Prim.Double) | Ty.Vector ((Prim.Float | Prim.Double), _) as ty -> Some ty
     | _ -> None
