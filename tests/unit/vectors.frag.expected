@@ -48,4 +48,13 @@ float swizzleOfConstructor(float a,float b,int i,vec2 v,ivec2 iv)
   a=vec2(iv.x,a).x;
   return b+y+z+a;
 }
-
+float userFloat(vec2 v)
+{
+  return v.x*v.y;
+}
+float swizzleOfCalls(float a,vec2 v)
+{
+  a=length(v);
+  float y=userFloat(v),z=float(v.x>0.);
+  return a+y+z;
+}

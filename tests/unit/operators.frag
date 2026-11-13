@@ -89,3 +89,12 @@ float fold_mixed_constants()
 	float d = 2.+1;
 	return a+b+c+d;
 }
+
+void typed_calls(inout vec3 p, inout vec3 q, inout vec3 r, inout vec3 s, inout vec3 u, float t)
+{
+	p = sin(t) * p; // p*=sin(t)
+	q = step(.5, q) * q; // q*=step(.5,q)
+	r = normalize(r) * r; // r*=normalize(r)
+	s = vec3(t) * s; // s*=vec3(t)
+	u = sin(1) * u; // not simplified: the type of sin(1) is unknown (the int is converted to float)
+}

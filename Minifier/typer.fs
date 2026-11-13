@@ -48,9 +48,31 @@ let private ofTypeName = function
         | _ -> Ty.Unknown
     | _ -> Ty.Unknown
 
+let private ofType (ty: Type) =
+    match ty.name with
+    | TypeName name when ty.arraySizes.IsEmpty -> ofTypeName name.Name
+    | _ -> Ty.Unknown
+
 let private ofVarDecl (vd: VarDecl) =
-    match vd.ty.name with
-    | TypeName name when vd.ty.arraySizes.IsEmpty && vd.decl.sizes.IsEmpty -> ofTypeName name.Name
+    if vd.decl.sizes.IsEmpty then ofType vd.ty else Ty.Unknown
+
+// The argument types for which builtin functions are typed.
+// With an int argument, the result can be a float, e.g. `sin(1)`.
+let private (|FloatingPoint|_|) = function
+    | Ty.Scalar (Prim.Float | Prim.Double) | Ty.Vector ((Prim.Float | Prim.Double), _) as ty -> Some ty
+    | _ -> None
+
+// Type of a call to a builtin function or constructor, given the types of its arguments.
+// TODO: matrix functions, texture functions, functions returning bool vectors.
+let private ofBuiltinCall name (argTypes: Ty list) =
+    match argTypes with
+    | _ when Builtin.castFunctions.Contains name -> ofTypeName name // constructor, e.g. vec3(...)
+    | FloatingPoint ty :: _ when Builtin.sameTypeAsFirstArgFunctions.Contains name -> ty
+    | _ when Builtin.sameTypeAsLastArgFunctions.Contains name ->
+        match List.tryLast argTypes with
+        | Some (FloatingPoint ty) -> ty
+        | _ -> Ty.Unknown
+    | FloatingPoint (Ty.Scalar prim | Ty.Vector (prim, _)) :: _ when Builtin.scalarResultFunctions.Contains name -> Ty.Scalar prim
     | _ -> Ty.Unknown
 
 let private ofSwizzle (ty: Ty) (field: string) =
@@ -78,7 +100,13 @@ let rec typeOf = function
     | Dot (e, field) -> ofSwizzle (typeOf e) field.Name
     | FunCall (Op ("-" | "+"), [e]) -> typeOf e
     | FunCall (Op ("+" | "-" | "*" | "/"), [e1; e2]) -> ofArithmetic (typeOf e1) (typeOf e2)
-    // TODO: other operators, constructors, function calls, subscripts, bool literals, half and long suffixes.
+    | FunCall (Var f, args) ->
+        match f.Declaration with
+        // An overload of a builtin function may not be the function that's called.
+        | Declaration.UserFunction fd when not (Builtin.builtinFunctions.Contains f.Name) -> ofType fd.funcType.retType
+        | Declaration.BuiltinFunction -> ofBuiltinCall f.Name (List.map typeOf args)
+        | _ -> Ty.Unknown // e.g. overloaded functions
+    // TODO: other operators, struct constructors, subscripts, bool literals, half and long suffixes.
     | _ -> Ty.Unknown
 
 // Whether `t1 * t2` is equal to `t2 * t1`.

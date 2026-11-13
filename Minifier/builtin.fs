@@ -98,6 +98,16 @@ let impureBuiltinFunctions = set ["atomicCounterIncrement"]
 
 let builtinFunctions = pureBuiltinFunctions + impureBuiltinFunctions
 
+// Builtin functions that return the type of their first argument (for float and double arguments).
+let sameTypeAsFirstArgFunctions = trigonometryFunctions + set [
+    "abs"; "ceil"; "clamp"; "cross"; "dFdx"; "dFdy"; "exp"; "exp2"; "faceforward"; "floor"; "fma";
+    "fract"; "fwidth"; "inversesqrt"; "log"; "log2"; "max"; "min"; "mix"; "mod"; "modf"; "normalize";
+    "pow"; "reflect"; "refract"; "round"; "roundEven"; "sign"; "sqrt"; "trunc"]
+// Builtin functions that return the type of their last argument, e.g. step(float, vec3) returns a vec3.
+let sameTypeAsLastArgFunctions = set ["smoothstep"; "step"]
+// Builtin functions that return a scalar, e.g. length(vec3) returns a float.
+let scalarResultFunctions = set ["distance"; "dot"; "length"]
+
 // Type qualifiers telling that a global variables is an 'external' name
 // (it may be referenced from other files).
 let externalQualifiers = set ["in"; "out"; "attribute"; "varying"; "uniform"]
