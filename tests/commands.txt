@@ -151,3 +151,9 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/issue-592.frag.expected tests/unit/issue-592.frag
 --format indented -o tests/unit/issue-579.frag.expected tests/unit/issue-579.frag
 --format indented -o tests/unit/issue-581.frag.expected tests/unit/issue-581.frag
+
+# Rewriter coverage tests
+--no-renaming --no-inlining --move-declarations --format indented -o tests/unit/move-declarations.frag.expected tests/unit/move-declarations.frag
+--no-renaming --no-inlining --format indented -o tests/unit/loop-rewrites.frag.expected tests/unit/loop-rewrites.frag
+--no-renaming --no-inlining --format indented -o tests/unit/unused-assignments-flow.frag.expected tests/unit/unused-assignments-flow.frag
+--no-renaming --format indented -o tests/unit/inline-param-duplication.frag.expected tests/unit/inline-param-duplication.frag
