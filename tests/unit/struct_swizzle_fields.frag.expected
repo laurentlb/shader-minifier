@@ -1,9 +1,40 @@
-struct Q{
+struct R{
   float xy;
-  float o;
+  float e;
   float zw;
 };
-float n(Q n)
+float v(R w)
 {
-  return(n.zw-n.xy)*n.o;
+  return(w.zw-w.xy)*w.e;
+}
+struct n{
+  float x;
+  float y;
+};
+struct O{
+  n c;
+  vec2 v;
+};
+uniform n x;
+uniform O y;
+uniform vec2 w;
+vec2 v()
+{
+  return vec2(x.x,x.y);
+}
+vec2 z()
+{
+  return vec2(w.y,x.x);
+}
+vec2 J()
+{
+  return vec2(w.y,y.c.x);
+}
+vec2 I()
+{
+  return vec2(w.y,n(1.,2.).x);
+}
+vec2 H()
+{
+  return vec2(w)+vec2(w.y,y.v);
 }
