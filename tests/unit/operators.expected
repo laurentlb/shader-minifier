@@ -68,6 +68,14 @@
  "{"
    "float a=97.4,b=97.4,c=97.4,d=3.;"
    "return a+b+c+d;"
+ "}"
+ "void typed_calls(inout vec3 p,inout vec3 q,inout vec3 r,inout vec3 s,inout vec3 u,float t)"
+ "{"
+   "p*=sin(t);"
+   "q*=step(.5,q);"
+   "r*=normalize(r);"
+   "s*=vec3(t);"
+   "u=sin(1)*u;"
  "}",
 
 #endif

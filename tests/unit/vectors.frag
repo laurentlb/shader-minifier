@@ -54,3 +54,12 @@ float swizzleOfConstructor(float a, float b, int i, vec2 v, ivec2 iv) {
   float w = vec2(iv.x, a).x; // iv.x is an int: not replaced
   return x + y + z + w;
 }
+
+float userFloat(vec2 v) { return v.x * v.y; }
+
+float swizzleOfCalls(float a, vec2 v) {
+  float x = vec3(a, length(v), 1.).y; // replaced with length(v)
+  float y = vec3(a, userFloat(v), 1.).y; // replaced with userFloat(v)
+  float z = vec3(a, float(v.x > 0.), 1.).y; // replaced with float(v.x>0.)
+  return x + y + z;
+}
