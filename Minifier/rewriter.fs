@@ -10,25 +10,6 @@ open System.Text.RegularExpressions
 
 let private commaSeparatedExprs = List.reduce (fun a b -> FunCall(Op ",", [a; b]))
 
-// Best-effort type checks on an expression. They return false when the type is unknown.
-let private isKnownToHaveTypeFloat = function
-    | Float _ -> true
-    | ResolvedVariableUse (_, vd) ->
-        match vd.ty.name with
-        | TypeName n -> n.OldName = "float" && vd.ty.arraySizes.IsEmpty && vd.decl.sizes.IsEmpty
-        | _ -> false
-    | _ -> false
-
-let private isKnownToBeScalarOrVector = function
-    | Int _ | Float _ -> true
-    | ResolvedVariableUse (_, vd) -> vd.ty.isScalarOrVector
-    | _ -> false
-
-let private isKnownToBeScalar = function
-    | Int _ | Float _ -> true
-    | ResolvedVariableUse (_, vd) -> vd.ty.isScalar
-    | _ -> false
-
 [<RequireQualifiedAccess>] 
 type private OptimizationPass =
     | First
@@ -209,11 +190,9 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         // Swap operands to get rid of parentheses.
         // x*(y*z) -> y*z*x
-        | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z])])
+        | FunCall(Op "*", [NoParen x; FunCall(Op "*", [y; z]) as yz])
             when Effects.isPure x && Effects.isPure y && Effects.isPure z &&
-                // Matrix multiplication is not commutative! Except with scalars.
-                ((isKnownToBeScalarOrVector x && isKnownToBeScalarOrVector y && isKnownToBeScalarOrVector z) ||
-                 ([isKnownToBeScalar x; isKnownToBeScalar y; isKnownToBeScalar z] |> Seq.filter id |> Seq.length) >= 2) ->
+                Typer.isCommutativeMul (Typer.typeOf x) (Typer.typeOf yz) ->
                 FunCall(Op "*", [FunCall(Op "*", [y; z]); x]) |> env.fExpr env
         // x+(y+z) -> x+y+z
         // x+(y-z) -> x+y-z
@@ -252,10 +231,9 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         // x=...+x  ->  x+=...
         // Works only if the operator is commutative. * is not commutative with vectors and matrices.
-        | FunCall(Op "=", [ResolvedVariableUse (v, vd); FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
+        | FunCall(Op "=", [ResolvedVariableUse (v, _) as x; FunCall(Op ("+"|"*"|"&"|"^"|"|" as op), [e; Var y])])
                 when v.Name = y.Name
-                && (op <> "*" || vd.ty.isScalar) // * is commutative when at least one operand is scalar
-                ->
+                && (op <> "*" || Typer.isCommutativeMul (Typer.typeOf e) (Typer.typeOf x)) ->
             FunCall(Op (op + "="), [Var v; e])
 
         // Unsafe when x contains NaN or Inf values.
@@ -335,7 +313,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             match indexes |> List.length with
             | 1 -> // vec3(a,b,c).y  ->  b
                 match List.tryItem indexes.Head args with
-                | Some arg when isKnownToHaveTypeFloat arg -> arg
+                | Some arg when Typer.typeOf arg = Typer.Ty.Scalar Typer.Prim.Float -> arg
                 | _ -> e
             | 2 | 3 | 4 -> // vec3(a,b,c).yx  ->  vec2(b,a)
                 // find whether the repeated fields are repeatable exprs (don't repeat function calls or long exprs)

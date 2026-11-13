@@ -51,12 +51,18 @@
  "}"
  "float swap_op_order(float g)"
  "{"
-   "float a=g*(g--*g--),b=g*((g+2.)*(g+3.));"
+   "float a=g*(g--*g--),b=(g+2.)*(g+3.)*g;"
    "return a*b*g;"
  "}"
  "mat2 dont_swap_op_order(float g)"
  "{"
    "return mat3x2(g)*(mat4x3(g)*mat2x4(g));"
+ "}"
+ "void augmented_mul(inout vec3 p,inout vec3 q,inout vec3 r,mat3 m,float s)"
+ "{"
+   "p*=s;"
+   "q*=q.yzx;"
+   "r=m*r;"
  "}",
 
 #endif

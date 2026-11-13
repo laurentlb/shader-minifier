@@ -73,3 +73,10 @@ mat2 dont_swap_op_order(float g)
 {
 	return mat3x2(g) * (mat4x3(g) * mat2x4(g));
 }
+
+void augmented_mul(inout vec3 p, inout vec3 q, inout vec3 r, mat3 m, float s)
+{
+	p = s * p; // p*=s
+	q = q.yzx * q; // q*=q.yzx
+	r = m * r; // not commutative: unchanged
+}
