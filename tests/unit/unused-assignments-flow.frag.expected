@@ -31,7 +31,7 @@ float switchStmt(float x)
   }
   return x;
 }
-float straightLine(float x)
+float noBranch(float x)
 {
   float a=sin(x);
   g=a;
@@ -40,5 +40,5 @@ float straightLine(float x)
 }
 void main()
 {
-  fragColor=vec4(doWhileLoop(u),switchStmt(u),straightLine(u),1);
+  fragColor=vec4(doWhileLoop(u),switchStmt(u),noBranch(u),1);
 }
