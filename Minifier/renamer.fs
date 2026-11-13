@@ -162,6 +162,9 @@ type private RenamerVisitor(options: Options.Options, funSignatures: Map<string,
                         env.newName VarFunStruct env decl.name // we have no tests of this and it doesn't work
                     else
                         processExternal()
+                | Field ({ blockType = Struct }, _) when Builtin.isFieldSwizzle decl.name.Name ->
+                    // Uses of this field are not renamed, because they look like swizzles (see renExpr).
+                    env.AddRenaming(FieldsOfAllStruct, decl.name, decl.name.Name)
                 | Field ({ blockType = Struct }, _) -> // named or anonymous struct, with instance or not
                     match env.memberRenames.TryFind(decl.name.Name) with
                     | None -> // first time we see this struct field: pick a new name

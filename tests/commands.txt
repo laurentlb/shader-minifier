@@ -43,6 +43,7 @@
 --no-remove-unused --no-renaming --format indented -o tests/unit/layout.frag.expected tests/unit/layout.frag
 --no-remove-unused --format indented -o tests/unit/struct.frag.expected tests/unit/struct.frag
 --no-remove-unused --format indented -o tests/unit/struct2.frag.expected tests/unit/struct2.frag
+--no-remove-unused --format indented -o tests/unit/struct_swizzle_fields.frag.expected tests/unit/struct_swizzle_fields.frag
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/multidimensional-array.hlsl.expected tests/unit/multidimensional-array.hlsl
 --no-remove-unused --hlsl --no-renaming --format indented -o tests/unit/struct_methods.hlsl.expected tests/unit/struct_methods.hlsl
 --no-inlining --hlsl --no-renaming --format indented -o tests/unit/issue-535.hlsl.expected tests/unit/issue-535.hlsl
