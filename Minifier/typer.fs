@@ -17,8 +17,13 @@ type Ty =
     | Unknown
     | Scalar of Prim
     | Vector of Prim * size: int
-    // TODO: Matrix, Array, Struct, and opaque types (samplers...).
+    | Struct of StructOrInterfaceBlock // also an interface block with an instance name
+    // TODO: Matrix, Array, and opaque types (samplers...).
 
+    member this.isStruct =
+        match this with
+        | Struct _ -> true
+        | _ -> false
     member this.isScalar =
         match this with
         | Scalar _ -> true
@@ -48,17 +53,33 @@ let private ofTypeName = function
         | _ -> Ty.Unknown
     | _ -> Ty.Unknown
 
-let private ofVarDecl (vd: VarDecl) =
-    match vd.ty.name with
-    | TypeName name when vd.ty.arraySizes.IsEmpty && vd.decl.sizes.IsEmpty -> ofTypeName name.Name
-    | _ -> Ty.Unknown
+let private ofType (ty: Type) =
+    match ty.name with
+    | _ when not ty.arraySizes.IsEmpty -> Ty.Unknown
+    | TypeName name ->
+        match name.Declaration with
+        | Declaration.StructType block -> Ty.Struct block
+        | _ -> ofTypeName name.Name
+    | TypeBlock block -> Ty.Struct block
+    | TypeTemplate _ -> Ty.Unknown
 
-let private ofSwizzle (ty: Ty) (field: string) =
+// Type of a declared variable or struct member, e.g. `x` in `float x[2]`.
+let private ofDeclElt (ty: Type) (elt: DeclElt) =
+    if elt.sizes.IsEmpty then ofType ty else Ty.Unknown
+
+// Type of `e.field`, where e has type ty.
+let private ofField (ty: Ty) (field: string) =
     match ty with
     | Ty.Vector (prim, size) when Builtin.isFieldSwizzle field && field.Length <= 4
                                   && Seq.forall (fun c -> Builtin.swizzleIndex c < size) field ->
         if field.Length = 1 then Ty.Scalar prim else Ty.Vector (prim, field.Length)
-    | _ -> Ty.Unknown // TODO: struct fields, swizzles on scalars
+    | Ty.Struct block ->
+        block.members |> List.tryPick (function
+            | MemberVariable (ty, elts) ->
+                elts |> List.tryFind (fun elt -> elt.name.Name = field) |> Option.map (ofDeclElt ty)
+            | Method _ -> None)
+        |> Option.defaultValue Ty.Unknown
+    | _ -> Ty.Unknown // TODO: swizzles on scalars
 
 // Type of `e1 op e2`, for an arithmetic operator.
 let private ofArithmetic t1 t2 =
@@ -74,12 +95,20 @@ let rec typeOf = function
     | Int (_, ("u" | "U")) -> Ty.Scalar Prim.UInt
     | Float (_, ("" | "f" | "F")) -> Ty.Scalar Prim.Float
     | Float (_, ("lf" | "LF")) -> Ty.Scalar Prim.Double
-    | ResolvedVariableUse (_, vd) -> ofVarDecl vd
-    | Dot (e, field) -> ofSwizzle (typeOf e) field.Name
+    | ResolvedVariableUse (_, vd) -> ofDeclElt vd.ty vd.decl
+    | Dot (e, field) -> ofField (typeOf e) field.Name
     | FunCall (Op ("-" | "+"), [e]) -> typeOf e
     | FunCall (Op ("+" | "-" | "*" | "/"), [e1; e2]) -> ofArithmetic (typeOf e1) (typeOf e2)
-    // TODO: other operators, constructors, function calls, subscripts, bool literals, half and long suffixes.
+    | FunCall (Var f, _) ->
+        match f.Declaration with
+        | Declaration.StructType block -> Ty.Struct block // constructor
+        | _ -> Ty.Unknown
+    // TODO: other operators, vector constructors, function calls, subscripts, bool literals, half and long suffixes.
     | _ -> Ty.Unknown
+
+// Whether `e.field` can be a swizzle. When the type of e is unknown, only the field name is checked.
+let isSwizzle e (field: Ident) =
+    Builtin.isFieldSwizzle field.Name && not (typeOf e).isStruct
 
 // Whether `t1 * t2` is equal to `t2 * t1`.
 // The multiplication is not commutative with matrices, unless the other operand is a scalar.

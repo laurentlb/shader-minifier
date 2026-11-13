@@ -303,12 +303,40 @@ type Analyzer(options: Options.Options) =
     // Create an ident.Declaration for each declaration in the file.
     // Give each Ident a reference to that Declaration.
     member _.resolve topLevel =
+        // Named structs. A name declared more than once (in different scopes) is ambiguous and not resolved.
+        let structs =
+            let blocks = ResizeArray()
+            let collect = function
+                | { blockType = Struct; name = Some name } as block -> blocks.Add (name.Name, block)
+                | _ -> ()
+            for tl in topLevel do
+                match tl with
+                | TypeDecl block | TLDecl ({ name = TypeBlock block }, _) -> collect block
+                | _ -> ()
+            let collectLocal _ = function
+                | Decl ({ name = TypeBlock block }, _) as stmt -> collect block; stmt
+                | stmt -> stmt
+            options.visitor(fStmt = collectLocal).iterTopLevel topLevel
+            blocks |> Seq.groupBy fst |> Seq.choose (fun (name, decls) ->
+                match List.ofSeq decls with
+                | [(_, block)] -> Some (name, block)
+                | _ -> None) |> Map
+
+        let resolveType (ty: Type) =
+            match ty.name with
+            | TypeName name ->
+                match structs.TryFind name.Name with
+                | Some block -> name.Declaration <- Declaration.StructType block
+                | None -> ()
+            | _ -> ()
+
         let resolveExpr (env: MapEnv) = function
             | FunCall (Var v, args) as e ->
                 v.Declaration <-
                     match env.fns.TryFind (v.Name, args.Length) with
                     | Some [(ft, _)] -> ft.fName.Declaration
                     | None when Builtin.builtinFunctions.Contains v.Name -> Declaration.BuiltinFunction
+                    | None when structs.ContainsKey v.Name -> Declaration.StructType structs[v.Name]
                     | _ -> Declaration.UnknownFunction // TODO: support type-based disambiguation of user-defined function overloading
                 e
             | Var v as e ->
@@ -319,6 +347,7 @@ type Analyzer(options: Options.Options) =
             | e -> e
 
         let resolveDecl scope (ty, li) =
+            resolveType ty
             for elt in li do
                 let varDecl = VarDecl(ty, elt, scope)
                 elt.name.Declaration <- Declaration.Variable varDecl
@@ -331,9 +360,17 @@ type Analyzer(options: Options.Options) =
         let resolveGlobalsAndParameters = function
             | TLDecl decl -> resolveDecl VarScope.Global decl
             | Function (funcType, _) as tl ->
+                resolveType funcType.retType
                 for decl in funcType.args do resolveDecl VarScope.Parameter decl
                 funcType.fName.Declaration <- Declaration.UserFunction (FunDecl(tl, funcType))
             | _ -> ()
+
+        // Struct members can have a struct type.
+        for block in structs.Values do
+            for m in block.members do
+                match m with
+                | MemberVariable (ty, _) -> resolveType ty
+                | Method _ -> ()
 
         // First visit all declarations, creating them.
         for tl in topLevel do
