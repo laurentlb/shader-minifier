@@ -11,6 +11,7 @@
     <Compile Include="printer.fs" />
     <Compile Include="formatter.fs" />
     <Compile Include="analyzer.fs" />
+    <Compile Include="typer.fs" />
     <Compile Include="inlining.fs" />
     <Compile Include="renamer.fs" />
     <Compile Include="rewriter.fs" />
