@@ -58,6 +58,7 @@ and [<NoComparison>] [<RequireQualifiedAccess>] Declaration =
     | UserFunction of FunDecl
     | BuiltinFunction
     | UnknownFunction // ambiguous (type-based) overloading, builtin unknown to minifier, or builtin redefinition
+    | StructType of StructOrInterfaceBlock // a struct type name, or a call to its constructor
 and VarDecl(ty, decl, scope) =
     member val ty: Type = ty with get
     member val decl = decl: DeclElt with get

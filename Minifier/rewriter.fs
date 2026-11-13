@@ -260,7 +260,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         let rec combineSwizzles = function
             | [] -> []
             | Dot (Var v1, field1) :: Dot (Var v2, field2) :: args
-                when isFieldSwizzle field1.Name && isFieldSwizzle field2.Name && v1.Name = v2.Name ->
+                when Typer.isSwizzle (Var v1) field1 && Typer.isSwizzle (Var v2) field2 && v1.Name = v2.Name ->
                     combineSwizzles (Dot (Var v1, Ident(field1.Name + field2.Name, field1.Loc)) :: args)
             | e::l -> e :: combineSwizzles l
 
@@ -296,7 +296,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         // vec3(a.x, b.xy) => vec3(a.x, b)
         let rec dropLastSwizzle n = function
-            | [Dot (expr, field) as last] when isFieldSwizzle field.Name ->
+            | [Dot (expr, field) as last] when Typer.isSwizzle expr field ->
                 match [for c in field.Name -> swizzleIndex c] with
                 | [0] when n = 1 -> [expr]
                 | [0; 1] | [0; 1; 2] | [0; 1; 2; 3] -> [expr]
@@ -372,7 +372,8 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             match e with
             | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Ident(options.renameField field.Name, field.Loc))
             | _ -> e
-        | Dot(e, field) when options.canonicalFieldNames <> "" -> Dot(e, Ident(options.renameField field.Name, field.Loc))
+        | Dot(e, field) when options.canonicalFieldNames <> "" && Typer.isSwizzle e field ->
+            Dot(e, Ident(options.renameField field.Name, field.Loc))
 
         | ResolvedVariableUse (_, vd) as e when vd.decl.name.ToBeInlined ->
             // Replace uses of inlined variables.

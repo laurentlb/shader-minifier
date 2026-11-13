@@ -1,0 +1,24 @@
+//NOCOMPILE TODO: the renamer still renames struct fields that look like swizzles (#395).
+#version 330
+// Struct fields can look like swizzles. Swizzle optimizations must not apply to them.
+struct S { float x; float y; };
+struct T { S m; vec2 v; };
+uniform S s;
+uniform T t;
+uniform vec2 u;
+out vec4 o;
+
+S makeS() { return S(1., 2.); }
+
+vec2 combine() { return vec2(s.x, s.y); }
+vec2 dropLast() { return vec2(u.y, s.x); }
+vec2 nested() { return vec2(u.y, t.m.x); }
+vec2 constructor() { return vec2(u.y, S(1., 2.).x); }
+vec2 call() { return vec2(u.y, makeS().x); }
+
+// Real swizzles are still optimized.
+vec2 swizzles() { return vec2(u.x, u.y) + vec2(u.y, t.v.x); }
+
+void main() {
+  o = vec4(combine(), dropLast()) + vec4(nested(), constructor()) + vec4(call(), swizzles());
+}
