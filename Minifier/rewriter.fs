@@ -100,6 +100,13 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | Float (f, _) -> Some f
         | _ -> None
 
+    // Two numeric operands, with at least one float. An int is implicitly converted to float, e.g. in `487./5`.
+    let (|FloatOperands|_|) = function
+        | [Float (f1, su); Float (f2, _)] -> Some (f1, f2, su)
+        | [Float (f1, su); Int (i2, "")] -> Some (f1, decimal i2, su)
+        | [Int (i1, ""); Float (f2, su)] -> Some (decimal i1, f2, su)
+        | _ -> None
+
     let rec (|VarWithPossibleField|_|) = function
         | Var v -> Some v
         | Dot (VarWithPossibleField v, _) -> Some v
@@ -157,18 +164,7 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Op "||", [False; x]) -> x
         | FunCall(Op "||", [x; False]) -> x
 
-        // Stupid simplifications (they can be useful to simplify rewritten code)
-        | FunCall(Op "/", [e; Number 1M]) -> e
-        | FunCall(Op "*", [e; Number 1M]) -> e
-        | FunCall(Op "*", [Number 1M; e]) -> e
-        // | FunCall(Op "*", [_; Number 0M as zero]) -> zero // unsafe
-        // | FunCall(Op "*", [Number 0M as zero; _]) -> zero // unsafe
-        | FunCall(Op "+", [e; Number 0M]) -> e
-        | FunCall(Op "+", [Number 0M; e]) -> e
-        | FunCall(Op "-", [e; Number 0M]) -> e
-        | FunCall(Op "-", [Number 0M; e]) -> FunCall(Op "-", [e])
-
-        // No simplification when numbers have different suffixes
+        // Constant folding. No simplification when numbers have different suffixes
         | FunCall(_, [Int (_, su1); Int (_, su2)]) as e when su1 <> su2 -> e
         | FunCall(_, [Float (_, su1); Float (_, su2)]) as e when su1 <> su2 -> e
 
@@ -180,13 +176,25 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
 
         | FunCall(Op "-", [Float (0.M,su)]) -> Float (0.M, su)
         | FunCall(Op "-", [Float (f1,su)]) -> Float (-f1, su)
-        | FunCall(Op "-", [Float (i1,su); Float (i2,_)]) -> Float (i1 - i2, su)
-        | FunCall(Op "+", [Float (i1,su); Float (i2,_)]) -> Float (i1 + i2, su)
-        | FunCall(Op "*", [Float (i1,su); Float (i2,_)]) -> Float (i1 * i2, su)
-        | FunCall(Op "/", [Float (i1,su); Float (i2,_)]) as e when i2 <> 0m ->
-            let div = Float (i1 / i2, su)
+        | FunCall(Op "-", FloatOperands (f1, f2, su)) -> Float (f1 - f2, su)
+        | FunCall(Op "+", FloatOperands (f1, f2, su)) -> Float (f1 + f2, su)
+        | FunCall(Op "*", FloatOperands (f1, f2, su)) -> Float (f1 * f2, su)
+        | FunCall(Op "/", FloatOperands (f1, f2, su)) as e when f2 <> 0m ->
+            let div = Float (f1 / f2, su)
             if (Printer.exprToS e).Length <= (Printer.exprToS div).Length then e
             else div
+        | FunCall(_, [Number _; Number _]) as e -> e // e.g. `1.*5u`: can't fold, don't change the type
+
+        // Stupid simplifications (they can be useful to simplify rewritten code)
+        | FunCall(Op "/", [e; Number 1M]) -> e
+        | FunCall(Op "*", [e; Number 1M]) -> e
+        | FunCall(Op "*", [Number 1M; e]) -> e
+        // | FunCall(Op "*", [_; Number 0M as zero]) -> zero // unsafe
+        // | FunCall(Op "*", [Number 0M as zero; _]) -> zero // unsafe
+        | FunCall(Op "+", [e; Number 0M]) -> e
+        | FunCall(Op "+", [Number 0M; e]) -> e
+        | FunCall(Op "-", [e; Number 0M]) -> e
+        | FunCall(Op "-", [Number 0M; e]) -> FunCall(Op "-", [e])
 
         // Swap operands to get rid of parentheses.
         // x*(y*z) -> y*z*x
