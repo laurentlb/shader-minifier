@@ -63,6 +63,11 @@
    "p*=s;"
    "q*=q.yzx;"
    "r=m*r;"
+ "}"
+ "float fold_mixed_constants()"
+ "{"
+   "float a=97.4,b=97.4,c=97.4,d=3.;"
+   "return a+b+c+d;"
  "}",
 
 #endif
