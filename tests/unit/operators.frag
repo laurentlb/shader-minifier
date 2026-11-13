@@ -80,3 +80,12 @@ void augmented_mul(inout vec3 p, inout vec3 q, inout vec3 r, mat3 m, float s)
 	q = q.yzx * q; // q*=q.yzx
 	r = m * r; // not commutative: unchanged
 }
+
+float identity_keeps_type(float x, int i)
+{
+	float a = (1.*487)/5; // 97.4, not 97 (#429)
+	float b = x*1.; // x
+	float c = i*1.; // not simplified: i is an int
+	float d = float(i*1); // i
+	return a+b+c+d;
+}

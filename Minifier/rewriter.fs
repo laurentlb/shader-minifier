@@ -120,6 +120,15 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall (Op op, [VarWithPossibleField name as target; e]) when Builtin.assignOps.Contains op -> augment op name (Some target) e
         | _ -> None
 
+    // Whether an operation between `e` and the literal `n` is known to have a different type than `e`.
+    // e.g. `i*1.` is a float when `i` is an int.
+    // TODO: Require the type of `e` to be known, once the typer supports function calls.
+    let changesType e n =
+        match n, Typer.typeOf e, Typer.typeOf n with
+        | Int (_, ""), _, _ -> false // the literal is implicitly converted to the type of `e`
+        | _, (Typer.Ty.Scalar pe | Typer.Ty.Vector (pe, _)), Typer.Ty.Scalar pn -> pe <> pn
+        | _ -> false
+
     let simplifyOperator (env: MapEnv) = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
@@ -158,15 +167,15 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall(Op "||", [x; False]) -> x
 
         // Stupid simplifications (they can be useful to simplify rewritten code)
-        | FunCall(Op "/", [e; Number 1M]) -> e
-        | FunCall(Op "*", [e; Number 1M]) -> e
-        | FunCall(Op "*", [Number 1M; e]) -> e
+        | FunCall(Op "/", [e; Number 1M as n]) when not (changesType e n) -> e
+        | FunCall(Op "*", [e; Number 1M as n]) when not (changesType e n) -> e
+        | FunCall(Op "*", [Number 1M as n; e]) when not (changesType e n) -> e
         // | FunCall(Op "*", [_; Number 0M as zero]) -> zero // unsafe
         // | FunCall(Op "*", [Number 0M as zero; _]) -> zero // unsafe
-        | FunCall(Op "+", [e; Number 0M]) -> e
-        | FunCall(Op "+", [Number 0M; e]) -> e
-        | FunCall(Op "-", [e; Number 0M]) -> e
-        | FunCall(Op "-", [Number 0M; e]) -> FunCall(Op "-", [e])
+        | FunCall(Op "+", [e; Number 0M as n]) when not (changesType e n) -> e
+        | FunCall(Op "+", [Number 0M as n; e]) when not (changesType e n) -> e
+        | FunCall(Op "-", [e; Number 0M as n]) when not (changesType e n) -> e
+        | FunCall(Op "-", [Number 0M as n; e]) when not (changesType e n) -> FunCall(Op "-", [e])
 
         // No simplification when numbers have different suffixes
         | FunCall(_, [Int (_, su1); Int (_, su2)]) as e when su1 <> su2 -> e

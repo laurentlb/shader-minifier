@@ -63,6 +63,12 @@
    "p*=s;"
    "q*=q.yzx;"
    "r=m*r;"
+ "}"
+ "float identity_keeps_type(float x,int i)"
+ "{"
+   "float a=1.*487/5,b=x,c=i*1.;"
+   "x=float(i);"
+   "return a+b+c+x;"
  "}",
 
 #endif
