@@ -50,6 +50,7 @@
 --hlsl --format indented -o tests/unit/issue-516.hlsl.expected tests/unit/issue-516.hlsl
 --hlsl --format indented --no-inlining --preserve-all-globals --no-remove-unused -o tests/unit/issue-537.hlsl.expected tests/unit/issue-537.hlsl
 --hlsl --format indented --no-renaming-list VS -o tests/unit/issue-504.hlsl.expected tests/unit/issue-504.hlsl
+--format indented --no-renaming -o tests/unit/vector-inline-increment.vert.expected tests/unit/vector-inline-increment.vert
 
 # Preprocessor tests
 
