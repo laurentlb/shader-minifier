@@ -1,0 +1,9 @@
+#version 450
+
+void main()
+{
+  int i=0;
+  float a[8];
+  vec3 v=vec3(a[i++],a[i++],a[i++]);
+  gl_Position=vec4(v,1);
+}
