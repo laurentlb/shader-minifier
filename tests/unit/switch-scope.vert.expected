@@ -1,0 +1,16 @@
+#version 450
+
+void main()
+{
+  int x=0;
+  switch(gl_VertexID){
+    case 0:
+      x=1;
+      
+      break;
+    case 1:
+      x=42;
+      break;
+  }
+  gl_Position=vec4(float(x));
+}
