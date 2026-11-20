@@ -285,11 +285,12 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             | e -> e
 
         // vec3(1,1,1)  =>  vec3(1)
-        // For safety, do not merge if there are function calls, e.g. vec2(rand(), rand()).
+        // For safety, do not merge if there are function calls, e.g. vec2(rand(), rand()),
+        // or side effects, e.g. vec3(a[i++], a[i++], a[i++]) (#610).
         // Iterate over the args as long as the arguments are equal.
         let rec mergeAllEquals allArgs = function
             | FunCall _ :: _ -> allArgs
-            | e1 :: e2 :: rest when Printer.exprToS e1 = Printer.exprToS e2 ->
+            | e1 :: e2 :: rest when Effects.isPure e1 && Printer.exprToS e1 = Printer.exprToS e2 ->
                 mergeAllEquals allArgs (e2 :: rest)
             | [e] -> [e]
             | _ -> allArgs

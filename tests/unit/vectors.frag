@@ -63,3 +63,12 @@ float swizzleOfCalls(float a, vec2 v) {
   float z = vec3(a, float(v.x > 0.), 1.).y; // replaced with float(v.x>0.)
   return x + y + z;
 }
+
+// #610 - equal arguments with side effects must not be merged
+vec3 mergeWithSideEffects(float a[8]) {
+  int i = 0;
+  vec3 v1 = vec3(a[i++], a[i++], a[i++]);
+  vec3 v2 = vec3(i += 1, i += 1, i += 1);
+  vec3 v3 = vec3(a[i], a[i], a[i]); // pure: merged
+  return v1 + v2 + v3;
+}
