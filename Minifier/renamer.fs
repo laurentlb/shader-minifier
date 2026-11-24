@@ -40,11 +40,13 @@ type private Env = {
     allowOverloading: bool
     // Function that decides a name (and returns the modified Env).
     newName: Namespace -> Env -> Ident -> Env
+    // Function that chooses one of the names (there's at least one), to overload an existing function.
+    chooseOverload: Ident -> string list -> string
     // Function called when we enter a scope, to support name reuse via shadowing
     onEnterScope: Env -> Stmt -> Env
 }
 with
-    static member Create(availableNames, availableFieldNames, allowOverloading, newName, onEnterScope) = {
+    static member Create(availableNames, availableFieldNames, allowOverloading, newName, chooseOverload, onEnterScope) = {
         identRenames = Map.empty
         memberRenames = Map.empty
         funOverloads = Map.empty
@@ -53,6 +55,7 @@ with
         exportedNames = ref []
         allowOverloading = allowOverloading
         newName = newName
+        chooseOverload = chooseOverload
         onEnterScope = onEnterScope
     }
 
@@ -287,15 +290,19 @@ type private RenamerVisitor(options: Options.Options, funSignatures: Map<string,
             not (signatures |> Set.exists x.Value.ContainsKey || List.contains x.Key options.noRenamingList)
         let addSignatures prevName overloads =
             signatures |> Set.fold (fun (m: Map<Signature,string>) s -> m.Add(s, prevName)) overloads
-        match env.funOverloads |> Seq.tryFind isFunctionNameAvailableForTheseSignatures with
-        | Some res when env.allowOverloading ->
+        let availableOverloads =
+            if env.allowOverloading then
+                [for x in env.funOverloads do if isFunctionNameAvailableForTheseSignatures x then x.Key]
+            else []
+        match availableOverloads with
+        | _ :: _ ->
             // overload an existing function name used with different signatures
-            let newName, overloads = res.Key, res.Value
-            let funOverloads = env.funOverloads.Add (newName, addSignatures id.Name overloads)
+            let newName = env.chooseOverload id availableOverloads
+            let funOverloads = env.funOverloads.Add (newName, addSignatures id.Name env.funOverloads[newName])
             let env = env.Update(env.identRenames.Add(id.Name, newName), funOverloads, env.availableNames)
             id.Rename(newName)
             env
-        | _ ->
+        | [] ->
             // find a new function name
             let prevName = id.Name
             let env = env.newName VarFunStruct env id
@@ -476,7 +483,7 @@ type private RenamerImpl(options: Options.Options) =
 
     let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
+        let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, (fun _ names -> names.Head), fun env _ -> env)
         renameAsts shaders env |> ignore<ExportedName list>
 
     member _.rename shaders =
@@ -498,7 +505,8 @@ type private RenamerImpl(options: Options.Options) =
         // and to a model of the text (frequencies of sequences of characters).
         let allowOverloading = not options.noOverloading
         let model = NameModel.Model(text, Ident.IsPlaceholder)
-        let mutable env = Env.Create(names, fieldNames, allowOverloading, optimizeContext model, shadowVariables)
+        let chooseOverload (id: Ident) names = model.ChooseName(id.Placeholder, names)
+        let mutable env = Env.Create(names, fieldNames, allowOverloading, optimizeContext model, chooseOverload, shadowVariables)
         env <- env.DontRenameList options.noRenamingList
         renameAsts shaders env
 
