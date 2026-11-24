@@ -73,7 +73,7 @@ type PrinterImpl(withLocations) =
     let idToS (id: Ident) =
         // In mode Unambiguous, ids contain numbers. We print a single Unicode char instead.
         if id.IsUniqueId then
-            string (char (1000 + int id.Name))
+            string id.Placeholder
         else if withLocations then
             out "%s@%d,%d@" id.Name id.Loc.line id.Loc.col
         else

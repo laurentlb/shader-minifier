@@ -2,39 +2,39 @@
 #version 300 es
 
 precision highp float;
-uniform float f;
-out vec4 v;
-float e(float f)
+uniform float t;
+out vec4 f;
+float n(float t)
 {
-  return f+f;
+  return t+t;
 }
 vec2 h()
 {
-  float v=3.*f;
-  return vec2(v+v,v);
+  float n=3.*t;
+  return vec2(n+n,n);
 }
 void main()
 {
-  v=vec4(e(f)+e(2.*f),h(),0);
+  f=vec4(n(t)+n(2.*t),h(),0);
 }
 
 // tests/unit/issue-564b.frag
 #version 300 es
 
 precision highp float;
-uniform float f;
-out vec4 v;
-float e()
+uniform float t;
+out vec4 f;
+float n()
 {
-  float v=4.*f;
-  return v+v;
+  float n=4.*t;
+  return n+n;
 }
 vec2 h()
 {
-  float v=5.*f;
-  return vec2(v+v,v);
+  float n=5.*t;
+  return vec2(n+n,n);
 }
 void main()
 {
-  v=vec4(e(),h(),0);
+  f=vec4(n(),h(),0);
 }

@@ -4,7 +4,7 @@ uniform MyBlock{
   vec3 M;
   float v;
 };
-void mainImage(out vec4 m,vec2 B)
+void mainImage(out vec4 m,vec2 e)
 {
   m=vec4(M,v);
 }

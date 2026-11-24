@@ -1,13 +1,13 @@
 #version 450
 
-uniform int i;
+uniform int v;
 out vec4 c;
-const ivec2 v=ivec2(1,5);
+const ivec2 i=ivec2(1,5);
 void main()
 {
-  switch(i){
+  switch(v){
     case 0:
-      const int m=v.y;
+      const int m=i.y;
       c=vec4(m);
       break;
     case m:

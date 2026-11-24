@@ -40,6 +40,10 @@ type Ident(name: string) =
     // Real identifiers cannot start with a digit, but the temporary ids of the rename pass are numbers.
     member this.IsUniqueId = System.Char.IsDigit this.Name[0]
 
+    // A Unicode character that represents the temporary id, when computing statistics on the text.
+    member this.Placeholder = char (1000 + int this.Name)
+    static member IsPlaceholder(c: char) = c >= char 1000
+
     interface System.IComparable with
         member this.CompareTo other =
             match other with
