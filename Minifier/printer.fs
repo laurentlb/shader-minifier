@@ -70,14 +70,18 @@ type PrinterImpl(withLocations) =
         |> List.concat
         |> dict
 
-    let idToS (id: Ident) =
+    let nameToS (id: Ident) =
         // In mode Unambiguous, ids contain numbers. We print a single Unicode char instead.
         if id.IsUniqueId then
             string id.Placeholder
-        else if withLocations then
-            out "%s@%d,%d@" id.Name id.Loc.line id.Loc.col
         else
             id.Name
+
+    let idToS (id: Ident) =
+        if withLocations then
+            out "%s@%d,%d@" (nameToS id) id.Loc.line id.Loc.col
+        else
+            nameToS id
 
     let commaListToS toS li =
         List.map toS li |> String.concat ","
@@ -165,7 +169,7 @@ type PrinterImpl(withLocations) =
             // We set the level in case a comma operator is used in the argument list.
             out "{%s}" (commaListToS (exprToSLevel indent (precedence[","] + 1)) li)
         | Dot(e, field) ->
-            out "%s.%s" (exprToSLevel indent precedence["."] e) field.Name
+            out "%s.%s" (exprToSLevel indent precedence["."] e) (nameToS field)
         | VerbatimExp s -> s
 
     // Add a space if needed
@@ -183,7 +187,7 @@ type PrinterImpl(withLocations) =
         if res = "" then res else ":" + res
 
     let rec blockToS indent (block: StructOrInterfaceBlock) =
-        let name = match block.name with None -> "" | Some (s: Ident) -> " " + s.Name
+        let name = match block.name with None -> "" | Some (s: Ident) -> " " + nameToS s
         let name = name + block.template
         let c = match block.baseClass with None -> "" | Some s -> $":{s}"
         let d = block.members |> List.map (fun s -> $"{nl (indent + 1)}{structMemberToS (indent+1) s};") |> String.concat ""
@@ -192,14 +196,14 @@ type PrinterImpl(withLocations) =
         $"{sp2 prefix name}{c}{{{d'}}}"
 
     and typeSpecToS indent = function
-        | TypeName s -> s.Name
+        | TypeName s -> nameToS s
         | TypeBlock block -> blockToS indent block
         | TypeTemplate (s, args) ->
             let argToS = function
                 | TypeArg t -> typeSpecToS indent t
                 | ValueArg e -> exprToS indent e
             let args = args |> List.map argToS |> String.concat ","
-            $"{s.Name}<{args}>"
+            $"{nameToS s}<{args}>"
 
     and typeToS indent (ty: Type) =
         let get = function
