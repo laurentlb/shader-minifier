@@ -471,14 +471,6 @@ type private RenamerImpl(options: Options.Options) =
                 d[id.OldName] <- newName
                 env.AddRenaming(ns, id, newName)
 
-    // Renaming safe across multiple files (e.g. uniform/in/out variables are
-    // renamed in a consistent way) that tries to optimize based on the context
-    // and variable reuse.
-    let multiFileRenaming contextTable (exportRenames: IDictionary<string, string>) (ns: Namespace) (env: Env) (id: Ident) =
-        match exportRenames.TryGetValue(id.Name) with
-            | true, newName -> env.AddRenaming(ns, id, newName)
-            | false, _ -> optimizeContext contextTable ns env id
-
     // Implements name reuse via shadowing. This is called when entering a new scope (function body, if, for, while).
     // It marks already assigned names as available again when they are not used inside the scope,
     // so that the names can be reused and shadow the outer names, leading to better compression and shorter names.
@@ -548,12 +540,12 @@ type private RenamerImpl(options: Options.Options) =
     let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
         let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
-        renameAsts shaders env
+        renameAsts shaders env |> ignore<ExportedName list>
 
     member _.rename shaders =
         // First we rename each identifier into a unique number, getting them out of the way
         // for analyzing the frequency of each letter in the shader.
-        let exportedNames = assignUniqueIds shaders
+        assignUniqueIds shaders
 
         // TODO: combine from all shaders
         let forbiddenNames = (Seq.head shaders).forbiddenNames
@@ -568,17 +560,9 @@ type private RenamerImpl(options: Options.Options) =
         // Rename each identifier again, this time into valid names, according to the list
         // and to a "context table" (frequencies of adjacent pairs of characters).
         let allowOverloading = not options.noOverloading
-        let mutable env =
-            if Array.length shaders > 1 then
-                // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
-                let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
-                let contextTable = computeContextTable text
-                Env.Create(names, names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
-            else
-                let contextTable = computeContextTable text
-                Env.Create(names, fieldNames, allowOverloading, optimizeContext contextTable, shadowVariables)
+        let contextTable = computeContextTable text
+        let mutable env = Env.Create(names, fieldNames, allowOverloading, optimizeContext contextTable, shadowVariables)
         env <- env.DontRenameList options.noRenamingList
-        env.exportedNames.Value <- exportedNames
         renameAsts shaders env
 
 let rename options = RenamerImpl(options).rename
