@@ -1,9 +1,9 @@
 uniform vec3 v[42];
-vec3 N()
+vec3 e()
 {
   return v[4];
 }
-vec3 N(float N)
+vec3 e(float e)
 {
-  return v[4]+N;
+  return v[4]+e;
 }

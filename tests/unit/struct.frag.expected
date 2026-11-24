@@ -1,67 +1,67 @@
 #version 460
 
-struct r{
+struct t{
   float t;
   vec3 r;
   float n;
 };
-r e;
+t M;
 uniform MyInterfaceBlock{
-  r k;
+  t m;
 };
 struct{
-  r u;
-} M;
-r i()
+  t u;
+} i;
+t n()
 {
-  return e;
+  return M;
 }
-int i(r M)
+int n(t m)
 {
   return 1;
 }
-int m()
+int r()
 {
-  r s;
-  s.t=1.;
-  s.n=s.t/2.;
-  s=r(1.,vec3(1),s.n);
+  t v;
+  v.t=1.;
+  v.n=v.t/2.;
+  v=t(1.,vec3(1),v.n);
   struct{
-    r u;
-  } e;
-  for(r e;true;)
+    t u;
+  } i;
+  for(t m;true;)
     break;
   for(struct{
-    r u;
-  } e;true;)
+    t u;
+  } i;true;)
     break;
-  return int(s.r.x+e.u.t+k.n);
+  return int(v.r.x+i.u.t+m.n);
 }
-float i(vec4 s)
+float n(vec4 m)
 {
-  float e=s.x-4.;
-  return s.w+e*e;
+  float v=m.x-4.;
+  return m.w+v*v;
 }
-struct B{
+struct A{
   int i;
   int e;
 };
-struct I{
+struct B{
   int i;
   int c;
   int e;
 };
-B f;
-I s;
-struct O{
+A f;
+B v;
+struct C{
   int i;
   int e;
-} N;
+} e;
 void main()
 {
   f.i=1;
   f.e=2;
-  s.i=3;
-  s.c=4;
-  s.e=5;
+  v.i=3;
+  v.c=4;
+  v.e=5;
 }

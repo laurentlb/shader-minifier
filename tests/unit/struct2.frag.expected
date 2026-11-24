@@ -1,5 +1,5 @@
-float m,v,I,R,Q,P,O,N,x;
-struct L{
+float m,v,t,o,a,f,l,i,x;
+struct A{
   vec3 t;
   float o;
   float a;
@@ -61,7 +61,7 @@ struct L{
   int af;
   float ag;
 };
-struct K{
+struct B{
   vec3 t;
   float o;
   float a;
@@ -121,11 +121,11 @@ struct K{
   int af;
   float ag;
 };
-void e(inout L f,K i)
+void e(inout A v,B i)
 {
-  f.t=vec3(.36,.45,.5);
-  f.o=30.;
-  f.Z=1.;
+  v.t=vec3(.36,.45,.5);
+  v.o=30.;
+  v.Z=1.;
   i.E=vec2(i.P,i.O);
   i.j=i.h.yx;
 }

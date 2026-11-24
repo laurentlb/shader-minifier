@@ -1,12 +1,12 @@
-struct B{
+struct A{
   float3 t;
 };
-StructuredBuffer<B> f;
-RWStructuredBuffer<B> m;
+StructuredBuffer<A> m;
+RWStructuredBuffer<A> f;
 Texture2D<float4> z;
-Buffer<vector<float,2>> D;
+Buffer<vector<float,2>> t;
 float4 main():SV_Target
 {
-  m[0].t=z[uint2(0,0)].xyz;
-  return float4(f[0].t,D[0].x);
+  f[0].t=z[uint2(0,0)].xyz;
+  return float4(m[0].t,t[0].x);
 }
