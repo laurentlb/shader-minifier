@@ -381,7 +381,7 @@ type private RenamerImpl(options: Options.Options) =
             let newName = model.ChooseName(id.Placeholder, shortestNames env.availableNames)
             env.AddRenaming(ns, id, newName)
         | FieldsOfAllStruct ->
-            let newName = env.availableFieldNames.Head
+            let newName = model.ChooseName(id.Placeholder, shortestNames env.availableFieldNames)
             env.AddRenaming(ns, id, newName)
 
     // A renaming strategy that always picks the first available name. This optimizes the

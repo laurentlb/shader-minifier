@@ -1,7 +1,7 @@
-struct A{
+struct t{
   float t;
 };
-float t()
+float r()
 {
   return 42.;
 }
