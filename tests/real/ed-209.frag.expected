@@ -18,9 +18,9 @@ mat2 n(float x)
   x=sin(x);
   return mat2(d,x,-x,d);
 }
-float n(float v,float y,float x,float d,float f)
+float n(float v,float y,float x,float d,float z)
 {
-  return mix(d,f,clamp((v-y)/(x-y),0.,1.));
+  return mix(d,z,clamp((v-y)/(x-y),0.,1.));
 }
 float n(vec3 d,vec3 y)
 {
@@ -29,10 +29,10 @@ float n(vec3 d,vec3 y)
 }
 float t(vec3 d,vec3 x)
 {
-  float f=n(d,x);
+  float v=n(d,x);
   d.xz*=n(.78525);
   x.xz*=-.18/1.41+1.41;
-  return max(f,n(d,x));
+  return max(v,n(d,x));
 }
 float n(vec3 x)
 {
@@ -52,24 +52,24 @@ float t(vec3 x)
     -1.:
     1.)*sqrt(min(m*m+c*c*d,f*f+s*s*d));
 }
-float n(vec3 d,float x,float y)
+float n(vec3 d,float v,float x)
 {
-  vec2 f=abs(vec2(length(d.xy),d.z))-vec2(x,y);
-  return min(max(f.x,f.y),0.)+length(max(f,0.));
+  vec2 n=abs(vec2(length(d.xy),d.z))-vec2(v,x);
+  return min(max(n.x,n.y),0.)+length(max(n,0.));
 }
-float n(vec3 d,vec3 x,vec3 y)
+float n(vec3 v,vec3 y,vec3 x)
 {
-  d-=x;
-  x=y-x;
-  return length(d-x*clamp(dot(d,x)/dot(x,x),0.,1.))-.2;
+  v-=y;
+  y=x-y;
+  return length(v-y*clamp(dot(v,y)/dot(y,y),0.,1.))-.2;
 }
-float n(vec2 d,float y)
+float n(vec2 d,float x)
 {
-  const vec3 x=vec3(-.9238795325,.3826834323,.4142135623);
+  const vec3 n=vec3(-.9238795325,.3826834323,.4142135623);
   d=abs(d);
-  d-=2.*min(dot(vec2(x),d),0.)*vec2(x);
-  d-=2.*min(dot(vec2(-x.x,x.y),d),0.)*vec2(-x.x,x.y);
-  d-=vec2(clamp(d.x,-x.z*y,x.z*y),y);
+  d-=2.*min(dot(vec2(n),d),0.)*vec2(n);
+  d-=2.*min(dot(vec2(-n.x,n.y),d),0.)*vec2(-n.x,n.y);
+  d-=vec2(clamp(d.x,-n.z*x,n.z*x),x);
   return length(d)*sign(d.y);
 }
 vec3 n(vec3 d,vec3 x,vec2 y)
@@ -78,10 +78,10 @@ vec3 n(vec3 d,vec3 x,vec2 y)
   x=normalize(cross(vec3(0,1,0),d));
   return normalize(d+x*y.x+cross(d,x)*y.y);
 }
-e n(e s,e x)
+e n(e n,e x)
 {
-  return s.x<x.x?
-    s:
+  return n.x<x.x?
+    n:
     x;
 }
 void n(inout e x)
@@ -89,9 +89,9 @@ void n(inout e x)
   x.y=vec3(.36,.45,.5);
   x.z=30.;
 }
-float t(float f)
+float t(float x)
 {
-  return sin(d*3.141*6.*f)*.2;
+  return sin(d*3.141*6.*x)*.2;
 }
 float n()
 {
@@ -104,78 +104,78 @@ float t()
 e t(vec3 d,float x,float y)
 {
   y*=sin(d.x*150.)*sin(d.y*150.)*.002;
-  e f;
-  f.x=n(d,vec3(1,x,2));
-  f.x=max(mix(f.x,(length(d/vec3(1,.8,1))-1.)*.8,.57),-d.y)-y;
-  f.y=vec3(.05);
-  f.z=30.;
-  return f;
+  e v;
+  v.x=n(d,vec3(1,x,2));
+  v.x=max(mix(v.x,(length(d/vec3(1,.8,1))-1.)*.8,.57),-d.y)-y;
+  v.y=vec3(.05);
+  v.z=30.;
+  return v;
 }
 e r(vec3 d)
 {
-  vec3 x=d;
-  e s=t(d*vec3(.95,-1.4,.95),1.,0.);
-  float y=max(max(t((d+vec3(0,.01,0))*vec3(.95),1.,0.).x,d.y-.35),d.y*.625-d.z-.66);
-  s.x=min(s.x,y);
+  vec3 y=d;
+  e v=t(d*vec3(.95,-1.4,.95),1.,0.);
+  float x=max(max(t((d+vec3(0,.01,0))*vec3(.95),1.,0.).x,d.y-.35),d.y*.625-d.z-.66);
+  v.x=min(v.x,x);
   d.xy*=n(.075*(f-1.)*sign(d.x));
   d.x=abs(d.x)-1.33;
   d.y-=.1-d.x*.1;
-  s.x=min(s.x,n(d,vec3(.4,.06*(1.-d.x),.3-d.x*.2)));
-  d=x;
+  v.x=min(v.x,n(d,vec3(.4,.06*(1.-d.x),.3-d.x*.2)));
+  d=y;
   d.y=abs(abs(d.y+.147)-.0556)-.0278;
-  s.x=max(s.x,-n(d+vec3(0,0,1.5),vec3(mix(.25,.55,-x.y),.015,.1)));
-  d=x;
+  v.x=max(v.x,-n(d+vec3(0,0,1.5),vec3(mix(.25,.55,-y.y),.015,.1)));
+  d=y;
   d.y=abs(d.y+.16)-.06;
   d.z-=-1.1;
-  y=max(max(n(d.xzy,1.,.03),-n(d.xzy,.55,1.)),d.z+.2);
-  s.x=max(s.x,-y);
-  n(s);
-  return s;
+  x=max(max(n(d.xzy,1.,.03),-n(d.xzy,.55,1.)),d.z+.2);
+  v.x=max(v.x,-x);
+  n(v);
+  return v;
 }
 e M(vec3 d)
 {
-  e s;
-  n(s);
+  e v;
+  n(v);
   d.yz+=vec2(.1,.45);
   vec3 x=d;
   x.z=abs(x.z)-.5;
-  s.x=t(x);
-  s.x=min(s.x,n(d,.35,.4));
+  v.x=t(x);
+  v.x=min(v.x,n(d,.35,.4));
   x=vec3(d.x,.28-d.y,d.z);
-  s.x=min(s.x,n(x));
+  v.x=min(v.x,n(x));
   x=d;
   x.x=abs(d.x);
   x.xy*=n(.78525);
-  float f=sign(sin(x.z*33.3))*.003;
-  f=n(x,vec3(.1-f,.38-f,.34))-.02;
+  float s=sign(sin(x.z*33.3))*.003;
+  s=n(x,vec3(.1-s,.38-s,.34))-.02;
   x=d-vec3(0,0,-.6);
   x.x=abs(x.x)-.1;
-  f=min(min(min(f,n(x,.06,.15)),n(x+vec3(0,.12,-.05),.06,.05)),n(d+vec3(0,0,.54),vec3(.1,.06,.04)));
-  if(f<s.x)
-    f=max(f,-n(x+vec3(0,0,.1),.03,.2)),s.x=f,s.y=vec3(.02);
+  s=min(min(min(s,n(x,.06,.15)),n(x+vec3(0,.12,-.05),.06,.05)),n(d+vec3(0,0,.54),vec3(.1,.06,.04)));
+  if(s<v.x)
+    s=max(s,-n(x+vec3(0,0,.1),.03,.2)),v.x=s,v.y=vec3(.02);
   float m=t();
   if(m>.5)
     {
-      f=n(x,.01+x.z*.05,fract(m*3322.423)*.5+.9);
-      if(f<s.x)
-        s.x=f,s.y=vec3(1),a+=.1/(.01+f*f*4e2);
+      s=n(x,.01+x.z*.05,fract(m*3322.423)*.5+.9);
+      if(s<v.x)
+        v.x=s,v.y=vec3(1),a+=.1/(.01+s*s*4e2);
     }
-  return s;
+  return v;
 }
-e h(vec3 d)
+e S(vec3 d)
 {
-  e s;
-  n(s);
+  e v;
+  n(v);
   d.x=abs(d.x);
   d.yz+=vec2(.24,0);
   d.xy*=n(.15*(f-1.));
   const vec3 x=vec3(1.5,0,0),y=x-vec3(0,0,.3);
-  s.x=min(n(d,vec3(0),x),n(d,x,y));
+  v.x=min(n(d,vec3(0),x),n(d,x,y));
   d-=y;
   d.z-=c*.15;
-  return n(s,M(d));
+  return n(v,M(d));
 }
-float p(vec3 d)
+float h(vec3 d)
 {
   d.yz+=vec2(.1,.32);
   return max(n(d,vec3(.3+.2*(d.z-.18)-d.y*.456*.5,.3+.2*cos((d.z-.18)*3.69),.35)),.1-d.y);
@@ -184,72 +184,72 @@ float z(vec3 d)
 {
   d.z+=.8;
   d.yz*=n(.86);
-  float f=p(d);
+  float s=h(d);
   d.xz*=n(1.57);
   d.x-=.43;
   d.z=.25-abs(d.z);
-  return min(f,p(d));
+  return min(s,h(d));
 }
-e S(vec3 d)
+e p(vec3 d)
 {
-  e s;
-  n(s);
+  e v;
+  n(v);
   d.y+=.65;
   d.yz*=n(-.2);
   float x=t(1.);
   d.xy*=n(x*.3);
-  vec3 f=d;
-  f.y+=.3;
-  s.x=max(n(f.zyx,.5,.5),d.y+.15);
-  float m=.5-abs(sin(d.y*40.))*.03,v=n(d,vec3(m,.15,m));
-  m=.3-abs(sin(d.x*40.))*.03;
-  f.y+=.18;
-  v=min(v,n(f.zyx,m,.75));
-  f.x=abs(f.x);
-  f.yz*=n(-.58525+x*sign(d.x));
-  f.x-=.98;
-  s.x=min(s.x,max(n(f.zyx,.4,.24),-f.y));
-  s.x=min(s.x,n(f,vec3(.24,.2,.14+.2*f.y)));
-  d=f;
-  f.xz=abs(f.xz)-vec2(.12,.25);
-  m=min(n(f.xzy,.1,.325),n(f.xzy,.05,.5));
-  s.x=min(s.x,max(m,f.y));
+  vec3 y=d;
+  y.y+=.3;
+  v.x=max(n(y.zyx,.5,.5),d.y+.15);
+  float s=.5-abs(sin(d.y*40.))*.03,m=n(d,vec3(s,.15,s));
+  s=.3-abs(sin(d.x*40.))*.03;
+  y.y+=.18;
+  m=min(m,n(y.zyx,s,.75));
+  y.x=abs(y.x);
+  y.yz*=n(-.58525+x*sign(d.x));
+  y.x-=.98;
+  v.x=min(v.x,max(n(y.zyx,.4,.24),-y.y));
+  v.x=min(v.x,n(y,vec3(.24,.2,.14+.2*y.y)));
+  d=y;
+  y.xz=abs(y.xz)-vec2(.12,.25);
+  s=min(n(y.xzy,.1,.325),n(y.xzy,.05,.5));
+  v.x=min(v.x,max(s,y.y));
   d.y+=.68;
-  s.x=min(s.x,n(d,vec3(sign(abs(d.y)-.04)*.005+.26,.2,.34)));
-  if(v<s.x)
-    s.x=v,s.y=vec3(.02);
-  return s;
+  v.x=min(v.x,n(d,vec3(sign(abs(d.y)-.04)*.005+.26,.2,.34)));
+  if(m<v.x)
+    v.x=m,v.y=vec3(.02);
+  return v;
 }
 e l(vec3 d)
 {
-  e s;
-  n(s);
-  float v=t(1.);
+  e v;
+  n(v);
+  float s=t(1.);
   d.z+=.27;
-  d.yz*=n(v*sign(d.x));
+  d.yz*=n(s*sign(d.x));
   d.z-=.27;
   d.y+=.65;
   d.yz*=n(-.2);
-  d.xy*=n(v*.3);
-  vec3 f=d;
-  f.x=abs(f.x);
-  f.y+=.48;
-  f.yz*=n(-.58525);
-  f.x-=.98;
-  vec3 x=f;
-  d=f;
-  f.xz=abs(f.xz)-vec2(.12,.25);
+  d.xy*=n(s*.3);
+  vec3 y=d;
+  y.x=abs(y.x);
+  y.y+=.48;
+  y.yz*=n(-.58525);
+  y.x-=.98;
+  vec3 x=y;
+  d=y;
+  y.xz=abs(y.xz)-vec2(.12,.25);
   d.y+=.68;
   d.xy=abs(d.xy)-.12;
-  v=n(d,vec3(.07,.05,1.2));
+  s=n(d,vec3(.07,.05,1.2));
   x-=vec3(0,-.7,0);
-  s.x=n(x-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
+  v.x=n(x-vec3(0,0,1.15),vec3(.17,.17,.07))-.04;
   x.z+=1.;
-  s.x=min(s.x,t(x.xzy,vec2(.28-sign(abs(x.z)-.3)*.01,.5).xyx));
-  s.x=min(s.x,z(x));
-  if(v<s.x)
-    s.x=v,s.y=vec3(.8);
-  return s;
+  v.x=min(v.x,t(x.xzy,vec2(.28-sign(abs(x.z)-.3)*.01,.5).xyx));
+  v.x=min(v.x,z(x));
+  if(s<v.x)
+    v.x=s,v.y=vec3(.8);
+  return v;
 }
 e i(vec3 d)
 {
@@ -261,99 +261,99 @@ e i(vec3 d)
     1.-smoothstep(.5,1.,m)*.2)*.5;
   f=smoothstep(0.,1.,clamp((v-.66)*6.,0.,1.));
   c=smoothstep(0.,1.,clamp((v-.83)*6.,0.,1.))+t()*.5;
-  s=n(s,S(d));
+  s=n(s,p(d));
   d.yz*=n(.1*(-y+t(2.)+smoothstep(0.,1.,clamp((v-.5)*6.,0.,1.))-1.));
   d.xz*=n(x*.2);
   s=n(s,r(d));
   s=n(s,t(d,.8,1.));
-  return n(s,h(d));
-}
-e A(vec3 d)
-{
-  e f;
-  f.y=vec3(.4);
-  f.z=1e7;
-  vec3 x=vec3(2.8,2.6,.1);
-  vec2 v=d.xy-vec2(0,2);
-  d.x=abs(d.x);
-  d.yz+=vec2(.5,-3.4);
-  float m=n(d,x+vec3(0,0,1)),y=length(d.z-8.);
-  f.x=min(y,max(length(d.z),-m+.1));
-  if(f.x==y)
-    if(min(max(min(abs(n(v,2.6)),abs(n(v,1.9))),min(.7-abs(v.x+1.2),-v.y)),max(abs(n(v,1.2)),min(v.x,.7-abs(v.y))))<.3)
-      f.y=vec3(.39,.57,.71);
-  m=max(n(d,x+vec3(.4,.4,.1)),-m);
-  y=x.x*.5;
-  d.x-=x.x;
-  d.xz*=n(s*2.1);
-  d.x+=y;
-  float c=n(d,vec3(y,x.yz));
-  d=abs(d)-vec3(y*.5,1.1,.14);
-  c=min(m,max(c,-max(n(d,vec3(.45,.9,.1)),-n(d,vec3(.35,.8,1)))));
-  if(c<f.x)
-    f.x=c,f.y=vec3(.02,.02,.024),f.z=10.;
-  return f;
+  return n(s,S(d));
 }
 e w(vec3 d)
 {
-  e s=n(A(d),i(d));
-  float f=length(d.y+3.);
-  if(f<s.x)
-    s.x=f,s.y=vec3(.1);
-  return s;
+  e v;
+  v.y=vec3(.4);
+  v.z=1e7;
+  vec3 x=vec3(2.8,2.6,.1);
+  vec2 y=d.xy-vec2(0,2);
+  d.x=abs(d.x);
+  d.yz+=vec2(.5,-3.4);
+  float m=n(d,x+vec3(0,0,1)),c=length(d.z-8.);
+  v.x=min(c,max(length(d.z),-m+.1));
+  if(v.x==c)
+    if(min(max(min(abs(n(y,2.6)),abs(n(y,1.9))),min(.7-abs(y.x+1.2),-y.y)),max(abs(n(y,1.2)),min(y.x,.7-abs(y.y))))<.3)
+      v.y=vec3(.39,.57,.71);
+  m=max(n(d,x+vec3(.4,.4,.1)),-m);
+  c=x.x*.5;
+  d.x-=x.x;
+  d.xz*=n(s*2.1);
+  d.x+=c;
+  float f=n(d,vec3(c,x.yz));
+  d=abs(d)-vec3(c*.5,1.1,.14);
+  f=min(m,max(f,-max(n(d,vec3(.45,.9,.1)),-n(d,vec3(.35,.8,1)))));
+  if(f<v.x)
+    v.x=f,v.y=vec3(.02,.02,.024),v.z=10.;
+  return v;
 }
-float A(vec3 d,vec3 x)
+e A(vec3 d)
+{
+  e v=n(w(d),i(d));
+  float s=length(d.y+3.);
+  if(s<v.x)
+    v.x=s,v.y=vec3(.1);
+  return v;
+}
+float h(vec3 d,vec3 x)
 {
   x=normalize(x-d);
-  float v=1.,m=.1;
-  for(float y=0.;y<SHADOW_STEPS;y++)
+  float m=1.,y=.1;
+  for(float f=0.;f<SHADOW_STEPS;f++)
     {
-      float f=w(d+x*m).x;
-      v=min(v,12.*f/m);
-      m+=f;
-      if(v<.001||m>25.)
+      float v=A(d+x*y).x;
+      m=min(m,12.*v/y);
+      y+=v;
+      if(m<.001||y>25.)
         break;
     }
-  return clamp(v,0.,1.);
+  return clamp(m,0.,1.);
 }
-vec3 A(vec3 d,float f)
+vec3 n(vec3 d,float x)
 {
-  vec2 x=vec2(1,-1)*.5773*(.01*f*.33);
-  return normalize(x.xyy*w(d+x.xyy).x+x.yyx*w(d+x.yyx).x+x.yxy*w(d+x.yxy).x+x.xxx*w(d+x.xxx).x);
+  vec2 v=vec2(1,-1)*.5773*(.01*x*.33);
+  return normalize(v.xyy*A(d+v.xyy).x+v.yyx*A(d+v.yyx).x+v.yxy*A(d+v.yxy).x+v.xxx*A(d+v.xxx).x);
 }
-vec3 A(vec3 d,vec2 y)
+vec3 n(vec3 v,vec2 d)
 {
-  y=y.xy/iResolution.xy;
-  return d*(.5+.5*pow(16.*y.x*y.y*(1.-y.x)*(1.-y.y),.4));
+  d=d.xy/iResolution.xy;
+  return v*(.5+.5*pow(16.*d.x*d.y*(1.-d.x)*(1.-d.y),.4));
 }
-vec3 A(vec3 d,vec3 x,float m,e f)
+vec3 n(vec3 d,vec3 v,float x,e y)
 {
-  const vec3 v=vec3(10,10,-10);
-  vec3 y=normalize(v-d),z=A(d,m);
-  m=max(0.,dot(y,z));
-  m*=mix(.2,1.,A(d,v));
-  y=((m+max(0.,dot(-y,z))*.2)*(w(d+.33*z).x/.33)+pow(max(0.,dot(x,reflect(y,z))),f.z)*2.)*vec3(2,1.6,1.7);
-  return mix(f.y*y,vec3(.01),smoothstep(.7,1.,1.+dot(x,z)))*exp(-length(d)*.05);
+  const vec3 s=vec3(10,10,-10);
+  vec3 m=normalize(s-d),c=n(d,x);
+  x=max(0.,dot(m,c));
+  x*=mix(.2,1.,h(d,s));
+  m=((x+max(0.,dot(-m,c))*.2)*(A(d+.33*c).x/.33)+pow(max(0.,dot(v,reflect(m,c))),y.z)*2.)*vec3(2,1.6,1.7);
+  return mix(y.y*m,vec3(.01),smoothstep(.7,1.,1.+dot(v,c)))*exp(-length(d)*.05);
 }
-vec3 M(vec3 d,vec3 x)
+vec3 A(vec3 d,vec3 x)
 {
-  vec3 y;
-  float m=.01;
-  e f;
-  for(float v=0.;v<MAX_STEPS;v++)
+  vec3 v;
+  float y=.01;
+  e s;
+  for(float f=0.;f<MAX_STEPS;f++)
     {
-      y=d+x*m;
-      f=w(y);
-      if(abs(f.x)<MIN_DIST*m)
+      v=d+x*y;
+      s=A(v);
+      if(abs(s.x)<MIN_DIST*y)
         break;
-      if(m>MAX_DIST)
+      if(y>MAX_DIST)
         return vec3(0);
-      m+=f.x;
+      y+=s.x;
     }
-  float c=a;
-  return A(y,x,m,f)+t()*.3+c;
+  float m=a;
+  return n(v,x,y,s)+t()*.3+m;
 }
-void mainImage(out vec4 f,vec2 a)
+void mainImage(out vec4 f,vec2 c)
 {
   d=1.;
   x=0.;
@@ -361,76 +361,76 @@ void mainImage(out vec4 f,vec2 a)
   m=0.;
   s=1.;
   v=1.;
-  vec3 c,i;
-  float z,r,p=mod(iTime,55.);
-  if(p<12.)
-    z=0.,r=12.,d=0.,c=vec3(0,-1.5,-.625),i=vec3(0,-1,n()),s=smoothstep(0.,1.,p/5.),v=n(p,7.,10.,0.,1.);
-  else if(p<25.)
+  vec3 e,i;
+  float z,r,a=mod(iTime,55.);
+  if(a<12.)
+    z=0.,r=12.,d=0.,e=vec3(0,-1.5,-.625),i=vec3(0,-1,n()),s=smoothstep(0.,1.,a/5.),v=n(a,7.,10.,0.,1.);
+  else if(a<25.)
     {
       z=12.;
       r=25.;
-      float x=p-z;
+      float x=a-z;
       d=smoothstep(0.,1.,n(x,3.,8.,0.,1.));
-      c=vec3(-.5*cos(x*.7),.5-x*.1,n()-3.);
+      e=vec3(-.5*cos(x*.7),.5-x*.1,n()-3.);
       i=vec3(0,0,n());
     }
-  else if(p<29.)
+  else if(a<29.)
     {
       z=25.;
       r=29.;
-      float x=p-z;
-      c=vec3(-2,.5+x*.1,n()-3.);
+      float x=a-z;
+      e=vec3(-2,.5+x*.1,n()-3.);
       i=vec3(0,0,n());
     }
-  else if(p<37.)
+  else if(a<37.)
     {
       z=29.;
       r=37.;
-      float x=p-z;
-      c=vec3(1.5,-1.-x*.05,n()-5.);
+      float x=a-z;
+      e=vec3(1.5,-1.-x*.05,n()-5.);
       i=vec3(0,-1,n());
       v=n(x,2.,5.,1.,0.);
     }
-  else if(p<55.)
+  else if(a<55.)
     {
       z=37.;
       r=55.;
-      float f=p-z;
-      c=vec3(-1.8,-.5,n()-2.5);
-      v=n(f,2.,3.,0.,1.)-n(f,11.5,14.5,0.,1.);
+      float s=a-z;
+      e=vec3(-1.8,-.5,n()-2.5);
+      v=n(s,2.,3.,0.,1.)-n(s,11.5,14.5,0.,1.);
       i=vec3(0,v*.5-.5,n());
-      x=n(f,3.,3.2,0.,1.)*v;
-      y=n(f,3.2,3.4,0.,1.)*v;
-      m=f<=9.5?
-        n(f,4.,9.5,0.,1.):
+      x=n(s,3.,3.2,0.,1.)*v;
+      y=n(s,3.2,3.4,0.,1.)*v;
+      m=s<=9.5?
+        n(s,4.,9.5,0.,1.):
         0.;
     }
-  float w=1.-cos(min(1.,2.*min(abs(p-z),abs(p-r)))*3.141/2.);
-  vec3 e=vec3(0);
+  float h=1.-cos(min(1.,2.*min(abs(a-z),abs(a-r)))*3.141/2.);
+  vec3 w=vec3(0);
   
 #ifdef AA
 
-  for(float v=0.;v<=1.;v++)
-    for(float y=0.;y<=1.;y++)
+  for(float f=0.;f<=1.;f++)
+    for(float m=0.;m<=1.;m++)
       {
-        vec2 f=a+vec2(v,y)*.5;
+        vec2 d=c+vec2(f,m)*.5;
         
 #else
 
-        vec2 d=a;
+        vec2 v=c;
         
 #endif
 
-        d+=(fract(t()*vec2(23242.2323,978.23465))-.5)*10.;
-        vec2 x=(d-.5*iResolution.xy)/iResolution.y;
-        e+=M(c,n(c,i,x));
+        v+=(fract(t()*vec2(23242.2323,978.23465))-.5)*10.;
+        vec2 y=(v-.5*iResolution.xy)/iResolution.y;
+        w+=A(e,n(e,i,y));
         
 #ifdef AA
 
       }
-  e/=4.;
+  w/=4.;
   
 #endif
 
-  f=vec4(A(pow(e*w,vec3(.4545)),a),1);
+  f=vec4(n(pow(w*h,vec3(.4545)),c),1);
 }

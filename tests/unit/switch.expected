@@ -46,7 +46,7 @@ float e()
   }
 }
 void b(){}
-int b(int e)
+int e(int e)
 {
   switch(e){
     case 1:
