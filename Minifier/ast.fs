@@ -345,7 +345,7 @@ type MapEnv private = {
                     let env, sl = env.foldList mapStmt' sl
                     env, (l, sl)
                 let e = env.mapExpr e
-                let env, cl = env.foldList mapCase cl
+                let _, cl = env.foldList mapCase cl
                 env, Switch(e, cl)
         let env, res = aux stmt
         let env = {env with blockLevel = blockLevel}
