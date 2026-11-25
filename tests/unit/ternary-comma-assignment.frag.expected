@@ -1,0 +1,8 @@
+#version 450
+
+out vec4 o;
+void main()
+{
+  float a,result=a=(2.,3.);
+  o=vec4(a,result,0,1);
+}

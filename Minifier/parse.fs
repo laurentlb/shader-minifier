@@ -39,10 +39,11 @@ type private ParseImpl(options: Options.Options) =
         let p = p >>= (fun s -> if Builtin.keywords.Contains(s.Name) then fail "ident is a keyword" else preturn s)
         (p .>> ws) <?> "identifier"
 
-    let opp = OperatorPrecedenceParser<_,_,_>()
-    let exprNoCommaNoVerbatim = opp.ExpressionParser
+    let opp = OperatorPrecedenceParser<Ast.Expr, unit, unit>()
+    let assignmentExpr, assignmentExprRef = createParserForwardedToRef<Ast.Expr, unit>()
+    let expr, exprRef = createParserForwardedToRef<Ast.Expr, unit>()
+    let exprNoCommaNoVerbatim = assignmentExpr
     let exprNoComma = choice [exprNoCommaNoVerbatim; verbatim |>> Ast.VerbatimExp]
-    let expr = sepBy1 exprNoComma (ch ',') |>> (List.reduce (fun acc e -> Ast.FunCall(Ast.Op ",", [acc;e])))
 
     let parenExp = between (ch '(') (ch ')') expr
 
@@ -120,7 +121,6 @@ type private ParseImpl(options: Options.Options) =
         ["&&"], Associativity.Left
         ["^^"], Associativity.Left
         ["||"], Associativity.Left
-        ["="; "+="; "-="; "*="; "/="; "%="; "<<="; ">>="; "&="; "^="; "|="], Associativity.Right
     ]
 
     // Add all the operators in the OperatorParser
@@ -131,7 +131,12 @@ type private ParseImpl(options: Options.Options) =
             for ops, assoc in li do
                 precCounter <- precCounter - 1
                 for op in ops do
-                    opp.AddOperator(InfixOperator(op, ws, precCounter, assoc, fun x y -> Ast.FunCall(Ast.Op op, [x; y])))
+                    let after =
+                        if ["+"; "-"; "*"; "/"; "%"; "<<"; ">>"; "&"; "^"; "|"] |> List.contains op then
+                            notFollowedBy (pchar '=') >>. ws
+                        else
+                            ws
+                    opp.AddOperator(InfixOperator(op, after, precCounter, assoc, fun x y -> Ast.FunCall(Ast.Op op, [x; y])))
 
         let addPrefix() =
             precCounter <- precCounter - 1
@@ -146,8 +151,54 @@ type private ParseImpl(options: Options.Options) =
         addPostfix()
         addPrefix()
         addInfix precedence
-        // same precedence as =
-        opp.AddOperator(TernaryOperator("?", ws, ":", ws, precCounter, Associativity.Right, fun x y z -> Ast.FunCall(Ast.Op "?:", [x; y; z])))
+
+        // Assignment operators
+        let assignmentOperators = ["<<="; ">>="; "+="; "-="; "*="; "/="; "%="; "&="; "^="; "|="; "="]
+        let assignmentOperator =
+            assignmentOperators
+            |> List.map (fun op ->
+                pstring op
+                .>> notFollowedBy (pchar '=')
+                .>> ws
+                |>> fun _ -> op)
+            |> choice
+
+        // conditional_expression:
+        // logical_expression | logical_expression '?' expression ':' assignment_expression
+        let conditionalExpr =
+            pipe2
+                opp.ExpressionParser
+                (opt (
+                    ch '?' >>. expr
+                    .>> ch ':'
+                    .>>. assignmentExpr
+                ))
+                (fun cond rest ->
+                    match rest with
+                    | Some (yes, no) ->
+                        Ast.FunCall(Ast.Op "?:", [cond; yes; no])
+                    | None ->
+                        cond)
+
+        // assignment_expression:
+        // conditional_expression | conditional_expression assignment_operator assignment_expression
+        do assignmentExprRef.Value <-
+            pipe2
+                conditionalExpr
+                (opt (assignmentOperator .>>. assignmentExpr))
+                (fun lhs rhs ->
+                    match rhs with
+                    | Some (op, value) ->
+                        Ast.FunCall(Ast.Op op, [lhs; value])
+                    | None ->
+                        lhs)
+
+        // expression:
+        // assignment_expression (',' assignment_expression)*
+        do exprRef.Value <-
+            sepBy1 assignmentExpr (ch ',')
+            |>> List.reduce (fun acc e ->
+                Ast.FunCall(Ast.Op ",", [acc; e]))
 
     let simpleStatement = opt expr |>> (function Some exp -> Ast.Expr exp | None -> Ast.Block [])
     let statement, stmtRef = createParserForwardedToRef()
