@@ -1,36 +1,36 @@
 #version 300 es
 
 precision highp float;
-out vec4 r;
-float v(vec2 v)
+out vec4 h;
+float v(vec2 p)
 {
-  return dot(v,v);
+  return dot(p,p);
 }
-float v(vec3 v)
+float v(vec3 p)
 {
-  return dot(v,v);
+  return dot(p,p);
 }
-float v(vec4 v)
+float v(vec4 p)
 {
-  return dot(v,v);
+  return dot(p,p);
 }
-float c(float v)
+float p(float p)
 {
-  return clamp(v,0.,1.);
+  return clamp(p,0.,1.);
 }
-vec2 c(vec2 v)
+vec2 p(vec2 p)
 {
-  return clamp(v,0.,1.);
+  return clamp(p,0.,1.);
 }
-vec3 c(vec3 v)
+vec3 p(vec3 p)
 {
-  return clamp(v,0.,1.);
+  return clamp(p,0.,1.);
 }
-vec4 c(vec4 v)
+vec4 p(vec4 p)
 {
-  return clamp(v,0.,1.);
+  return clamp(p,0.,1.);
 }
 void main()
 {
-  r=vec4(1,c(v(gl_FragCoord.xy/5e2)),1,1);
+  h=vec4(1,p(v(gl_FragCoord.xy/5e2)),1,1);
 }

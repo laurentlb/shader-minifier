@@ -40,11 +40,13 @@ type private Env = {
     allowOverloading: bool
     // Function that decides a name (and returns the modified Env).
     newName: Namespace -> Env -> Ident -> Env
+    // Function that chooses one of the names (there's at least one), to overload an existing function.
+    chooseOverload: Ident -> string list -> string
     // Function called when we enter a scope, to support name reuse via shadowing
     onEnterScope: Env -> Stmt -> Env
 }
 with
-    static member Create(availableNames, availableFieldNames, allowOverloading, newName, onEnterScope) = {
+    static member Create(availableNames, availableFieldNames, allowOverloading, newName, chooseOverload, onEnterScope) = {
         identRenames = Map.empty
         memberRenames = Map.empty
         funOverloads = Map.empty
@@ -53,6 +55,7 @@ with
         exportedNames = ref []
         allowOverloading = allowOverloading
         newName = newName
+        chooseOverload = chooseOverload
         onEnterScope = onEnterScope
     }
 
@@ -288,15 +291,19 @@ type private RenamerVisitor(options: Options.Options, funSignatures: Map<string,
             not (signatures |> Set.exists x.Value.ContainsKey || List.contains x.Key options.noRenamingList)
         let addSignatures prevName overloads =
             signatures |> Set.fold (fun (m: Map<Signature,string>) s -> m.Add(s, prevName)) overloads
-        match env.funOverloads |> Seq.tryFind isFunctionNameAvailableForTheseSignatures with
-        | Some res when env.allowOverloading ->
+        let availableOverloads =
+            if env.allowOverloading then
+                [for x in env.funOverloads do if isFunctionNameAvailableForTheseSignatures x then x.Key]
+            else []
+        match availableOverloads with
+        | _ :: _ ->
             // overload an existing function name used with different signatures
-            let newName, overloads = res.Key, res.Value
-            let funOverloads = env.funOverloads.Add (newName, addSignatures id.Name overloads)
+            let newName = env.chooseOverload id availableOverloads
+            let funOverloads = env.funOverloads.Add (newName, addSignatures id.Name env.funOverloads[newName])
             let env = env.Update(env.identRenames.Add(id.Name, newName), funOverloads, env.availableNames)
             id.Rename(newName)
             env
-        | _ ->
+        | [] ->
             // find a new function name
             let prevName = id.Name
             let env = env.newName VarFunStruct env id
@@ -358,75 +365,6 @@ type private RenamerVisitor(options: Options.Options, funSignatures: Map<string,
 (* Contextual renaming *)
 type private RenamerImpl(options: Options.Options) =
 
-    let computeContextTable text =
-        let contextTable = Dictionary<(char*char), int>()
-        for prev, next in Seq.pairwise text do
-            contextTable[(prev, next)] <- match contextTable.TryGetValue((prev, next)) with _, n -> n + 1
-        contextTable
-
-    // /!\ This function is a performance bottleneck.
-    let chooseIdent (contextTable: Dictionary<(char*char), int>) ident candidates =
-        let allChars = [char 32 .. char 127] // printable chars
-        let prevs = allChars |> Seq.choose (fun c ->
-            match contextTable.TryGetValue((c, ident)) with
-            | true, occ -> Some (c, occ)
-            | false, _ -> None
-        )
-        let nexts = allChars |> Seq.choose (fun c ->
-            match contextTable.TryGetValue((ident, c)) with
-            | true, occ -> Some (c, occ)
-            | false, _-> None
-        )
-
-        let mutable best = -10000, ""
-        // For performance, consider at most 26 candidates.
-        for word: string in candidates |> Seq.take 26 do
-            let firstLetter = word[0]
-            let lastLetter = word[word.Length - 1]
-            let mutable score = 0
-
-            for c, _ in prevs do // more frequent adjacency with previous character scores better
-                match contextTable.TryGetValue((c, firstLetter)) with
-                | false, _ -> ()
-                | true, occ -> score <- score + occ
-
-            for c, _ in nexts do // more frequent adjacency with following character scores better
-                match contextTable.TryGetValue((lastLetter, c)) with
-                | false, _ -> ()
-                | true, occ -> score <- score + occ
-
-            if word.Length > 1 then // also use adjacency between the 2 letters of an identifier
-                score <- score - 1000 // avoid long names if there are 1-letter names available
-                match contextTable.TryGetValue((firstLetter, lastLetter)) with
-                | false, _ -> ()
-                | true, occ -> score <- score + occ
-
-            if score > fst best then best <- score, word
-            // If the score is equal, consistently pick the same string, to get a more deterministic behavior.
-            elif score = fst best && word < snd best then best <- score, word
-
-        let best = snd best
-        assert (best.Length > 0)
-        let firstLetter = best[0]
-        let lastLetter = best[best.Length - 1]
-
-        // Update the context table. Due to this side-effect, variables in two identical functions
-        // may get different names. Compression tests using Crinkler show that (on average) it's
-        // still worth updating the tables. Results might differ with kkrunchy, more testing
-        // will be useful.
-        for c in allChars do
-            match contextTable.TryGetValue((c, ident)), contextTable.TryGetValue((c, firstLetter)) with
-            | (false, _), _ -> ()
-            | (true, n1), (false, _) -> contextTable[(c, firstLetter)] <- n1
-            | (true, n1), (true, n2) -> contextTable[(c, firstLetter)] <- n1 + n2
-            match contextTable.TryGetValue((ident, c)), contextTable.TryGetValue((lastLetter, c)) with
-            | (false, _), _ -> ()
-            | (true, n1), (false, _) -> contextTable[(lastLetter, c)] <- n1
-            | (true, n1), (true, n2) -> contextTable[(lastLetter, c)] <- n1 + n2
-
-        best
-
-
                                     (* ** Renamer ** *)
 
     let newUniqueId (numberOfUsedIdents: int ref) (ns: Namespace) (env: Env) (id: Ident) =
@@ -434,17 +372,23 @@ type private RenamerImpl(options: Options.Options) =
         let newName = sprintf "%04d" numberOfUsedIdents.Value
         env.AddRenaming(ns, id, newName)
 
-    // A renaming strategy that considers how a variable is used. It optimizes the frequency of
-    // adjacent characters, which can make the output more compression-friendly. This is best
+    // Don't use long names if there are one-letter names available.
+    // For performance, limit the number of long names to consider.
+    let shortestNames (names: string list) =
+        match names |> List.filter (fun name -> name.Length = 1) with
+        | [] -> List.truncate 40 names
+        | oneLetterNames -> oneLetterNames
+
+    // A renaming strategy that considers how a variable is used. It chooses the name that the
+    // model can predict best, which can make the output more compression-friendly. This is best
     // suited when minifying a single file.
-    let optimizeContext contextTable (ns: Namespace) env (id: Ident) =
+    let optimizeContext (model: NameModel.Model) (ns: Namespace) env (id: Ident) =
         match ns with
         | VarFunStruct ->
-            let cid = char (1000 + int id.Name)
-            let newName = chooseIdent contextTable cid env.availableNames
+            let newName = model.ChooseName(id.Placeholder, shortestNames env.availableNames)
             env.AddRenaming(ns, id, newName)
         | FieldsOfAllStruct ->
-            let newName = env.availableFieldNames.Head
+            let newName = model.ChooseName(id.Placeholder, shortestNames env.availableFieldNames)
             env.AddRenaming(ns, id, newName)
 
     // A renaming strategy that always picks the first available name. This optimizes the
@@ -475,10 +419,10 @@ type private RenamerImpl(options: Options.Options) =
     // Renaming safe across multiple files (e.g. uniform/in/out variables are
     // renamed in a consistent way) that tries to optimize based on the context
     // and variable reuse.
-    let multiFileRenaming contextTable (exportRenames: IDictionary<string, string>) (ns: Namespace) (env: Env) (id: Ident) =
+    let multiFileRenaming model (exportRenames: IDictionary<string, string>) (ns: Namespace) (env: Env) (id: Ident) =
         match exportRenames.TryGetValue(id.Name) with
             | true, newName -> env.AddRenaming(ns, id, newName)
-            | false, _ -> optimizeContext contextTable ns env id
+            | false, _ -> optimizeContext model ns env id
 
     // Implements name reuse via shadowing. This is called when entering a new scope (function body, if, for, while).
     // It marks already assigned names as available again when they are not used inside the scope,
@@ -548,7 +492,7 @@ type private RenamerImpl(options: Options.Options) =
 
     let assignUniqueIds shaders =
         let numberOfUsedIdents = ref 0
-        let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, fun env _ -> env)
+        let mutable env = Env.Create([], [], false, newUniqueId numberOfUsedIdents, (fun _ names -> names.Head), fun env _ -> env)
         renameAsts shaders env
 
     member _.rename shaders =
@@ -567,17 +511,17 @@ type private RenamerImpl(options: Options.Options) =
         let fieldNames = names
 
         // Rename each identifier again, this time into valid names, according to the list
-        // and to a "context table" (frequencies of adjacent pairs of characters).
+        // and to a model of the text (frequencies of sequences of characters).
         let allowOverloading = not options.noOverloading
+        let model = NameModel.Model(text, Ident.IsPlaceholder)
+        let chooseOverload (id: Ident) names = model.ChooseName(id.Placeholder, names)
         let mutable env =
             if Array.length shaders > 1 then
                 // Env.Create(names, true, bijectiveRenaming names, shadowVariables)
                 let exportsRenames = Seq.zip [for export in exportedNames -> export.name] names |> dict
-                let contextTable = computeContextTable text
-                Env.Create(names, names, allowOverloading, multiFileRenaming contextTable exportsRenames, shadowVariables)
+                Env.Create(names, names, allowOverloading, multiFileRenaming model exportsRenames, chooseOverload, shadowVariables)
             else
-                let contextTable = computeContextTable text
-                Env.Create(names, fieldNames, allowOverloading, optimizeContext contextTable, shadowVariables)
+                Env.Create(names, fieldNames, allowOverloading, optimizeContext model, chooseOverload, shadowVariables)
         env <- env.DontRenameList options.noRenamingList
         env.exportedNames.Value <- exportedNames
         renameAsts shaders env

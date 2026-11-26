@@ -1,7 +1,7 @@
 float r()
 {
-  float J=J;
+  float r=J;
   for(;;)
     ;
-  return J;
+  return r;
 }

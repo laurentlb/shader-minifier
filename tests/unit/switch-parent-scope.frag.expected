@@ -1,16 +1,15 @@
 #version 450
 
 uniform int v;
-out vec4 i;
+out vec4 m;
 void main()
 {
-  int m=0;
+  int s=0;
   switch(v){
     case 0:
       int o=v;
       o++;
-      m=o;
+      s=o;
   }
-  i=vec4(m,5,0,1);
+  m=vec4(s,5,0,1);
 }
-

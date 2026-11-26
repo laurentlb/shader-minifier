@@ -1,6 +1,6 @@
 #version 130
 
-void h()
+void G()
 {
   switch(42){
     case 42:
@@ -10,28 +10,28 @@ void h()
 
 #define GOOD 42
 
-void G()
+void h()
 {
   switch(42){
     case GOOD:
       break;
   }
 }
-void G(int G)
+void G(int e)
 {
-  switch(G){
+  switch(e){
     case 0:
       break;
   }
 }
-void h(int G)
+void h(int e)
 {
-  switch(G+42){
+  switch(e+42){
     case 0:
       break;
   }
 }
-float D()
+float e()
 {
   switch(42){
     case 42:
@@ -46,9 +46,9 @@ float D()
   }
 }
 void b(){}
-int D(int G)
+int e(int e)
 {
-  switch(G){
+  switch(e){
     case 1:
       b();
     case 2:

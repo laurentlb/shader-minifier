@@ -13,6 +13,7 @@
     <Compile Include="analyzer.fs" />
     <Compile Include="typer.fs" />
     <Compile Include="inlining.fs" />
+    <Compile Include="namemodel.fs" />
     <Compile Include="renamer.fs" />
     <Compile Include="rewriter.fs" />
     <Compile Include="preprocessor.fs" />
