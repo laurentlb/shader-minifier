@@ -338,13 +338,15 @@ type MapEnv private = {
                 env, Jump (k, Option.map env.mapExpr e)
             | Verbatim _ | Directive _ as v -> env, v
             | Switch(e, cl) ->
-                let mapCase (l, sl) =
+                let mapCase (env: MapEnv) (l, sl) =
                     let l = match l with
                             | Case e -> Case (env.mapExpr e)
                             | Default -> Default
-                    let _, sl = env.foldList mapStmt' sl
-                    (l, sl)
-                env, Switch (env.mapExpr e, List.map mapCase cl)
+                    let env, sl = env.foldList mapStmt' sl
+                    env, (l, sl)
+                let e = env.mapExpr e
+                let _, cl = env.foldList mapCase cl
+                env, Switch(e, cl)
         let env, res = aux stmt
         let env = {env with blockLevel = blockLevel}
         env, env.fStmt env res

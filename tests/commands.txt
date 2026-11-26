@@ -50,6 +50,8 @@
 --hlsl --format indented -o tests/unit/issue-516.hlsl.expected tests/unit/issue-516.hlsl
 --hlsl --format indented --no-inlining --preserve-all-globals --no-remove-unused -o tests/unit/issue-537.hlsl.expected tests/unit/issue-537.hlsl
 --hlsl --format indented --no-renaming-list VS -o tests/unit/issue-504.hlsl.expected tests/unit/issue-504.hlsl
+--format indented --no-renaming -o tests/unit/switch-scope.vert.expected tests/unit/switch-scope.vert
+--format indented -o tests/unit/switch-parent-scope.frag.expected tests/unit/switch-parent-scope.frag
 
 # Preprocessor tests
 

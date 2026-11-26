@@ -1,0 +1,16 @@
+#version 450
+
+uniform int v;
+out vec4 i;
+void main()
+{
+  int m=0;
+  switch(v){
+    case 0:
+      int o=v;
+      o++;
+      m=o;
+  }
+  i=vec4(m,5,0,1);
+}
+
