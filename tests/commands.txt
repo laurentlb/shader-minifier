@@ -63,6 +63,7 @@
 --no-renaming --format indented -o tests/unit/ternary-comma-true-parenthesized.frag.expected tests/unit/ternary-comma-true-parenthesized.frag
 --no-renaming --format indented -o tests/unit/ternary-comma-true.frag.expected tests/unit/ternary-comma-true.frag
 --no-renaming --format indented -o tests/unit/ternary-comma.hlsl.expected tests/unit/ternary-comma.hlsl
+--no-renaming --format indented -o tests/unit/comma-verbatim.frag.expected tests/unit/comma-verbatim.frag
 
 # Preprocessor tests
 

@@ -42,8 +42,7 @@ type private ParseImpl(options: Options.Options) =
     let opp = OperatorPrecedenceParser<Ast.Expr, unit, unit>()
     let assignmentExpr, assignmentExprRef = createParserForwardedToRef<Ast.Expr, unit>()
     let expr, exprRef = createParserForwardedToRef<Ast.Expr, unit>()
-    let exprNoCommaNoVerbatim = assignmentExpr
-    let exprNoComma = choice [exprNoCommaNoVerbatim; verbatim |>> Ast.VerbatimExp]
+    let exprNoComma = assignmentExpr
 
     let parenExp = between (ch '(') (ch ')') expr
 
@@ -85,7 +84,7 @@ type private ParseImpl(options: Options.Options) =
         let inner = sepEndBy exprNoComma (ch ',')
         between (ch '{') (ch '}') inner |>> Ast.VectorExp
 
-    let prim' = choice [vectorExp; parenExp; ident |>> Ast.Var; anyNumber]
+    let prim' = choice [vectorExp; parenExp; ident |>> Ast.Var; anyNumber; verbatim |>> Ast.VerbatimExp]
                <?> "expression"
 
     let cast =
