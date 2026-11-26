@@ -82,6 +82,7 @@
 # Unused removal tests
 
 --no-renaming --format indented -o tests/unit/unused_removal.frag.expected tests/unit/unused_removal.frag
+--no-renaming --format indented -o tests/unit/side-effects-builtin-names.frag.expected tests/unit/side-effects-builtin-names.frag
 --no-renaming --format indented -o tests/unit/unused_assignments.frag.expected tests/unit/unused_assignments.frag
 
 
