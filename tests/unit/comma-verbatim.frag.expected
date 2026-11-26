@@ -1,0 +1,14 @@
+#version 450
+
+uniform float u;
+out vec4 o;
+void main()
+{
+  float a=3.;
+
+  a=(u,a * 2.
+    );
+  o=vec4(a,(u,a * 2.
+    ),(u,a * 2.
+    ),0);
+}

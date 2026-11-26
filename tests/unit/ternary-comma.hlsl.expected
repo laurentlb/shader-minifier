@@ -1,0 +1,6 @@
+float4 main():SV_TARGET
+{
+  float counter=0.;
+  counter=(counter+=1.,counter+2.);
+  return float4((1.,2.),(1.,2.),(2.,3.),counter);
+}
