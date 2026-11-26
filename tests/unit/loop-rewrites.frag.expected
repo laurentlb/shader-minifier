@@ -72,9 +72,9 @@ float emptyElse(float x)
 }
 float expressions(float x)
 {
-  float a=x+2.5;
-  x=(x,a,u);
-  return a+x;
+  x+=2.5;
+  float b=u;
+  return x+b;
 }
 void builtinAssignment()
 {

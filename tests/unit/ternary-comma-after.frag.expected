@@ -3,7 +3,5 @@
 out vec4 o;
 void main()
 {
-  float result;
-  result=1.,result+=3.;
-  o=vec4(result);
+  o=vec4(4);
 }

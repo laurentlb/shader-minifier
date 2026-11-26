@@ -127,6 +127,12 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
         | FunCall (Op op, [VarWithPossibleField name as target; e]) when Builtin.assignOps.Contains op -> augment op name (Some target) e
         | _ -> None
 
+    let tryGetAssignment = function
+        | FunCall(Op "=", [Var v; value]) -> Some (v, "=", value)
+        | FunCall(Op op, [Var v; value])
+            when Builtin.assignOps.Contains op -> Some (v, op, value)
+        | _ -> None
+
     let simplifyOperator (env: MapEnv) = function
         | FunCall(Op "-", [Int (i1, su)]) -> Int (-i1, su)
         | FunCall(Op "-", [FunCall(Op "-", [e])]) -> e
@@ -145,6 +151,18 @@ type private RewriterImpl(options: Options.Options, optimizationPass: Optimizati
             FunCall(Op "+", [x; Float (-f, s)]) |> env.fExpr env
         | FunCall(Op "-", [x; Int (i, s)]) when i < 0 ->
             FunCall(Op "+", [x; Int (-i, s)]) |> env.fExpr env
+        // a=1, a+=3 -> a=1+3
+        | FunCall(Op ",", [first; second]) ->
+            match tryGetAssignment first, tryGetAssignment second with
+            | Some (v1, "=", init1), Some (v2, op, init2)
+                when op <> "="
+                    && v1.Name = v2.Name
+                    && Effects.isPure init1
+                    && Effects.isPure init2 ->
+                let op = op.TrimEnd('=')
+                FunCall(Op "=", [Var v1; FunCall(Op op, [init1; init2])]) |> env.fExpr env
+            | _ when Effects.isPure first -> second
+            | _ -> FunCall(Op ",", [first; second])
 
         // Boolean simplifications (let's ignore the suffix)
         | FunCall(Op "<", [Number n1; Number n2]) -> bool(n1 < n2)
