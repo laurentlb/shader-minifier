@@ -13,6 +13,7 @@ type CliArguments =
     | Skip_Glslang_Compile
     | GLSL_Driver_Compile
     | Skip_Performance_Tests
+    | Compression_Test
 
     interface IArgParserTemplate with
         member s.Usage =
@@ -22,6 +23,7 @@ type CliArguments =
             | Skip_Glslang_Compile -> "Skip testing compilation of shaders with glslang"
             | GLSL_Driver_Compile -> "Test GLSL compilation of shaders agaist current OpenGL driver"
             | Skip_Performance_Tests -> "Skip the tests of performance"
+            | Compression_Test -> "Only run the compression tests, and update tests/compression_results.log"
 
 let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine()
 //let cliArgs = ArgumentParser.Create<CliArguments>().ParseCommandLine([|"--update-golden"|])
@@ -289,8 +291,9 @@ let testCompiled () =
 
 [<EntryPoint>]
 let main argv =
-    // Manually run compression tests by enabling this line:
-    // CompressionTests.run ()
+    if cliArgs.Contains(Compression_Test) then
+        CompressionTests.run ()
+        exit 0
 
     initOpenTK()
     let mutable failures = 0

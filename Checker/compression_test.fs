@@ -3,7 +3,7 @@
 open ShaderMinifier
 open System.Runtime.InteropServices
 open System.IO
-open System.Text
+open System.Text.RegularExpressions
 
 #nowarn "51" // use of native pointers
 
@@ -40,14 +40,20 @@ let testFiles = [
     "moutard.frag"
 ]
 
-let writer = new StringWriter()
+let logFile = "tests/compression_results.log"
 
-let log fmt =
-    let logger str =
-        printf "%s" str
-        writer.Write(str)
+type Result = { name: string; minifiedSize: int; compressedSize: float }
+with
+    override this.ToString() = sprintf "%-40s %5d => %8.3f" this.name this.minifiedSize this.compressedSize
 
-    Printf.ksprintf logger fmt
+// Compressed sizes from the log file, by name.
+let readPreviousSizes () =
+    dict [
+        for line in File.ReadAllLines logFile do
+            let m = Regex.Match(line, @"^(.*?) +\d+ => +([\d.]+)$")
+            if m.Success then
+                m.Groups[1].Value, System.Double.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture)
+    ]
 
 let compressionTest args filenames =
     let options = Options.init(args)
@@ -59,11 +65,10 @@ let compressionTest args filenames =
         out.ToString().ToCharArray()
 
     let pointer = &&minified.[0]
-    log "%-40s " (match filenames with [f] -> f | f::_ -> f + " (and others)" | [] -> "?")
-    log "%5d " minified.Length
     let compressedSize = Crinkler.ApproximateModels4k(pointer, minified.Length)
-    log "=> %8.3f\n" compressedSize
-    minified.Length, float compressedSize
+    { name = match filenames with [f] -> f | f::_ -> f + " (and others)" | [] -> "?"
+      minifiedSize = minified.Length
+      compressedSize = float compressedSize }
 
 let compressFile (file: string) =
     let langArg = if file.EndsWith("hlsl") then [|"--hlsl"|] else [||]
@@ -73,23 +78,31 @@ let compressFile (file: string) =
 let run () =
     Crinkler.InitCompressor() // Platform must be set to x64
 
-    writer.GetStringBuilder().Clear() |> ignore<StringBuilder>
+    let previousSizes = readPreviousSizes ()
+    let report result =
+        match previousSizes.TryGetValue result.name with
+        | true, previous -> printfn "%O (%+.3f)" result (result.compressedSize - previous)
+        | false, _ -> printfn "%O (new)" result
+        result
 
     // Tests for minifying multiple files together.
     // We don't have good examples of files that fit together, but these files use the same uniforms (e.g. time, tex0).
-    let multifileInputs1 = ["clod.frag"; "leizex.frag"; "slisesix.frag"; "motion_blur.frag"; "mandel.frag"; "kaleidoscope.frag"]
-    let multifileOutput1 = compressionTest [|"--format"; "text"|] multifileInputs1
+    let multifileInputs = [
+        ["clod.frag"; "leizex.frag"; "slisesix.frag"; "motion_blur.frag"; "mandel.frag"; "kaleidoscope.frag"]
+        ["mouton/mouton.vert"; "mouton/mouton.frag"; "mouton/fxaa.frag"]
+        ["vestige/music.frag"; "vestige/post.frag"; "vestige/render.frag"]
+    ]
+    let results = [
+        for files in multifileInputs do
+            report (compressionTest [|"--format"; "text"|] files)
+        // Tests for individual files.
+        for file in testFiles do
+            report (compressFile file)
+    ]
+    let total = report {
+        name = "Total:"
+        minifiedSize = results |> List.sumBy _.minifiedSize
+        compressedSize = results |> List.sumBy _.compressedSize
+    }
 
-    let multifileInputs2 = ["mouton/mouton.vert"; "mouton/mouton.frag"; "mouton/fxaa.frag"]
-    let multifileOutput2 = compressionTest [|"--format"; "text"|] multifileInputs2
-
-    let multifileInputs3 = ["vestige/music.frag"; "vestige/post.frag"; "vestige/render.frag"]
-    let multifileOutput3 = compressionTest [|"--format"; "text"|] multifileInputs3
-
-    // Tests for individual files.
-    let sizes = multifileOutput1 :: multifileOutput2 :: multifileOutput3 :: List.map compressFile testFiles
-    let minifiedSum = List.sumBy fst sizes
-    let compressedSum = List.sumBy snd sizes
-    log "Total: %5d => %9.3f\n" minifiedSum compressedSum
-
-    File.WriteAllText("tests/compression_results.log", writer.ToString())
+    File.WriteAllLines(logFile, results @ [total] |> List.map string)
