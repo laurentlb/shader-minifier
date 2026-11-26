@@ -1,0 +1,26 @@
+#version 450
+
+uniform float u;
+out vec4 color;
+float seed;
+float noise()
+{
+  return fract(sin(seed++)*43758.5);
+}
+vec2 userNoise()
+{
+  vec2 v=vec3(1,2,noise()).xy;
+  float unused=noise();
+  return v;
+}
+float modfOut()
+{
+  float x=u,ip,unused=modf(x,ip);
+  vec2 v=vec3(1,2,modf(x,ip)).xy;
+  return ip+v.x;
+}
+void main()
+{
+  seed=u;
+  color=vec4(userNoise(),modfOut(),vec2(1,2).x);
+}

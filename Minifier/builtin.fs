@@ -80,7 +80,7 @@ let trigonometryFunctions = set([
 let mathsFunctions = set([
     "abs"; "ceil"; "clamp"; "dFdx"; "dFdy"; "exp"; "exp2"; "floor"; "fma";
     "fract"; "fwidth"; "inversesqrt"; "isinf"; "isnan"; "log"; "log2"; "max"; "min";
-    "mix"; "mod"; "modf"; "noise"; "pow"; "round"; "roundEven"; "sign"; "smoothstep";
+    "mix"; "mod"; "noise"; "pow"; "round"; "roundEven"; "sign"; "smoothstep";
     "sqrt"; "step"; "trunc"])
 let vectorFunctions = set([
     "cross"; "distance"; "dot"; "equal"; "faceforward"; "length"; "normalize";
@@ -94,7 +94,8 @@ let pureBuiltinFunctions =
     castFunctions +
     textureFunctions
 
-let impureBuiltinFunctions = set ["atomicCounterIncrement"]
+// Builtins with side effects: modf writes its second (out) argument.
+let impureBuiltinFunctions = set ["atomicCounterIncrement"; "modf"]
 
 let builtinFunctions = pureBuiltinFunctions + impureBuiltinFunctions
 
