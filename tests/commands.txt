@@ -53,6 +53,18 @@
 --format indented --no-renaming -o tests/unit/switch-scope.vert.expected tests/unit/switch-scope.vert
 --format indented -o tests/unit/switch-parent-scope.frag.expected tests/unit/switch-parent-scope.frag
 --format indented -o tests/unit/switch-case-label.frag.expected tests/unit/switch-case-label.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-after.frag.expected tests/unit/ternary-comma-after.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-assignment.frag.expected tests/unit/ternary-comma-assignment.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-declarations.frag.expected tests/unit/ternary-comma-declarations.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-false-parenthesized.frag.expected tests/unit/ternary-comma-false-parenthesized.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-function-args.frag.expected tests/unit/ternary-comma-function-args.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-nested.frag.expected tests/unit/ternary-comma-nested.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-sideeffects-false.frag.expected tests/unit/ternary-comma-sideeffects-false.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-sideeffects-true.frag.expected tests/unit/ternary-comma-sideeffects-true.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-true-parenthesized.frag.expected tests/unit/ternary-comma-true-parenthesized.frag
+--no-renaming --format indented -o tests/unit/ternary-comma-true.frag.expected tests/unit/ternary-comma-true.frag
+--no-renaming --format indented -o tests/unit/ternary-comma.hlsl.expected tests/unit/ternary-comma.hlsl
+--no-renaming --format indented -o tests/unit/comma-verbatim.frag.expected tests/unit/comma-verbatim.frag
 
 # Preprocessor tests
 
@@ -71,6 +83,7 @@
 # Unused removal tests
 
 --no-renaming --format indented -o tests/unit/unused_removal.frag.expected tests/unit/unused_removal.frag
+--no-renaming --format indented -o tests/unit/side-effects-builtin-names.frag.expected tests/unit/side-effects-builtin-names.frag
 --no-renaming --format indented -o tests/unit/unused_assignments.frag.expected tests/unit/unused_assignments.frag
 
 

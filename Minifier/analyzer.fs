@@ -163,9 +163,9 @@ module Effects =
         | Dot(v, _)  -> sideEffects v
         | Subscript(e1, e2) -> (e1 :: (Option.toList e2)) |> List.collect sideEffects
         | VectorExp li -> li |> List.collect sideEffects
-        | FunCall(Var fct, args) when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
         | FunCall(Var fct, args) as e ->
             match fct.Declaration with
+            | Declaration.BuiltinFunction | Declaration.Unknown when Builtin.pureBuiltinFunctions.Contains(fct.Name) -> args |> List.collect sideEffects
             | Declaration.UserFunction fd when not fd.hasExternallyVisibleSideEffects -> args |> List.collect sideEffects
             | _ -> [e]
         | FunCall(Op "?:", [condExpr; thenExpr; elseExpr]) as e ->
