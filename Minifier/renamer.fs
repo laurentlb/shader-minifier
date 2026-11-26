@@ -268,11 +268,12 @@ type private RenamerVisitor(options: Options.Options, funSignatures: Map<string,
         | Jump(_, e) -> renOpt e; env
         | Verbatim _ | Directive _ -> env
         | Switch(e, cl) ->
-            let renLabel = function
+            // Cases share a scope: a label can refer to a const declared in an earlier case.
+            let renLabel env = function
                 | Case e -> renExpr env e
                 | Default -> ()
             let renCase env (l, sl) =
-                renLabel l
+                renLabel env l
                 renList env renStmt sl
             renExpr env e
             renList env renCase cl |> ignore<Env>

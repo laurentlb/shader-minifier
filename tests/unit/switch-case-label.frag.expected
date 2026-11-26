@@ -1,0 +1,17 @@
+#version 450
+
+uniform int i;
+out vec4 c;
+const ivec2 v=ivec2(1,5);
+void main()
+{
+  switch(i){
+    case 0:
+      const int m=v.y;
+      c=vec4(m);
+      break;
+    case m:
+      c=vec4(1);
+      break;
+  }
+}

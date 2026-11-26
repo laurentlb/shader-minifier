@@ -52,6 +52,7 @@
 --hlsl --format indented --no-renaming-list VS -o tests/unit/issue-504.hlsl.expected tests/unit/issue-504.hlsl
 --format indented --no-renaming -o tests/unit/switch-scope.vert.expected tests/unit/switch-scope.vert
 --format indented -o tests/unit/switch-parent-scope.frag.expected tests/unit/switch-parent-scope.frag
+--format indented -o tests/unit/switch-case-label.frag.expected tests/unit/switch-case-label.frag
 
 # Preprocessor tests
 
