@@ -379,7 +379,7 @@ type private RenamerImpl(options: Options.Options) =
 
         let mutable best = -10000, ""
         // For performance, consider at most 26 candidates.
-        for word: string in candidates |> Seq.take 26 do
+        for word: string in candidates |> Seq.truncate 26 do
             let firstLetter = word[0]
             let lastLetter = word[word.Length - 1]
             let mutable score = 0
@@ -428,6 +428,8 @@ type private RenamerImpl(options: Options.Options) =
 
                                     (* ** Renamer ** *)
 
+    let usedChars = HashSet<char>()
+
     let newUniqueId (numberOfUsedIdents: int ref) (ns: Namespace) (env: Env) (id: Ident) =
         numberOfUsedIdents.Value <- numberOfUsedIdents.Value + 1
         let newName = sprintf "%04d" numberOfUsedIdents.Value
@@ -440,7 +442,12 @@ type private RenamerImpl(options: Options.Options) =
         match ns with
         | VarFunStruct ->
             let cid = char (1000 + int id.Name)
-            let newName = chooseIdent contextTable cid env.availableNames
+            // Experiment: prefer 1-letter names whose letter already appears in the output,
+            // to minimize the number of distinct characters.
+            let known = env.availableNames |> List.filter (fun n -> n.Length = 1 && usedChars.Contains n[0])
+            let candidates = if known.IsEmpty then env.availableNames else known
+            let newName = chooseIdent contextTable cid candidates
+            for c in newName do usedChars.Add c |> ignore
             env.AddRenaming(ns, id, newName)
         | FieldsOfAllStruct ->
             let newName = env.availableFieldNames.Head
@@ -561,6 +568,7 @@ type private RenamerImpl(options: Options.Options) =
         // Then, compute the ordered list of variable names to use.
         // Most frequent letters must be picked first because they will compress better.
         let text = [for shader in shaders -> Printer.print shader.code] |> String.concat "\0"
+        usedChars.UnionWith(text)
         let names = computeListOfNames text
                  |> List.filter (fun x -> not <| List.contains x forbiddenNames)
         let fieldNames = names
