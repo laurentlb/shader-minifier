@@ -12,7 +12,7 @@ module Crinkler =
     extern void InitCompressor()
 
     [<DllImport(@"Compressor.dll", CallingConvention = CallingConvention.Cdecl)>]
-    extern single ApproximateModels4k(char* data, int datasize)
+    extern single ApproximateModels4k(byte* data, int datasize)
 
 
 let testFiles = [
@@ -56,7 +56,8 @@ let compressionTest args filenames =
         let files = [|for f in filenames -> f, File.ReadAllText("tests/real/" + f)|]
         let minifier = Minifier(options, files)
         minifier.Format(out)
-        out.ToString().ToCharArray()
+        // Crinkler works on bytes: don't pass .NET chars (UTF-16).
+        Encoding.UTF8.GetBytes(out.ToString())
 
     let pointer = &&minified.[0]
     log "%-40s " (match filenames with [f] -> f | f::_ -> f + " (and others)" | [] -> "?")
